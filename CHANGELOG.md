@@ -7,6 +7,14 @@ version may change an interface, and its entry says how to update.
 
 ## Unreleased
 
+## 0.2.0 - 2026-10-20
+
+What a real app needed to adopt Evalkeeper: settings for apps whose models
+are chosen in an admin page, temperature as a setting, prices for cached
+input, and baselines. **To update:** add the nullable `temperature`
+columns below to your schema, and set `baseline` on any `BoardRow` you
+build by hand.
+
 ### Added
 
 - Cached-input prices: `ModelInfo.cachedInputPer1M` and

@@ -7,7 +7,6 @@ import {
   money,
   probabilityQuality,
   perAnswer,
-  type ReasoningEffort,
   retiresLabel,
   seconds,
   seriousMistakes,
@@ -75,7 +74,7 @@ export default async function SuitePage({
           [
             r.key,
             await runner.estimateRun(key, r.model, "ALL", 1, {
-              reasoningEffort: r.effort as ReasoningEffort | null,
+              reasoningEffort: r.effort,
             }),
           ] as const,
       ),

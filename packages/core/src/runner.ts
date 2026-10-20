@@ -105,6 +105,13 @@ export type RunnerOptions = {
     models: string[];
     fallbackModels?: string[];
   };
+  /**
+   * Which retiring models (`ModelInfo.retiring`) the board lists.
+   * "always" (the default): every candidate, though a retiring one is never
+   * suggested. "inUse": only one a feature still runs on, as its live or
+   * fallback model, so nobody spends a test on a model that's going away.
+   */
+  retiringOnBoard?: "always" | "inUse";
 };
 
 /**
@@ -572,8 +579,7 @@ export function createRunner(opts: RunnerOptions) {
           const output = await withTimeout(
             suite.run(suite.input.parse(c.input), {
               model: run.model,
-              reasoningEffort:
-                (run.reasoningEffort as ReasoningEffort | null) ?? null,
+              reasoningEffort: run.reasoningEffort ?? null,
               temperature: run.temperature ?? null,
               maxOutputTokens: run.maxOutputTokens ?? null,
               onCost: (usd) => (cost += usd),
@@ -832,7 +838,7 @@ export function createRunner(opts: RunnerOptions) {
     // The setting a model actually gets: models without reasoning settings
     // ignore it, so their rows don't split by it.
     const realEffort = (model: string, effort: string | null) =>
-      effortFor(opts.models, model, effort as ReasoningEffort | null) ?? null;
+      effortFor(opts.models, model, effort) ?? null;
     const keyOf = (model: string, effort: string | null) =>
       `${model}|${realEffort(model, effort) ?? ""}`;
     const runKey = (r: RunRecord) => keyOf(r.model, r.reasoningEffort);
@@ -881,7 +887,7 @@ export function createRunner(opts: RunnerOptions) {
     const checkKeys = suite.checks.map((c) => c.key);
 
     const seen = new Set<string>();
-    const keys = [
+    let keys = [
       ...models.map((m) => ({
         model: m,
         effort: defaultEffort,
@@ -900,6 +906,13 @@ export function createRunner(opts: RunnerOptions) {
       seen.add(k);
       return true;
     });
+    // A retiring model stays on the board only while a feature runs on it.
+    const inUse = (model: string) =>
+      model === route.model || model === route.fallbackModel;
+    if (opts.retiringOnBoard === "inUse")
+      keys = keys.filter(
+        ({ model }) => !opts.models[model]?.retiring || inUse(model),
+      );
     const complete = (r: RunRecord | undefined) => !(r?.metrics?.failed ?? 0);
     const estimates = new Map(
       await Promise.all(

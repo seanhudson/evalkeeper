@@ -57,7 +57,9 @@ dataset version (cases and answers), and the grader version.
 test: score, serious mistakes, time and cost per answer, and how it
 compares with the live model. A _baseline_ (code the app runs instead of a
 model, such as a matcher) can sit on the board too, for comparison; it's
-never suggested.
+never suggested. A retiring model is on the board unless the runner
+says `retiringOnBoard: "inUse"`; then it's listed only while a feature
+still runs on it.
 
 **Decision suite.** A suite for a feature that uses a decision model
 (the AI SDK's `experimental_decide`): typed questions about a state, each

@@ -15,6 +15,9 @@ version may change an interface, and its entry says how to update.
   and a test at another cap than the live one is out of date. A raised cap
   no longer reuses answers cut short under the old one. **To update:** add
   a nullable `maxOutputTokens Int?` column to `EvalRun`. (#18)
+- `createRunner({ retiringOnBoard: "inUse" })` lists a retiring model on
+  the board only while a feature runs on it as its live or fallback model.
+  The default, `"always"`, lists every candidate as before. (#20)
 
 ### Changed
 

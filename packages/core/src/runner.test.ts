@@ -428,3 +428,56 @@ describe("output cap", () => {
     expect(given.run.maxOutputTokens).toBe(200);
   });
 });
+
+describe("retiring models on the board", () => {
+  const models = {
+    "model-a": { label: "Model A", provider: "acme" },
+    "old-live": { label: "Old live", provider: "acme", retiring: "2027-01" },
+    "old-spare": { label: "Old spare", provider: "other", retiring: "2027-01" },
+    "old-unused": {
+      label: "Old unused",
+      provider: "other",
+      retiring: "2027-01",
+    },
+  };
+  const route = () => ({
+    model: "old-live",
+    fallbackModel: "old-spare",
+    reasoningEffort: null,
+  });
+  const candidates = () => ({
+    models: ["model-a", "old-live", "old-spare", "old-unused"],
+  });
+
+  it("lists every candidate by default", async () => {
+    const { runner } = await setup(["a"], { models, route, candidates });
+    expect((await runner.board("upper")).rows.map((r) => r.model)).toEqual(
+      expect.arrayContaining([
+        "model-a",
+        "old-live",
+        "old-spare",
+        "old-unused",
+      ]),
+    );
+  });
+
+  it("with inUse, lists a retiring model only while a feature runs on it", async () => {
+    const { runner } = await setup(["a"], {
+      models,
+      route,
+      candidates,
+      retiringOnBoard: "inUse",
+    });
+    // A test run before it was hidden doesn't bring it back either.
+    const { run } = await runner.createRun({
+      suite: "upper",
+      model: "old-unused",
+    });
+    await runner.runEval(run.id);
+    const rows = (await runner.board("upper")).rows.map((r) => r.model);
+    expect(rows).toEqual(
+      expect.arrayContaining(["model-a", "old-live", "old-spare"]),
+    );
+    expect(rows).not.toContain("old-unused");
+  });
+});

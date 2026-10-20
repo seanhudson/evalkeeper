@@ -27,5 +27,21 @@
   },
   "peerDependencies": {
     "@prisma/client": "^5.0.0 || ^6.0.0"
+  },
+  "author": "Sean Hudson",
+  "homepage": "https://github.com/seanhudson/evalkeeper#readme",
+  "bugs": {
+    "url": "https://github.com/seanhudson/evalkeeper/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/seanhudson/evalkeeper.git",
+    "directory": "packages/prisma"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

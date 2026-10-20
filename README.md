@@ -4,6 +4,7 @@
 looks like, test every model against it, and choose the live model on
 evidence instead of vibes, then keep that choice honest as models change.
 
+[![CI](https://github.com/seanhudson/evalkeeper/actions/workflows/ci.yml/badge.svg)](https://github.com/seanhudson/evalkeeper/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 <!-- Screenshot: docs/screenshot.png, the suite page with its model board. -->
@@ -196,9 +197,17 @@ you're new to evals, start there.
 - Stores for Drizzle and plain Postgres; Prisma 7.
 - Count reusable answers in cost estimates.
 
+## Docs
+
+[Concepts](docs/concepts.md), [adding it to your app](docs/adding-to-your-app.md),
+[architecture](docs/architecture.md), and [lessons](docs/lessons.md).
+Changes are in the [changelog](CHANGELOG.md).
+
 ## Contributing
 
-Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
+Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md),
+the [code of conduct](CODE_OF_CONDUCT.md), and, for security issues,
+[SECURITY.md](SECURITY.md).
 
 ## License
 

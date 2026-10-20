@@ -33,5 +33,9 @@
   },
   "overrides": {
     "deepmerge-ts": "^8.0.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/seanhudson/evalkeeper.git"
   }
 }

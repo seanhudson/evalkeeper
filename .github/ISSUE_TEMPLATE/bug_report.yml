@@ -1,0 +1,22 @@
+name: Bug report
+description: Something works differently than the docs say.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what you saw.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce
+      description: The smallest suite, store, or steps that show it. Leave out real data.
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: evalkeeper and adapter versions, Node, and your database.
+      placeholder: "evalkeeper 0.1.0, @evalkeeper/prisma 0.1.0, Node 22, PostgreSQL 16"

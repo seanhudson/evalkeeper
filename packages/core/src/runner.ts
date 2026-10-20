@@ -889,6 +889,7 @@ export function createRunner(opts: RunnerOptions) {
                 answersRight: m.allPass.passed,
                 answers: m.allPass.n,
                 byCheck: m.byCheck,
+                measures: m.measures ?? {},
                 avgMs: m.avgMs || null,
                 costPerAnswer: m.costPerAnswer ?? null,
                 stale: !fresh,

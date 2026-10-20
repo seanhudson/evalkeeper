@@ -22,6 +22,11 @@ export type CheckResult = {
    * items), how many it got right. The headline score sums these.
    */
   units?: { right: number; total: number } | undefined;
+  /**
+   * Numbers measured on this answer, averaged across a test: a decision's
+   * `brier`, `logLoss`, `confidence`, and `correct` (see decisionCheck).
+   */
+  measures?: Record<string, number> | undefined;
 };
 
 /**
@@ -168,6 +173,13 @@ export type Suite<Input, Output, Label> = {
    * need more to finish before the platform's time limit.
    */
   concurrency?: number;
+  /**
+   * Graded as decisions (typed answers with probabilities, as from the AI
+   * SDK's `experimental_decide`), so pages show probability quality and
+   * calibration next to accuracy, and which models' probabilities are
+   * native or prompted.
+   */
+  decisions?: boolean;
   /** What the headline counts: "items", "tickets", … Default "answers". */
   unitNoun?: string;
   /**

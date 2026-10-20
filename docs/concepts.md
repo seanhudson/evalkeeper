@@ -57,6 +57,29 @@ dataset version (cases and answers), and the grader version.
 test: score, serious mistakes, time and cost per answer, and how it
 compares with the live model.
 
+**Decision suite.** A suite for a feature that uses a decision model
+(the AI SDK's `experimental_decide`): typed questions about a state, each
+answered with a probability instead of text. Set `decisions: true` and
+grade each question with `decisionCheck`. A decision is graded twice:
+
+- **The pick.** Did the top choice, or the side of 50% for a true-or-false
+  question, match the answer key? That's the check's pass or fail, as in
+  any suite.
+- **The probabilities.** Each check also records measures: the Brier
+  score (squared error, 0 to 1), log loss, and how sure the model was.
+  The board shows **probability quality** (1 minus the mean Brier; 100%
+  is all probability on the right answers) and **calibration error**
+  (how far "how sure" sits from "how often right", in 10 bins; 0 is
+  perfect). Calibration needs more cases than accuracy to be trusted.
+
+Two models that pick right equally often can differ a lot here, and that
+difference matters when your code acts on the probability (route only
+above 80%, ask a person below). **Native** decision models return a
+probability for every option; **prompted** ones are a text model asked to
+decide, which gives a pick with no distribution for choices, so
+probability quality counts only their true-or-false answers. A catalog
+entry's `decisions` field says which.
+
 ## Rules
 
 **Reuse.** An identical request (same suite, model, setting,

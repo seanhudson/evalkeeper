@@ -12,3 +12,4 @@
 export * from "./hash.js";
 export * from "./judge.js";
 export * from "./usage.js";
+export * from "./decide.js";

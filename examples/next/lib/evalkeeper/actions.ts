@@ -6,7 +6,7 @@ import { caseFromFeedback, formText, suggest } from "evalkeeper";
 import {
   MODELS,
   SUITES,
-  availableModels,
+  modelsFor,
   feedbackStore,
   requireAdmin,
   runner,
@@ -28,7 +28,8 @@ export async function testModel(form: FormData) {
   await requireAdmin();
   const suite = suiteFrom(form);
   const model = formText(form, "model");
-  if (!availableModels().includes(model)) throw new Error("Unknown model");
+  if (!modelsFor(suite.operation).includes(model))
+    throw new Error("Unknown model");
   const { run } = await runner.createRun({ suite: suite.key, model });
   // Answers come back after the response; the page refreshes until done.
   after(() => runner.runEval(run.id));
@@ -38,7 +39,7 @@ export async function testModel(form: FormData) {
 export async function testAll(form: FormData) {
   await requireAdmin();
   const suite = suiteFrom(form);
-  for (const model of availableModels()) {
+  for (const model of modelsFor(suite.operation)) {
     const { run } = await runner.createRun({ suite: suite.key, model });
     after(() => runner.runEval(run.id));
   }

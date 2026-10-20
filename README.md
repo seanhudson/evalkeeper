@@ -65,6 +65,12 @@ design.
   a weekly flag when a feature's thumbs-down share climbs, and one click to
   turn a rating on a kept input into a draft case (with consent, and
   never confirmed for you).
+- **Decision models, graded on their probabilities.** For features that
+  answer typed questions (pick a queue, say true or false) with the AI
+  SDK's decisions, a suite scores the pick and the probabilities: how close
+  they were (probability quality) and whether a model that says 90% is
+  right 90% of the time (calibration error). The board marks which models
+  give probabilities natively and which are prompted.
 - **Built for real platforms.** Answers time out, long tests continue in a
   fresh request instead of dying at the platform's limit, stuck tests are
   marked failed, and a provider out of credits stops a test instead of
@@ -116,6 +122,15 @@ test behind it, and a rollback that asks why.
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/history-dark.png">
   <img alt="A feature's settings history: version 2, promoted and live now, with what changed, who, when, the suggestion's reasons, and a link to the test behind it; version 1, the default from code, with a roll back button that asks why." src="docs/screenshots/history-light.png">
+</picture>
+
+**Decision models:** the same picks, told apart by their probabilities.
+Native decision models next to a prompted one, with probability quality
+and calibration error.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/decisions-dark.png">
+  <img alt="The ticket routing board: four demo decision models with similar scores, their probability quality and calibration error, and chips marking native probabilities or prompted." src="docs/screenshots/decisions-light.png">
 </picture>
 
 **Feedback:** thumbs from people using the product, ready to become
@@ -223,7 +238,7 @@ them for you.
 | --------------------------------------- | ----------------------------------------------------------------------------------------------- |
 | [`evalkeeper`](packages/core)           | The core: suite types, stats, comparisons, suggestions, health, grader helpers, and the runner. |
 | [`@evalkeeper/prisma`](packages/prisma) | The tables, a store on your Prisma client, and a judgment cache.                                |
-| [`@evalkeeper/ai-sdk`](packages/ai-sdk) | For the Vercel AI SDK: instruction hashes, call pricing, and a cached meaning judge.            |
+| [`@evalkeeper/ai-sdk`](packages/ai-sdk) | For the Vercel AI SDK: instruction hashes, call pricing, priced decisions, and a meaning judge. |
 | [`examples/next`](examples/next)        | A Next.js app with two suites, demo models, and the eval pages.                                 |
 
 Bring another database by implementing `EvalStore` (eleven plain reads and
@@ -249,7 +264,7 @@ you're new to evals, start there.
 ## Roadmap
 
 - Stores for Drizzle and plain Postgres.
-- Planned upgrades: Prisma 7, zod 4, and AI SDK 7.
+- Planned upgrades: Prisma 7 and zod 4.
 
 ## Docs
 

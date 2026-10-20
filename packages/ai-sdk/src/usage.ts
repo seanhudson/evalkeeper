@@ -1,5 +1,4 @@
 import { priceCall, type ModelCatalog } from "evalkeeper";
-import type { LanguageModelUsage } from "ai";
 
 /**
  * What a call cost, from the AI SDK's usage and your catalog's prices;
@@ -9,7 +8,11 @@ import type { LanguageModelUsage } from "ai";
 export function costOf(
   models: ModelCatalog,
   model: string,
-  usage: LanguageModelUsage,
+  /** A call's usage: a language model's, or a decision's. */
+  usage: {
+    inputTokens?: number | undefined;
+    outputTokens?: number | undefined;
+  },
 ): number | null {
   return priceCall(models, model, {
     input: usage.inputTokens ?? 0,

@@ -34,6 +34,8 @@ export type BoardRow = {
     answers: number;
     /** Pass rate of each check, for the breakdown table. */
     byCheck: SuiteMetrics["byCheck"];
+    /** Per check, probability measures (decision suites); empty otherwise. */
+    measures: NonNullable<SuiteMetrics["measures"]>;
     avgMs: number | null;
     costPerAnswer: number | null;
     /** Cases, answers, or instructions changed since: test again. */

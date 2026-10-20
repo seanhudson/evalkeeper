@@ -26,6 +26,7 @@ export * from "./glossary.js";
 export * from "./feedback.js";
 export * from "./weekly.js";
 export * from "./settings.js";
+export * from "./decisions.js";
 export * from "./store.js";
 export * from "./labels.js";
 // Server-only (node:crypto): import from "evalkeeper/runner".

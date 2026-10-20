@@ -3,7 +3,9 @@ import { notFound } from "next/navigation";
 import {
   FAVOR_TEXT,
   checkBar,
+  meanCalibrationError,
   money,
+  probabilityQuality,
   perAnswer,
   type ReasoningEffort,
   retiresLabel,
@@ -35,6 +37,9 @@ import { InfoTip, Tip } from "@/components/evalkeeper/Tip";
 import { EVALS_BASE, evalsPath } from "@/lib/evalkeeper/paths";
 
 export const dynamic = "force-dynamic";
+
+/** A share as a whole percent, or a dash when there's nothing to show. */
+const asPct = (x: number | null) => (x === null ? "—" : pct(x));
 
 const VS: Record<string, string> = {
   BETTER: "More accurate",
@@ -146,6 +151,22 @@ export default async function SuitePage({
                   Time
                   <InfoTip term="time" side="bottom" align="end" />
                 </th>
+                {suite.decisions && (
+                  <>
+                    <th className="p-3 font-normal">
+                      Probability quality
+                      <InfoTip term="probabilityQuality" side="bottom" />
+                    </th>
+                    <th className="p-3 font-normal">
+                      Calibration error
+                      <InfoTip
+                        term="calibrationError"
+                        side="bottom"
+                        align="end"
+                      />
+                    </th>
+                  </>
+                )}
                 <th className="p-3 font-normal">
                   Cost
                   <InfoTip term="cost" side="bottom" align="end" />
@@ -192,6 +213,23 @@ export default async function SuitePage({
                           </Chip>
                         </Tip>
                       )}
+                      {suite.decisions && MODELS[r.model]?.decisions && (
+                        <Tip
+                          term={
+                            MODELS[r.model]?.decisions === "native"
+                              ? "nativeProbabilities"
+                              : "promptedProbabilities"
+                          }
+                          side="bottom"
+                          id={`decisions-${r.key}`}
+                        >
+                          <Chip tone="neutral">
+                            {MODELS[r.model]?.decisions === "native"
+                              ? "Native probabilities"
+                              : "Prompted"}
+                          </Chip>
+                        </Tip>
+                      )}
                       {r.test?.stale && (
                         <Tip
                           term="outOfDate"
@@ -228,6 +266,20 @@ export default async function SuitePage({
                   <td className="p-3 tabular-nums">
                     {r.test ? seconds(r.test.avgMs) : "—"}
                   </td>
+                  {suite.decisions && (
+                    <>
+                      <td className="p-3 tabular-nums">
+                        {asPct(
+                          r.test ? probabilityQuality(r.test.measures) : null,
+                        )}
+                      </td>
+                      <td className="p-3 tabular-nums">
+                        {asPct(
+                          r.test ? meanCalibrationError(r.test.measures) : null,
+                        )}
+                      </td>
+                    </>
+                  )}
                   <td className="p-3 tabular-nums">
                     {r.test ? perAnswer(r.test.costPerAnswer) : "—"}
                   </td>

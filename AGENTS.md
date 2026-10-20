@@ -112,6 +112,9 @@ Every change comes with the tests that prove it, at the right level:
 - An `overrides` entry in `package.json` (to pin a fixed sub-dependency)
   gets a CHANGELOG line saying why, and comes out once upstream ships the
   fix.
+- Planned majors (zod, Prisma, `@types/node`) are ignored in
+  `.github/dependabot.yml`; remove a line once its upgrade lands, as AI
+  SDK 7 did.
 - No new runtime dependency in the core without a reason in the pull
   request.
 

@@ -121,7 +121,7 @@ export function createMeaningJudge(opts: {
     const r = await generateText({
       model: opts.model,
       maxOutputTokens: 1_500,
-      system,
+      instructions: system,
       prompt: JSON.stringify({
         expected: expected.map((text, index) => ({ index, text })),
         actual: actual.map((text, index) => ({ index, text })),

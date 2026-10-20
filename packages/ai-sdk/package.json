@@ -26,11 +26,11 @@
     "evalkeeper": "0.1.0"
   },
   "peerDependencies": {
-    "ai": ">=5",
+    "ai": ">=7",
     "zod": "^3.25.0"
   },
   "devDependencies": {
-    "ai": "^6.0.303",
+    "ai": "^7.0.146",
     "zod": "^3.25.76"
   },
   "author": "Sean Hudson",

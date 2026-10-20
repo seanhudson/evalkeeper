@@ -202,7 +202,7 @@ export const actionItems: Suite<Input, Output, Label> = {
     const { languageModel } = await import("../ai");
     const r = await generateText({
       model: languageModel(ctx.model),
-      system: SYSTEM,
+      instructions: SYSTEM,
       prompt: i.notes,
       output: Output.object({ schema }),
     });

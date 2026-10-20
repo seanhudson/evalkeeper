@@ -1,4 +1,5 @@
 import type { CheckResult } from "./types.js";
+import { calibrationError } from "./decisions.js";
 
 /**
  * Summary numbers for a run: pass rates per check with a 95% range, so a
@@ -69,6 +70,12 @@ export type SuiteMetrics = {
   judgeCostUsd?: number;
   /** The error most failed answers share (runner). */
   failureReason?: string | null;
+  /**
+   * Per check, the mean of each measure its answers carried (brier,
+   * logLoss, …), and, where answers carried a confidence, the calibration
+   * error. Only checks with measures appear.
+   */
+  measures?: Record<string, CheckMeasures>;
   /** What this run spent: reused outputs cost nothing. */
   costUsd: number;
   /** What one answer costs on this model, reused or not. */
@@ -111,6 +118,48 @@ export function answerScore(checks: CheckResult[] | null): number {
 }
 
 /** A test's numbers from its graded answers. */
+/** One check's measures across a test. */
+export type CheckMeasures = {
+  /** Answers that carried measures. */
+  n: number;
+  /** The mean of each measure, over the answers that carried it. */
+  mean: Record<string, number>;
+  /** Expected calibration error, from confidence and correctness; null without both. */
+  calibrationError: number | null;
+};
+
+/** One check's measures across a test's answers; null when none carried any. */
+export function measuresFor(
+  outputs: ScoredOutput[],
+  key: string,
+): CheckMeasures | null {
+  const all = outputs
+    .map((o) => o.checks?.find((c) => c.key === key)?.measures)
+    .filter((m): m is Record<string, number> => m !== undefined);
+  if (!all.length) return null;
+  const sums = new Map<string, { total: number; n: number }>();
+  for (const m of all)
+    for (const [name, v] of Object.entries(m)) {
+      const s = sums.get(name) ?? { total: 0, n: 0 };
+      s.total += v;
+      s.n++;
+      sums.set(name, s);
+    }
+  const pairs = all.flatMap((m) =>
+    m.confidence !== undefined && m.correct !== undefined
+      ? [{ confidence: m.confidence, correct: m.correct === 1 }]
+      : [],
+  );
+  return {
+    n: all.length,
+    mean: Object.fromEntries([...sums].map(([k, s]) => [k, s.total / s.n])),
+    calibrationError: calibrationError(pairs),
+  };
+}
+
+/**
+ *
+ */
 export function suiteMetrics(
   outputs: ScoredOutput[],
   checkKeys: string[],
@@ -121,6 +170,11 @@ export function suiteMetrics(
       .map((o) => o.checks?.find((c) => c.key === key))
       .filter((c): c is CheckResult => c !== undefined && c.pass !== null);
     byCheck[key] = wilson(applied.filter((c) => c.pass).length, applied.length);
+  }
+  const measures: Record<string, CheckMeasures> = {};
+  for (const key of checkKeys) {
+    const m = measuresFor(outputs, key);
+    if (m) measures[key] = m;
   }
   const byCase = new Map<string, boolean[]>();
   for (const o of outputs)
@@ -142,6 +196,7 @@ export function suiteMetrics(
     ),
     units: sumUnits(outputs),
     byCheck,
+    ...(Object.keys(measures).length ? { measures } : {}),
     consistency: repeated.length
       ? wilson(
           repeated.filter((r) => r.every((x) => x === r[0])).length,

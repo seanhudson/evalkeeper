@@ -25,6 +25,14 @@ export function availableModels(): string[] {
   return Object.keys(MODELS);
 }
 
+/**
+ * The models a feature can be tested on now. TODO: return decision models
+ * for features graded as decisions, if you have any.
+ */
+export function modelsFor(_operation: string): string[] {
+  return availableModels();
+}
+
 /** TODO: one suite per AI feature (see the README's "Write a suite"). */
 export const SUITES: AnySuite[] = [];
 export const SUITE_BY_KEY: Record<string, AnySuite> = Object.fromEntries(
@@ -62,7 +70,7 @@ export const runner = createRunner({
   models: MODELS,
   promptVersion: (operation) => PROMPT_VERSIONS[operation] ?? "unregistered",
   route: routeFor,
-  candidates: () => ({ models: availableModels() }),
+  candidates: (operation) => ({ models: modelsFor(operation) }),
 });
 
 /**

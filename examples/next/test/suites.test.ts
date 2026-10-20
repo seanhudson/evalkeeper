@@ -183,3 +183,53 @@ describe("demo models", () => {
     expect(spent).toBeGreaterThan(0);
   });
 });
+
+describe("ticket routing (a decision suite)", () => {
+  it("answers through experimental_decide and grades both questions", async () => {
+    const { ticketRouting, ROUTING_STARTERS } =
+      await import("../lib/suites/ticketRouting");
+    const starter = ROUTING_STARTERS[0];
+    if (!starter) throw new Error("no starters");
+    let spent = 0;
+    const out = await ticketRouting.run(starter.input, {
+      model: "demo-careful",
+      onCost: (u) => (spent += u),
+    });
+    expect(out.queue.type).toBe("choice");
+    expect(out.queue.probabilities).toBeDefined();
+    expect(spent).toBeGreaterThan(0);
+    const checks = await ticketRouting.grade(starter.input, out, starter.label);
+    expect(checks.map((c) => c.key)).toEqual(["queue", "urgent"]);
+    expect(checks[0]?.measures?.brier).toBeDefined();
+  });
+
+  it("gives a prompted model's choice no distribution", async () => {
+    const { ticketRouting, ROUTING_STARTERS } =
+      await import("../lib/suites/ticketRouting");
+    const starter = ROUTING_STARTERS[1];
+    if (!starter) throw new Error("no starters");
+    const out = await ticketRouting.run(starter.input, {
+      model: "demo-legacy",
+      onCost: () => undefined,
+    });
+    expect(out.queue.probabilities).toBeUndefined();
+    const [queue] = await ticketRouting.grade(
+      starter.input,
+      out,
+      starter.label,
+    );
+    expect(queue?.measures?.brier).toBeUndefined();
+  });
+});
+
+describe("models per feature", () => {
+  it("offers decision models for decision features and text models for the rest", async () => {
+    const { availableModels } = await import("../lib/models");
+    const decisions = availableModels("decisions");
+    const text = availableModels("text");
+    expect(decisions).toContain("demo-careful");
+    expect(text).toContain("demo-careful");
+    // Jev answers decisions only, and only with its key.
+    expect(text).not.toContain("jev-latest");
+  });
+});

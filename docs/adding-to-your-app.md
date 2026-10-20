@@ -132,7 +132,19 @@ thumbs up can propose the model's answer. The feedback page
 (`examples/next/app/evals/feedback`) lists ratings and makes cases with
 `caseFromFeedback`.
 
-## 9. Keep it honest
+## 9. Test decision models (optional)
+
+For a feature that uses the AI SDK's decisions, write a suite with
+`decisions: true`. In `run`, call `decideAndPrice` from
+`@evalkeeper/ai-sdk` (it calls `experimental_decide` and prices the call
+from your catalog) and return the answers. In `grade`, call
+`decisionCheck(key, answer, expected)` for each question. Mark each
+model in the catalog with `decisions: "native"` or `"prompted"`, and have
+`modelsFor(operation)` in `lib/evalkeeper/index.ts` return only decision
+models for these features. `examples/next/lib/suites/ticketRouting.ts` is
+a full example.
+
+## 10. Keep it honest
 
 - Retest after you change a prompt or a model ships; rescore after you
   change an answer or a check (free).

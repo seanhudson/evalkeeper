@@ -9,6 +9,20 @@ version may change an interface, and its entry says how to update.
 
 ### Added
 
+- Decision suites: `decisions: true` on a suite, and `decisionCheck`,
+  `scoreDecision`, `calibrationError`, `probabilityQuality`, and
+  `meanCalibrationError` in the core. A check can carry `measures`
+  (numbers averaged over a test), and a test's metrics and board rows
+  carry them with each check's calibration error. `ModelInfo.decisions`
+  says whether a model's probabilities are native or prompted.
+  `decideAndPrice` in `@evalkeeper/ai-sdk` calls `experimental_decide`
+  and prices it. The example adds a ticket routing suite with four demo
+  decision models and Jev, GPT-6 Luna, and Claude entries, and shows
+  probability quality, calibration error, and native or prompted on the
+  board.
+- The starter `lib/evalkeeper/index.ts` has `modelsFor(operation)`, the
+  models a feature can be tested on, used for the runner's candidates.
+
 - TSDoc on every export of the packages, with `@example` on the main entry
   points, enforced by lint (`eslint-plugin-tsdoc`, `eslint-plugin-jsdoc`),
   and an API reference built with TypeDoc (`npm run docs:api`) and
@@ -68,6 +82,11 @@ version may change an interface, and its entry says how to update.
   CI on Node 20 and 22.
 
 ### Changed
+
+- AI SDK 7 (`ai` 7, providers 4): `@evalkeeper/ai-sdk` needs `ai` 7 or
+  later. zod 3 and Prisma 6 are unchanged. `costOf` takes usage whose
+  token counts may be undefined. The judge passes `instructions` instead
+  of the deprecated `system`; do the same in your suites.
 
 - The example's eval pages import only the app's wiring module
   (`lib/evalkeeper/index.ts`) and the copied glue beside it, check

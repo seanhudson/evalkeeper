@@ -263,7 +263,7 @@ export const ticketTriage: Suite<Input, Output, Label> = {
     const { languageModel } = await import("../ai");
     const r = await generateText({
       model: languageModel(ctx.model),
-      system: SYSTEM,
+      instructions: SYSTEM,
       prompt: prompt(i),
       output: Output.object({ schema }),
     });

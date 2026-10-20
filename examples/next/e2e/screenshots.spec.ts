@@ -26,6 +26,7 @@ test("fill the pages with tests, a rating, and a weekly check", async ({
 }) => {
   await testEveryModel(page, "ticket_triage");
   await testEveryModel(page, "action_items");
+  await testEveryModel(page, "ticket_routing");
   // A promotion for the settings history.
   await page.goto("/evals/ticket_triage");
   await page.getByRole("button", { name: "Use these" }).click();
@@ -90,6 +91,13 @@ for (const scheme of SCHEMES) {
         window.scrollBy(0, -24);
       });
     await shot("history");
+
+    await page.goto("/evals/ticket_routing");
+    await page.getByRole("heading", { name: "Models" }).evaluate((el) => {
+      el.scrollIntoView({ block: "start" });
+      window.scrollBy(0, -24);
+    });
+    await shot("decisions");
 
     await page.goto("/evals/feedback");
     await shot("feedback");

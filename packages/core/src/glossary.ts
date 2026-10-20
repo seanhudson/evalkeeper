@@ -55,6 +55,14 @@ export const GLOSSARY = {
     "Each suite's quick set, answered again on its live model every week. A drop of 15 points or more against last week's check of the same model, instructions, and grading is drift.",
   settingsHistory:
     "Every change to which model this feature runs on: who, when, why, and the test behind it. Any earlier version can be made live again.",
+  probabilityQuality:
+    "How good the probabilities were: 100% minus the Brier score. High means sure when right and unsure when wrong; picking right with careless probabilities scores lower.",
+  calibrationError:
+    "How far the model's confidence is from how often it's right: 0% means its 80%-sure answers are right 80% of the time. It needs more cases than accuracy to be trusted.",
+  nativeProbabilities:
+    "The model returns its own probabilities for every option, so they can be scored and compared.",
+  promptedProbabilities:
+    "The model writes out its own estimate. Choices come without a distribution, so only true-or-false questions get probability scores.",
 } as const;
 
 /** A word the glossary defines, for tooltips. */

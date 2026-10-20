@@ -28,6 +28,12 @@ export type ModelInfo = {
   retiring?: string;
   /** Where the price came from, so it can be checked. */
   source?: string;
+  /**
+   * As a decision model: "native" probabilities come from the model itself
+   * (a full distribution for choices and scales); "prompted" ones are the
+   * model's own estimate written out, with no distribution for choices.
+   */
+  decisions?: "native" | "prompted";
 };
 
 /** Your app's models, by id. */

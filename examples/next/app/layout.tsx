@@ -16,7 +16,7 @@ export default function RootLayout({
     <html lang="en">
       <body className="min-h-screen">
         <header className="border-b border-line bg-card">
-          <div className="mx-auto flex max-w-6xl items-center gap-6 px-4 py-3">
+          <div className="mx-auto flex max-w-7xl items-center gap-6 px-4 py-3">
             <Link href="/evals" className="font-semibold">
               Evalkeeper
             </Link>
@@ -28,7 +28,7 @@ export default function RootLayout({
             <span className="ml-auto text-sm text-muted">Example app</span>
           </div>
         </header>
-        <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
+        <main className="mx-auto max-w-7xl px-4 py-8">{children}</main>
       </body>
     </html>
   );

@@ -19,7 +19,7 @@ flowchart LR
   end
   subgraph adapters["Adapters"]
     prisma["@evalkeeper/prisma<br/>prismaStore"]
-    aisdk["@evalkeeper/ai-sdk<br/>hashes · pricing · judge"]
+    aisdk["@evalkeeper/ai-sdk<br/>hashes · pricing · decisions · judge"]
     memory["memoryStore"]
   end
   pages --> runner
@@ -34,12 +34,12 @@ flowchart LR
 
 - **The core** (`packages/core`) is pure TypeScript: suite and check
   types, statistics, the paired comparison, the suggestion rules, suite
-  health, the glossary, and grader helpers. The runner is the one
+  health, the glossary, grader helpers, and decision scoring (`decisions.ts`). The runner is the one
   server-only module (it hashes with `node:crypto`), and it talks to
   storage only through `EvalStore`.
 - **Adapters** connect the core to services: `@evalkeeper/prisma` stores
   everything in your database, and `@evalkeeper/ai-sdk` hashes
-  instructions, prices calls, and judges meaning with a model. Another
+  instructions, prices calls and decisions, and judges meaning with a model. Another
   ORM or AI library is another adapter.
 - **Your app** owns its suites, its routing (which model is live), its
   auth, and its pages. The pages in `examples/next` are meant to be

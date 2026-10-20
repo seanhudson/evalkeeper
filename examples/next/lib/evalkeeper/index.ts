@@ -12,7 +12,7 @@ import { prisma } from "../db";
 import { MODELS, availableModels } from "../models";
 import { useMatcher } from "../suites/actionItems";
 import { demoCost } from "../demo";
-import { PROMPT_VERSIONS, SUITES } from "../suites";
+import { DECISION_OPERATIONS, PROMPT_VERSIONS, SUITES } from "../suites";
 
 /**
  * Evalkeeper wired to this app: the Prisma store, the suites, the model
@@ -29,6 +29,12 @@ const DEFAULTS: Record<string, Settings> = {
     maxOutputTokens: null,
   },
   action_items: {
+    model: "demo-quick",
+    fallbackModel: null,
+    reasoningEffort: null,
+    maxOutputTokens: null,
+  },
+  route_ticket: {
     model: "demo-quick",
     fallbackModel: null,
     reasoningEffort: null,
@@ -83,7 +89,7 @@ export const runner = createRunner({
   models: MODELS,
   promptVersion: (operation) => PROMPT_VERSIONS[operation] ?? "unregistered",
   route: routeFor,
-  candidates: () => ({ models: availableModels() }),
+  candidates: (operation) => ({ models: modelsFor(operation) }),
   estimateCallCost,
 });
 
@@ -108,6 +114,13 @@ async function estimateCallCost(
 
 // What the copied eval pages need from your app, in one place.
 export { MODELS, availableModels } from "../models";
+
+/** The models a feature can be tested on now: decision models for decision features. */
+export function modelsFor(operation: string): string[] {
+  return availableModels(
+    DECISION_OPERATIONS.has(operation) ? "decisions" : "text",
+  );
+}
 export { SUITES, SUITE_BY_KEY } from "../suites";
 
 /**

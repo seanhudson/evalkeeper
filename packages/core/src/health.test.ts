@@ -35,6 +35,7 @@ const row = (
         total: 25,
         answersRight: right,
         answers: 25,
+        measures: {},
         byCheck: {
           rule: { passed, n: 25, rate: passed / 25, low: null, high: null },
         },

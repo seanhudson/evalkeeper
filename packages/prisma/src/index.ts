@@ -1,7 +1,7 @@
 /**
  * Evalkeeper's tables for Prisma, and stores on your Prisma client.
  *
- * @module \@evalkeeper/prisma
+ * @module \@crowandraven/evalkeeper-prisma
  */
 import { SettingsConflict, cleanRating } from "evalkeeper";
 import type {
@@ -226,7 +226,7 @@ const json = (v: unknown): object | string | number | boolean | undefined =>
  *
  * @example
  * ```ts
- * import { prismaStore } from "@evalkeeper/prisma";
+ * import { prismaStore } from "@crowandraven/evalkeeper-prisma";
  * const store = prismaStore(prisma);
  * const runner = createRunner({ store, suites, models, promptVersion });
  * ```
@@ -324,7 +324,7 @@ export function prismaStore(db: PrismaEvalClient): EvalStore {
   };
 }
 
-/** A judgment cache on the EvalJudgment table, for `@evalkeeper/ai-sdk`. */
+/** A judgment cache on the EvalJudgment table, for `@crowandraven/evalkeeper-ai-sdk`. */
 export function prismaJudgmentCache(db: PrismaEvalClient) {
   return {
     async get(key: string): Promise<unknown> {

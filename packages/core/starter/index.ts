@@ -12,9 +12,9 @@ import {
   prismaFeedbackStore,
   prismaSettingsStore,
   prismaStore,
-} from "@evalkeeper/prisma";
+} from "@crowandraven/evalkeeper-prisma";
 // TODO: your app's Prisma client, with Evalkeeper's models added to the
-// schema (node_modules/@evalkeeper/prisma/schema/evalkeeper.prisma).
+// schema (node_modules/@crowandraven/evalkeeper-prisma/schema/evalkeeper.prisma).
 import { prisma } from "@/lib/prisma";
 
 /** TODO: the models your app can use, with prices and retirement dates. */
@@ -41,7 +41,7 @@ export const SUITE_BY_KEY: Record<string, AnySuite> = Object.fromEntries(
 
 /**
  * TODO: each feature's instructions hash (instructionsHash from
- * @evalkeeper/ai-sdk), so editing a prompt marks older tests out of date.
+ * @crowandraven/evalkeeper-ai-sdk), so editing a prompt marks older tests out of date.
  */
 const PROMPT_VERSIONS: Record<string, string> = {};
 

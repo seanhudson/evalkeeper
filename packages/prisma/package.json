@@ -1,5 +1,5 @@
 {
-  "name": "@evalkeeper/prisma",
+  "name": "@crowandraven/evalkeeper-prisma",
   "version": "0.1.0",
   "description": "Evalkeeper's tables for Prisma, and a store on your Prisma client.",
   "license": "MIT",

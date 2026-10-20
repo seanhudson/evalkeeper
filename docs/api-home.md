@@ -12,12 +12,12 @@ pieces fit, start with the guides in the repository:
 
 ## Packages
 
-| Import               | What it is                                                           |
-| -------------------- | -------------------------------------------------------------------- |
-| `evalkeeper`         | The core: suites, stats, suggestions, feedback, settings, and stores |
-| `evalkeeper/runner`  | The runner (server-only)                                             |
-| `evalkeeper/memory`  | An in-memory store                                                   |
-| `evalkeeper/testing` | The store contracts, as Vitest tests                                 |
-| `evalkeeper/cli`     | The `evalkeeper` command                                             |
-| `@evalkeeper/prisma` | The Prisma tables and stores                                         |
-| `@evalkeeper/ai-sdk` | Instruction hashes, pricing, and the meaning judge                   |
+| Import                            | What it is                                                           |
+| --------------------------------- | -------------------------------------------------------------------- |
+| `evalkeeper`                      | The core: suites, stats, suggestions, feedback, settings, and stores |
+| `evalkeeper/runner`               | The runner (server-only)                                             |
+| `evalkeeper/memory`               | An in-memory store                                                   |
+| `evalkeeper/testing`              | The store contracts, as Vitest tests                                 |
+| `evalkeeper/cli`                  | The `evalkeeper` command                                             |
+| `@crowandraven/evalkeeper-prisma` | The Prisma tables and stores                                         |
+| `@crowandraven/evalkeeper-ai-sdk` | Instruction hashes, pricing, and the meaning judge                   |

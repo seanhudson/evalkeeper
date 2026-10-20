@@ -1,5 +1,8 @@
 import { z } from "zod";
-import { decideAndPrice, instructionsHash } from "@evalkeeper/ai-sdk";
+import {
+  decideAndPrice,
+  instructionsHash,
+} from "@crowandraven/evalkeeper-ai-sdk";
 import { decisionCheck, formText, type CheckDef, type Suite } from "evalkeeper";
 import { demoDecisionModel, isDemoDecider } from "../demoDecision";
 import { MODELS } from "../models";

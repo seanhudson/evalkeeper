@@ -1,4 +1,4 @@
-# @evalkeeper/ai-sdk
+# @crowandraven/evalkeeper-ai-sdk
 
 [Evalkeeper](../../README.md) for the Vercel AI SDK: `instructionsHash`
 (so editing a prompt or schema marks older tests out of date), `costOf`

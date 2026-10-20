@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import { prismaStore } from "@evalkeeper/prisma";
+import { prismaStore } from "@crowandraven/evalkeeper-prisma";
 import { SUITES } from "../lib/suites";
 
 /**

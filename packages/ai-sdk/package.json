@@ -1,5 +1,5 @@
 {
-  "name": "@evalkeeper/ai-sdk",
+  "name": "@crowandraven/evalkeeper-ai-sdk",
   "version": "0.1.0",
   "description": "Evalkeeper for the Vercel AI SDK: instruction hashes, call pricing, and a cached meaning judge.",
   "license": "MIT",

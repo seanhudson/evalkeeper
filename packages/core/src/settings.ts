@@ -79,7 +79,7 @@ export type SettingsSwitch = {
   expectLive: string | null;
 };
 
-/** Where versions live. `@evalkeeper/prisma` and `memoryStore` implement it. */
+/** Where versions live. `@crowandraven/evalkeeper-prisma` and `memoryStore` implement it. */
 export interface SettingsStore {
   liveVersion(operation: string): Promise<SettingsVersion | null>;
   /** Newest first. */

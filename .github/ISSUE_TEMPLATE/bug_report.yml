@@ -19,4 +19,4 @@ body:
     attributes:
       label: Versions
       description: evalkeeper and adapter versions, Node, and your database.
-      placeholder: "evalkeeper 0.1.0, @evalkeeper/prisma 0.1.0, Node 22, PostgreSQL 16"
+      placeholder: "evalkeeper 0.1.0, @crowandraven/evalkeeper-prisma 0.1.0, Node 22, PostgreSQL 16"

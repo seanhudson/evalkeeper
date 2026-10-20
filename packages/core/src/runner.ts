@@ -62,7 +62,7 @@ export type RunnerOptions = {
   models: ModelCatalog;
   /**
    * The current instructions' hash for an operation (see instructionsHash
-   * in `@evalkeeper/ai-sdk`). A test records it, so editing the instructions
+   * in `@crowandraven/evalkeeper-ai-sdk`). A test records it, so editing the instructions
    * marks older tests out of date.
    */
   promptVersion: (operation: string) => string | Promise<string>;

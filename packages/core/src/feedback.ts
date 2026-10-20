@@ -54,7 +54,7 @@ export type NewRating = {
   output?: unknown;
 };
 
-/** Where ratings live. `@evalkeeper/prisma` and `memoryStore` implement it. */
+/** Where ratings live. `@crowandraven/evalkeeper-prisma` and `memoryStore` implement it. */
 export interface FeedbackStore {
   /**
    * Saves a person's rating of an answer, replacing their earlier one. A

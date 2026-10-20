@@ -5,7 +5,7 @@ import {
   instructionsHash,
   slot,
   type Pairing,
-} from "@evalkeeper/ai-sdk";
+} from "@crowandraven/evalkeeper-ai-sdk";
 import {
   formText,
   linesOf,

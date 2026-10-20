@@ -10,7 +10,6 @@ const BANNED = new Set([
   "dbc737adcf55c4e6",
   "5888e41be672b504",
   "d05b118663c888a2",
-  "02aac7d8ea090e70",
   "cf07a92555a6eb89",
 ]);
 const hash = (word) =>

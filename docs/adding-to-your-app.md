@@ -14,7 +14,7 @@ which model each operation runs on and its fallback. Evalkeeper reads
 that route for its board; your app keeps owning it.
 
 Record what each call costs (the AI SDK's `usage` priced with your
-catalog: `costOf` in `@evalkeeper/ai-sdk`) and pass it to the suite's
+catalog: `costOf` in `@crowandraven/evalkeeper-ai-sdk`) and pass it to the suite's
 `onCost`, so tests show real cost per answer.
 
 Or let Evalkeeper keep it: `createSettings({ store, defaults })` with
@@ -136,7 +136,7 @@ thumbs up can propose the model's answer. The feedback page
 
 For a feature that uses the AI SDK's decisions, write a suite with
 `decisions: true`. In `run`, call `decideAndPrice` from
-`@evalkeeper/ai-sdk` (it calls `experimental_decide` and prices the call
+`@crowandraven/evalkeeper-ai-sdk` (it calls `experimental_decide` and prices the call
 from your catalog) and return the answers. In `grade`, call
 `decisionCheck(key, answer, expected)` for each question. Mark each
 model in the catalog with `decisions: "native"` or `"prompted"`, and have

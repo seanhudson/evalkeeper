@@ -18,8 +18,8 @@ flowchart LR
     store_if["EvalStore interface"]
   end
   subgraph adapters["Adapters"]
-    prisma["@evalkeeper/prisma<br/>prismaStore"]
-    aisdk["@evalkeeper/ai-sdk<br/>hashes · pricing · decisions · judge"]
+    prisma["@crowandraven/evalkeeper-prisma<br/>prismaStore"]
+    aisdk["@crowandraven/evalkeeper-ai-sdk<br/>hashes · pricing · decisions · judge"]
     memory["memoryStore"]
   end
   pages --> runner
@@ -37,8 +37,8 @@ flowchart LR
   health, the glossary, grader helpers, and decision scoring (`decisions.ts`). The runner is the one
   server-only module (it hashes with `node:crypto`), and it talks to
   storage only through `EvalStore`.
-- **Adapters** connect the core to services: `@evalkeeper/prisma` stores
-  everything in your database, and `@evalkeeper/ai-sdk` hashes
+- **Adapters** connect the core to services: `@crowandraven/evalkeeper-prisma` stores
+  everything in your database, and `@crowandraven/evalkeeper-ai-sdk` hashes
   instructions, prices calls and decisions, and judges meaning with a model. Another
   ORM or AI library is another adapter.
 - **Your app** owns its suites, its routing (which model is live), its

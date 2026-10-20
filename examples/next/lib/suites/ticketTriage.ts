@@ -1,6 +1,10 @@
 import { generateText, Output } from "ai";
 import { z } from "zod";
-import { costOf, instructionsHash, slot } from "@evalkeeper/ai-sdk";
+import {
+  costOf,
+  instructionsHash,
+  slot,
+} from "@crowandraven/evalkeeper-ai-sdk";
 import { formText, type CheckDef, type Suite } from "evalkeeper";
 import { demoCall } from "../demo";
 import { MODELS, isDemo } from "../models";

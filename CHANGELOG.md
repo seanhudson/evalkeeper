@@ -15,7 +15,7 @@ version may change an interface, and its entry says how to update.
   (numbers averaged over a test), and a test's metrics and board rows
   carry them with each check's calibration error. `ModelInfo.decisions`
   says whether a model's probabilities are native or prompted.
-  `decideAndPrice` in `@evalkeeper/ai-sdk` calls `experimental_decide`
+  `decideAndPrice` in `@crowandraven/evalkeeper-ai-sdk` calls `experimental_decide`
   and prices it. The example adds a ticket routing suite with four demo
   decision models and Jev, GPT-6 Luna, and Claude entries, and shows
   probability quality, calibration error, and native or prompted on the
@@ -83,6 +83,11 @@ version may change an interface, and its entry says how to update.
 
 ### Changed
 
+- The adapters are published as `@crowandraven/evalkeeper-prisma` and
+  `@crowandraven/evalkeeper-ai-sdk` (were `@evalkeeper/prisma` and
+  `@evalkeeper/ai-sdk`). The core is still `evalkeeper`. Each package
+  ships its LICENSE, and `vitest` is an optional peer (only
+  `evalkeeper/testing` needs it).
 - The example's icons are Lucide (`lucide-react`, now in the CLI's install
   line): back arrows, thumbs, the case chevron, the info tip, and the
   circle loader. Everything you can press shows a pointer
@@ -94,7 +99,7 @@ version may change an interface, and its entry says how to update.
   Rescore at the top right; each case's edit and retire are in a menu.
 - Glossary: `settingsHistory` is now `versions`; `answerKey` and `checks`
   are new, and so is `suites`.
-- AI SDK 7 (`ai` 7, providers 4): `@evalkeeper/ai-sdk` needs `ai` 7 or
+- AI SDK 7 (`ai` 7, providers 4): `@crowandraven/evalkeeper-ai-sdk` needs `ai` 7 or
   later. zod 3 and Prisma 6 are unchanged. `costOf` takes usage whose
   token counts may be undefined. The judge passes `instructions` instead
   of the deprecated `system`; do the same in your suites.

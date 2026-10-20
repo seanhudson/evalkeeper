@@ -13,6 +13,23 @@ updates:
     groups:
       minor-and-patch:
         update-types: [minor, patch]
+    # Major versions of these change APIs Evalkeeper is built on, so each is
+    # a planned upgrade (see the README roadmap), not a weekly bump.
+    # Security updates still arrive. Remove a line when its upgrade is done.
+    ignore:
+      - dependency-name: zod
+        update-types: [version-update:semver-major]
+      - dependency-name: ai
+        update-types: [version-update:semver-major]
+      - dependency-name: "@ai-sdk/*"
+        update-types: [version-update:semver-major]
+      - dependency-name: prisma
+        update-types: [version-update:semver-major]
+      - dependency-name: "@prisma/client"
+        update-types: [version-update:semver-major]
+      # Matches the oldest Node the packages support (20) and CI's newest (22).
+      - dependency-name: "@types/node"
+        update-types: [version-update:semver-major]
   - package-ecosystem: github-actions
     directory: /
     schedule:

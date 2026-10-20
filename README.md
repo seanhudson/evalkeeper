@@ -194,7 +194,8 @@ you're new to evals, start there.
 - Versioned model settings with rollback, as an optional package.
 - A scheduled drift check: each suite's quick set on its live model, weekly.
 - Thumbs up and down on AI answers, turned into draft cases.
-- Stores for Drizzle and plain Postgres; Prisma 7.
+- Stores for Drizzle and plain Postgres.
+- Planned upgrades: Prisma 7, zod 4, and AI SDK 7.
 - Count reusable answers in cost estimates.
 
 ## Docs

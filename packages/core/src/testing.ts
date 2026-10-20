@@ -135,6 +135,20 @@ export function describeStoreContract(
       expect((await store.getRun(none.id))?.temperature ?? null).toBeNull();
     });
 
+    it("keeps the output cap a run was tested at", async () => {
+      const store = await make();
+      const capped = await store.createRun({
+        ...newRun("s"),
+        maxOutputTokens: 4000,
+      });
+      const none = await store.createRun({
+        ...newRun("s"),
+        maxOutputTokens: null,
+      });
+      expect((await store.getRun(capped.id))?.maxOutputTokens).toBe(4000);
+      expect((await store.getRun(none.id))?.maxOutputTokens ?? null).toBeNull();
+    });
+
     it("updates a run only while it has the status it's guarded by", async () => {
       const store = await make();
       const r = await store.createRun(newRun("s"));

@@ -7,6 +7,15 @@ version may change an interface, and its entry says how to update.
 
 ## Unreleased
 
+### Added
+
+- The output cap is part of what a test ran with, like temperature:
+  `Route.maxOutputTokens` (`settings.route` returns it), `RunRecord` and
+  the suite's `run` context carry it, it's in the request hash when set,
+  and a test at another cap than the live one is out of date. A raised cap
+  no longer reuses answers cut short under the old one. **To update:** add
+  a nullable `maxOutputTokens Int?` column to `EvalRun`. (#18)
+
 ### Changed
 
 - `confirmedLabel` and `isProvisional` are generic over any label with a

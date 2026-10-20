@@ -82,6 +82,11 @@ export type RunRecord = {
    * test at another temperature than the live one shows as out of date.
    */
   temperature?: number | null;
+  /**
+   * The output-token cap tested; null or unset: the call's own default.
+   * Kept like temperature: a test at another cap is out of date.
+   */
+  maxOutputTokens?: number | null;
   set: EvalSet;
   repeats: number;
   /** Changes when the cases or their answers do, so tests compare. */

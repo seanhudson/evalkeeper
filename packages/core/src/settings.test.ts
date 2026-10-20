@@ -55,6 +55,7 @@ describe("versioned settings", () => {
       fallbackModel: null,
       reasoningEffort: null,
       temperature: null,
+      maxOutputTokens: null,
     });
   });
 

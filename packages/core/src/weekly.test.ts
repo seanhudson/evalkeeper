@@ -93,13 +93,14 @@ describe("weeklySummary", () => {
     expect(s.clear).toBe(false);
   });
 
-  it("doesn't call it drift when the instructions, grading, model, or temperature changed", () => {
+  it("doesn't call it drift when the instructions, grading, model, temperature, or output cap changed", () => {
     const now = run({ metrics: metrics(0.5) });
     for (const changed of [
       { promptVersion: "v0" },
       { graderVersion: "0" },
       { model: "old" },
       { temperature: 0.9 },
+      { maxOutputTokens: 4000 },
     ]) {
       const lastWeek = run({
         startedAt: new Date(+today - 7 * DAY),

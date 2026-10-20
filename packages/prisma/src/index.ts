@@ -73,6 +73,7 @@ export type EvalRunRow = {
   promptVersion: string;
   reasoningEffort: string | null;
   temperature: number | null;
+  maxOutputTokens: number | null;
   set: string;
   repeats: number;
   datasetVersion: string | null;
@@ -185,6 +186,7 @@ const run = (r: EvalRunRow): RunRecord => ({
   promptVersion: r.promptVersion,
   reasoningEffort: r.reasoningEffort,
   temperature: r.temperature,
+  maxOutputTokens: r.maxOutputTokens,
   set: oneOf(r.set, SETS, "ALL"),
   repeats: r.repeats,
   datasetVersion: r.datasetVersion,

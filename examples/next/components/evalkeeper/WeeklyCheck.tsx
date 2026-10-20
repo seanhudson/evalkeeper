@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { money, type WeeklySummary } from "evalkeeper";
-import { runWeeklyNow } from "@/app/evals/actions";
+import { runWeeklyNow } from "@/lib/evalkeeper/actions";
 import { RefreshWhile } from "./RefreshWhile";
 import { Submit } from "./Submit";
 import { InfoTip } from "./Tip";
 import { Card, Chip, pct } from "./ui";
+import { evalsPath } from "@/lib/evalkeeper/paths";
 
 /**
  * The weekly check on the evals hub: when it last ran, what it found, and
@@ -52,7 +53,7 @@ export function WeeklyCheck({ weekly }: { weekly: WeeklySummary }) {
                 <Chip tone="serious">Drift</Chip>
                 <span>
                   <Link
-                    href={`/evals/${d.suite}`}
+                    href={evalsPath(d.suite)}
                     className="font-medium underline"
                   >
                     {d.label}
@@ -71,7 +72,7 @@ export function WeeklyCheck({ weekly }: { weekly: WeeklySummary }) {
                 <Chip tone="serious">Didn&apos;t finish</Chip>
                 <span>
                   <Link
-                    href={`/evals/${f.suite}`}
+                    href={evalsPath(f.suite)}
                     className="font-medium underline"
                   >
                     {f.label}
@@ -89,7 +90,7 @@ export function WeeklyCheck({ weekly }: { weekly: WeeklySummary }) {
                 <span>
                   {r.model}, the {r.role} model for{" "}
                   <Link
-                    href={`/evals/${r.suite}`}
+                    href={evalsPath(r.suite)}
                     className="font-medium underline"
                   >
                     {r.label}
@@ -108,7 +109,7 @@ export function WeeklyCheck({ weekly }: { weekly: WeeklySummary }) {
                 <Chip tone="warn">Thumbs down</Chip>
                 <span>
                   {t.operation}: {t.down} of {t.up + t.down} ratings this week.{" "}
-                  <Link href="/evals/feedback" className="underline">
+                  <Link href={evalsPath("feedback")} className="underline">
                     Read the reasons
                   </Link>
                   .

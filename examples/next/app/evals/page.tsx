@@ -8,18 +8,24 @@ import {
   type GlossaryTerm,
 } from "evalkeeper";
 import { Card, StatusBadge, pct } from "@/components/evalkeeper/ui";
-import { feedbackStore, runner } from "@/lib/evalkeeper";
-import { daysAgo } from "@/lib/time";
-import { loadWeekly } from "@/lib/weekly";
+import {
+  feedbackStore,
+  MODELS,
+  requireAdmin,
+  runner,
+  SUITES,
+} from "@/lib/evalkeeper";
+import { daysAgo } from "@/lib/evalkeeper/time";
+import { loadWeekly } from "@/lib/evalkeeper/weekly";
 import { WeeklyCheck } from "@/components/evalkeeper/WeeklyCheck";
-import { MODELS } from "@/lib/models";
-import { SUITES } from "@/lib/suites";
 import { InfoTip } from "@/components/evalkeeper/Tip";
+import { evalsPath } from "@/lib/evalkeeper/paths";
 
 export const dynamic = "force-dynamic";
 
 /** The evals hub: where each suite stands, and what needs attention. */
 export default async function EvalsHub() {
+  await requireAdmin();
   const [boards, weekly] = await Promise.all([
     Promise.all(SUITES.map((s) => runner.board(s.key))),
     loadWeekly(),
@@ -79,7 +85,7 @@ export default async function EvalsHub() {
               : "—"
           }
         />
-        <Link href="/evals/feedback">
+        <Link href={evalsPath("feedback")}>
           <Stat
             title="Thumbs down this week"
             term="thumbs"
@@ -106,7 +112,7 @@ export default async function EvalsHub() {
             MODELS,
           );
           return (
-            <Link key={b.suite.key} href={`/evals/${b.suite.key}`}>
+            <Link key={b.suite.key} href={evalsPath(b.suite.key)}>
               <Card className="h-full space-y-3 hover:bg-tint">
                 <div className="flex items-start justify-between gap-4">
                   <h2 className="font-semibold">{b.suite.label}</h2>

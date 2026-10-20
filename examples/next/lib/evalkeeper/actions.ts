@@ -2,40 +2,48 @@
 
 import { after } from "next/server";
 import { revalidatePath } from "next/cache";
-import { formText, suggest } from "evalkeeper";
-import { runner, settings, store } from "@/lib/evalkeeper";
-import { MODELS } from "@/lib/models";
-import { availableModels } from "@/lib/models";
+import { caseFromFeedback, formText, suggest } from "evalkeeper";
+import {
+  MODELS,
+  SUITES,
+  availableModels,
+  feedbackStore,
+  requireAdmin,
+  runner,
+  settings,
+  store,
+} from ".";
+import { EVALS_BASE, evalsPath } from "./paths";
+import { runWeeklyCheck, startWeeklyCheck } from "./weekly";
 
 /**
- * The suite page's actions. In your app, check that the person may run
- * evals (an admin) at the top of each one.
+ * Every action on the eval pages. Each one checks requireAdmin() first,
+ * and records the admin as who made a change.
  */
 
 const suiteFrom = (form: FormData) =>
   runner.suiteOrThrow(formText(form, "suite"));
 
 export async function testModel(form: FormData) {
+  await requireAdmin();
   const suite = suiteFrom(form);
   const model = formText(form, "model");
   if (!availableModels().includes(model)) throw new Error("Unknown model");
   const { run } = await runner.createRun({ suite: suite.key, model });
   // Answers come back after the response; the page refreshes until done.
   after(() => runner.runEval(run.id));
-  revalidatePath(`/evals/${suite.key}`);
+  revalidatePath(evalsPath(suite.key));
 }
 
 export async function testAll(form: FormData) {
+  await requireAdmin();
   const suite = suiteFrom(form);
   for (const model of availableModels()) {
     const { run } = await runner.createRun({ suite: suite.key, model });
     after(() => runner.runEval(run.id));
   }
-  revalidatePath(`/evals/${suite.key}`);
+  revalidatePath(evalsPath(suite.key));
 }
-
-/** Who's acting. In your app: the signed-in admin's id. */
-const BY = "Example admin";
 
 /**
  * The evidence for a promotion: the model's current test, the live
@@ -65,6 +73,7 @@ const VS: Record<string, string> = {
 };
 
 export async function makeLive(form: FormData) {
+  const admin = await requireAdmin();
   const suite = suiteFrom(form);
   const model = formText(form, "model");
   const { row, evidence } = await evidenceFor(suite.key, model);
@@ -72,15 +81,16 @@ export async function makeLive(form: FormData) {
     suite.operation,
     { model },
     {
-      by: BY,
+      by: admin.name,
       reason: `Made ${row.label} live: ${evidence.score.right}/${evidence.score.total}, ${VS[row.vsLive ?? ""] ?? "no comparison"}`,
       evidence,
     },
   );
-  revalidatePath("/evals", "layout");
+  revalidatePath(EVALS_BASE, "layout");
 }
 
 export async function makeFallback(form: FormData) {
+  const admin = await requireAdmin();
   const suite = suiteFrom(form);
   const model = formText(form, "model");
   const { row, evidence } = await evidenceFor(suite.key, model);
@@ -88,16 +98,17 @@ export async function makeFallback(form: FormData) {
     suite.operation,
     { fallbackModel: model },
     {
-      by: BY,
+      by: admin.name,
       reason: `Made ${row.label} the fallback: ${evidence.score.right}/${evidence.score.total}, from another provider`,
       evidence,
     },
   );
-  revalidatePath("/evals", "layout");
+  revalidatePath(EVALS_BASE, "layout");
 }
 
 /** Applies the suggestion: its live and fallback models, in one change. */
 export async function useSuggestion(form: FormData) {
+  const admin = await requireAdmin();
   const suite = suiteFrom(form);
   const board = await runner.board(suite.key);
   const s = suggest(board.rows, suite.checks, suite.priority, MODELS);
@@ -109,7 +120,7 @@ export async function useSuggestion(form: FormData) {
       fallbackModel: s.fallback?.model ?? null,
     },
     {
-      by: BY,
+      by: admin.name,
       reason: s.reasons.join(" "),
       evidence: {
         suggestion: s.reasons,
@@ -118,37 +129,41 @@ export async function useSuggestion(form: FormData) {
       },
     },
   );
-  revalidatePath("/evals", "layout");
+  revalidatePath(EVALS_BASE, "layout");
 }
 
 /** Makes an earlier version live again; a reason is required. */
 export async function rollBackSettings(form: FormData) {
+  const admin = await requireAdmin();
   const suite = suiteFrom(form);
   const reason = formText(form, "reason");
   if (!reason) throw new Error("Say why you're rolling back");
   await settings.rollBack(suite.operation, formText(form, "version"), {
-    by: BY,
+    by: admin.name,
     reason,
   });
-  revalidatePath("/evals", "layout");
+  revalidatePath(EVALS_BASE, "layout");
 }
 
 /** A person confirms an answer: the only way a draft gets used. */
 export async function confirmAnswer(form: FormData) {
+  await requireAdmin();
   const suite = suiteFrom(form);
   await store.setLabelStatus(formText(form, "label"), "CONFIRMED");
   after(() => runner.rescoreRecent(suite.key));
-  revalidatePath(`/evals/${suite.key}`);
+  revalidatePath(evalsPath(suite.key));
 }
 
 export async function rescore(form: FormData) {
+  await requireAdmin();
   const suite = suiteFrom(form);
   await runner.rescoreRecent(suite.key);
-  revalidatePath(`/evals/${suite.key}`);
+  revalidatePath(evalsPath(suite.key));
 }
 
 /** A person adds a case. They wrote its answer, so it's confirmed. */
 export async function addCase(form: FormData) {
+  await requireAdmin();
   const suite = suiteFrom(form);
   if (!suite.labelFromForm) throw new Error("This suite has no answer form");
   await store.createCase({
@@ -174,7 +189,7 @@ export async function addCase(form: FormData) {
       },
     ],
   });
-  revalidatePath(`/evals/${suite.key}`);
+  revalidatePath(evalsPath(suite.key));
 }
 
 /**
@@ -182,6 +197,7 @@ export async function addCase(form: FormData) {
  * ones kept as history. Stored answers are rescored for free.
  */
 export async function editAnswer(form: FormData) {
+  await requireAdmin();
   const suite = suiteFrom(form);
   if (!suite.labelFromForm) throw new Error("This suite has no answer form");
   const caseId = formText(form, "case");
@@ -198,15 +214,49 @@ export async function editAnswer(form: FormData) {
   // A draft (from feedback) is in use once it has an answer.
   await store.setCaseStatus(caseId, "ACTIVE");
   after(() => runner.rescoreRecent(suite.key));
-  revalidatePath(`/evals/${suite.key}`);
+  revalidatePath(evalsPath(suite.key));
 }
 
 /** Takes a case out of use; its stored answers stay. */
 export async function retireCase(form: FormData) {
+  await requireAdmin();
   const suite = suiteFrom(form);
   const caseId = formText(form, "case");
   const known = (await store.listCases(suite.key)).some((c) => c.id === caseId);
   if (!known) throw new Error("Unknown case");
   await store.setCaseStatus(caseId, "RETIRED");
-  revalidatePath(`/evals/${suite.key}`);
+  revalidatePath(evalsPath(suite.key));
+}
+
+async function find(id: string) {
+  const f = (await feedbackStore.listFeedback()).find((x) => x.id === id);
+  if (!f) throw new Error("Unknown rating");
+  return f;
+}
+
+/** Makes a draft case from a rating; a person finishes its answer. */
+export async function makeCase(form: FormData) {
+  await requireAdmin();
+  const f = await find(formText(form, "feedback"));
+  const suite = SUITES.find((s) => s.operation === f.operation);
+  const draft = suite ? caseFromFeedback(f, suite) : null;
+  if (!draft || !suite) throw new Error("This rating can't become a case");
+  const c = await store.createCase(draft);
+  await feedbackStore.setFeedbackStatus(f.id, "CASED", c.id);
+  revalidatePath(EVALS_BASE, "layout");
+}
+
+export async function dismissFeedback(form: FormData) {
+  await requireAdmin();
+  const f = await find(formText(form, "feedback"));
+  await feedbackStore.setFeedbackStatus(f.id, "DISMISSED");
+  revalidatePath(evalsPath("feedback"));
+}
+
+export async function runWeeklyNow(): Promise<void> {
+  await requireAdmin();
+  // Recorded before the page re-renders, so it shows them running.
+  const ids = await startWeeklyCheck();
+  after(() => runWeeklyCheck(ids));
+  revalidatePath(EVALS_BASE);
 }

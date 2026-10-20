@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { describeChange, type ChangeKind, type HistoryEntry } from "evalkeeper";
-import { rollBackSettings } from "@/app/evals/[suite]/actions";
+import { rollBackSettings } from "@/lib/evalkeeper/actions";
 import { Submit } from "./Submit";
 import { InfoTip, Tip } from "./Tip";
 import { Card, Chip } from "./ui";
+import { evalsPath } from "@/lib/evalkeeper/paths";
 
 const KIND: Record<
   ChangeKind,
@@ -99,7 +100,7 @@ export function SettingsHistory({
                 <div className="flex flex-wrap items-center gap-3">
                   {testId && (
                     <Link
-                      href={`/evals/${suite}/runs/${testId}`}
+                      href={evalsPath(suite, "runs", testId)}
                       className="text-xs underline"
                     >
                       The test behind it

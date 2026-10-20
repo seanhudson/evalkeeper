@@ -15,10 +15,14 @@ import { AnswerKey } from "@/components/evalkeeper/AnswerKey";
 import { RefreshWhile } from "@/components/evalkeeper/RefreshWhile";
 import { Spinner, Submit } from "@/components/evalkeeper/Submit";
 import { Card, Chip, Score, pct } from "@/components/evalkeeper/ui";
-import { runner, settings } from "@/lib/evalkeeper";
+import {
+  MODELS,
+  requireAdmin,
+  runner,
+  settings,
+  SUITE_BY_KEY,
+} from "@/lib/evalkeeper";
 import { SettingsHistory } from "@/components/evalkeeper/SettingsHistory";
-import { MODELS } from "@/lib/models";
-import { SUITE_BY_KEY } from "@/lib/suites";
 import {
   makeFallback,
   makeLive,
@@ -26,8 +30,9 @@ import {
   testAll,
   testModel,
   useSuggestion,
-} from "./actions";
+} from "@/lib/evalkeeper/actions";
 import { InfoTip, Tip } from "@/components/evalkeeper/Tip";
+import { EVALS_BASE, evalsPath } from "@/lib/evalkeeper/paths";
 
 export const dynamic = "force-dynamic";
 
@@ -43,6 +48,7 @@ export default async function SuitePage({
 }: {
   params: Promise<{ suite: string }>;
 }) {
+  await requireAdmin();
   const { suite: key } = await params;
   if (!SUITE_BY_KEY[key]) notFound();
   const b = await runner.board(key);
@@ -75,7 +81,7 @@ export default async function SuitePage({
     <div className="space-y-8">
       <RefreshWhile active={testing} />
       <div className="space-y-2">
-        <Link href="/evals" className="text-sm text-muted">
+        <Link href={EVALS_BASE} className="text-sm text-muted">
           ← Evals
         </Link>
         <h1 className="text-2xl font-semibold">{suite.label}</h1>
@@ -207,7 +213,7 @@ export default async function SuitePage({
                         <Spinner />
                       </span>
                     ) : r.test ? (
-                      <Link href={`/evals/${key}/runs/${r.test.runId}`}>
+                      <Link href={evalsPath(key, "runs", r.test.runId)}>
                         <Score right={r.test.right} total={r.test.total} />
                       </Link>
                     ) : (

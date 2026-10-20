@@ -8,11 +8,11 @@ import {
 } from "@evalkeeper/prisma";
 import { createSettings, type Settings } from "evalkeeper";
 import { createRunner, type Route } from "evalkeeper/runner";
-import { prisma } from "./db";
-import { MODELS, availableModels } from "./models";
-import { useMatcher } from "./suites/actionItems";
-import { demoCost } from "./demo";
-import { PROMPT_VERSIONS, SUITES } from "./suites";
+import { prisma } from "../db";
+import { MODELS, availableModels } from "../models";
+import { useMatcher } from "../suites/actionItems";
+import { demoCost } from "../demo";
+import { PROMPT_VERSIONS, SUITES } from "../suites";
 
 /**
  * Evalkeeper wired to this app: the Prisma store, the suites, the model
@@ -60,7 +60,7 @@ const judgeModel = process.env.ANTHROPIC_API_KEY
     ? "gpt-6-luna"
     : null;
 if (judgeModel) {
-  const { languageModel } = await import("./ai");
+  const { languageModel } = await import("../ai");
   const judge = createMeaningJudge({
     model: languageModel(judgeModel),
     modelId: judgeModel,
@@ -104,4 +104,18 @@ async function estimateCallCost(
     (r) => r.model === model,
   );
   return last?.metrics?.costPerAnswer ?? null;
+}
+
+// What the copied eval pages need from your app, in one place.
+export { MODELS, availableModels } from "../models";
+export { SUITES, SUITE_BY_KEY } from "../suites";
+
+/**
+ * Who may use the eval pages. Every page and action calls this first, and
+ * what it returns is recorded as who made each change. The example has no
+ * accounts, so everyone is the example admin; in your app, check your
+ * session and throw when the person isn't an admin.
+ */
+export async function requireAdmin(): Promise<{ id: string; name: string }> {
+  return { id: "example-admin", name: "Example admin" };
 }

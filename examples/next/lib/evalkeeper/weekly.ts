@@ -1,8 +1,6 @@
 import "server-only";
 import { thumbsSummary, weeklySummary, type WeeklySummary } from "evalkeeper";
-import { feedbackStore, routeFor, runner, store } from "./evalkeeper";
-import { MODELS } from "./models";
-import { SUITES } from "./suites";
+import { MODELS, SUITES, feedbackStore, routeFor, runner, store } from ".";
 import { daysAgo } from "./time";
 
 /**

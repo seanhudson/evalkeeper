@@ -1,6 +1,6 @@
 import { after, type NextRequest, NextResponse } from "next/server";
-import { isAuthorizedCron } from "@/lib/cronAuth";
-import { runWeeklyCheck, startWeeklyCheck } from "@/lib/weekly";
+import { isAuthorizedCron } from "@/lib/evalkeeper/cronAuth";
+import { runWeeklyCheck, startWeeklyCheck } from "@/lib/evalkeeper/weekly";
 
 /** The checks run after the response, within this function's time limit. */
 export const maxDuration = 300;

@@ -1,6 +1,8 @@
 import {
   allPassed,
+  type CaseRecord,
   type GlossaryTerm,
+  type OutputRecord,
   type AnySuite,
   type BoardRow,
   type CheckResult,
@@ -10,21 +12,19 @@ import {
   confirmAnswer,
   editAnswer,
   retireCase,
-} from "@/app/evals/[suite]/actions";
-import { prisma } from "@/lib/db";
+} from "@/lib/evalkeeper/actions";
+import { store } from "@/lib/evalkeeper";
 import { FieldValues, Fields } from "./Fields";
 import { Submit } from "./Submit";
 import { Card } from "./ui";
 import { InfoTip, Tip } from "./Tip";
 
-type CaseRow = Awaited<ReturnType<typeof loadCases>>[number];
-
-function loadCases(suite: string) {
-  return prisma.evalCase.findMany({
-    where: { suite, status: { not: "RETIRED" } },
-    include: { labels: { orderBy: { updatedAt: "desc" } } },
-    orderBy: { createdAt: "asc" },
-  });
+/** A suite's cases in use, with each case's answers newest first. */
+async function loadCases(suite: string): Promise<CaseRecord[]> {
+  return (await store.listCases(suite)).map((c) => ({
+    ...c,
+    labels: [...c.labels].sort((a, b) => +b.updatedAt - +a.updatedAt),
+  }));
 }
 
 const STATUS: Record<
@@ -55,13 +55,10 @@ export async function AnswerKey({
       r.test && !r.variant ? [[r.test.runId, r.label] as const] : [],
     ),
   );
-  const outputs = await prisma.evalOutput.findMany({
-    where: { runId: { in: [...modelByRun.keys()] } },
-  });
-  const byCase = new Map<
-    string,
-    { model: string; output: (typeof outputs)[number] }[]
-  >();
+  const outputs = (
+    await Promise.all([...modelByRun.keys()].map((id) => store.listOutputs(id)))
+  ).flat();
+  const byCase = new Map<string, { model: string; output: OutputRecord }[]>();
   for (const o of outputs) {
     byCase.set(o.caseId, [
       ...(byCase.get(o.caseId) ?? []),
@@ -158,7 +155,7 @@ function CaseItem({
   results,
 }: {
   suite: AnySuite;
-  c: CaseRow;
+  c: CaseRecord;
   results: {
     model: string;
     output: { scores: unknown; error: string | null };
@@ -182,7 +179,7 @@ function CaseItem({
   ).length;
   const label = (key: string) =>
     suite.checks.find((x) => x.key === key)?.label ?? key;
-  const tags = Array.isArray(c.tags) ? (c.tags as string[]) : [];
+  const tags = Array.isArray(c.tags) ? c.tags : [];
 
   return (
     <details className="group rounded-md bg-tint">

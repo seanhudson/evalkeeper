@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isAuthorizedCron } from "../lib/cronAuth";
+import { isAuthorizedCron } from "../lib/evalkeeper/cronAuth";
 
 describe("cron secret check", () => {
   it("accepts only the exact bearer secret", () => {

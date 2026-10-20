@@ -10,10 +10,10 @@ import { FieldValues } from "@/components/evalkeeper/Fields";
 import { Submit } from "@/components/evalkeeper/Submit";
 import { InfoTip, Tip } from "@/components/evalkeeper/Tip";
 import { Card, Chip, pct } from "@/components/evalkeeper/ui";
-import { feedbackStore } from "@/lib/evalkeeper";
-import { daysAgo } from "@/lib/time";
-import { SUITES } from "@/lib/suites";
-import { dismissFeedback, makeCase } from "./actions";
+import { feedbackStore, requireAdmin, SUITES } from "@/lib/evalkeeper";
+import { daysAgo } from "@/lib/evalkeeper/time";
+import { dismissFeedback, makeCase } from "@/lib/evalkeeper/actions";
+import { EVALS_BASE } from "@/lib/evalkeeper/paths";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +22,7 @@ export const dynamic = "force-dynamic";
  * and each rating waiting for a look, to make into a case or dismiss.
  */
 export default async function FeedbackPage() {
+  await requireAdmin();
   const all = await feedbackStore.listFeedback();
   const summary = thumbsSummary(all, daysAgo(7));
   const open = all
@@ -33,7 +34,7 @@ export default async function FeedbackPage() {
   return (
     <div className="space-y-8">
       <div className="space-y-2">
-        <Link href="/evals" className="text-sm text-muted">
+        <Link href={EVALS_BASE} className="text-sm text-muted">
           ← Evals
         </Link>
         <h1 className="text-2xl font-semibold">Feedback</h1>

@@ -1,3 +1,4 @@
+import { Info } from "lucide-react";
 import { GLOSSARY, type GlossaryTerm } from "evalkeeper";
 
 /**
@@ -9,6 +10,7 @@ import { GLOSSARY, type GlossaryTerm } from "evalkeeper";
  *
  *   <InfoTip term="score" />           an (i) after a label
  *   <Tip term="live"><Chip …/></Tip>   explains the thing it wraps
+ *   <Tip text="…" control><button …/></Tip>   a button's tooltip
  */
 
 type Props = {
@@ -62,9 +64,9 @@ export function InfoTip(props: Props) {
         type="button"
         aria-describedby={id}
         aria-label="What's this?"
-        className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-line text-[10px] leading-none text-muted hover:text-ink"
+        className="inline-flex h-4 w-4 items-center justify-center rounded-full text-muted hover:text-ink"
       >
-        i
+        <Info aria-hidden className="h-3.5 w-3.5" />
       </button>
       <Bubble id={id} text={text} side={props.side} align={props.align} />
     </span>
@@ -72,14 +74,22 @@ export function InfoTip(props: Props) {
 }
 
 /** Explains whatever it wraps (a chip, a number) on hover and focus. */
-export function Tip(props: Props & { children: React.ReactNode }) {
+export function Tip(
+  props: Props & {
+    children: React.ReactNode;
+    /**
+     * The child is a control that takes focus itself (a button), so the
+     * wrapper isn't a second tab stop.
+     */
+    control?: boolean;
+  },
+) {
   const text = body(props);
   const id = `tip-${props.id ?? props.term ?? "info"}`;
   return (
     <span
       className="group/tip relative inline-flex"
-      tabIndex={0}
-      aria-describedby={id}
+      {...(props.control ? {} : { tabIndex: 0, "aria-describedby": id })}
     >
       {props.children}
       <Bubble id={id} text={text} side={props.side} align={props.align} />

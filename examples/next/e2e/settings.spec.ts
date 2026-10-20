@@ -24,7 +24,7 @@ test("use the suggestion, see it in the history, and roll it back", async ({
   ).toBeVisible();
 
   const history = page.locator("section", {
-    has: page.getByRole("heading", { name: "Settings history" }),
+    has: page.getByRole("heading", { name: "Versions" }),
   });
   const promoted = history.getByRole("article", { name: /: Promoted/ }).first();
   await expect(

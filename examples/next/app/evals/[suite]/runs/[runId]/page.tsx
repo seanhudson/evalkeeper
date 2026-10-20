@@ -1,7 +1,6 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { allPassed, money, summarize } from "evalkeeper";
-import { Card, pct } from "@/components/evalkeeper/ui";
+import { BackLink, Card, pct } from "@/components/evalkeeper/ui";
 import { MODELS, requireAdmin, runner, store } from "@/lib/evalkeeper";
 import { evalsPath } from "@/lib/evalkeeper/paths";
 
@@ -34,9 +33,7 @@ export default async function RunPage({
 
   return (
     <div className="space-y-6">
-      <Link href={evalsPath(key)} className="text-sm text-muted">
-        ← {suite.label}
-      </Link>
+      <BackLink href={evalsPath(key)}>{suite.label}</BackLink>
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold">
           {MODELS[run.model]?.label ?? run.model} on {suite.label}

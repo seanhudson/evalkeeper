@@ -83,6 +83,17 @@ version may change an interface, and its entry says how to update.
 
 ### Changed
 
+- The example's icons are Lucide (`lucide-react`, now in the CLI's install
+  line): back arrows, thumbs, the case chevron, the info tip, and the
+  circle loader. Everything you can press shows a pointer
+  (`evalkeeper.css`).
+- The example's hub cards show each feature's live version, models,
+  cost and speed, latest test, and its versions with rollback. The
+  settings history is called Versions and shows v1 (the defaults from
+  code) before the first change. Answer key: Add a case and an icon
+  Rescore at the top right; each case's edit and retire are in a menu.
+- Glossary: `settingsHistory` is now `versions`; `answerKey` and `checks`
+  are new, and so is `suites`.
 - AI SDK 7 (`ai` 7, providers 4): `@evalkeeper/ai-sdk` needs `ai` 7 or
   later. zod 3 and Prisma 6 are unchanged. `costOf` takes usage whose
   token counts may be undefined. The judge passes `instructions` instead

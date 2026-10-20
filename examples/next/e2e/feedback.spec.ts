@@ -42,11 +42,10 @@ test("a thumbs down becomes a draft case a person finishes", async ({
 
   await page.goto("/evals/ticket_triage");
   const draft = page.locator("details").filter({ hasText: subject }).first();
-  await expect(draft.getByText("Needs an answer")).toBeVisible();
+  await expect(draft.getByText("No answer", { exact: true })).toBeVisible();
 
   // A person writes the right answer; the case is then in use.
   await draft.locator("summary").first().click();
-  await draft.getByText("Write the answer").click();
   await draft.getByLabel("Category").selectOption("billing");
   await draft.getByLabel("Urgency").selectOption("high");
   await draft.getByRole("button", { name: "Save answer" }).click();

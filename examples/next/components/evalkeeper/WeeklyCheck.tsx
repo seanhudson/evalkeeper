@@ -15,26 +15,26 @@ export function WeeklyCheck({ weekly }: { weekly: WeeklySummary }) {
   return (
     <section aria-labelledby="weekly" className="space-y-3">
       <RefreshWhile active={weekly.running > 0} />
-      <h2 id="weekly" className="text-lg font-semibold">
-        Weekly check
-        <InfoTip term="weeklyCheck" />
-      </h2>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h2 id="weekly" className="text-lg font-semibold">
+          Weekly check
+          <InfoTip term="weeklyCheck" />
+        </h2>
+        <form action={runWeeklyNow}>
+          <Submit variant="quiet">Run it now</Submit>
+        </form>
+      </div>
       <Card className="space-y-4">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <p className="readable text-sm text-muted">
-            {weekly.running > 0
-              ? `Running now: ${weekly.running} quick set${weekly.running === 1 ? "" : "s"} left. `
-              : weekly.lastAt
-                ? `Last run ${weekly.lastAt.toLocaleDateString("en-US", { month: "long", day: "numeric" })}, ${money(weekly.costUsd)}. `
-                : "Not run yet. "}
-            Every Monday, each live model answers its suite&apos;s quick set
-            again, so a quiet change by its provider shows up here. It also
-            flags models retiring soon and features people rate poorly.
-          </p>
-          <form action={runWeeklyNow}>
-            <Submit variant="quiet">Run it now</Submit>
-          </form>
-        </div>
+        <p className="readable text-sm text-muted">
+          {weekly.running > 0
+            ? `Running now: ${weekly.running} quick set${weekly.running === 1 ? "" : "s"} left. `
+            : weekly.lastAt
+              ? `Last run ${weekly.lastAt.toLocaleDateString("en-US", { month: "long", day: "numeric" })}, ${money(weekly.costUsd)}. `
+              : "Not run yet. "}
+          Every Monday, each live model answers its suite&apos;s quick set
+          again, so a quiet change by its provider shows up here. It also flags
+          models retiring soon and features people rate poorly.
+        </p>
 
         {weekly.clear && (
           <p className="readable text-sm text-good">

@@ -44,7 +44,7 @@ test("tooltips explain the columns on keyboard focus", async ({ page }) => {
   await page.goto("/evals/ticket_triage");
   const info = page
     .getByRole("columnheader", { name: /Score/ })
-    .getByRole("button", { name: "What's this?" });
+    .locator("[aria-describedby]");
   await info.focus();
   const tip = page.locator(`#${await info.getAttribute("aria-describedby")}`);
   await expect(tip).toBeVisible();
@@ -105,7 +105,7 @@ test("the answer key: open a case, add one, edit its answer, and retire it", asy
 
   // Add a case.
   const subject = `E2E case ${Date.now()}`;
-  await page.getByText("+ Add a case").click();
+  await page.getByText("Add a case", { exact: true }).click();
   await page.getByLabel("Subject").first().fill(subject);
   await page
     .getByLabel("Message")
@@ -122,7 +122,8 @@ test("the answer key: open a case, add one, edit its answer, and retire it", asy
 
   // Edit its answer.
   await added.locator("summary").first().click();
-  await added.getByText("Edit answer").click();
+  await added.getByRole("button", { name: "Case actions" }).click();
+  await added.getByRole("menuitem", { name: "Edit answer" }).click();
   await added.getByLabel("Urgency").selectOption("high");
   await added.getByRole("button", { name: "Save answer" }).click();
   const reopened = page.locator("details").filter({ hasText: subject }).first();
@@ -134,7 +135,8 @@ test("the answer key: open a case, add one, edit its answer, and retire it", asy
   ).toBeVisible();
 
   // Retire it.
-  await reopened.getByRole("button", { name: "Retire case" }).click();
+  await reopened.getByRole("button", { name: "Case actions" }).click();
+  await reopened.getByRole("menuitem", { name: "Retire case" }).click();
   await expect(
     page.locator("details").filter({ hasText: subject }),
   ).toHaveCount(0);

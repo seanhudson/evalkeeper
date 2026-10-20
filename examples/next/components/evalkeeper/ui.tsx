@@ -1,24 +1,23 @@
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import type { HealthStatus } from "evalkeeper";
 
 export const pct = (x: number) => `${Math.round(x * 100)}%`;
 
-const STATUS: Record<HealthStatus, { label: string; tone: string }> = {
-  good: { label: "Good", tone: "text-good" },
-  fair: { label: "Fair", tone: "text-warn" },
-  improve: { label: "Room to improve", tone: "text-bad" },
-  few: { label: "Needs more cases", tone: "text-warn" },
-  stale: { label: "Test again", tone: "text-warn" },
-  untested: { label: "Not tested", tone: "text-muted" },
-};
+const STATUS: Record<HealthStatus, { label: string; tone: keyof typeof CHIP }> =
+  {
+    good: { label: "Good", tone: "live" },
+    fair: { label: "Fair", tone: "warn" },
+    improve: { label: "Needs work", tone: "serious" },
+    few: { label: "Few cases", tone: "warn" },
+    stale: { label: "Retest", tone: "warn" },
+    untested: { label: "Untested", tone: "neutral" },
+  };
 
+/** A suite's health as a chip; the card's details say why. */
 export function StatusBadge({ status }: { status: HealthStatus }) {
   const s = STATUS[status];
-  return (
-    <span className={`inline-flex items-center gap-1.5 text-sm ${s.tone}`}>
-      <span className="h-2 w-2 rounded-full bg-current" />
-      {s.label}
-    </span>
-  );
+  return <Chip tone={s.tone}>{s.label}</Chip>;
 }
 
 export function Card({
@@ -64,6 +63,9 @@ const CHIP = {
   neutral: "bg-tint text-muted",
 } as const;
 
+/** A chip's color. */
+export type ChipTone = keyof typeof CHIP;
+
 /** A small rounded label: Live, Fallback, Retires …, serious, minor. */
 export function Chip({
   tone,
@@ -78,5 +80,24 @@ export function Chip({
     >
       {children}
     </span>
+  );
+}
+
+/** A link back to the page above, with an arrow. */
+export function BackLink({
+  href,
+  children,
+}: {
+  href: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className="inline-flex items-center gap-1 text-sm text-muted hover:text-ink"
+    >
+      <ArrowLeft aria-hidden className="h-4 w-4" />
+      {children}
+    </Link>
   );
 }

@@ -48,6 +48,23 @@
   --color-bad: var(--bad);
 }
 
+/* Anything you can press shows it. Tailwind's reset leaves buttons with
+   the default arrow. */
+@layer base {
+  button:not(:disabled),
+  [role="button"],
+  summary,
+  select,
+  label[for],
+  input[type="checkbox"],
+  input[type="radio"] {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+}
+
 /* Prose never runs the full width of a wide page. */
 .readable {
   max-width: 65ch;

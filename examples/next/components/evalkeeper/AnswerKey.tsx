@@ -13,10 +13,13 @@ import {
   editAnswer,
   retireCase,
 } from "@/lib/evalkeeper/actions";
+import { Check, ChevronRight, CircleAlert, X } from "lucide-react";
 import { store } from "@/lib/evalkeeper";
 import { FieldValues, Fields } from "./Fields";
+import { AddCaseHeader } from "./AddCase";
+import { CaseMenu } from "./CaseMenu";
 import { Submit } from "./Submit";
-import { Card } from "./ui";
+import { Chip, type ChipTone } from "./ui";
 import { InfoTip, Tip } from "./Tip";
 
 /** A suite's cases in use, with each case's answers newest first. */
@@ -29,11 +32,11 @@ async function loadCases(suite: string): Promise<CaseRecord[]> {
 
 const STATUS: Record<
   string,
-  { text: string; tone: string; term: GlossaryTerm }
+  { text: string; tone: ChipTone; term: GlossaryTerm }
 > = {
-  CONFIRMED: { text: "Confirmed", tone: "text-good", term: "confirmed" },
-  PROVISIONAL: { text: "Provisional", tone: "text-warn", term: "provisional" },
-  PENDING: { text: "Waiting for review", tone: "text-warn", term: "pending" },
+  CONFIRMED: { text: "Confirmed", tone: "live", term: "confirmed" },
+  PROVISIONAL: { text: "Provisional", tone: "warn", term: "provisional" },
+  PENDING: { text: "Pending", tone: "warn", term: "pending" },
 };
 
 /**
@@ -44,9 +47,15 @@ const STATUS: Record<
 export async function AnswerKey({
   suite,
   rows,
+  heading,
+  tools,
 }: {
   suite: AnySuite;
   rows: BoardRow[];
+  /** The section's heading, with "Add a case" across from it. */
+  heading: React.ReactNode;
+  /** More buttons beside "Add a case" (rescore). */
+  tools?: React.ReactNode;
 }) {
   const cases = await loadCases(suite.key);
   // Each model's latest test (at the operation's setting), by case.
@@ -69,13 +78,13 @@ export async function AnswerKey({
 
   return (
     <div className="space-y-4">
-      {fields && suite.labelFromForm && (
-        <Card className="p-0">
-          <details>
-            <summary className="cursor-pointer list-none p-4 font-medium">
-              + Add a case
-            </summary>
-            <form action={addCase} className="space-y-4 px-4 pb-4">
+      <AddCaseHeader
+        heading={heading}
+        tools={tools}
+        form={
+          fields &&
+          suite.labelFromForm && (
+            <form action={addCase} className="space-y-4">
               <input type="hidden" name="suite" value={suite.key} />
               <Fields fields={fields.input} prefix="new-" />
               <p className="readable text-sm text-muted">
@@ -130,11 +139,11 @@ export async function AnswerKey({
                 <Submit>Add case</Submit>
               </div>
             </form>
-          </details>
-        </Card>
-      )}
+          )
+        }
+      />
 
-      <Card className="space-y-2">
+      <div className="space-y-2">
         {cases.map((c) => (
           <CaseItem
             key={c.id}
@@ -144,7 +153,7 @@ export async function AnswerKey({
           />
         ))}
         {!cases.length && <p className="text-sm text-muted">No cases yet.</p>}
-      </Card>
+      </div>
     </div>
   );
 }
@@ -165,13 +174,11 @@ function CaseItem({
     c.labels.find((l) => l.status === "CONFIRMED") ??
     c.labels.find((l) => l.status === "PROVISIONAL") ??
     c.labels.find((l) => l.status === "PENDING");
-  const status = answer
-    ? STATUS[answer.status]
-    : {
-        text: "Needs an answer",
-        tone: "text-warn",
-        term: "needsAnswer" as const,
-      };
+  const status = (answer && STATUS[answer.status]) ?? {
+    text: "No answer",
+    tone: "warn" as const,
+    term: "needsAnswer" as const,
+  };
   const input = suite.input.parse(c.input);
   const right = results.filter(
     (r) =>
@@ -182,28 +189,40 @@ function CaseItem({
   const tags = Array.isArray(c.tags) ? c.tags : [];
 
   return (
-    <details className="group rounded-md bg-tint">
-      <summary className="flex cursor-pointer list-none flex-wrap items-baseline justify-between gap-2 p-3 text-sm">
+    <details className="group rounded-md border border-line bg-card">
+      <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2 p-3 text-sm">
         <span className="font-medium">
-          <span className="mr-2 inline-block text-muted transition-transform group-open:rotate-90">
-            ▸
-          </span>
+          <ChevronRight
+            aria-hidden
+            className="mr-1.5 inline-block h-4 w-4 align-[-3px] text-muted transition-transform group-open:rotate-90"
+          />
           {suite.title(input)}
         </span>
-        <span className="text-xs text-muted">
-          {status && (
-            <Tip term={status.term} id={`status-${c.id}`}>
-              <span className={status.tone}>{status.text}</span>
+        <span className="flex items-center gap-1.5">
+          <Tip term={status.term} id={`status-${c.id}`}>
+            <Chip tone={status.tone}>{status.text}</Chip>
+          </Tip>
+          <Tip term={c.split === "TEST" ? "test" : "dev"} id={`split-${c.id}`}>
+            <Chip tone="neutral">{c.split === "TEST" ? "Test" : "Dev"}</Chip>
+          </Tip>
+          {results.length > 0 && (
+            <Tip
+              text={`Right on ${right} of ${results.length} models' latest tests.`}
+              id={`right-${c.id}`}
+              align="end"
+            >
+              <span
+                className={`ml-1 inline-flex items-center gap-1 text-xs tabular-nums ${right === results.length ? "text-good" : "text-muted"}`}
+              >
+                <Check aria-hidden className="h-3.5 w-3.5" />
+                {right}/{results.length}
+              </span>
             </Tip>
           )}
-          {" · "}
-          {c.split}
-          {results.length > 0 &&
-            ` · right on ${right} of ${results.length} models`}
         </span>
       </summary>
 
-      <div className="space-y-5 px-3 pb-4 text-sm">
+      <div className="relative space-y-5 px-3 pb-4 text-sm">
         <div className="grid gap-5 md:grid-cols-2">
           <section className="space-y-2">
             <h4 className="text-xs font-semibold uppercase tracking-wide text-muted">
@@ -255,33 +274,36 @@ function CaseItem({
                 const checks = (output.scores as CheckResult[] | null) ?? null;
                 const failed = checks?.filter((x) => x.pass === false) ?? [];
                 return (
-                  <li key={model}>
-                    <span
-                      className={
-                        output.error
-                          ? "text-bad"
-                          : failed.length
-                            ? "text-warn"
-                            : "text-good"
-                      }
-                    >
-                      {output.error
-                        ? "No answer"
-                        : failed.length
-                          ? "Wrong"
-                          : "Right"}
-                    </span>{" "}
-                    <span className="font-medium">{model}</span>
-                    {output.error && (
-                      <span className="text-muted">: {output.error}</span>
+                  <li key={model} className="flex items-start gap-1.5">
+                    {output.error ? (
+                      <CircleAlert
+                        aria-label="No answer"
+                        className="mt-0.5 h-4 w-4 shrink-0 text-bad"
+                      />
+                    ) : failed.length ? (
+                      <X
+                        aria-label="Wrong"
+                        className="mt-0.5 h-4 w-4 shrink-0 text-warn"
+                      />
+                    ) : (
+                      <Check
+                        aria-label="Right"
+                        className="mt-0.5 h-4 w-4 shrink-0 text-good"
+                      />
                     )}
-                    {failed.map((x) => (
-                      <span key={x.key} className="text-muted">
-                        {" "}
-                        · {label(x.key)}
-                        {x.note ? `: ${x.note}` : ""}
-                      </span>
-                    ))}
+                    <span>
+                      <span className="font-medium">{model}</span>
+                      {output.error && (
+                        <span className="text-muted">: {output.error}</span>
+                      )}
+                      {failed.map((x) => (
+                        <span key={x.key} className="text-muted">
+                          {" "}
+                          · {label(x.key)}
+                          {x.note ? `: ${x.note}` : ""}
+                        </span>
+                      ))}
+                    </span>
                   </li>
                 );
               })}
@@ -289,46 +311,49 @@ function CaseItem({
           </section>
         )}
 
-        <div className="flex flex-wrap items-start gap-2">
-          {answer?.status === "PENDING" && (
-            <form action={confirmAnswer}>
-              <input type="hidden" name="suite" value={suite.key} />
-              <input type="hidden" name="label" value={answer.id} />
-              <Submit>Confirm this answer</Submit>
-            </form>
-          )}
-          <form action={retireCase}>
+        {answer?.status === "PENDING" && (
+          <form action={confirmAnswer}>
             <input type="hidden" name="suite" value={suite.key} />
-            <input type="hidden" name="case" value={c.id} />
-            <Submit variant="quiet">Retire case</Submit>
+            <input type="hidden" name="label" value={answer.id} />
+            <Submit>Confirm this answer</Submit>
           </form>
-        </div>
-
-        {suite.fields && suite.labelFromForm && (
-          <details className="rounded-md bg-card p-3">
-            <summary className="cursor-pointer list-none text-sm font-medium">
-              {answer ? "Edit answer" : "Write the answer"}
-            </summary>
-            <form
-              key={answer?.updatedAt.toISOString() ?? "none"}
-              action={editAnswer}
-              className="mt-3 space-y-4"
-            >
-              <input type="hidden" name="suite" value={suite.key} />
-              <input type="hidden" name="case" value={c.id} />
-              <Fields
-                fields={suite.fields.label}
-                values={answer?.value}
-                prefix={`${c.id}-`}
-              />
-              <p className="readable text-xs text-muted">
-                Saves a new confirmed answer and keeps the old one in the
-                history. Tests are rescored for free.
-              </p>
-              <Submit>Save answer</Submit>
-            </form>
-          </details>
         )}
+
+        <CaseMenu
+          suite={suite.key}
+          caseId={c.id}
+          retire={retireCase}
+          startEditing={!answer}
+          editLabel={
+            suite.fields && suite.labelFromForm
+              ? answer
+                ? "Edit answer"
+                : "Write the answer"
+              : null
+          }
+          edit={
+            suite.fields && (
+              <form
+                key={answer?.updatedAt.toISOString() ?? "none"}
+                action={editAnswer}
+                className="space-y-4"
+              >
+                <input type="hidden" name="suite" value={suite.key} />
+                <input type="hidden" name="case" value={c.id} />
+                <Fields
+                  fields={suite.fields.label}
+                  values={answer?.value}
+                  prefix={`${c.id}-`}
+                />
+                <p className="readable text-xs text-muted">
+                  Saves a new confirmed answer and keeps the old one in the
+                  history. Tests are rescored for free.
+                </p>
+                <Submit>Save answer</Submit>
+              </form>
+            )
+          }
+        />
       </div>
     </details>
   );

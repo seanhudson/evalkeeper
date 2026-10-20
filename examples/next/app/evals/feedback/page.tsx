@@ -9,7 +9,8 @@ import {
 import { FieldValues } from "@/components/evalkeeper/Fields";
 import { Submit } from "@/components/evalkeeper/Submit";
 import { InfoTip, Tip } from "@/components/evalkeeper/Tip";
-import { Card, Chip, pct } from "@/components/evalkeeper/ui";
+import { BackLink, Card, Chip, pct } from "@/components/evalkeeper/ui";
+import { ThumbsDown, ThumbsUp } from "lucide-react";
 import { feedbackStore, requireAdmin, SUITES } from "@/lib/evalkeeper";
 import { daysAgo } from "@/lib/evalkeeper/time";
 import { dismissFeedback, makeCase } from "@/lib/evalkeeper/actions";
@@ -34,9 +35,7 @@ export default async function FeedbackPage() {
   return (
     <div className="space-y-8">
       <div className="space-y-2">
-        <Link href={EVALS_BASE} className="text-sm text-muted">
-          ← Evals
-        </Link>
+        <BackLink href={EVALS_BASE}>Evals</BackLink>
         <h1 className="text-2xl font-semibold">Feedback</h1>
         <p className="readable text-muted">
           Thumbs up and down from people using the product. A rating on a kept
@@ -53,7 +52,7 @@ export default async function FeedbackPage() {
         {summary.length === 0 ? (
           <p className="text-sm text-muted">No ratings this week.</p>
         ) : (
-          <Card className="overflow-x-auto p-0">
+          <Card className="overflow-x-auto p-0 lg:overflow-visible">
             <table className="w-full text-sm">
               <thead className="text-left text-muted">
                 <tr className="border-b border-line">
@@ -146,7 +145,15 @@ function Rating({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="flex items-center gap-2">
             <Chip tone={f.rating === "DOWN" ? "serious" : "live"}>
-              {f.rating === "DOWN" ? "👎 Thumbs down" : "👍 Thumbs up"}
+              {f.rating === "DOWN" ? (
+                <>
+                  <ThumbsDown aria-hidden className="h-3.5 w-3.5" /> Thumbs down
+                </>
+              ) : (
+                <>
+                  <ThumbsUp aria-hidden className="h-3.5 w-3.5" /> Thumbs up
+                </>
+              )}
             </Chip>
             <span className="font-medium">{feature}</span>
           </span>

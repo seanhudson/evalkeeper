@@ -1,5 +1,6 @@
 "use client";
 
+import { LoaderCircle } from "lucide-react";
 import { useFormStatus } from "react-dom";
 
 /** A submit button that spins while its form's action runs. */
@@ -27,11 +28,31 @@ export function Submit({
   );
 }
 
-export function Spinner() {
+/**
+ * An icon-only submit button. `label` is its accessible name; wrap it in a
+ * `<Tip control>` for the tooltip. The icon turns into the loader while the
+ * action runs.
+ */
+export function IconSubmit({
+  label,
+  icon,
+}: {
+  label: string;
+  icon: React.ReactNode;
+}) {
+  const { pending } = useFormStatus();
   return (
-    <span
-      aria-hidden
-      className="inline-block h-3.5 w-3.5 animate-spin rounded-full border border-current border-t-transparent"
-    />
+    <button
+      type="submit"
+      aria-label={label}
+      disabled={pending}
+      className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-line bg-card text-ink hover:bg-tint disabled:opacity-60"
+    >
+      {pending ? <Spinner /> : icon}
+    </button>
   );
+}
+
+export function Spinner() {
+  return <LoaderCircle aria-hidden className="h-3.5 w-3.5 animate-spin" />;
 }

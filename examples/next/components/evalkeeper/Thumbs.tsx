@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { ThumbsDown, ThumbsUp } from "lucide-react";
 import { formText } from "evalkeeper";
 
 type Rating = "UP" | "DOWN";
@@ -62,7 +63,11 @@ export function Thumbs({
             : "border-line bg-card text-muted hover:text-ink"
         }`}
       >
-        {value === "UP" ? "👍" : "👎"}
+        {value === "UP" ? (
+          <ThumbsUp aria-hidden className="h-4 w-4" />
+        ) : (
+          <ThumbsDown aria-hidden className="h-4 w-4" />
+        )}
       </button>
     );
   };

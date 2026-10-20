@@ -53,8 +53,14 @@ export const GLOSSARY = {
     "A draft case with no answer yet. Write what a good answer is; until then, tests leave it out.",
   weeklyCheck:
     "Each suite's quick set, answered again on its live model every week. A drop of 15 points or more against last week's check of the same model, instructions, and grading is drift.",
-  settingsHistory:
-    "Every change to which model this feature runs on: who, when, why, and the test behind it. Any earlier version can be made live again.",
+  versions:
+    "Each numbered version of this feature's settings (model, fallback, reasoning), with who changed it, when, why, and the test behind it. v1 is the defaults from code. Any version can be made live again.",
+  suites:
+    "One suite per AI feature: its cases, the answers people confirmed, and the checks that grade any model against them. Open one to compare models and choose the live one.",
+  answerKey:
+    "The cases and the answers tests grade against. Only confirmed answers count: a model can draft answers, but they stay pending until a person confirms them. Open a case to see how each model did on it.",
+  checks:
+    "What a good answer gets right, one thing per check. Serious checks catch mistakes that change what your product does; minor ones, fair differences of judgment. Each has a bar its pass rate should reach.",
   probabilityQuality:
     "How good the probabilities were: 100% minus the Brier score. High means sure when right and unsure when wrong; picking right with careless probabilities scores lower.",
   calibrationError:

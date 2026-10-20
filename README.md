@@ -116,12 +116,12 @@ and how every model did on it.
   <img alt="An open case in the answer key: the ticket's subject and message, its confirmed category and urgency, and which models got it right or wrong, and why." src="docs/screenshots/answer-key-light.png">
 </picture>
 
-**Settings history:** every change to which model is live, with the
-test behind it, and a rollback that asks why.
+**Versions:** every change to which model is live, with the test
+behind it, and a rollback that asks why.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/history-dark.png">
-  <img alt="A feature's settings history: version 2, promoted and live now, with what changed, who, when, the suggestion's reasons, and a link to the test behind it; version 1, the default from code, with a roll back button that asks why." src="docs/screenshots/history-light.png">
+  <img alt="A feature's versions: version 2, promoted and live now, with what changed, who, when, the suggestion's reasons, and a link to the test behind it; version 1, the default from code, with a roll back button that asks why." src="docs/screenshots/history-light.png">
 </picture>
 
 **Decision models:** the same picks, told apart by their probabilities.

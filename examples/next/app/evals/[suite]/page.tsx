@@ -15,8 +15,9 @@ import {
 } from "evalkeeper";
 import { AnswerKey } from "@/components/evalkeeper/AnswerKey";
 import { RefreshWhile } from "@/components/evalkeeper/RefreshWhile";
-import { Spinner, Submit } from "@/components/evalkeeper/Submit";
-import { Card, Chip, Score, pct } from "@/components/evalkeeper/ui";
+import { IconSubmit, Spinner, Submit } from "@/components/evalkeeper/Submit";
+import { RotateCw } from "lucide-react";
+import { BackLink, Card, Chip, Score, pct } from "@/components/evalkeeper/ui";
 import {
   MODELS,
   requireAdmin,
@@ -86,9 +87,7 @@ export default async function SuitePage({
     <div className="space-y-8">
       <RefreshWhile active={testing} />
       <div className="space-y-2">
-        <Link href={EVALS_BASE} className="text-sm text-muted">
-          ← Evals
-        </Link>
+        <BackLink href={EVALS_BASE}>Evals</BackLink>
         <h1 className="text-2xl font-semibold">{suite.label}</h1>
         <p className="readable text-muted">{suite.description}</p>
         <p className="readable text-sm text-muted">
@@ -134,46 +133,49 @@ export default async function SuitePage({
             <Submit variant="quiet">Test every model</Submit>
           </form>
         </div>
-        <Card className="overflow-x-auto p-0">
+        <Card className="overflow-x-auto p-0 lg:overflow-visible">
           <table className="w-full text-sm">
             <thead className="text-left text-muted">
               <tr className="border-b border-line">
                 <th className="p-3 font-normal">Model</th>
                 <th className="p-3 font-normal">
-                  Score
-                  <InfoTip term="score" side="bottom" />
+                  <Tip term="score" side="bottom">
+                    Score
+                  </Tip>
                 </th>
                 <th className="p-3 font-normal">
-                  Serious mistakes
-                  <InfoTip term="seriousMistakes" side="bottom" />
+                  <Tip term="seriousMistakes" side="bottom">
+                    Serious mistakes
+                  </Tip>
                 </th>
                 <th className="p-3 font-normal">
-                  Time
-                  <InfoTip term="time" side="bottom" align="end" />
+                  <Tip term="time" side="bottom" align="end">
+                    Time
+                  </Tip>
                 </th>
                 {suite.decisions && (
                   <>
                     <th className="p-3 font-normal">
-                      Probability quality
-                      <InfoTip term="probabilityQuality" side="bottom" />
+                      <Tip term="probabilityQuality" side="bottom">
+                        Probability quality
+                      </Tip>
                     </th>
                     <th className="p-3 font-normal">
-                      Calibration error
-                      <InfoTip
-                        term="calibrationError"
-                        side="bottom"
-                        align="end"
-                      />
+                      <Tip term="calibrationError" side="bottom" align="end">
+                        Calibration error
+                      </Tip>
                     </th>
                   </>
                 )}
                 <th className="p-3 font-normal">
-                  Cost
-                  <InfoTip term="cost" side="bottom" align="end" />
+                  <Tip term="cost" side="bottom" align="end">
+                    Cost
+                  </Tip>
                 </th>
                 <th className="p-3 font-normal">
-                  Against live
-                  <InfoTip term="againstLive" side="bottom" align="end" />
+                  <Tip term="againstLive" side="bottom" align="end">
+                    Against live
+                  </Tip>
                 </th>
                 <th className="p-3" />
               </tr>
@@ -285,33 +287,49 @@ export default async function SuitePage({
                   </td>
                   <td className="p-3">{r.vsLive ? VS[r.vsLive] : "—"}</td>
                   <td className="p-3">
-                    <div className="flex justify-end gap-2">
-                      <form
-                        action={testModel}
-                        className="flex flex-col items-end gap-0.5"
-                      >
-                        <input type="hidden" name="suite" value={key} />
-                        <input type="hidden" name="model" value={r.model} />
-                        <Submit variant="quiet">Test</Submit>
-                        <EstimateNote
-                          id={r.key}
-                          estimate={estimates.get(r.key)}
-                        />
-                      </form>
-                      {!r.live && r.canMakeLive && (
-                        <form action={makeLive}>
+                    <div className="flex flex-col items-end gap-0.5">
+                      <div className="flex justify-end gap-2">
+                        {r.canMakeFallback && (
+                          <form action={makeFallback}>
+                            <input type="hidden" name="suite" value={key} />
+                            <input type="hidden" name="model" value={r.model} />
+                            <Submit variant="quiet">Make fallback</Submit>
+                          </form>
+                        )}
+                        {!r.live && r.canMakeLive && (
+                          <form action={makeLive}>
+                            <input type="hidden" name="suite" value={key} />
+                            <input type="hidden" name="model" value={r.model} />
+                            <Submit variant="quiet">Make live</Submit>
+                          </form>
+                        )}
+                        <form action={testModel}>
                           <input type="hidden" name="suite" value={key} />
                           <input type="hidden" name="model" value={r.model} />
-                          <Submit variant="quiet">Make live</Submit>
+                          <Tip
+                            control
+                            id={`test-${r.key}`}
+                            text={
+                              r.test
+                                ? "Test this model again on every case in use."
+                                : "Test this model on every case in use."
+                            }
+                            side="bottom"
+                            align="end"
+                          >
+                            <IconSubmit
+                              label="Test"
+                              icon={
+                                <RotateCw aria-hidden className="h-4 w-4" />
+                              }
+                            />
+                          </Tip>
                         </form>
-                      )}
-                      {r.canMakeFallback && (
-                        <form action={makeFallback}>
-                          <input type="hidden" name="suite" value={key} />
-                          <input type="hidden" name="model" value={r.model} />
-                          <Submit variant="quiet">Make fallback</Submit>
-                        </form>
-                      )}
+                      </div>
+                      <EstimateNote
+                        id={r.key}
+                        estimate={estimates.get(r.key)}
+                      />
                     </div>
                   </td>
                 </tr>
@@ -326,10 +344,14 @@ export default async function SuitePage({
         entries={history}
         liveId={liveSettings.version?.id ?? null}
         label={(m) => MODELS[m]?.label ?? m}
+        defaults={liveSettings.settings}
       />
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Checks</h2>
+        <h2 className="text-lg font-semibold">
+          Checks
+          <InfoTip term="checks" />
+        </h2>
         <div className="grid gap-3 md:grid-cols-2">
           {suite.checks.map((c) => {
             const rate = live?.test?.byCheck[c.key];
@@ -337,25 +359,35 @@ export default async function SuitePage({
               <Card key={c.key} className="space-y-1">
                 <div className="flex justify-between gap-4">
                   <h3 className="font-medium">{c.label}</h3>
-                  <span className="flex items-center gap-2 text-sm text-muted">
-                    <Tip term={c.severity} id={`severity-${c.key}`}>
-                      <Chip
-                        tone={c.severity === "serious" ? "serious" : "neutral"}
-                      >
-                        {c.severity}
-                      </Chip>
-                    </Tip>
-                    <Tip term="bar" id={`bar-${c.key}`}>
-                      <span>bar {pct(checkBar(c))}</span>
-                    </Tip>
-                  </span>
+                  <Tip term={c.severity} id={`severity-${c.key}`}>
+                    <Chip
+                      tone={c.severity === "serious" ? "serious" : "neutral"}
+                    >
+                      {c.severity}
+                    </Chip>
+                  </Tip>
                 </div>
                 <p className="readable text-sm text-muted">{c.description}</p>
-                {rate && rate.n > 0 && (
-                  <p className="text-sm">
-                    Live: {pct(rate.passed / rate.n)} ({rate.passed}/{rate.n})
-                  </p>
-                )}
+                <p className="text-sm">
+                  {rate && rate.n > 0 && (
+                    <>
+                      Live:{" "}
+                      <span
+                        className={
+                          rate.passed / rate.n >= checkBar(c)
+                            ? "text-good"
+                            : "text-warn"
+                        }
+                      >
+                        {pct(rate.passed / rate.n)}
+                      </span>{" "}
+                      ({rate.passed}/{rate.n}) ·{" "}
+                    </>
+                  )}
+                  <Tip term="bar" id={`bar-${c.key}`}>
+                    <span className="text-muted">Bar: {pct(checkBar(c))}</span>
+                  </Tip>
+                </p>
               </Card>
             );
           })}
@@ -363,28 +395,33 @@ export default async function SuitePage({
       </section>
 
       <section className="space-y-3">
-        <div className="flex items-center justify-between gap-4">
-          <h2 className="text-lg font-semibold">
-            Answer key ({b.cases} cases in use)
-          </h2>
-          <form action={rescore} className="flex items-center gap-1">
-            <input type="hidden" name="suite" value={key} />
-            <Submit variant="quiet">Rescore tests</Submit>
-            <InfoTip term="rescore" />
-          </form>
-        </div>
-        <p className="readable text-sm text-muted">
-          Tests grade against confirmed answers only. A model can draft answers,
-          but they stay pending until a person confirms them. Open a case to see
-          how each model did on it.
-        </p>
-        <AnswerKey suite={suite} rows={rows} />
+        <AnswerKey
+          suite={suite}
+          rows={rows}
+          heading={
+            <h2 className="text-lg font-semibold">
+              Answer key ({b.cases} cases in use)
+              <InfoTip term="answerKey" />
+            </h2>
+          }
+          tools={
+            <form action={rescore}>
+              <input type="hidden" name="suite" value={key} />
+              <Tip control term="rescore" side="bottom" align="end">
+                <IconSubmit
+                  label="Rescore tests"
+                  icon={<RotateCw aria-hidden className="h-4 w-4" />}
+                />
+              </Tip>
+            </form>
+          }
+        />
       </section>
     </div>
   );
 }
 
-/** "Free: all 16 reused" or "~$0.03, 4 of 16 reused", under a Test button. */
+/** "Free: all 16 reused" or "~$0.03, 4 of 16 reused", under a model's buttons. */
 function EstimateNote({
   id,
   estimate,

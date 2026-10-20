@@ -58,7 +58,10 @@ for (const scheme of SCHEMES) {
     await page.emulateMedia({ colorScheme: scheme });
     await page.setViewportSize({ width: 1280, height: 900 });
     const shot = (name: string) =>
-      page.screenshot({ path: `${OUT}/${name}-${scheme}.png` });
+      page.screenshot({
+        path: `${OUT}/${name}-${scheme}.png`,
+        animations: "disabled",
+      });
 
     await page.goto("/evals");
     await shot("hub");
@@ -84,12 +87,10 @@ for (const scheme of SCHEMES) {
     await shot("answer-key");
 
     await page.goto("/evals/ticket_triage");
-    await page
-      .getByRole("heading", { name: "Settings history" })
-      .evaluate((el) => {
-        el.scrollIntoView({ block: "start" });
-        window.scrollBy(0, -24);
-      });
+    await page.getByRole("heading", { name: "Versions" }).evaluate((el) => {
+      el.scrollIntoView({ block: "start" });
+      window.scrollBy(0, -24);
+    });
     await shot("history");
 
     await page.goto("/evals/ticket_routing");

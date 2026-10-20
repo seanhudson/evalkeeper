@@ -19,6 +19,10 @@ version may change an interface, and its entry says how to update.
   `EvalStore` must pass.
 - `addLabel`, `setLabelStatus`, and `setCaseStatus` on `EvalStore`.
 - Live, Fallback, Retires, and Out of date chips on the model board.
+- Tests for every feature: unit, runner, store contract, AI adapter (with
+  a mock model), suite graders, and end-to-end browser tests of the pages.
+- Coverage limits, pre-commit and pre-push hooks, Dependabot, CodeQL, and
+  CI on Node 20 and 22.
 
 ### Changed
 
@@ -29,7 +33,10 @@ version may change an interface, and its entry says how to update.
 ### Fixed
 
 - A high-severity advisory in the Prisma CLI's `deepmerge-ts`, through an
-  npm override.
+  npm override (`overrides.deepmerge-ts` in `package.json`). Remove it once
+  Prisma ships `@prisma/config` with `deepmerge-ts` 8 or later.
+- A test started without `liveEffort` now uses the route's reasoning
+  setting, instead of the model's default.
 
 ## 0.1.0 - 2026-10-20
 

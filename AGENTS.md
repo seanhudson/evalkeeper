@@ -1,14 +1,116 @@
 # Instructions for coding agents
 
-Two jobs: adding Evalkeeper to someone's app, and working on this repo.
+Two jobs: working on this repo, and adding Evalkeeper to someone's app.
+Read [docs/architecture.md](docs/architecture.md) first; it says where
+each kind of change goes.
+
+## Working on this repo
+
+### Before you finish
+
+- `npm run check` passes: scrub, formatting, build, typecheck, lint, and
+  tests with coverage. For page changes, `npm run e2e` in `examples/next`
+  passes too.
+- Never bypass the hooks (`--no-verify`) or merge with CI red. CI is the
+  gate; the hooks just catch things sooner.
+
+### Strict typing
+
+- No `any`. Use `unknown` and narrow it (`typeof`, `Array.isArray`, a
+  zod schema). Data from outside (forms, JSON columns, model output) is
+  parsed with zod or narrowed before use.
+- No non-null assertions (`!`) outside tests. Use `at()` or `mustGet()`
+  from `util.ts` for indexes and keys you've checked, or handle the
+  missing case.
+- No `@ts-ignore`. `@ts-expect-error` only with a comment saying why and
+  what would remove it.
+- `as` casts only at a trust boundary (a value this code wrote itself,
+  read back from storage), with a comment saying so.
+- Keep the compiler's strict flags (`noUncheckedIndexedAccess`,
+  `exactOptionalPropertyTypes`, and the rest in `tsconfig.base.json`)
+  and the lint rules on. Don't loosen them to make a change pass.
+- Public types are documented with a `/** */` comment that says what the
+  thing is for, not just what it is.
+
+### Explain everything on screen
+
+- Every term a page shows has an entry in `packages/core/src/glossary.ts`
+  and a tooltip (`InfoTip` or `Tip`). Pages, tooltips, and docs use the
+  same wording; change all three together.
+- Every form field has a `label` and `help` (`FormField`), shown with the
+  field and as a tooltip where the value is read.
+- Every check has a `description` that says what it checks and why its
+  severity is serious or minor.
+- Plain words, US English, and the Oxford comma. Prose gets the `readable`
+  class (about 65 characters a line).
+
+### Tests ship with the feature
+
+Every change comes with the tests that prove it, at the right level:
+
+| Change                         | Tests                                                                    |
+| ------------------------------ | ------------------------------------------------------------------------ |
+| A pure function or rule (core) | A unit test next to it, covering edge cases and each branch              |
+| A runner behavior              | A runner test on `memoryStore` (`runner.test.ts`, `runner.more.test.ts`) |
+| A storage method               | A case in `describeStoreContract`; every store must pass it              |
+| A new store or adapter         | Run `describeStoreContract` against it                                   |
+| An AI adapter                  | Unit tests with `MockLanguageModelV3` from `ai/test`; no network         |
+| A suite                        | Grader tests on fixed outputs: right, wrong, edge cases, no answer       |
+| A form reader                  | A test that it reads good input and rejects bad input                    |
+| A page, action, or component   | An end-to-end test in `examples/next/e2e`, demo models only              |
+| A bug fix                      | A test that fails before the fix and passes after                        |
+
+- Coverage limits (`packages/*/vitest.config.ts`) never go down. Raise
+  them when coverage rises.
+- Tests never call a paid model or the network. End-to-end tests use demo
+  models and their own database.
+- Tests use made-up names and data only.
+
+### Docs ship with the feature
+
+- `CHANGELOG.md` gets a line under "Unreleased" for anything a user would
+  notice: Added, Changed, Fixed, or Removed. A breaking change says how to
+  update.
+- Concepts, the glossary, the README, and the architecture doc change
+  when what they describe does.
+- A rule caused by a real case gets an entry in
+  [docs/lessons.md](docs/lessons.md): what happened, what it taught, and
+  what changed.
+
+### Structure
+
+- The core (`packages/core`) stays pure: no database, framework, or
+  provider imports, except `runner.ts`, which may use `node:crypto`.
+  Anything that talks to a service is an adapter package.
+- Pages and actions talk to storage through `EvalStore`, never to tables
+  directly, so they work with any store.
+- A change to what a suite's grading means bumps its `graderVersion`.
+- Packages follow semantic versioning. Until 1.0, a minor version may
+  change an interface; its changelog entry says how to update.
+
+### Dependencies
+
+- Dependabot opens weekly pull requests. Read the release notes, run
+  `npm run check`, and merge one major update at a time.
+- An `overrides` entry in `package.json` (to pin a fixed sub-dependency)
+  gets a CHANGELOG line saying why, and comes out once upstream ships the
+  fix.
+- No new runtime dependency in the core without a reason in the pull
+  request.
+
+### Security and privacy
+
+- Never commit secrets, real people's data, or private project names. The
+  scrub check (`scripts/scrub-check.mjs`) stores banned words as hashes;
+  add new ones the same way.
+- Security issues are reported privately (SECURITY.md), never in an
+  issue.
 
 ## Adding Evalkeeper to an app
 
 Follow [docs/adding-to-your-app.md](docs/adding-to-your-app.md) one step
 at a time, and stop after each step for the person to check it. Read
 [docs/concepts.md](docs/concepts.md) first.
-
-Rules:
 
 - **Never confirm an answer on the person's behalf.** Cases and answers
   you draft are PENDING. If the person wants drafts used before review,
@@ -26,22 +128,9 @@ Rules:
   migration SQL from schema files; never pass a real database's URL as a
   shadow database.
 - **Read failures before changing a prompt or a check.** A low score is
-  often the grader's fault. Fix the grader with a unit test that shows
-  the bug, and bump the suite's `graderVersion`.
+  often the grader's fault. Fix the grader with a test that shows the bug,
+  and bump the suite's `graderVersion`.
 - **Hash every instruction a model gets** (`instructionsHash`): system
   text, prompt templates, output schemas, and tool descriptions.
-
-## Working on this repo
-
-- `npm run check` runs the scrub check, typechecks, and tests. It must
-  pass before a commit.
-- The core (`packages/core`) stays pure: no database, framework, or
-  provider imports, except `runner.ts`, which may use `node:crypto`.
-  Anything that talks to a service is an adapter.
-- Every rule in the suggestion, health, or comparison code has a test,
-  and a lesson in [docs/lessons.md](docs/lessons.md) when a real case
-  caused it.
-- Examples use made-up companies, people, and data only. The scrub check
-  (`scripts/scrub-check.mjs`) fails on names that must never appear.
-- Copy: plain words, US English, and the Oxford comma. Prose in pages gets
-  the `readable` class (about 65 characters a line).
+- **Give every suite field help and every check a description,** and test
+  the suite's grader like any other code.

@@ -127,6 +127,14 @@ export function describeStoreContract(
       expect(await store.getRun("missing")).toBeNull();
     });
 
+    it("keeps the temperature a run was tested at", async () => {
+      const store = await make();
+      const warm = await store.createRun({ ...newRun("s"), temperature: 0.7 });
+      const none = await store.createRun({ ...newRun("s"), temperature: null });
+      expect((await store.getRun(warm.id))?.temperature).toBe(0.7);
+      expect((await store.getRun(none.id))?.temperature ?? null).toBeNull();
+    });
+
     it("updates a run only while it has the status it's guarded by", async () => {
       const store = await make();
       const r = await store.createRun(newRun("s"));
@@ -379,6 +387,21 @@ export function describeSettingsStoreContract(
       ).rejects.toBeInstanceOf(SettingsConflict);
       expect((await store.liveVersion("triage"))?.model).toBe("b");
       expect(await store.listVersions("triage")).toHaveLength(2);
+    });
+
+    it("keeps a version's temperature", async () => {
+      const store = await make();
+      const v1 = await store.switchTo("triage", {
+        ...create("a", null),
+        create: {
+          settings: { ...settings("a"), temperature: 0.4 },
+          promptVersion: "p1",
+        },
+      });
+      expect(v1.temperature).toBe(0.4);
+      expect((await store.liveVersion("triage"))?.temperature).toBe(0.4);
+      const v2 = await store.switchTo("triage", create("b", v1.id));
+      expect(v2.temperature ?? null).toBeNull();
     });
 
     it("keeps each feature's versions and live one apart", async () => {

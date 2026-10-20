@@ -108,6 +108,12 @@ export type Suite<Input, Output, Label> = {
       model: string;
       /** A reasoning setting to test; undefined: the operation's own. */
       reasoningEffort?: ReasoningEffort | null;
+      /**
+       * The temperature the test runs at: the operation's live one when the
+       * test was started. Null: send none. Undefined from runners before
+       * temperature was versioned.
+       */
+      temperature?: number | null;
       onCost: (usd: number) => void;
     },
   ): Promise<Output>;

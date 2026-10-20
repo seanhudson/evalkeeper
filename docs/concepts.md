@@ -55,7 +55,9 @@ dataset version (cases and answers), and the grader version.
 
 **Board.** For one suite, every model your app can use, with its latest
 test: score, serious mistakes, time and cost per answer, and how it
-compares with the live model.
+compares with the live model. A _baseline_ (code the app runs instead of a
+model, such as a matcher) can sit on the board too, for comparison; it's
+never suggested.
 
 **Decision suite.** A suite for a feature that uses a decision model
 (the AI SDK's `experimental_decide`): typed questions about a state, each
@@ -87,9 +89,10 @@ instructions, input, and repeat) from the last 7 days is reused instead
 of paid for twice. Testing with `fresh` calls every time, to measure how
 much answers move between identical requests.
 
-**Out of date.** A test is current when its instructions and dataset
-version match today's. Edit a prompt, an output schema's description, or
-an answer, and older tests say so. Rescoring regrades stored answers for
+**Out of date.** A test is current when its instructions, dataset
+version, and temperature match today's. Edit a prompt, an output schema's
+description, an answer, or the feature's temperature, and older tests say
+so. Rescoring regrades stored answers for
 free and brings a test up to today's answers, but never up to inputs
 that changed after it ran.
 
@@ -113,7 +116,8 @@ A suite may also set `maxSeconds`; slower models are never suggested.
 one:
 
 1. Ruled out: out-of-date or incomplete tests, retiring models, models
-   over the time limit, and anything clearly less accurate than live.
+   over the time limit, baselines, and anything clearly less accurate
+   than live.
 2. A switch scores at least as high as live with no more serious
    mistakes, and needs a real reason: clearly more accurate, at least two
    fewer serious mistakes, or 30% faster or cheaper when the suite favors
@@ -133,14 +137,17 @@ worse at the job.
 needs more cases, room to improve, fair, or good, with the reasons.
 
 **Versioned settings (optional).** A feature's settings (its live model,
-fallback, reasoning setting, and output limit, with the instructions they
-ran with) are numbered versions that never change. Each switch is logged
+fallback, reasoning setting, output limit, and temperature, with the
+instructions they ran with) are numbered versions that never change. Each switch is logged
 with who, when, why, and its evidence: a _change_ by a person, a
 _promotion_ from a test (the test is the evidence), a _rollback_ to an
 earlier version, or a _deploy_ that changed the instructions in code
 under the live settings. A feature never changed runs on its default
 from code; the first change records that default as version 1, so
-there's always something to roll back to. A switch decided against a
+there's always something to roll back to. An app that chooses models in
+an admin page, with no defaults in code, records each feature's current
+choice as version 1 instead (_seeding_); until then the feature has no
+settings, and reading them is an error. A switch decided against a
 version that's no longer live is refused, so two people saving at once
 can't overwrite each other.
 
@@ -148,8 +155,8 @@ can't overwrite each other.
 live model at its live reasoning setting, with fresh answers. A provider
 can change a model under the same name; this is how you find out. A drop
 of 15 points or more against last week's check of the same model,
-instructions, and grading is _drift_. A different model, prompt, or
-grader isn't compared, since that change has a known reason. The check
+instructions, temperature, and grading is _drift_. A different model,
+prompt, temperature, or grader isn't compared, since that change has a known reason. The check
 also lists quick sets that didn't finish, live and fallback models
 retiring within 60 days, and features with a high thumbs-down share. It
 only reports; a person decides what to change.

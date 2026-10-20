@@ -23,13 +23,24 @@ each feature's settings as versions with a history and rollback, and its
 `settings.route` is the runner's `route`. Your AI calls read
 `settings.route(operation)` too, and call `settings.syncPrompt(operation)`
 where they do, so a deploy that changed the instructions is recorded.
+If your models are chosen in an admin page and stored in your own table,
+return null from `defaults` and record each row once with
+`settings.seed(operation, settings, { by: null, reason })`; it does
+nothing for a feature that already has a version, so the import can run
+again.
 
 ## 2. Describe your models
 
 A `ModelCatalog` lists each model's label, provider, price per million
-tokens (with its source), the reasoning settings it accepts, and when the
+tokens (with its source, and cached-input prices where the provider has
+them), the reasoning settings it accepts, and when the
 provider retires it (`retiring: "2027-01"`). Retiring models are never
 suggested.
+
+To see whether a model beats the code it backs up (a matcher, a rules
+engine), add that code as a catalog entry with `baseline: true` and a
+`run` that calls it. The board compares it like any model, but it's never
+suggested as live or as the fallback.
 
 ## 3. Add the tables
 

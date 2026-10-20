@@ -72,6 +72,7 @@ export type EvalRunRow = {
   model: string;
   promptVersion: string;
   reasoningEffort: string | null;
+  temperature: number | null;
   set: string;
   repeats: number;
   datasetVersion: string | null;
@@ -183,6 +184,7 @@ const run = (r: EvalRunRow): RunRecord => ({
   model: r.model,
   promptVersion: r.promptVersion,
   reasoningEffort: r.reasoningEffort,
+  temperature: r.temperature,
   set: oneOf(r.set, SETS, "ALL"),
   repeats: r.repeats,
   datasetVersion: r.datasetVersion,
@@ -463,6 +465,7 @@ export type EvalSettingsVersionRow = {
   fallbackModel: string | null;
   reasoningEffort: string | null;
   maxOutputTokens: number | null;
+  temperature: number | null;
   promptVersion: string | null;
   createdAt: Date;
 };
@@ -516,6 +519,7 @@ const version = (v: EvalSettingsVersionRow): SettingsVersion => ({
       ? null
       : oneOf(v.reasoningEffort, EFFORTS, "low"),
   maxOutputTokens: v.maxOutputTokens,
+  temperature: v.temperature,
   promptVersion: v.promptVersion,
   createdAt: v.createdAt,
 });

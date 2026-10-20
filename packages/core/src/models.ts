@@ -19,6 +19,16 @@ export type ModelInfo = {
   /** USD per 1M tokens, for estimates and the cost of each answer. */
   inputPer1M?: number;
   outputPer1M?: number;
+  /**
+   * USD per 1M input tokens read from the provider's prompt cache. Unset:
+   * cached input costs `inputPer1M`, which overstates rather than flatters.
+   */
+  cachedInputPer1M?: number;
+  /**
+   * USD per 1M input tokens written to the prompt cache (Anthropic bills
+   * these above the input price). Unset: they cost `inputPer1M`.
+   */
+  cacheWriteInputPer1M?: number;
   /** Reasoning efforts it accepts, lowest first. */
   efforts?: ReasoningEffort[];
   /**
@@ -34,10 +44,22 @@ export type ModelInfo = {
    * model's own estimate written out, with no distribution for choices.
    */
   decisions?: "native" | "prompted";
+  /**
+   * Code your app runs instead of a model (a matcher, a rules engine) or
+   * alongside it, tested so the board shows whether a model beats it. A
+   * baseline is compared like any model but never suggested as live or as
+   * the fallback. Give it a label that says what it is.
+   */
+  baseline?: boolean;
 };
 
 /** Your app's models, by id. */
 export type ModelCatalog = Record<string, ModelInfo>;
+
+/** Whether a catalog entry is a baseline (code, not a model): never suggested. */
+export function isBaseline(models: ModelCatalog, model: string): boolean {
+  return models[model]?.baseline === true;
+}
 
 /** "January 2027" for a retiring model; null when it isn't retiring. */
 export function retiresLabel(
@@ -54,15 +76,38 @@ export function retiresLabel(
   });
 }
 
-/** The cost of a call from its token counts; null when the price is unknown. */
+/**
+ * The cost of a call from its token counts; null when the price is unknown.
+ * `cachedInput` and `cacheWriteInput` are the parts of `input` read from
+ * and written to the provider's prompt cache, priced at the model's cache
+ * prices when it has them.
+ */
 export function priceCall(
   models: ModelCatalog,
   model: string,
-  tokens: { input: number; output: number },
+  tokens: {
+    input: number;
+    output: number;
+    cachedInput?: number;
+    cacheWriteInput?: number;
+  },
 ): number | null {
   const m = models[model];
   if (m?.inputPer1M === undefined || m.outputPer1M === undefined) return null;
-  return (tokens.input * m.inputPer1M + tokens.output * m.outputPer1M) / 1e6;
+  // The cache parts are subsets of input: never count more than it has.
+  const cached = Math.min(Math.max(tokens.cachedInput ?? 0, 0), tokens.input);
+  const written = Math.min(
+    Math.max(tokens.cacheWriteInput ?? 0, 0),
+    tokens.input - cached,
+  );
+  const plain = tokens.input - cached - written;
+  return (
+    (plain * m.inputPer1M +
+      cached * (m.cachedInputPer1M ?? m.inputPer1M) +
+      written * (m.cacheWriteInputPer1M ?? m.inputPer1M) +
+      tokens.output * m.outputPer1M) /
+    1e6
+  );
 }
 
 /**

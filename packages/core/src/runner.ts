@@ -9,6 +9,7 @@ import { compareRuns, type RunOutput } from "./compare.js";
 import { isStuck, shouldContinue } from "./legs.js";
 import {
   effortFor,
+  isBaseline,
   type ModelCatalog,
   type ReasoningEffort,
 } from "./models.js";
@@ -107,12 +108,15 @@ export type RunnerOptions = {
 };
 
 /**
- * Which model a feature runs on now, its fallback, and its reasoning setting.
+ * Which model a feature runs on now, its fallback, its reasoning setting,
+ * and its temperature.
  */
 export type Route = {
   model: string;
   fallbackModel: string | null;
   reasoningEffort: ReasoningEffort | null;
+  /** Null or unset: no temperature sent. */
+  temperature?: number | null;
 };
 
 /**
@@ -143,6 +147,8 @@ export function requestHashFor(r: {
   prompt: string;
   input: unknown;
   repeat: number;
+  /** Left out of the hash when null, so requests without one reuse as before. */
+  temperature?: number | null;
 }): string {
   return sha(
     stableJson({
@@ -152,6 +158,7 @@ export function requestHashFor(r: {
       prompt: r.prompt,
       input: r.input,
       repeat: r.repeat,
+      ...(r.temperature != null ? { temperature: r.temperature } : {}),
     }),
     64,
   );
@@ -254,6 +261,12 @@ export function createRunner(opts: RunnerOptions) {
     return null;
   }
 
+  /** The operation's live temperature: the route's, else none. */
+  async function liveTemperatureFor(operation: string): Promise<number | null> {
+    if (!opts.route) return null;
+    return (await opts.route(operation)).temperature ?? null;
+  }
+
   /**
    * What a test would cost. Answers an identical request gave in the last
    * 7 days are reused for free, so only the rest are priced: a retest
@@ -270,6 +283,8 @@ export function createRunner(opts: RunnerOptions) {
       fresh?: boolean;
       /** The setting to test; undefined: the operation's live one. */
       reasoningEffort?: ReasoningEffort | null;
+      /** The temperature to test; undefined: the operation's live one. */
+      temperature?: number | null;
     } = {},
   ): Promise<{
     cases: number;
@@ -280,13 +295,16 @@ export function createRunner(opts: RunnerOptions) {
     costUsd: number | null;
   }> {
     const suite = suiteOrThrow(suiteKey);
-    const [cases, perCall, prompt, effort] = await Promise.all([
+    const [cases, perCall, prompt, effort, temperature] = await Promise.all([
       casesFor(suite.key, set),
       opts.estimateCallCost?.(suite.operation, model) ?? null,
       opts.promptVersion(suite.operation),
       o.reasoningEffort !== undefined
         ? o.reasoningEffort
         : liveEffortFor(suite.operation),
+      o.temperature !== undefined
+        ? o.temperature
+        : liveTemperatureFor(suite.operation),
     ]);
     const answers = cases.length * repeats;
     const since = new Date(Date.now() - REUSE_DAYS * 86_400_000);
@@ -304,6 +322,7 @@ export function createRunner(opts: RunnerOptions) {
                     prompt,
                     input: c.input,
                     repeat: i + 1,
+                    temperature,
                   }),
                   since,
                 ),
@@ -329,6 +348,8 @@ export function createRunner(opts: RunnerOptions) {
     startedBy?: string | null;
     /** A reasoning setting to test; undefined: the operation's own. */
     reasoningEffort?: ReasoningEffort | null;
+    /** A temperature to test; undefined: the operation's live one. */
+    temperature?: number | null;
     /** For the estimate: pass the same `fresh` to runEval. */
     fresh?: boolean;
   }) {
@@ -339,9 +360,14 @@ export function createRunner(opts: RunnerOptions) {
       args.reasoningEffort !== undefined
         ? args.reasoningEffort
         : await liveEffortFor(suite.operation);
+    const temperature =
+      args.temperature !== undefined
+        ? args.temperature
+        : await liveTemperatureFor(suite.operation);
     const [estimate, promptVersion] = await Promise.all([
       estimateRun(suite.key, args.model, set, repeats, {
         reasoningEffort,
+        temperature,
         fresh: Boolean(args.fresh),
       }),
       opts.promptVersion(suite.operation),
@@ -353,6 +379,7 @@ export function createRunner(opts: RunnerOptions) {
       promptVersion,
       reasoningEffort:
         args.reasoningEffort !== undefined ? args.reasoningEffort : liveEffort,
+      temperature,
       set,
       repeats,
       datasetVersion: null,
@@ -488,6 +515,7 @@ export function createRunner(opts: RunnerOptions) {
           prompt: run.promptVersion,
           input: c.input,
           repeat,
+          temperature: run.temperature ?? null,
         });
         const earlier = o.fresh
           ? null
@@ -517,6 +545,7 @@ export function createRunner(opts: RunnerOptions) {
               model: run.model,
               reasoningEffort:
                 (run.reasoningEffort as ReasoningEffort | null) ?? null,
+              temperature: run.temperature ?? null,
               onCost: (usd) => (cost += usd),
             }),
             timeout,
@@ -663,6 +692,7 @@ export function createRunner(opts: RunnerOptions) {
       set: "SMOKE",
       startedBy: SCHEDULED,
       reasoningEffort: route.reasoningEffort,
+      temperature: route.temperature ?? null,
     });
     return run.id;
   }
@@ -784,8 +814,12 @@ export function createRunner(opts: RunnerOptions) {
       if (r.status === "SUCCEEDED" && !latestDone.has(runKey(r)))
         latestDone.set(runKey(r), r);
     }
+    const liveTemperature = route.temperature ?? null;
+    // A test at another temperature than the live one answered differently.
     const isCurrent = (r: RunRecord) =>
-      r.datasetVersion === current && r.promptVersion === prompt;
+      r.datasetVersion === current &&
+      r.promptVersion === prompt &&
+      (r.temperature ?? null) === liveTemperature;
 
     const liveKey = keyOf(route.model, defaultEffort);
     const liveRun = latestDone.get(liveKey);
@@ -794,7 +828,8 @@ export function createRunner(opts: RunnerOptions) {
     const sameAsLive = (r: RunRecord) =>
       liveRun !== undefined &&
       r.datasetVersion === liveRun.datasetVersion &&
-      r.promptVersion === liveRun.promptVersion;
+      r.promptVersion === liveRun.promptVersion &&
+      (r.temperature ?? null) === (liveRun.temperature ?? null);
     const outputs = new Map<string, RunOutput[]>();
     for (const r of latestDone.values())
       outputs.set(
@@ -863,6 +898,7 @@ export function createRunner(opts: RunnerOptions) {
               .verdict
           : null;
       const label = opts.models[model]?.label ?? model;
+      const baseline = isBaseline(opts.models, model);
       return {
         key,
         model,
@@ -873,6 +909,7 @@ export function createRunner(opts: RunnerOptions) {
           : label,
         live: key === liveKey,
         fallback: !variant && model === route.fallbackModel,
+        baseline,
         testing: testing.has(key),
         failed:
           lastRun?.status === "FAILED"
@@ -900,6 +937,7 @@ export function createRunner(opts: RunnerOptions) {
         vsLive,
         // Only on up-to-date tests: never promote on an old answer key.
         canMakeLive:
+          !baseline &&
           models.includes(model) &&
           fresh &&
           complete(r) &&
@@ -907,6 +945,7 @@ export function createRunner(opts: RunnerOptions) {
         liveOnly: !fallbackModels.includes(model),
         fallbackOnly: !models.includes(model),
         canMakeFallback:
+          !baseline &&
           fallbackModels.includes(model) &&
           !variant &&
           model !== route.model &&

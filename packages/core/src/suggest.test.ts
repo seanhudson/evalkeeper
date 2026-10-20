@@ -31,6 +31,7 @@ const MODELS: ModelCatalog = {
     retiring: "2027-01",
   },
   "classifier-1": { label: "Classifier", provider: "acme-ml" },
+  matcher: { label: "Matcher (code)", provider: "app", baseline: true },
 };
 const suggest = (
   rows: SuggestRow[],
@@ -72,6 +73,21 @@ const row = (
 });
 
 describe("suggest", () => {
+  it("never suggests a baseline as live, the fallback, or one to watch", () => {
+    const rows = [
+      row("Luna", "gpt-6-luna", { rule: 2, right: 22, live: true }),
+      // Scores best of all, but it's code, not a model.
+      row("Matcher", "matcher", { rule: 0, right: 25, cost: 0 }),
+      row("Haiku", "claude-haiku-5-5", { rule: 2, right: 22 }),
+    ];
+    const s = suggest(rows, checks)!;
+    expect(s.live.key).toBe("Luna");
+    expect(s.fallback?.key).toBe("Haiku");
+    expect(s.reasons.join(" ")).not.toMatch(/Matcher/);
+    // Only a baseline tested: nothing to suggest.
+    expect(suggest([row("Matcher", "matcher")], checks)).toBeNull();
+  });
+
   it("puts fewest serious mistakes first, and a fallback from another provider", () => {
     const s = suggest(
       [

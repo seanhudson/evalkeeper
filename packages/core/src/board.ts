@@ -18,6 +18,8 @@ export type BoardRow = {
   label: string;
   live: boolean;
   fallback: boolean;
+  /** Code, not a model (`ModelInfo.baseline`): compared, never made live or the fallback. */
+  baseline: boolean;
   testing: boolean;
   /** The newest test failed: why, in a line. Older results still show. */
   failed: string | null;

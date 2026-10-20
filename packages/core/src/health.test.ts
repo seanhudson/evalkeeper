@@ -15,7 +15,14 @@ const checks: CheckDef[] = [
 const row = (
   key: string,
   model: string,
-  { live = false, passed = 25, right = 25, stale = false, tested = true } = {},
+  {
+    live = false,
+    passed = 25,
+    right = 25,
+    stale = false,
+    tested = true,
+    baseline = false,
+  } = {},
 ): BoardRow => ({
   key,
   model,
@@ -24,6 +31,7 @@ const row = (
   label: key,
   live,
   fallback: false,
+  baseline,
   testing: false,
   failed: null,
   estCostPerAnswer: null,
@@ -98,6 +106,16 @@ describe("suiteHealth", () => {
     expect(suiteHealth(rows, checks, quality, 60).details.join(" ")).toMatch(
       /Only one model tested/,
     );
+  });
+
+  it("doesn't count a baseline as a second model", () => {
+    const rows = [
+      row("Luna", "gpt-6-luna", { live: true }),
+      row("Matcher", "matcher", { baseline: true }),
+    ];
+    const h = suiteHealth(rows, checks, quality, 60);
+    expect(h.testedModels).toBe(1);
+    expect(h.details.join(" ")).toMatch(/Only one model tested/);
   });
 
   it("says when answers are provisional, first", () => {

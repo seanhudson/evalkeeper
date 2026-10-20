@@ -50,7 +50,9 @@ export function suiteHealth(
   models: ModelCatalog = {},
 ): Health {
   const liveRow = rows.find((r) => r.live) ?? null;
-  const testedModels = rows.filter((r) => r.test && !r.test.stale).length;
+  const testedModels = rows.filter(
+    (r) => !r.baseline && r.test && !r.test.stale,
+  ).length;
   const t = liveRow?.test;
   const live =
     liveRow && t ? { label: liveRow.label, rate: t.right / t.total } : null;

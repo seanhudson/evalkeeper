@@ -7,6 +7,38 @@ version may change an interface, and its entry says how to update.
 
 ## Unreleased
 
+### Added
+
+- Cached-input prices: `ModelInfo.cachedInputPer1M` and
+  `cacheWriteInputPer1M`, and `priceCall` takes `cachedInput` and
+  `cacheWriteInput` (parts of `input`). `costOf` reads the AI SDK's
+  `usage.inputTokenDetails`, so a test of a mostly cached operation (a chat
+  turn) no longer reads several times its real cost. Models without cache
+  prices cost the same as before. (#15)
+- Settings without defaults in code: `defaults` may return null, reading
+  such a feature's settings throws `NoSettingsError` until it has a
+  version, and `settings.seed(operation, settings, { by, reason })` records
+  an app's existing config as version 1 (only when the feature has none,
+  so an import can run again). A first `change` with no default records
+  the new settings as version 1. (#13)
+- Temperature is a versioned setting: `Settings.temperature` and
+  `Route.temperature` (null or unset: none sent). A test records the
+  temperature it ran at (`RunRecord.temperature`) and passes it to the
+  suite's `run` as `ctx.temperature`; a test at another temperature than
+  the live one is out of date, answers aren't reused across temperatures,
+  and a temperature change isn't called drift. **To update:** add a
+  nullable `temperature Float?` column to `EvalRun` and
+  `EvalSettingsVersion` (see `schema/evalkeeper.prisma`), and a custom
+  `EvalStore` keeps `temperature` on runs. Requests without a temperature
+  hash as before, so earlier answers are still reused. (#14)
+- Baselines: `ModelInfo.baseline` marks a catalog entry that is code, not
+  a model (a matcher, a rules engine), so the board shows whether a model
+  beats it. A baseline is tested and compared like any model, but never
+  suggested as live, as the fallback, or as one to watch, and it doesn't
+  count as a tested model in a suite's health or as a suite's best model.
+  `BoardRow.baseline` says which rows are baselines; code that builds board
+  rows by hand sets it. (#16)
+
 ### Changed
 
 - Package descriptions say what Evalkeeper is: an eval harness for

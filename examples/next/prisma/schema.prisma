@@ -79,6 +79,8 @@ model EvalRun {
   model            String
   promptVersion    String
   reasoningEffort  String?
+  /// The temperature tested; null: none sent.
+  temperature      Float?
   /// ALL, SMOKE, DEV, or TEST.
   set              String    @default("ALL")
   repeats          Int       @default(1)
@@ -171,6 +173,8 @@ model EvalSettingsVersion {
   fallbackModel   String?
   reasoningEffort String?
   maxOutputTokens Int?
+  /// Null: none sent.
+  temperature     Float?
   /// The instructions' hash when this version was made.
   promptVersion   String?
   createdAt       DateTime @default(now())

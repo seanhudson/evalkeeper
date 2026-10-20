@@ -203,7 +203,6 @@ you're new to evals, start there.
 - Versioned model settings with rollback, as an optional package.
 - Stores for Drizzle and plain Postgres.
 - Planned upgrades: Prisma 7, zod 4, and AI SDK 7.
-- Count reusable answers in cost estimates.
 
 ## Docs
 

@@ -21,8 +21,14 @@ test("the hub shows each suite and what needs attention", async ({ page }) => {
 test("testing a model fills in its score", async ({ page }) => {
   await page.goto("/evals/ticket_triage");
   const row = modelRow(page, "Demo Careful");
+  await expect(row.getByText(/~\$|under 1¢/)).toBeVisible();
   await row.getByRole("button", { name: "Test" }).click();
   await expect(row.getByText(/\d+\/16/)).toBeVisible({ timeout: 30_000 });
+  // Testing it again would reuse every answer, so the estimate says free.
+  await page.reload();
+  await expect(
+    modelRow(page, "Demo Careful").getByText("Free: all 16 reused"),
+  ).toBeVisible();
 });
 
 test("the board marks the live model and a retiring one with chips", async ({

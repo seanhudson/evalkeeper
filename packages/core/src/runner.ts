@@ -110,6 +110,32 @@ export type RunEvalOptions = {
 const sha = (text: string, n = 8) =>
   createHash("sha256").update(text).digest("hex").slice(0, n);
 
+/**
+ * What makes two requests identical, so the second can reuse the first's
+ * answer: the suite, model, reasoning setting, instructions, input, and
+ * repeat. One function, so tests and estimates always agree.
+ */
+export function requestHashFor(r: {
+  suite: string;
+  model: string;
+  effort: string | null;
+  prompt: string;
+  input: unknown;
+  repeat: number;
+}): string {
+  return sha(
+    stableJson({
+      suite: r.suite,
+      model: r.model,
+      effort: r.effort,
+      prompt: r.prompt,
+      input: r.input,
+      repeat: r.repeat,
+    }),
+    64,
+  );
+}
+
 /** Changes whenever a case or its answer in use does. */
 export function datasetVersion(cases: CaseRecord[]): string {
   return sha(
@@ -179,20 +205,77 @@ export function createRunner(opts: RunnerOptions) {
     return pickQuickSet(active.map((c) => ({ ...c, confirmed: true })));
   }
 
+  /** The operation's live reasoning setting: liveEffort's, else the route's. */
+  async function liveEffortFor(
+    operation: string,
+  ): Promise<ReasoningEffort | null> {
+    if (opts.liveEffort) return opts.liveEffort(operation);
+    if (opts.route) return (await opts.route(operation)).reasoningEffort;
+    return null;
+  }
+
+  /**
+   * What a test would cost. Answers an identical request gave in the last
+   * 7 days are reused for free, so only the rest are priced: a retest
+   * after rescoring, or after a test that ran out of time, often costs
+   * little or nothing. `costUsd` is null when the model has no price.
+   */
   async function estimateRun(
     suiteKey: string,
     model: string,
     set: EvalSet,
     repeats: number,
-  ): Promise<{ cases: number; costUsd: number | null }> {
+    o: {
+      /** Never reuse: every answer is a new call. */
+      fresh?: boolean;
+      /** The setting to test; undefined: the operation's live one. */
+      reasoningEffort?: ReasoningEffort | null;
+    } = {},
+  ): Promise<{
+    cases: number;
+    /** Answers the test will need: cases times repeats. */
+    answers: number;
+    /** Of those, answers an identical earlier request will give for free. */
+    reused: number;
+    costUsd: number | null;
+  }> {
     const suite = suiteOrThrow(suiteKey);
-    const [cases, perCall] = await Promise.all([
-      casesFor(suite.key, set).then((c) => c.length),
+    const [cases, perCall, prompt, effort] = await Promise.all([
+      casesFor(suite.key, set),
       opts.estimateCallCost?.(suite.operation, model) ?? null,
+      opts.promptVersion(suite.operation),
+      o.reasoningEffort !== undefined
+        ? o.reasoningEffort
+        : liveEffortFor(suite.operation),
     ]);
+    const answers = cases.length * repeats;
+    const since = new Date(Date.now() - REUSE_DAYS * 86_400_000);
+    const reused = o.fresh
+      ? 0
+      : (
+          await Promise.all(
+            cases.flatMap((c) =>
+              Array.from({ length: repeats }, (_, i) =>
+                store.findReusableOutput(
+                  requestHashFor({
+                    suite: suite.key,
+                    model,
+                    effort,
+                    prompt,
+                    input: c.input,
+                    repeat: i + 1,
+                  }),
+                  since,
+                ),
+              ),
+            ),
+          )
+        ).filter(Boolean).length;
     return {
-      cases,
-      costUsd: perCall === null ? null : perCall * cases * repeats,
+      cases: cases.length,
+      answers,
+      reused,
+      costUsd: perCall === null ? null : perCall * (answers - reused),
     };
   }
 
@@ -206,22 +289,24 @@ export function createRunner(opts: RunnerOptions) {
     startedBy?: string | null;
     /** A reasoning setting to test; undefined: the operation's own. */
     reasoningEffort?: ReasoningEffort | null;
+    /** For the estimate: pass the same `fresh` to runEval. */
+    fresh?: boolean;
   }) {
     const suite = suiteOrThrow(args.suite);
     const set = args.set ?? "ALL";
     const repeats = args.repeats ?? 1;
-    const [estimate, promptVersion, liveEffort] = await Promise.all([
-      estimateRun(suite.key, args.model, set, repeats),
+    const reasoningEffort =
+      args.reasoningEffort !== undefined
+        ? args.reasoningEffort
+        : await liveEffortFor(suite.operation);
+    const [estimate, promptVersion] = await Promise.all([
+      estimateRun(suite.key, args.model, set, repeats, {
+        reasoningEffort,
+        fresh: Boolean(args.fresh),
+      }),
       opts.promptVersion(suite.operation),
-      // The live setting: from liveEffort, else the route's.
-      opts.liveEffort
-        ? opts.liveEffort(suite.operation)
-        : opts.route
-          ? Promise.resolve(opts.route(suite.operation)).then(
-              (r) => r.reasoningEffort,
-            )
-          : null,
     ]);
+    const liveEffort = reasoningEffort;
     const run = await store.createRun({
       suite: suite.key,
       model: args.model,
@@ -356,17 +441,14 @@ export function createRunner(opts: RunnerOptions) {
           skipped++;
           return;
         }
-        const requestHash = sha(
-          stableJson({
-            suite: suite.key,
-            model: run.model,
-            effort: run.reasoningEffort,
-            prompt: run.promptVersion,
-            input: c.input,
-            repeat,
-          }),
-          64,
-        );
+        const requestHash = requestHashFor({
+          suite: suite.key,
+          model: run.model,
+          effort: run.reasoningEffort,
+          prompt: run.promptVersion,
+          input: c.input,
+          repeat,
+        });
         const earlier = o.fresh
           ? null
           : await store.findReusableOutput(requestHash, since);

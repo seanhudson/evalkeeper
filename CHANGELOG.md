@@ -45,6 +45,14 @@ version may change an interface, and its entry says how to update.
 
 ### Changed
 
+- `estimateRun` prices only the answers that won't be reused, and says how
+  many will be (`answers`, `reused`), so a retest after rescoring shows as
+  free. It takes `fresh` and `reasoningEffort`, and `createRun` passes
+  them, so a test's stored estimate counts reuse too. The example shows
+  each model's estimate under its Test button.
+- `requestHashFor` is the one definition of an identical request, shared
+  by tests and estimates.
+
 - `AnySuite` is `Suite<unknown, unknown, unknown>` instead of `any`.
 - The Prisma adapter is typed by its rows; no `any`.
 - Stricter compiler and lint settings across the repo.

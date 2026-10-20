@@ -132,11 +132,55 @@ describe("runner, beyond a basic test", () => {
     const { runner } = await setup();
     expect(await runner.estimateRun("double", "good", "ALL", 2)).toEqual({
       cases: 6,
+      answers: 12,
+      reused: 0,
       costUsd: 0.12,
     });
     expect(
       (await runner.estimateRun("double", "bad", "ALL", 1)).costUsd,
     ).toBeNull();
+  });
+
+  it("prices only the answers that won't be reused", async () => {
+    const { runner } = await setup([2, 4, 6]);
+    const first = await runner.createRun({ suite: "double", model: "good" });
+    await runner.runEval(first.run.id);
+    // The same test again: every answer is reused, so it's free.
+    expect(await runner.estimateRun("double", "good", "ALL", 1)).toMatchObject({
+      answers: 3,
+      reused: 3,
+      costUsd: 0,
+    });
+    // A second repeat was never asked: those three are new calls.
+    const two = await runner.estimateRun("double", "good", "ALL", 2);
+    expect(two).toMatchObject({ answers: 6, reused: 3 });
+    expect(two.costUsd).toBeCloseTo(0.03);
+    // Fresh, or another reasoning setting: nothing to reuse.
+    const fresh = await runner.estimateRun("double", "good", "ALL", 1, {
+      fresh: true,
+    });
+    expect(fresh.reused).toBe(0);
+    expect(fresh.costUsd).toBeCloseTo(0.03);
+    expect(
+      await runner.estimateRun("double", "good", "ALL", 1, {
+        reasoningEffort: "high",
+      }),
+    ).toMatchObject({ reused: 0 });
+  });
+
+  it("stores the estimate a test starts with, counting reuse", async () => {
+    const { runner } = await setup([2, 4]);
+    const first = await runner.createRun({ suite: "double", model: "good" });
+    expect(first.run.estimatedCostUsd).toBeCloseTo(0.02);
+    await runner.runEval(first.run.id);
+    const again = await runner.createRun({ suite: "double", model: "good" });
+    expect(again.run.estimatedCostUsd).toBe(0);
+    const fresh = await runner.createRun({
+      suite: "double",
+      model: "good",
+      fresh: true,
+    });
+    expect(fresh.run.estimatedCostUsd).toBeCloseTo(0.02);
   });
 
   it("uses the operation's live reasoning setting unless told otherwise", async () => {

@@ -24,6 +24,11 @@ function chance(model: string, key: string): number {
   return ((h >>> 0) % 10_000) / 10_000;
 }
 
+/** What one demo answer costs, for estimates; null for real models. */
+export function demoCost(model: string): number | null {
+  return PROFILE[model]?.usd ?? null;
+}
+
 export async function demoCall<T>(
   model: string,
   key: string,

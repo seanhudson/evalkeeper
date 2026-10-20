@@ -3,7 +3,9 @@ import { notFound } from "next/navigation";
 import {
   FAVOR_TEXT,
   checkBar,
+  money,
   perAnswer,
+  type ReasoningEffort,
   retiresLabel,
   seconds,
   seriousMistakes,
@@ -39,6 +41,20 @@ export default async function SuitePage({
   const { suite, rows } = b;
   const s = suggest(rows, suite.checks, suite.priority, MODELS);
   const testing = rows.some((r) => r.testing);
+  // What testing each model would cost now, counting answers it would reuse.
+  const estimates = new Map(
+    await Promise.all(
+      rows.map(
+        async (r) =>
+          [
+            r.key,
+            await runner.estimateRun(key, r.model, "ALL", 1, {
+              reasoningEffort: r.effort as ReasoningEffort | null,
+            }),
+          ] as const,
+      ),
+    ),
+  );
   const live = rows.find((r) => r.live);
 
   return (
@@ -192,10 +208,17 @@ export default async function SuitePage({
                   <td className="p-3">{r.vsLive ? VS[r.vsLive] : "—"}</td>
                   <td className="p-3">
                     <div className="flex justify-end gap-2">
-                      <form action={testModel}>
+                      <form
+                        action={testModel}
+                        className="flex flex-col items-end gap-0.5"
+                      >
                         <input type="hidden" name="suite" value={key} />
                         <input type="hidden" name="model" value={r.model} />
                         <Submit variant="quiet">Test</Submit>
+                        <EstimateNote
+                          id={r.key}
+                          estimate={estimates.get(r.key)}
+                        />
                       </form>
                       {!r.live && r.canMakeLive && (
                         <form action={makeLive}>
@@ -273,5 +296,32 @@ export default async function SuitePage({
         <AnswerKey suite={suite} rows={rows} />
       </section>
     </div>
+  );
+}
+
+/** "Free: all 16 reused" or "~$0.03, 4 of 16 reused", under a Test button. */
+function EstimateNote({
+  id,
+  estimate,
+}: {
+  id: string;
+  estimate:
+    { answers: number; reused: number; costUsd: number | null } | undefined;
+}) {
+  if (!estimate || estimate.answers === 0) return null;
+  const { answers, reused, costUsd } = estimate;
+  const text =
+    reused === answers
+      ? `Free: all ${answers} reused`
+      : `${costUsd === null ? "Cost unknown" : `~${money(costUsd)}`}${reused ? `, ${reused} of ${answers} reused` : ""}`;
+  return (
+    <Tip
+      text="What testing this model costs now. Answers an identical request gave in the last 7 days are reused for free."
+      id={`estimate-${id}`}
+      side="bottom"
+      align="end"
+    >
+      <span className="whitespace-nowrap text-xs text-muted">{text}</span>
+    </Tip>
   );
 }

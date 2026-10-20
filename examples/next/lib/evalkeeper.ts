@@ -9,6 +9,7 @@ import { createRunner, type Route } from "evalkeeper/runner";
 import { prisma } from "./db";
 import { MODELS, availableModels } from "./models";
 import { useMatcher } from "./suites/actionItems";
+import { demoCost } from "./demo";
 import { PROMPT_VERSIONS, SUITES } from "./suites";
 
 /**
@@ -69,4 +70,24 @@ export const runner = createRunner({
   promptVersion: (operation) => PROMPT_VERSIONS[operation] ?? "unregistered",
   route: routeFor,
   candidates: () => ({ models: availableModels() }),
+  estimateCallCost,
 });
+
+/**
+ * What one answer costs on a model, for estimates: the demo model's own
+ * price, or what the model's last finished test averaged on this feature.
+ * Your app might average its usage records instead.
+ */
+async function estimateCallCost(
+  operation: string,
+  model: string,
+): Promise<number | null> {
+  const demo = demoCost(model);
+  if (demo !== null) return demo;
+  const suite = SUITES.find((s) => s.operation === operation);
+  if (!suite) return null;
+  const last = (await store.listRuns(suite.key, { status: "SUCCEEDED" })).find(
+    (r) => r.model === model,
+  );
+  return last?.metrics?.costPerAnswer ?? null;
+}

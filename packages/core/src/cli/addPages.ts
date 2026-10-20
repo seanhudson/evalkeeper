@@ -30,6 +30,9 @@ export const TEMPLATE_FILES = {
   cron: ["app/api/cron/evals-weekly/route.ts"],
 } as const;
 
+/**
+ * What `addPages` needs: the app's folder, the templates, and the choices from the command line.
+ */
 export type AddPagesOptions = {
   /** The app's folder. */
   cwd: string;
@@ -39,7 +42,7 @@ export type AddPagesOptions = {
   starterFile: string;
   /** Where the pages live, under the app: "evals", "admin/evals". */
   base?: string;
-  /** The import alias ("@"); read from tsconfig.json when absent. */
+  /** The import alias (`@`); read from tsconfig.json when absent. */
   alias?: string;
   /** Where the alias points ("src", "."); read from tsconfig.json. */
   root?: string;
@@ -48,6 +51,7 @@ export type AddPagesOptions = {
   dryRun?: boolean;
 };
 
+/** One file the command would write, overwrite, or leave alone. */
 export type PlannedFile = {
   /** Relative to the app's folder. */
   path: string;

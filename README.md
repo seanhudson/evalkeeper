@@ -254,7 +254,10 @@ you're new to evals, start there.
 ## Docs
 
 [Concepts](docs/concepts.md), [adding it to your app](docs/adding-to-your-app.md),
-[architecture](docs/architecture.md), and [lessons](docs/lessons.md).
+[architecture](docs/architecture.md), and [lessons](docs/lessons.md). The
+[API reference](https://seanhudson.github.io/evalkeeper/) documents every
+export, with examples for the main ones (`npm run docs:api` builds it
+locally into `docs/api`).
 Changes are in the [changelog](CHANGELOG.md).
 
 ## Contributing

@@ -1,3 +1,8 @@
+/**
+ * The contracts every store must meet, as Vitest tests.
+ *
+ * @module evalkeeper/testing
+ */
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import type { FeedbackStore, NewRating } from "./feedback.js";
@@ -12,12 +17,15 @@ import type { Suite } from "./types.js";
 
 /**
  * The contract every EvalStore must meet, as Vitest tests. Run it against
- * your store to know the runner will work on it:
+ * your store to know the runner will work on it. `make` must return an
+ * empty store each time it's called.
  *
- *   import { describeStoreContract } from "evalkeeper/testing";
- *   describeStoreContract("my store", () => myStore(freshDatabase()));
+ * @example
+ * ```ts
+ * import { describeStoreContract } from "evalkeeper/testing";
  *
- * `make` must return an empty store each time it's called.
+ * describeStoreContract("my store", () => myStore(freshDatabase()));
+ * ```
  */
 export function describeStoreContract(
   name: string,

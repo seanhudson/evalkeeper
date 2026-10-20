@@ -11,18 +11,32 @@ import { priceCall, type ModelCatalog } from "evalkeeper";
  * unchanged answers is free.
  */
 
+/**
+ * One match: an expected item's index, the actual item's index, and why they match.
+ */
 export type Pair = { expected: number; actual: number; why: string };
+/**
+ * How expected items were matched to a model's, and by what: the judge ("meaning") or a fallback ("words").
+ */
 export type Pairing = {
   pairs: Pair[];
   /** "meaning": the judge decided; "words": it was unavailable, so a fallback did. */
   by: "meaning" | "words";
 };
 
+/**
+ * Where a judge's answers are kept, so the same question is never paid for twice.
+ * `prismaJudgmentCache` keeps them in the EvalJudgment table.
+ */
 export type JudgmentCache = {
   get(key: string): Promise<unknown>;
   set(key: string, value: unknown, model: string): Promise<void>;
 };
 
+/**
+ * The judge's default instructions: pair each expected item with the actual item that
+ * says the same thing. Pass `system` to createMeaningJudge to describe your domain.
+ */
 export const MATCH_SYSTEM = `You check an AI's output against a reviewer's answer key.
 
 You get the EXPECTED items, each written by a reviewer in their own words, and the ACTUAL items the AI wrote. Pair each expected item with the actual item that expresses the same idea.
@@ -69,6 +83,21 @@ export function cleanPairs(
   return out;
 }
 
+/**
+ * A judge model that matches expected items to a model's items by meaning, cached so
+ * regrading unchanged answers is free.
+ *
+ * @example
+ * ```ts
+ * const judge = createMeaningJudge({
+ *   model: anthropic("claude-haiku-5-5"),
+ *   modelId: "claude-haiku-5-5",
+ *   models: MODELS,
+ *   cache: prismaJudgmentCache(prisma),
+ * });
+ * const { pairs, by } = await judge.match(expected, actual, wordPairs, onCost);
+ * ```
+ */
 export function createMeaningJudge(opts: {
   /** A small, cheap model is enough; test it with its own suite. */
   model: LanguageModel;

@@ -81,6 +81,10 @@ export function withCountedWords(text: string): string {
  */
 const NUMBER = /(?<![\d,.])(?=(\d[\d,]*(?:\.\d+)?))\1\s*([km])?\b/gi;
 
+/**
+ * Numbers the text states that appear in none of the sources: likely invented.
+ * Standard phrasing (a 30-60-90 day plan, list markers, fact ids) doesn't count.
+ */
 export function inventedNumbers(text: string, sources: string[]): string[] {
   const known = new Set(
     sources.flatMap((s) => [...numbersIn(withNumberWords(s))]),
@@ -94,6 +98,7 @@ export function inventedNumbers(text: string, sources: string[]): string[] {
   return [...new Set(out)];
 }
 
+/** How many words the text has. */
 export function wordCount(text: string): number {
   return text.split(/\s+/).filter(Boolean).length;
 }
@@ -155,6 +160,9 @@ export function numbersCheck(
     : { key, pass: true };
 }
 
+/**
+ * A minor check that answers speak to the person ("you"), not about them.
+ */
 export const VOICE_CHECK: CheckDef = {
   key: "voice",
   label: 'Addressed as "you"',
@@ -164,6 +172,9 @@ export const VOICE_CHECK: CheckDef = {
   severity: "serious",
 };
 
+/**
+ * A serious check that every number in an answer appears in what the model was given.
+ */
 export const NUMBERS_CHECK: CheckDef = {
   key: "numbers",
   label: "No invented numbers",

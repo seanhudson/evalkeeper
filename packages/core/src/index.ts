@@ -1,7 +1,9 @@
 /**
- * Evalkeeper core: pure logic for testing an app's AI features against
- * answers people confirmed, and choosing models on that evidence. No
- * database, framework, or provider: adapters bring those.
+ * The core: suites, checks, stats, comparisons, suggestions, health, feedback,
+ * versioned settings, and the store interfaces. Pure: no database,
+ * framework, or provider.
+ *
+ * @module evalkeeper
  */
 export * from "./types.js";
 export * from "./models.js";

@@ -9,9 +9,13 @@ import { checkBar, type CheckDef, type SuitePriority } from "./types.js";
  * reasons, from the same board and suggestion its own page shows. Pure.
  */
 
+/** Where a suite stands, from not tested to good. */
 export type HealthStatus =
   "untested" | "stale" | "few" | "improve" | "fair" | "good";
 
+/**
+ * A suite's status for its card, with the live model's score and the reasons, most important first.
+ */
 export type Health = {
   status: HealthStatus;
   title: string;
@@ -24,6 +28,17 @@ export type Health = {
 
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 
+/**
+ * Where a suite stands, for its card on the hub, from the same board and suggestion its
+ * page shows.
+ *
+ * @example
+ * ```ts
+ * const board = await runner.board("ticket_triage");
+ * const h = suiteHealth(board.rows, suite.checks, suite.priority, board.cases, board.provisional, MODELS);
+ * // h.status: "good" | "fair" | "improve" | "few" | "stale" | "untested"
+ * ```
+ */
 export function suiteHealth(
   rows: BoardRow[],
   checks: CheckDef[],

@@ -6,8 +6,13 @@ import { at } from "./util.js";
  * on ties, so the set is stable and spans what the dataset tests. Pure.
  */
 
+/** How many cases the quick set holds. */
 export const QUICK_SET_SIZE = 8;
 
+/**
+ * Picks the quick set: confirmed cases first, each pick covering the most tags not yet
+ * covered, oldest first on ties, so the set is stable.
+ */
 export function pickQuickSet<
   T extends { id: string; tags: string[]; createdAt: Date; confirmed: boolean },
 >(cases: T[], size = QUICK_SET_SIZE): T[] {

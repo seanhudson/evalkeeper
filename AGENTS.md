@@ -29,8 +29,15 @@ each kind of change goes.
 - Keep the compiler's strict flags (`noUncheckedIndexedAccess`,
   `exactOptionalPropertyTypes`, and the rest in `tsconfig.base.json`)
   and the lint rules on. Don't loosen them to make a change pass.
-- Public types are documented with a `/** */` comment that says what the
-  thing is for, not just what it is.
+- Every export in the packages has a TSDoc comment that says what it's
+  for and when to use it, not just what it is: `@param name - meaning`,
+  never `@param {type}` (the types are in the code). The main entry points
+  (`createRunner`, `createSettings`, `suggest`, `suiteHealth`,
+  `weeklySummary`, `caseFromFeedback`, `describeStoreContract`,
+  `prismaStore`, `instructionsHash`, `createMeaningJudge`) have an
+  `@example`; a new entry point gets one too. Lint enforces the syntax
+  (`tsdoc/syntax`) and the comments (`jsdoc/require-jsdoc`), and the API
+  reference build (`npm run docs:api`) fails on any TypeDoc warning.
 
 ### Explain everything on screen
 

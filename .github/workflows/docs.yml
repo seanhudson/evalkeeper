@@ -1,0 +1,49 @@
+name: API reference
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build the API reference
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # TypeDoc warnings are errors: an undocumented export fails here.
+      - run: npm run docs:api
+      - uses: actions/upload-pages-artifact@v3
+        if: github.ref == 'refs/heads/main'
+        with:
+          path: docs/api
+
+  deploy:
+    name: Publish to GitHub Pages
+    # Runs once Pages is turned on for the repo (Settings → Pages → GitHub
+    # Actions) and the repository variable API_DOCS_PAGES is "true".
+    if: github.ref == 'refs/heads/main' && vars.API_DOCS_PAGES == 'true'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -7,6 +7,7 @@ import type { CheckDef } from "./types.js";
  * common problems. Pure.
  */
 
+/** A check that failed, and how often. */
 export type Problem = {
   key: string;
   label: string;
@@ -14,6 +15,9 @@ export type Problem = {
   of: number;
 };
 
+/**
+ * A test in plain words: answers right, how far to trust that, and the common problems.
+ */
 export type Summary = {
   right: number;
   total: number;
@@ -26,6 +30,9 @@ export type Summary = {
 /** Below this many answers the number is mostly noise. */
 export const TRUST_MIN = 10;
 
+/**
+ * A test's result in plain words, for people who don't want the statistics.
+ */
 export function summarize(m: SuiteMetrics, checks: CheckDef[]): Summary {
   const right = m.allPass.passed;
   const total = m.allPass.n;
@@ -51,6 +58,9 @@ export function summarize(m: SuiteMetrics, checks: CheckDef[]): Summary {
   return { right, total, trust, problems };
 }
 
+/**
+ * How far a score on this many cases can be trusted, and how far off it could be.
+ */
 export type Confidence = {
   level: "too-few" | "rough" | "good" | "strong";
   label: string;

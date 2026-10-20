@@ -11,6 +11,9 @@ import type { Route } from "./runner.js";
  * your own routing and pass `route` to the runner yourself.
  */
 
+/**
+ * A feature's model settings: live model, fallback, reasoning setting, and output limit.
+ */
 export type Settings = {
   model: string;
   fallbackModel: string | null;
@@ -20,6 +23,9 @@ export type Settings = {
   maxOutputTokens: number | null;
 };
 
+/**
+ * One numbered version of a feature's settings, with the instructions it ran with. Never changed.
+ */
 export type SettingsVersion = Settings & {
   id: string;
   operation: string;
@@ -38,6 +44,10 @@ export type SettingsVersion = Settings & {
  */
 export type ChangeKind = "CHANGE" | "PROMOTE" | "ROLLBACK" | "DEPLOY";
 
+/**
+ * One switch in a feature's history: its kind, the versions it went from and to, who, why,
+ * and the evidence.
+ */
 export type SettingsChange = {
   id: string;
   operation: string;
@@ -96,6 +106,7 @@ export class SettingsConflict extends Error {
   }
 }
 
+/** Whether two settings are the same in every field. */
 export function sameSettings(a: Settings, b: Settings): boolean {
   return (
     a.model === b.model &&
@@ -105,6 +116,7 @@ export function sameSettings(a: Settings, b: Settings): boolean {
   );
 }
 
+/** Just the settings of a version. */
 export function settingsOf(v: Settings): Settings {
   return {
     model: v.model,
@@ -139,11 +151,31 @@ export function describeChange(
   return out;
 }
 
+/** A switch with the versions it went from and to, for a history page. */
 export type HistoryEntry = SettingsChange & {
   to: SettingsVersion;
   from: SettingsVersion | null;
 };
 
+/**
+ * Versioned settings: each feature's settings as numbered versions, with every change,
+ * promotion, rollback, and deploy logged. Its `route` is the runner's route.
+ *
+ * @example
+ * ```ts
+ * const settings = createSettings({
+ *   store: prismaSettingsStore(prisma),
+ *   defaults: (op) => DEFAULTS[op],
+ *   promptVersion: (op) => PROMPT_VERSIONS[op],
+ * });
+ * await settings.update("ticket_triage", { model: "claude-haiku-5-5" }, {
+ *   by: admin.name,
+ *   reason: "About as accurate at half the cost",
+ *   evidence: { runId },
+ * });
+ * await settings.rollBack("ticket_triage", versionId, { by: admin.name, reason: "Worse in production" });
+ * ```
+ */
 export function createSettings(opts: {
   store: SettingsStore;
   /** Each feature's settings in code, used until it's first changed. */
@@ -295,4 +327,5 @@ export function createSettings(opts: {
   return { current, route, change, update, rollBack, syncPrompt, history };
 }
 
+/** What createSettings returns. */
 export type VersionedSettings = ReturnType<typeof createSettings>;

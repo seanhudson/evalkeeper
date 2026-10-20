@@ -24,6 +24,10 @@ export type CheckResult = {
   units?: { right: number; total: number } | undefined;
 };
 
+/**
+ * One check a suite runs: what it checks, whether it needs an answer, and how serious a
+ * miss is.
+ */
 export type CheckDef = {
   key: string;
   label: string;
@@ -66,6 +70,7 @@ export type SuitePriority = {
   maxSeconds?: number;
 };
 
+/** Each priority, explained for the suite page. */
 export const FAVOR_TEXT: Record<SuitePriority["favor"], string> = {
   speed:
     "speed: someone waits on this, so a model that scores as well and answers clearly faster is worth switching to, and so is one about as accurate (within 10 points) in half the time",
@@ -74,6 +79,10 @@ export const FAVOR_TEXT: Record<SuitePriority["favor"], string> = {
     "quality: people read and act on this, so only clearly better accuracy or fewer serious mistakes is worth switching for",
 };
 
+/**
+ * An eval suite: how to call one AI feature on a model and how to grade what comes back.
+ * Code says how to evaluate; the store holds the cases and answers.
+ */
 export type Suite<Input, Output, Label> = {
   key: string;
   /** The AI feature it tests, as your app names it ("summarize_ticket"). */

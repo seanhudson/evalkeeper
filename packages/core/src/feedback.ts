@@ -8,11 +8,13 @@ import { thumbsAlert } from "./upkeepRules.js";
  * tests the next model on the same input. Pure, except the store.
  */
 
+/** A thumbs up or a thumbs down. */
 export type Rating = "UP" | "DOWN";
 
 /** OPEN: waiting for a look. CASED: made into a case. DISMISSED: not useful. */
 export type FeedbackStatus = "OPEN" | "CASED" | "DISMISSED";
 
+/** A person's rating of one AI answer in your product, as stored. */
 export type FeedbackRecord = {
   id: string;
   /** The AI feature that wrote the answer. */
@@ -40,6 +42,7 @@ export type FeedbackRecord = {
   updatedAt: Date;
 };
 
+/** A rating to save; `cleanRating` trims and bounds it. */
 export type NewRating = {
   operation: string;
   targetId: string;
@@ -81,6 +84,7 @@ export interface FeedbackStore {
 
 /** Longest reason and excerpt kept, so one rating can't fill a table. */
 export const REASON_MAX = 1_000;
+/** The longest rated excerpt kept. */
 export const EXCERPT_MAX = 2_000;
 
 /** A rating as it should be stored: trimmed, bounded, a reason only on a thumbs down. */
@@ -122,6 +126,13 @@ export function whyNotACase(
  * answer yet: the person writes what a good one is. A thumbs up proposes
  * the model's own answer, pending until a person confirms it. Never
  * confirmed on anyone's behalf. Null when it can't become a case.
+ *
+ * @example
+ * ```ts
+ * const suite = SUITES.find((s) => s.operation === rating.operation);
+ * const draft = suite ? caseFromFeedback(rating, suite) : null;
+ * if (draft) await store.createCase(draft);
+ * ```
  */
 export function caseFromFeedback(
   f: FeedbackRecord,
@@ -161,6 +172,10 @@ export function caseFromFeedback(
   };
 }
 
+/**
+ * One feature's ratings over a period: up, down, the share down, whether it needs a look,
+ * and how many thumbs down nobody has looked at.
+ */
 export type ThumbsSummary = {
   operation: string;
   up: number;

@@ -7,6 +7,7 @@ import type { BoardRow } from "./board.js";
  * only current, complete tests count. Pure.
  */
 
+/** One suite's board, as attention reads it. */
 export type SuiteBoard = {
   key: string;
   label: string;
@@ -15,6 +16,10 @@ export type SuiteBoard = {
   toReview: number;
 };
 
+/**
+ * What needs a look across suites: the most room to improve, the slowest and costliest
+ * live models, and the answers waiting for review.
+ */
 export type Attention = {
   improve: { key: string; label: string; best: number; model: string } | null;
   slowest: { key: string; label: string; model: string; ms: number } | null;
@@ -30,6 +35,9 @@ export type Attention = {
 const current = (r: BoardRow) =>
   r.test && !r.test.stale && !r.test.failedAnswers ? r.test : null;
 
+/**
+ * Finds what needs a look across suites, from their boards. Only current, complete tests count.
+ */
 export function attention(boards: SuiteBoard[]): Attention {
   let improve: Attention["improve"] = null;
   let slowest: Attention["slowest"] = null;

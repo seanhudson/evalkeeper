@@ -1,3 +1,9 @@
+/**
+ * The runner: creates, runs, rescores, and compares tests, and builds each
+ * suite's model board. Server-only.
+ *
+ * @module evalkeeper/runner
+ */
 import { createHash } from "node:crypto";
 import { compareRuns, type RunOutput } from "./compare.js";
 import { isStuck, shouldContinue } from "./legs.js";
@@ -45,6 +51,10 @@ export const REUSE_DAYS = 7;
 export const OUT_OF_CREDITS =
   /no credits remaining|credit balance is too low|insufficient_quota|exceeded your current quota|billing/i;
 
+/**
+ * What the runner needs from your app: storage, suites, models, instruction hashes, and,
+ * for the board and drift checks, routing.
+ */
 export type RunnerOptions = {
   store: EvalStore;
   suites: AnySuite[];
@@ -52,7 +62,7 @@ export type RunnerOptions = {
   models: ModelCatalog;
   /**
    * The current instructions' hash for an operation (see instructionsHash
-   * in @evalkeeper/ai-sdk). A test records it, so editing the instructions
+   * in `@evalkeeper/ai-sdk`). A test records it, so editing the instructions
    * marks older tests out of date.
    */
   promptVersion: (operation: string) => string | Promise<string>;
@@ -96,12 +106,19 @@ export type RunnerOptions = {
   };
 };
 
+/**
+ * Which model a feature runs on now, its fallback, and its reasoning setting.
+ */
 export type Route = {
   model: string;
   fallbackModel: string | null;
   reasoningEffort: ReasoningEffort | null;
 };
 
+/**
+ * How to run a test: fresh (no reuse), and, for a test continued in a new request, its leg
+ * and the judge's spend so far.
+ */
 export type RunEvalOptions = {
   /** Never reuse an earlier test's output. */
   fresh?: boolean;
@@ -184,6 +201,25 @@ export async function mapLimit<T, R>(
   return results;
 }
 
+/**
+ * The runner: creates and runs tests, rescores them, compares them, and builds each
+ * suite's model board, on your store.
+ *
+ * @example
+ * ```ts
+ * const runner = createRunner({
+ *   store: prismaStore(prisma),
+ *   suites: [ticketTriage],
+ *   models: MODELS,
+ *   promptVersion: (op) => PROMPT_VERSIONS[op] ?? "unregistered",
+ *   route: settings.route,
+ *   candidates: () => ({ models: Object.keys(MODELS) }),
+ * });
+ * const { run } = await runner.createRun({ suite: "ticket_triage", model: "claude-haiku-5-5" });
+ * await runner.runEval(run.id);
+ * const board = await runner.board("ticket_triage");
+ * ```
+ */
 export function createRunner(opts: RunnerOptions) {
   const { store } = opts;
   const byKey = new Map(opts.suites.map((s) => [s.key, s]));
@@ -930,4 +966,5 @@ export function createRunner(opts: RunnerOptions) {
   };
 }
 
+/** What createRunner returns. */
 export type Runner = ReturnType<typeof createRunner>;

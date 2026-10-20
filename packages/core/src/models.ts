@@ -5,8 +5,13 @@
 
 /** How hard a reasoning model thinks, where the model takes a setting. */
 export const REASONING_EFFORTS = ["none", "low", "medium", "high"] as const;
+/** A reasoning setting a model may accept. */
 export type ReasoningEffort = (typeof REASONING_EFFORTS)[number];
 
+/**
+ * What Evalkeeper needs to know about one model: its label, provider, prices, reasoning
+ * settings, and retirement date.
+ */
 export type ModelInfo = {
   label: string;
   /** Who serves it ("anthropic", "openai", …): the fallback must differ. */
@@ -25,6 +30,7 @@ export type ModelInfo = {
   source?: string;
 };
 
+/** Your app's models, by id. */
 export type ModelCatalog = Record<string, ModelInfo>;
 
 /** "January 2027" for a retiring model; null when it isn't retiring. */

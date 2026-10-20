@@ -9,6 +9,11 @@ version may change an interface, and its entry says how to update.
 
 ### Added
 
+- TSDoc on every export of the packages, with `@example` on the main entry
+  points, enforced by lint (`eslint-plugin-tsdoc`, `eslint-plugin-jsdoc`),
+  and an API reference built with TypeDoc (`npm run docs:api`) and
+  published from CI to GitHub Pages.
+
 - `npx evalkeeper add pages`: copies the eval pages, components, and their
   server actions into a Next.js app, fitted to its import alias, folders,
   and a base path; never overwrites without `--force`; writes a starter

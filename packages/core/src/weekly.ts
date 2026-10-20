@@ -16,6 +16,10 @@ export const SCHEDULED = "schedule";
 
 const DAY = 86_400_000;
 
+/**
+ * What the last weekly check found: drift, unfinished checks, retiring models, and
+ * thumbs-down, plus when it ran and what it cost.
+ */
 export type WeeklySummary = {
   /** When the last weekly check started; null before the first. */
   lastAt: Date | null;
@@ -55,6 +59,16 @@ export function headline(m: RunMetrics | null): number | null {
     : (m.allPass.rate ?? 0);
 }
 
+/**
+ * What the last weekly check found, from every suite's tests.
+ *
+ * @example
+ * ```ts
+ * const runs = (await Promise.all(SUITES.map((s) => store.listRuns(s.key, { limit: 50 })))).flat();
+ * const weekly = weeklySummary({ runs, suites: SUITES, routes, models: MODELS, thumbs });
+ * if (!weekly.clear) console.log(weekly.drift, weekly.retiring);
+ * ```
+ */
 export function weeklySummary(args: {
   /** Every suite's tests, newest first or not. */
   runs: RunRecord[];

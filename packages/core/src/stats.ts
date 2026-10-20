@@ -5,6 +5,7 @@ import type { CheckResult } from "./types.js";
  * small dataset doesn't look more certain than it is. Pure; no database.
  */
 
+/** A pass rate with its 95% range; null when nothing was measured. */
 export type Rate = {
   passed: number;
   /** Outputs the check applied to. */
@@ -32,6 +33,7 @@ export function wilson(passed: number, n: number, z = 1.96): Rate {
   };
 }
 
+/** One graded answer, as the metrics read it. */
 export type ScoredOutput = {
   caseId: string;
   repeat: number;
@@ -42,6 +44,10 @@ export type ScoredOutput = {
   reused: boolean;
 };
 
+/**
+ * A test's numbers: answers right, partial credit, each check's pass rate, consistency,
+ * cost, time, and reuse.
+ */
 export type SuiteMetrics = {
   cases: number;
   outputs: number;
@@ -72,6 +78,9 @@ export type SuiteMetrics = {
   reused: number;
 };
 
+/**
+ * Whether an answer passed every check that applied. A failed answer (null) didn't.
+ */
 export function allPassed(checks: CheckResult[] | null): boolean {
   return checks !== null && checks.every((c) => c.pass !== false);
 }
@@ -101,6 +110,7 @@ export function answerScore(checks: CheckResult[] | null): number {
   return allPassed(checks) ? 1 : 0;
 }
 
+/** A test's numbers from its graded answers. */
 export function suiteMetrics(
   outputs: ScoredOutput[],
   checkKeys: string[],

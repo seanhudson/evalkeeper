@@ -13,7 +13,7 @@ export function promptHash(...parts: string[]): string {
     .slice(0, 8);
 }
 
-/** Placeholders for a prompt template's per-call values: "{name}". */
+/** A placeholder for a prompt template's per-call value, written as `{name}`. */
 export const slot = (name: string) => `{${name}}`;
 
 /**
@@ -23,6 +23,14 @@ export const slot = (name: string) => `{${name}}`;
  * `.describe()` changes the answer as surely as editing the system text, so
  * it must mark older tests out of date too. Pass the result to the runner
  * as the operation's promptVersion.
+ *
+ * @example
+ * ```ts
+ * export const triageVersion = instructionsHash({
+ *   texts: [SYSTEM, prompt({ subject: slot("subject"), body: slot("body") })],
+ *   schemas: [outputSchema],
+ * });
+ * ```
  */
 export function instructionsHash(parts: {
   texts: string[];

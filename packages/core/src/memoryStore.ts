@@ -1,3 +1,9 @@
+/**
+ * An in-memory store, for tests, demos, and trying Evalkeeper before adding
+ * tables.
+ *
+ * @module evalkeeper/memory
+ */
 import type { FeedbackRecord, FeedbackStore } from "./feedback.js";
 import { cleanRating } from "./feedback.js";
 import {

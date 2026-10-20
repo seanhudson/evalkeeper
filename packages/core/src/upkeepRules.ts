@@ -10,6 +10,9 @@ export const DRIFT_DROP = 0.15;
 export const RETIRE_WARN_DAYS = 60;
 /** Thumbs: at least this many ratings, at least this share down. */
 export const THUMBS_MIN = 5;
+/**
+ * The share of thumbs down that flags a feature (with at least THUMBS_MIN ratings).
+ */
 export const THUMBS_DOWN_SHARE = 0.2;
 
 /** This week's quick-set score against last week's: a drop worth a look. */
@@ -27,12 +30,16 @@ export function daysUntil(retiring: string, today: Date): number {
   return Math.floor((when - today.getTime()) / 86_400_000);
 }
 
+/** Whether a model retires within the warning window, or already has. */
 export function retiresSoon(retiring: string | undefined, today: Date) {
   return (
     retiring !== undefined && daysUntil(retiring, today) <= RETIRE_WARN_DAYS
   );
 }
 
+/**
+ * Whether a feature's ratings need a look: enough of them, and enough down.
+ */
 export function thumbsAlert(up: number, down: number): boolean {
   const n = up + down;
   return n >= THUMBS_MIN && down / n >= THUMBS_DOWN_SHARE;

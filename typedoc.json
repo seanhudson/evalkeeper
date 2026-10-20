@@ -1,0 +1,25 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "name": "Evalkeeper",
+  "entryPoints": [
+    "packages/core/src/index.ts",
+    "packages/core/src/runner.ts",
+    "packages/core/src/memoryStore.ts",
+    "packages/core/src/testing.ts",
+    "packages/core/src/cli/main.ts",
+    "packages/prisma/src/index.ts",
+    "packages/ai-sdk/src/index.ts"
+  ],
+  "tsconfig": "tsconfig.typedoc.json",
+  "out": "docs/api",
+  "readme": "docs/api-home.md",
+  "excludePrivate": true,
+  "excludeInternal": true,
+  "sort": ["kind", "alphabetical"],
+  "validation": {
+    "notExported": false,
+    "invalidLink": true,
+    "notDocumented": true
+  },
+  "treatWarningsAsErrors": true
+}

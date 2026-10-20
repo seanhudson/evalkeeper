@@ -11,8 +11,12 @@ import type { SuiteMetrics } from "./stats.js";
 
 /** ALL: every case in use. SMOKE: the quick set. DEV and TEST: by split. */
 export type EvalSet = "ALL" | "SMOKE" | "DEV" | "TEST";
+/** Every set of cases a test can run on. */
 export const EVAL_SETS: EvalSet[] = ["ALL", "SMOKE", "DEV", "TEST"];
 
+/**
+ * Where an answer stands: pending review, confirmed, provisional, or rejected.
+ */
 export type LabelStatus = "PENDING" | "CONFIRMED" | "PROVISIONAL" | "REJECTED";
 
 /**
@@ -34,6 +38,7 @@ export type LabelRecord = {
   updatedAt: Date;
 };
 
+/** A stored case: a frozen input, its tags and set, and its answers. */
 export type CaseRecord = {
   id: string;
   suite: string;
@@ -52,6 +57,7 @@ export type CaseRecord = {
   labels: LabelRecord[];
 };
 
+/** Where a test stands. */
 export type RunStatus = "RUNNING" | "SUCCEEDED" | "FAILED";
 
 /** What the runner stores on a finished test. */
@@ -60,6 +66,9 @@ export type RunMetrics = SuiteMetrics & {
   failureReason: string | null;
 };
 
+/**
+ * A stored test: one suite on one model, with what it ran with and its metrics.
+ */
 export type RunRecord = {
   id: string;
   suite: string;
@@ -84,6 +93,7 @@ export type RunRecord = {
   finishedAt: Date | null;
 };
 
+/** One stored answer in a test, with its grades, cost, and time. */
 export type OutputRecord = {
   id: string;
   runId: string;
@@ -102,12 +112,16 @@ export type OutputRecord = {
   createdAt: Date;
 };
 
+/** A test to record; the store fills in the id, times, and status. */
 export type NewRun = Omit<
   RunRecord,
   "id" | "startedAt" | "finishedAt" | "status" | "metrics" | "error"
 >;
+/** An answer to record. */
 export type NewOutput = Omit<OutputRecord, "id" | "createdAt">;
+/** An answer to add to a case. */
 export type NewLabel = Omit<LabelRecord, "id" | "createdAt" | "updatedAt">;
+/** A case to create, with its first answers. */
 export type NewCase = Omit<
   CaseRecord,
   "id" | "createdAt" | "updatedAt" | "labels"
@@ -115,6 +129,10 @@ export type NewCase = Omit<
   labels?: NewLabel[];
 };
 
+/**
+ * Where Evalkeeper keeps cases, answers, tests, and outputs. Implement it for another
+ * database, and run describeStoreContract against it.
+ */
 export interface EvalStore {
   /** A suite's cases that aren't retired, with their answers, oldest first. */
   listCases(suite: string): Promise<CaseRecord[]>;

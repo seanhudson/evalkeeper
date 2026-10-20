@@ -1,3 +1,8 @@
+/**
+ * Evalkeeper's tables for Prisma, and stores on your Prisma client.
+ *
+ * @module \@evalkeeper/prisma
+ */
 import { SettingsConflict, cleanRating } from "evalkeeper";
 import type {
   CaseRecord,
@@ -47,6 +52,7 @@ export type EvalCaseRow = {
   createdAt: Date;
   updatedAt: Date;
 };
+/** An EvalCaseLabel row. */
 export type EvalCaseLabelRow = {
   id: string;
   caseId: string;
@@ -59,6 +65,7 @@ export type EvalCaseLabelRow = {
   createdAt: Date;
   updatedAt: Date;
 };
+/** An EvalRun row. */
 export type EvalRunRow = {
   id: string;
   suite: string;
@@ -77,6 +84,7 @@ export type EvalRunRow = {
   startedAt: Date;
   finishedAt: Date | null;
 };
+/** An EvalOutput row. */
 export type EvalOutputRow = {
   id: string;
   runId: string;
@@ -91,6 +99,7 @@ export type EvalOutputRow = {
   reused: boolean;
   createdAt: Date;
 };
+/** An EvalJudgment row. */
 export type EvalJudgmentRow = {
   key: string;
   value: Json;
@@ -211,6 +220,17 @@ const output = (o: EvalOutputRow): OutputRecord => ({
 const json = (v: unknown): object | string | number | boolean | undefined =>
   v === undefined || v === null ? undefined : v;
 
+/**
+ * An EvalStore on your Prisma client, using the models in
+ * `schema/evalkeeper.prisma`.
+ *
+ * @example
+ * ```ts
+ * import { prismaStore } from "@evalkeeper/prisma";
+ * const store = prismaStore(prisma);
+ * const runner = createRunner({ store, suites, models, promptVersion });
+ * ```
+ */
 export function prismaStore(db: PrismaEvalClient): EvalStore {
   return {
     async listCases(suite) {
@@ -304,7 +324,7 @@ export function prismaStore(db: PrismaEvalClient): EvalStore {
   };
 }
 
-/** A judgment cache on the EvalJudgment table, for @evalkeeper/ai-sdk. */
+/** A judgment cache on the EvalJudgment table, for `@evalkeeper/ai-sdk`. */
 export function prismaJudgmentCache(db: PrismaEvalClient) {
   return {
     async get(key: string): Promise<unknown> {
@@ -323,6 +343,7 @@ export function prismaJudgmentCache(db: PrismaEvalClient) {
   };
 }
 
+/** An EvalFeedback row. */
 export type EvalFeedbackRow = {
   id: string;
   operation: string;
@@ -433,6 +454,7 @@ export function prismaFeedbackStore(db: PrismaFeedbackClient): FeedbackStore {
   };
 }
 
+/** An EvalSettingsVersion row. */
 export type EvalSettingsVersionRow = {
   id: string;
   operation: string;
@@ -444,11 +466,13 @@ export type EvalSettingsVersionRow = {
   promptVersion: string | null;
   createdAt: Date;
 };
+/** An EvalSettingsLive row. */
 export type EvalSettingsLiveRow = {
   operation: string;
   versionId: string;
   updatedAt: Date;
 };
+/** An EvalSettingsChange row. */
 export type EvalSettingsChangeRow = {
   id: string;
   operation: string;

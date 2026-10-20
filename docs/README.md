@@ -8,3 +8,5 @@
   of change goes, and how it's tested.
 - [Lessons](lessons.md): what went wrong in real use, and the rule each
   mistake left behind.
+- [API reference](https://seanhudson.github.io/evalkeeper/): every export,
+  with examples for the main ones.

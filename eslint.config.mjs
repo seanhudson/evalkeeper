@@ -5,6 +5,8 @@ import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 import reactHooks from "eslint-plugin-react-hooks";
 import globals from "globals";
+import jsdoc from "eslint-plugin-jsdoc";
+import tsdoc from "eslint-plugin-tsdoc";
 
 export default tseslint.config(
   {
@@ -13,6 +15,7 @@ export default tseslint.config(
       "**/dist/**",
       "**/.next/**",
       "**/coverage/**",
+      "docs/api/**",
       "**/test-results/**",
       "**/playwright-report/**",
       // Built from the example app (linted there), and the starter for apps.
@@ -51,6 +54,33 @@ export default tseslint.config(
       // Interface methods return promises without always awaiting.
       "@typescript-eslint/require-await": "off",
       eqeqeq: ["error", "smart"],
+    },
+  },
+  {
+    // The packages' public API: valid TSDoc, and a doc comment on every
+    // export, so editors and the API reference explain each one.
+    files: ["packages/*/src/**/*.ts"],
+    ignores: ["**/*.test.ts"],
+    plugins: { jsdoc, tsdoc },
+    rules: {
+      "tsdoc/syntax": "error",
+      "jsdoc/require-jsdoc": [
+        "error",
+        {
+          publicOnly: true,
+          require: {
+            FunctionDeclaration: true,
+            ClassDeclaration: true,
+            ArrowFunctionExpression: true,
+            FunctionExpression: true,
+          },
+          contexts: [
+            "ExportNamedDeclaration > TSInterfaceDeclaration",
+            "ExportNamedDeclaration > TSTypeAliasDeclaration",
+            "ExportNamedDeclaration > VariableDeclaration",
+          ],
+        },
+      ],
     },
   },
   {

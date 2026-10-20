@@ -1,9 +1,15 @@
+/**
+ * The `evalkeeper` command: `npx evalkeeper add pages`.
+ *
+ * @module evalkeeper/cli
+ */
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { addPages, nextSteps, type AddPagesOptions } from "./addPages.js";
 
 /** The `evalkeeper` command. */
 
+/** The command's help text. */
 export const HELP = `Usage: npx evalkeeper add pages [options]
 
 Copies Evalkeeper's eval pages, components, and their glue into your
@@ -25,6 +31,9 @@ function packageDir(): string {
   return join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 }
 
+/**
+ * Reads the command line into a command and options. Throws on an unknown option or a missing value.
+ */
 export function parseArgs(argv: string[]): Partial<AddPagesOptions> & {
   command: string[];
   help: boolean;

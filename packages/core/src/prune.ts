@@ -20,14 +20,19 @@ export const STALE_DRAFT_DAYS = 30;
 /** Inputs this similar (shared words) are near-duplicates. */
 export const DUPLICATE_SIMILARITY = 0.9;
 
+/** How one case did across the models tested on it. */
 export type CaseResult = { passed: number; models: number };
 
+/**
+ * A case every tested model got right (with enough models): it no longer tells them apart.
+ */
 export function isEasy(r: CaseResult | undefined): boolean {
   return (
     r !== undefined && r.models >= EASY_MIN_MODELS && r.passed === r.models
   );
 }
 
+/** A case some models get right and others wrong: the most useful kind. */
 export function isSplit(r: CaseResult | undefined): boolean {
   if (!r || r.models < SPLIT_MIN_MODELS) return false;
   const share = r.passed / r.models;
@@ -76,6 +81,7 @@ export function nearDuplicates<C extends { id: string; input: unknown }>(
   return pairs;
 }
 
+/** A draft nobody has reviewed for long enough to retire. */
 export function isStaleDraft(createdAt: Date, today: Date): boolean {
   return +today - +createdAt > STALE_DRAFT_DAYS * 86_400_000;
 }

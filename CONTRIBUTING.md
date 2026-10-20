@@ -28,6 +28,7 @@ CI runs everything again on Node 20 and 22, plus the browser tests,
 | ------------------------------------------ | ----------------------------------------------- |
 | `npm test`                                 | Unit, contract, and grader tests, with coverage |
 | `npm run e2e` (in `examples/next`)         | The pages in a real browser, on demo models     |
+| `npm run docs:api`                         | Builds the API reference into `docs/api`        |
 | `npm run check`                            | Everything CI checks except the browser tests   |
 | `npm run screenshots` (in `examples/next`) | Retakes the README screenshots, light and dark  |
 

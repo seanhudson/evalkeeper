@@ -21,6 +21,7 @@ import { at } from "./util.js";
  * model is replaced by the best-scoring one that isn't. Pure.
  */
 
+/** One model's row, as the suggestion reads it. */
 export type SuggestRow = {
   key: string;
   model: string;
@@ -45,6 +46,9 @@ export type SuggestRow = {
   } | null;
 };
 
+/**
+ * Which model to make live and which the fallback, with the reasons in plain sentences.
+ */
 export type Suggestion<R extends SuggestRow = SuggestRow> = {
   live: R;
   fallback: R | null;
@@ -56,6 +60,9 @@ export type Suggestion<R extends SuggestRow = SuggestRow> = {
   reasons: string[];
 };
 
+/**
+ * How many serious checks a model's test failed; Infinity without a test.
+ */
 export function seriousMistakes(row: SuggestRow, checks: CheckDef[]): number {
   const test = row.test;
   if (!test) return Infinity;
@@ -80,6 +87,17 @@ const HALF = 0.5;
 const clearlyLess = (a: number, b: number) =>
   Number.isFinite(a) && Number.isFinite(b) && a <= b * 0.7;
 
+/**
+ * Suggests the live and fallback models from a suite's board, by fixed rules, so the
+ * reason given is always the real one. Null with nothing current to go on.
+ *
+ * @example
+ * ```ts
+ * const board = await runner.board("ticket_triage");
+ * const s = suggest(board.rows, suite.checks, suite.priority, MODELS);
+ * if (s && !s.same) console.log(s.live.label, s.fallback?.label, s.reasons);
+ * ```
+ */
 export function suggest<R extends SuggestRow>(
   rows: R[],
   checks: CheckDef[],

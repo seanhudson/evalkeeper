@@ -57,4 +57,5 @@ export const GLOSSARY = {
     "Every change to which model this feature runs on: who, when, why, and the test behind it. Any earlier version can be made live again.",
 } as const;
 
+/** A word the glossary defines, for tooltips. */
 export type GlossaryTerm = keyof typeof GLOSSARY;

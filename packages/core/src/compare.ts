@@ -11,6 +11,7 @@ import { mustGet } from "./util.js";
  * bootstrap, and the verdict is read off that range. Pure; no database.
  */
 
+/** One stored answer, as a comparison reads it. */
 export type RunOutput = {
   caseId: string;
   checks: CheckResult[] | null;
@@ -19,8 +20,16 @@ export type RunOutput = {
   reused: boolean;
 };
 
+/**
+ * How a challenger compares with the model in place: more accurate, about as accurate,
+ * less accurate, or too few cases to tell.
+ */
 export type Verdict = "BETTER" | "SAME" | "WORSE" | "TOO_FEW";
 
+/**
+ * Two tests compared case by case: the verdict, the difference and its range, the cases
+ * the challenger fixed and broke, and each check's pass rates.
+ */
 export type Comparison = {
   /** Cases both runs have. */
   n: number;
@@ -78,6 +87,10 @@ export function bootstrapMean(
   };
 }
 
+/**
+ * The verdict for a difference's 95% range on `n` shared cases: too few under 5, else
+ * better or worse only when the whole range is on one side of zero.
+ */
 export function verdictFor(n: number, low: number, high: number): Verdict {
   if (n < MIN_CASES) return "TOO_FEW";
   if (low > 0) return "BETTER";
@@ -168,6 +181,10 @@ function perCall(outputs: RunOutput[], pick: (o: RunOutput) => number) {
     : null;
 }
 
+/**
+ * Compares two tests on the cases they share, with a paired bootstrap, using the same
+ * partial credit as the headline.
+ */
 export function compareRuns(
   champion: RunOutput[],
   challenger: RunOutput[],

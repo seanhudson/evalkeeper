@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.129",
-    "@ai-sdk/openai": "^3.0.125",
+    "@ai-sdk/openai": "^4.0.96",
     "@evalkeeper/ai-sdk": "0.1.0",
     "@evalkeeper/prisma": "0.1.0",
     "@prisma/client": "^6.19.3",

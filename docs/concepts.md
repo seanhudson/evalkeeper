@@ -140,7 +140,10 @@ _promotion_ from a test (the test is the evidence), a _rollback_ to an
 earlier version, or a _deploy_ that changed the instructions in code
 under the live settings. A feature never changed runs on its default
 from code; the first change records that default as version 1, so
-there's always something to roll back to. A switch decided against a
+there's always something to roll back to. An app that chooses models in
+an admin page, with no defaults in code, records each feature's current
+choice as version 1 instead (_seeding_); until then the feature has no
+settings, and reading them is an error. A switch decided against a
 version that's no longer live is refused, so two people saving at once
 can't overwrite each other.
 

@@ -23,6 +23,11 @@ each feature's settings as versions with a history and rollback, and its
 `settings.route` is the runner's `route`. Your AI calls read
 `settings.route(operation)` too, and call `settings.syncPrompt(operation)`
 where they do, so a deploy that changed the instructions is recorded.
+If your models are chosen in an admin page and stored in your own table,
+return null from `defaults` and record each row once with
+`settings.seed(operation, settings, { by: null, reason })`; it does
+nothing for a feature that already has a version, so the import can run
+again.
 
 ## 2. Describe your models
 

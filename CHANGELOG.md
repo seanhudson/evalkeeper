@@ -15,6 +15,12 @@ version may change an interface, and its entry says how to update.
   `usage.inputTokenDetails`, so a test of a mostly cached operation (a chat
   turn) no longer reads several times its real cost. Models without cache
   prices cost the same as before. (#15)
+- Settings without defaults in code: `defaults` may return null, reading
+  such a feature's settings throws `NoSettingsError` until it has a
+  version, and `settings.seed(operation, settings, { by, reason })` records
+  an app's existing config as version 1 (only when the feature has none,
+  so an import can run again). A first `change` with no default records
+  the new settings as version 1. (#13)
 
 ### Changed
 

@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { memoryStore } from "./memoryStore.js";
-import { createSettings, describeChange, type Settings } from "./settings.js";
+import {
+  NoSettingsError,
+  createSettings,
+  describeChange,
+  type Settings,
+} from "./settings.js";
 
 const DEFAULT: Settings = {
   model: "small",
@@ -19,6 +24,24 @@ function setup() {
   });
   return { store, settings, setPrompt: (p: string) => (prompt = p) };
 }
+
+/** Settings chosen in an admin page: no defaults in code. */
+function setupWithoutDefaults() {
+  const store = memoryStore();
+  const settings = createSettings({
+    store,
+    defaults: () => null,
+    promptVersion: () => "p1",
+  });
+  return { store, settings };
+}
+
+const IMPORTED: Settings = {
+  model: "big",
+  fallbackModel: "other",
+  reasoningEffort: null,
+  maxOutputTokens: 800,
+};
 
 describe("versioned settings", () => {
   it("runs on the default from code until first changed", async () => {
@@ -191,5 +214,107 @@ describe("versioned settings", () => {
       "Reasoning: default → high",
       "Output limit: default → 500",
     ]);
+  });
+});
+
+describe("versioned settings without defaults in code", () => {
+  it("throws NoSettingsError until a version is recorded", async () => {
+    const { settings } = setupWithoutDefaults();
+    await expect(settings.current("triage")).rejects.toBeInstanceOf(
+      NoSettingsError,
+    );
+    await expect(settings.route("triage")).rejects.toThrow(
+      "triage has no settings yet",
+    );
+    await expect(
+      settings.update("triage", { model: "big" }, { by: "sam", reason: null }),
+    ).rejects.toBeInstanceOf(NoSettingsError);
+  });
+
+  it("seeds version 1 from an existing config, once", async () => {
+    const { settings } = setupWithoutDefaults();
+    const v1 = await settings.seed("triage", IMPORTED, {
+      by: null,
+      reason: "Imported from the admin config",
+    });
+    expect(v1).toMatchObject({ number: 1, model: "big", promptVersion: "p1" });
+    expect(await settings.route("triage")).toMatchObject({
+      model: "big",
+      fallbackModel: "other",
+    });
+    // Again: the import is safe to rerun and changes nothing.
+    expect(
+      await settings.seed(
+        "triage",
+        { ...IMPORTED, model: "small" },
+        { by: null, reason: "Imported again" },
+      ),
+    ).toBeNull();
+    const history = await settings.history("triage");
+    expect(history).toHaveLength(1);
+    expect(history[0]).toMatchObject({
+      kind: "CHANGE",
+      by: null,
+      reason: "Imported from the admin config",
+      fromVersionId: null,
+    });
+  });
+
+  it("seeds with the instructions' hash it's given", async () => {
+    const { settings } = setupWithoutDefaults();
+    const v1 = await settings.seed("triage", IMPORTED, {
+      by: "sam",
+      reason: null,
+      promptVersion: null,
+    });
+    expect(v1?.promptVersion).toBeNull();
+  });
+
+  it("lets a seed that lost a race stand aside", async () => {
+    const { store, settings } = setupWithoutDefaults();
+    // Another request records the first version between the check and the switch.
+    const live = store.liveVersion.bind(store);
+    let first = true;
+    store.liveVersion = async (op) => {
+      if (first) {
+        first = false;
+        await settings.seed(op, IMPORTED, { by: null, reason: "First" });
+        return null;
+      }
+      return live(op);
+    };
+    expect(
+      await settings.seed("triage", IMPORTED, { by: null, reason: "Second" }),
+    ).toBeNull();
+    expect((await settings.history("triage")).map((h) => h.reason)).toEqual([
+      "First",
+    ]);
+  });
+
+  it("passes on errors other than a lost race", async () => {
+    const { store, settings } = setupWithoutDefaults();
+    store.switchTo = () => Promise.reject(new Error("Database down"));
+    await expect(
+      settings.seed("triage", IMPORTED, { by: null, reason: null }),
+    ).rejects.toThrow("Database down");
+  });
+
+  it("makes the first change version 1 when there's no default", async () => {
+    const { settings } = setupWithoutDefaults();
+    const v1 = await settings.change("triage", IMPORTED, {
+      by: "sam",
+      reason: "New feature",
+    });
+    expect(v1).toMatchObject({ number: 1, model: "big" });
+    const [first] = await settings.history("triage");
+    expect(first).toMatchObject({ kind: "CHANGE", by: "sam", from: null });
+    // With a test as evidence, the first version is a promotion.
+    const other = await settings.change("summarize", IMPORTED, {
+      by: "sam",
+      reason: null,
+      evidence: { runId: "r1" },
+    });
+    expect(other?.number).toBe(1);
+    expect((await settings.history("summarize"))[0]?.kind).toBe("PROMOTE");
   });
 });

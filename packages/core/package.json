@@ -18,6 +18,10 @@
     "./memory": {
       "types": "./dist/memoryStore.d.ts",
       "default": "./dist/memoryStore.js"
+    },
+    "./testing": {
+      "types": "./dist/testing.d.ts",
+      "default": "./dist/testing.js"
     }
   },
   "files": [
@@ -32,7 +36,8 @@
     "test": "vitest run"
   },
   "peerDependencies": {
-    "zod": "^3.25.0"
+    "zod": "^3.25.0",
+    "vitest": ">=3"
   },
   "devDependencies": {
     "zod": "^3.25.76"
@@ -43,5 +48,10 @@
     "ai",
     "testing",
     "model-selection"
-  ]
+  ],
+  "peerDependenciesMeta": {
+    "vitest": {
+      "optional": true
+    }
+  }
 }

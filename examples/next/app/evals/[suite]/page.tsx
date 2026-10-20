@@ -3,27 +3,20 @@ import { notFound } from "next/navigation";
 import {
   FAVOR_TEXT,
   checkBar,
-  confirmedLabel,
   perAnswer,
+  retiresLabel,
   seconds,
   seriousMistakes,
   suggest,
 } from "evalkeeper";
+import { AnswerKey } from "@/components/evalkeeper/AnswerKey";
 import { RefreshWhile } from "@/components/evalkeeper/RefreshWhile";
-import { Submit } from "@/components/evalkeeper/Submit";
-import { Card, Score, pct } from "@/components/evalkeeper/ui";
-import { prisma } from "@/lib/db";
+import { Spinner, Submit } from "@/components/evalkeeper/Submit";
+import { Card, Chip, Score, pct } from "@/components/evalkeeper/ui";
 import { runner } from "@/lib/evalkeeper";
 import { MODELS } from "@/lib/models";
 import { SUITE_BY_KEY } from "@/lib/suites";
-import {
-  confirmAnswer,
-  makeFallback,
-  makeLive,
-  rescore,
-  testAll,
-  testModel,
-} from "./actions";
+import { makeFallback, makeLive, rescore, testAll, testModel } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -46,11 +39,6 @@ export default async function SuitePage({
   const s = suggest(rows, suite.checks, suite.priority, MODELS);
   const testing = rows.some((r) => r.testing);
   const live = rows.find((r) => r.live);
-  const cases = await prisma.evalCase.findMany({
-    where: { suite: key, status: { not: "RETIRED" } },
-    include: { labels: true },
-    orderBy: { createdAt: "asc" },
-  });
 
   return (
     <div className="space-y-8">
@@ -111,21 +99,31 @@ export default async function SuitePage({
               {rows.map((r) => (
                 <tr key={r.key} className="border-b border-line last:border-0">
                   <td className="p-3">
-                    <div className="font-medium">{r.label}</div>
-                    <div className="text-xs text-muted">
-                      {[
-                        r.live && "Live",
-                        r.fallback && "Fallback",
-                        MODELS[r.model]?.retiring && "Retiring",
-                        r.test?.stale && "Out of date",
-                      ]
-                        .filter(Boolean)
-                        .join(" · ")}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span
+                        className={r.live ? "font-semibold" : "font-medium"}
+                      >
+                        {r.label}
+                      </span>
+                      {r.live && <Chip tone="live">Live</Chip>}
+                      {r.fallback && <Chip tone="fallback">Fallback</Chip>}
+                      {retiresLabel(MODELS, r.model) && (
+                        <Chip tone="warn">
+                          Retires {retiresLabel(MODELS, r.model)}
+                        </Chip>
+                      )}
+                      {r.test?.stale && <Chip tone="neutral">Out of date</Chip>}
                     </div>
                   </td>
                   <td className="p-3">
                     {r.testing ? (
-                      <span className="text-muted">Testing…</span>
+                      <span
+                        role="status"
+                        title="Testing"
+                        className="inline-flex text-accent"
+                      >
+                        <Spinner />
+                      </span>
                     ) : r.test ? (
                       <Link href={`/evals/${key}/runs/${r.test.runId}`}>
                         <Score right={r.test.right} total={r.test.total} />
@@ -185,8 +183,13 @@ export default async function SuitePage({
               <Card key={c.key} className="space-y-1">
                 <div className="flex justify-between gap-4">
                   <h3 className="font-medium">{c.label}</h3>
-                  <span className="text-sm text-muted">
-                    {c.severity} · bar {pct(checkBar(c))}
+                  <span className="flex items-center gap-2 text-sm text-muted">
+                    <Chip
+                      tone={c.severity === "serious" ? "serious" : "neutral"}
+                    >
+                      {c.severity}
+                    </Chip>
+                    bar {pct(checkBar(c))}
                   </span>
                 </div>
                 <p className="readable text-sm text-muted">{c.description}</p>
@@ -204,7 +207,7 @@ export default async function SuitePage({
       <section className="space-y-3">
         <div className="flex items-center justify-between gap-4">
           <h2 className="text-lg font-semibold">
-            Answer key ({cases.length} cases)
+            Answer key ({b.cases} cases in use)
           </h2>
           <form action={rescore}>
             <input type="hidden" name="suite" value={key} />
@@ -213,45 +216,10 @@ export default async function SuitePage({
         </div>
         <p className="readable text-sm text-muted">
           Tests grade against confirmed answers only. A model can draft answers,
-          but they stay pending until a person confirms them.
+          but they stay pending until a person confirms them. Open a case to see
+          how each model did on it.
         </p>
-        <Card className="space-y-4">
-          {cases.map((c) => {
-            const used = confirmedLabel(
-              c.labels.map((l) => ({
-                ...l,
-                kind: "EXPECTED" as const,
-                status: l.status as never,
-              })),
-            );
-            const pending = c.labels.find((l) => l.status === "PENDING");
-            const result = b.caseResults[c.id];
-            return (
-              <div key={c.id} className="rounded-md bg-tint p-3 text-sm">
-                <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <span className="font-medium">
-                    {suite.title(suite.input.parse(c.input))}
-                  </span>
-                  <span className="text-xs text-muted">
-                    {c.split}
-                    {result &&
-                      ` · right on ${result.passed} of ${result.models} models`}
-                  </span>
-                </div>
-                <pre className="mt-1 whitespace-pre-wrap font-mono text-xs text-muted">
-                  {JSON.stringify(used?.value ?? pending?.value ?? null)}
-                </pre>
-                {!used && pending && (
-                  <form action={confirmAnswer} className="mt-2">
-                    <input type="hidden" name="suite" value={key} />
-                    <input type="hidden" name="label" value={pending.id} />
-                    <Submit variant="quiet">Confirm this answer</Submit>
-                  </form>
-                )}
-              </div>
-            );
-          })}
-        </Card>
+        <AnswerKey suite={suite} rows={rows} />
       </section>
     </div>
   );

@@ -6,7 +6,7 @@ import {
   slot,
   type Pairing,
 } from "@evalkeeper/ai-sdk";
-import { wordPairs, type CheckDef, type Suite } from "evalkeeper";
+import { linesOf, wordPairs, type CheckDef, type Suite } from "evalkeeper";
 import { demoCall } from "../demo";
 import { MODELS, isDemo } from "../models";
 
@@ -243,6 +243,28 @@ export const actionItems: Suite<Input, Output, Label> = {
   },
   inputFromForm(form) {
     return input.parse({ notes: String(form.get("notes") ?? "").trim() });
+  },
+  labelFromForm(form) {
+    return label.parse({ items: linesOf(form, "items") });
+  },
+  fields: {
+    input: [
+      {
+        name: "notes",
+        label: "Meeting notes",
+        help: "The notes as someone wrote them. Use first names only.",
+        kind: "textarea",
+        required: true,
+      },
+    ],
+    label: [
+      {
+        name: "items",
+        label: "Action items",
+        help: "One per line, in your own words: things someone agreed to do, with the owner when the notes name one. Leave it empty when there are none.",
+        kind: "lines",
+      },
+    ],
   },
   starter: ACTION_STARTERS,
   title: (i) => i.notes.split(".")[0].slice(0, 60),

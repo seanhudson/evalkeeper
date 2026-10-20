@@ -296,6 +296,46 @@ export const ticketTriage: Suite<Input, Output, Label> = {
       body: String(form.get("body") ?? "").trim(),
     });
   },
+  labelFromForm(form) {
+    return label.parse({
+      category: form.get("category"),
+      urgency: form.get("urgency"),
+    });
+  },
+  fields: {
+    input: [
+      {
+        name: "subject",
+        label: "Subject",
+        help: "The ticket's subject line, as the customer wrote it.",
+        kind: "text",
+        required: true,
+      },
+      {
+        name: "body",
+        label: "Message",
+        help: "What the customer wrote. Remove names, emails, and account numbers.",
+        kind: "textarea",
+        required: true,
+      },
+    ],
+    label: [
+      {
+        name: "category",
+        label: "Category",
+        help: "The queue it belongs in: billing (charges, invoices, plans), account (sign-in, access, users), bug (something broken), feature_request (something new), or other.",
+        kind: "select",
+        options: CATEGORIES,
+      },
+      {
+        name: "urgency",
+        label: "Urgency",
+        help: "high when people can't work or money is wrong now; low for questions and wishes; normal otherwise.",
+        kind: "select",
+        options: URGENCIES,
+      },
+    ],
+  },
   starter: TRIAGE_STARTERS,
   title: (i) => i.subject,
   describe: (i) => `${i.subject}\n\n${i.body}`,

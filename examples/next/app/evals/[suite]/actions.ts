@@ -75,3 +75,69 @@ export async function rescore(form: FormData) {
   await runner.rescoreRecent(suite);
   revalidatePath(`/evals/${suite}`);
 }
+
+/** A person adds a case. They wrote its answer, so it's confirmed. */
+export async function addCase(form: FormData) {
+  const suite = runner.suiteOrThrow(String(form.get("suite")));
+  if (!suite.labelFromForm) throw new Error("This suite has no answer form");
+  const input = suite.inputFromForm(form);
+  const value = suite.labelFromForm(form);
+  const tags = String(form.get("tags") ?? "")
+    .split(",")
+    .map((t) => t.trim())
+    .filter(Boolean);
+  await prisma.evalCase.create({
+    data: {
+      suite: suite.key,
+      input,
+      tags,
+      split: form.get("split") === "TEST" ? "TEST" : "DEV",
+      status: "ACTIVE",
+      source: "OWNER",
+      labels: {
+        create: {
+          kind: "EXPECTED",
+          status: "CONFIRMED",
+          value,
+          raterRole: "OWNER",
+        },
+      },
+    },
+  });
+  revalidatePath(`/evals/${suite.key}`);
+}
+
+/**
+ * A person changes a case's answer: a new confirmed answer, with the old
+ * ones kept as history. Stored answers are rescored for free.
+ */
+export async function editAnswer(form: FormData) {
+  const suite = runner.suiteOrThrow(String(form.get("suite")));
+  if (!suite.labelFromForm) throw new Error("This suite has no answer form");
+  const caseId = String(form.get("case"));
+  const c = await prisma.evalCase.findFirst({
+    where: { id: caseId, suite: suite.key },
+  });
+  if (!c) throw new Error("Unknown case");
+  await prisma.evalCaseLabel.create({
+    data: {
+      caseId,
+      kind: "EXPECTED",
+      status: "CONFIRMED",
+      value: suite.labelFromForm(form),
+      raterRole: "OWNER",
+    },
+  });
+  after(() => runner.rescoreRecent(suite.key));
+  revalidatePath(`/evals/${suite.key}`);
+}
+
+/** Takes a case out of use; its stored answers stay. */
+export async function retireCase(form: FormData) {
+  const suite = runner.suiteOrThrow(String(form.get("suite")));
+  await prisma.evalCase.updateMany({
+    where: { id: String(form.get("case")), suite: suite.key },
+    data: { status: "RETIRED" },
+  });
+  revalidatePath(`/evals/${suite.key}`);
+}

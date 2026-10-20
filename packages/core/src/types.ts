@@ -117,6 +117,14 @@ export type Suite<Input, Output, Label> = {
   ): CheckResult[][];
   /** Reads a case's input from the add/edit form; throws on bad input. */
   inputFromForm(form: FormData): Input;
+  /** Reads an answer from the add/edit form; throws on bad input. */
+  labelFromForm?(form: FormData): Label;
+  /**
+   * The form's fields, so pages can render one for any suite. Every field
+   * has a plain label and help: people confirming answers weeks later
+   * won't remember what a field means.
+   */
+  fields?: { input: FormField[]; label: FormField[] };
   /** Drafted cases to start from, added as drafts with PENDING labels. */
   starter?: {
     input: Input;
@@ -162,6 +170,36 @@ export type Suite<Input, Output, Label> = {
   /** Fixture suites: what the expected answer's fields mean. */
   labelHelp?: string;
 };
+
+/**
+ * One field of a suite's add/edit form. `name` is the form key (and the
+ * input or answer property it fills). "lines": one item per line, read as
+ * a list.
+ */
+export type FormField = {
+  name: string;
+  label: string;
+  help: string;
+  kind: "text" | "textarea" | "select" | "lines";
+  /** For "select". */
+  options?: readonly string[];
+  required?: boolean;
+};
+
+/** A field's value from a stored input or answer, as the form shows it. */
+export function fieldValue(field: FormField, value: unknown): string {
+  const v = (value as Record<string, unknown> | null)?.[field.name];
+  if (Array.isArray(v)) return v.join("\n");
+  return v === undefined || v === null ? "" : String(v);
+}
+
+/** A "lines" field's value as a list: one item per non-empty line. */
+export function linesOf(form: FormData, name: string): string[] {
+  return String(form.get(name) ?? "")
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+}
 
 // The registry holds suites of different shapes.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -55,3 +55,28 @@ export function Score({ right, total }: { right: number; total: number }) {
     </div>
   );
 }
+
+const CHIP = {
+  live: "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300",
+  fallback: "bg-sky-100 text-sky-800 dark:bg-sky-500/15 dark:text-sky-200",
+  warn: "bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-200",
+  serious: "bg-red-50 text-red-800 dark:bg-red-500/10 dark:text-red-200",
+  neutral: "bg-tint text-muted",
+} as const;
+
+/** A small rounded label: Live, Fallback, Retires …, serious, minor. */
+export function Chip({
+  tone,
+  children,
+}: {
+  tone: keyof typeof CHIP;
+  children: React.ReactNode;
+}) {
+  return (
+    <span
+      className={`inline-flex h-6 items-center gap-1 whitespace-nowrap rounded-full px-2.5 text-xs font-medium leading-none ${CHIP[tone]}`}
+    >
+      {children}
+    </span>
+  );
+}

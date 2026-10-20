@@ -31,7 +31,7 @@
   },
   "devDependencies": {
     "ai": "^6.0.303",
-    "zod": "^3.25.76"
+    "zod": "^4.6.7"
   },
   "author": "Sean Hudson",
   "homepage": "https://github.com/seanhudson/evalkeeper#readme",

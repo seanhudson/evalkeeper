@@ -7,6 +7,15 @@ version may change an interface, and its entry says how to update.
 
 ## Unreleased
 
+## 0.3.0 - 2026-10-20
+
+From adopting Evalkeeper in two apps: the output cap counts like
+temperature, reasoning settings beyond none to high, retiring models
+shown only while in use, importing existing cases, and clearer pages on a
+fresh install. **To update:** add the nullable `maxOutputTokens Int?`
+column to `EvalRun` (see `schema/evalkeeper.prisma`), and have a custom
+`EvalStore` honor `listCases(suite, { includeRetired })`.
+
 ### Added
 
 - The output cap is part of what a test ran with, like temperature:

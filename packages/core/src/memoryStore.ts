@@ -163,9 +163,13 @@ export function memoryStore(): EvalStore &
         f.updatedAt = now();
       }
     },
-    async listCases(suite) {
+    async listCases(suite, opts) {
       return cases
-        .filter((c) => c.suite === suite && c.status !== "RETIRED")
+        .filter(
+          (c) =>
+            c.suite === suite &&
+            (opts?.includeRetired || c.status !== "RETIRED"),
+        )
         .sort((a, b) => +a.createdAt - +b.createdAt);
     },
     async createCase({ labels = [], ...data }) {

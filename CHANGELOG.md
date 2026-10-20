@@ -18,6 +18,15 @@ version may change an interface, and its entry says how to update.
 - `createRunner({ retiringOnBoard: "inUse" })` lists a retiring model on
   the board only while a feature runs on it as its live or fallback model.
   The default, `"always"`, lists every candidate as before. (#20)
+- `importCases` imports existing test data as a suite's cases. It checks
+  every row against the suite's schemas before writing anything
+  (`CaseImportError` lists the bad rows), skips rows it imported before
+  (retired ones included), and splits DEV, TEST, or like new cases.
+  Answers arrive PENDING, or PROVISIONAL when the owner allowed it, tagged
+  `needs-review` and noting who allowed it. `importStarters` adds a
+  suite's `starter` cases the same way. `EvalStore.listCases` takes
+  `{ includeRetired }`; a custom store should honor it (the contract
+  checks). (#22)
 
 ### Changed
 

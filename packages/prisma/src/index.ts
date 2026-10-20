@@ -236,9 +236,11 @@ const json = (v: unknown): object | string | number | boolean | undefined =>
  */
 export function prismaStore(db: PrismaEvalClient): EvalStore {
   return {
-    async listCases(suite) {
+    async listCases(suite, opts) {
       const rows = (await db.evalCase.findMany({
-        where: { suite, status: { not: "RETIRED" } },
+        where: opts?.includeRetired
+          ? { suite }
+          : { suite, status: { not: "RETIRED" } },
         include: { labels: true },
         orderBy: { createdAt: "asc" },
       })) as (EvalCaseRow & { labels: EvalCaseLabelRow[] })[];

@@ -90,6 +90,10 @@ export function describeStoreContract(
       expect((await store.listCases("s")).map((c) => c.id)).toEqual([
         second.id,
       ]);
+      // On request, retired ones too, still oldest first.
+      expect(
+        (await store.listCases("s", { includeRetired: true })).map((c) => c.id),
+      ).toEqual([first.id, second.id]);
     });
 
     it("adds answers without overwriting, and changes their status", async () => {

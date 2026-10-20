@@ -78,6 +78,41 @@ test it: a low score is often the grader's fault.
 Start with 10 to 20 real cases, with personal details removed. Confirm
 each answer yourself. Grow toward 50.
 
+**Cases you already have.** Test data in files, or a suite's `starter`
+cases, comes in with `importCases` (or `importStarters(store, suite)`).
+Map each row to the suite's input and answer; every row is checked
+against the suite's schemas before anything is written, and a rerun skips
+rows it imported before (by `source` and row id), retired ones included.
+Use `split: "DEV"` for the cases you tune against, `"TEST"` for a
+held-out file, and the default `"auto"` for new cases. Run it against your
+development database only.
+
+```ts
+await importCases({
+  store,
+  suite: ticketTriage,
+  source: "tickets-heldout.json",
+  rows,
+  map: (r) => ({
+    id: r.id,
+    input: { body: r.text },
+    label: { queue: r.queue },
+  }),
+  split: "TEST",
+});
+```
+
+Answers arrive pending: a person confirms each on the pages. If the owner
+says "use them so you can test, I'll review later", pass
+`answers: { status: "PROVISIONAL", rater, allowedBy }`. Tests use them,
+every score says it rests on unreviewed answers, and each row is tagged
+`needs-review`. Nothing is imported confirmed.
+
+When an agent drafts the answers, two habits catch most mistakes: have it
+list the cases it's unsure of, so a person reviews those first, and check
+every expected term against the input. In one app, 43 of 218 drafted terms
+were things the input never said.
+
 ## 6. Create the runner
 
 ```ts

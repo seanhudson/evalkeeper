@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import type { FeedbackStore, NewRating } from "./feedback";
 import { createRunner } from "./runner";
+import {
+  SettingsConflict,
+  type Settings,
+  type SettingsStore,
+} from "./settings";
 import type { EvalStore, NewCase } from "./store";
 import type { Suite } from "./types";
 
@@ -278,6 +283,102 @@ export function describeFeedbackStoreContract(
         await store.listFeedback({ since: new Date(Date.now() + 60_000) }),
       ).toHaveLength(0);
       expect(await store.listFeedback({ limit: 1 })).toHaveLength(1);
+    });
+  });
+}
+
+/**
+ * The contract every SettingsStore must meet. `make` must return an empty
+ * store each time it's called.
+ */
+export function describeSettingsStoreContract(
+  name: string,
+  make: () => SettingsStore | Promise<SettingsStore>,
+) {
+  const settings = (model: string): Settings => ({
+    model,
+    fallbackModel: null,
+    reasoningEffort: null,
+    maxOutputTokens: null,
+  });
+  const create = (model: string, expectLive: string | null) => ({
+    create: { settings: settings(model), promptVersion: "p1" },
+    kind: "CHANGE" as const,
+    reason: `to ${model}`,
+    by: "person-1",
+    expectLive,
+  });
+
+  describe(`SettingsStore contract: ${name}`, () => {
+    it("has nothing live until the first switch, then numbers versions", async () => {
+      const store = await make();
+      expect(await store.liveVersion("triage")).toBeNull();
+      const v1 = await store.switchTo("triage", create("a", null));
+      const v2 = await store.switchTo("triage", create("b", v1.id));
+      expect([v1.number, v2.number]).toEqual([1, 2]);
+      expect(v2).toMatchObject({
+        operation: "triage",
+        model: "b",
+        promptVersion: "p1",
+      });
+      expect((await store.liveVersion("triage"))?.id).toBe(v2.id);
+      expect((await store.listVersions("triage")).map((v) => v.number)).toEqual(
+        [2, 1],
+      );
+    });
+
+    it("logs every switch, newest first, with who, why, and evidence", async () => {
+      const store = await make();
+      const v1 = await store.switchTo("triage", create("a", null));
+      await store.switchTo("triage", {
+        ...create("b", v1.id),
+        kind: "PROMOTE",
+        evidence: { runId: "r1", verdict: "BETTER" },
+      });
+      const [latest, first] = await store.listChanges("triage");
+      expect(latest).toMatchObject({
+        kind: "PROMOTE",
+        fromVersionId: v1.id,
+        reason: "to b",
+        by: "person-1",
+        evidence: { runId: "r1", verdict: "BETTER" },
+      });
+      expect(first).toMatchObject({ kind: "CHANGE", fromVersionId: null });
+      expect(await store.listChanges("triage", { limit: 1 })).toHaveLength(1);
+    });
+
+    it("makes an earlier version live again without a new one", async () => {
+      const store = await make();
+      const v1 = await store.switchTo("triage", create("a", null));
+      const v2 = await store.switchTo("triage", create("b", v1.id));
+      await store.switchTo("triage", {
+        versionId: v1.id,
+        kind: "ROLLBACK",
+        reason: "b was worse",
+        by: "person-1",
+        expectLive: v2.id,
+      });
+      expect((await store.liveVersion("triage"))?.id).toBe(v1.id);
+      expect(await store.listVersions("triage")).toHaveLength(2);
+    });
+
+    it("refuses a switch decided against a live version that changed", async () => {
+      const store = await make();
+      const v1 = await store.switchTo("triage", create("a", null));
+      await store.switchTo("triage", create("b", v1.id));
+      await expect(
+        store.switchTo("triage", create("c", v1.id)),
+      ).rejects.toBeInstanceOf(SettingsConflict);
+      expect((await store.liveVersion("triage"))?.model).toBe("b");
+      expect(await store.listVersions("triage")).toHaveLength(2);
+    });
+
+    it("keeps each feature's versions and live one apart", async () => {
+      const store = await make();
+      await store.switchTo("triage", create("a", null));
+      const other = await store.switchTo("summary", create("x", null));
+      expect(other.number).toBe(1);
+      expect((await store.liveVersion("triage"))?.model).toBe("a");
     });
   });
 }

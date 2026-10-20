@@ -1,7 +1,12 @@
 import { PrismaClient } from "@prisma/client";
-import { prismaFeedbackStore, prismaStore } from "@evalkeeper/prisma";
+import {
+  prismaFeedbackStore,
+  prismaSettingsStore,
+  prismaStore,
+} from "@evalkeeper/prisma";
 import {
   describeFeedbackStoreContract,
+  describeSettingsStoreContract,
   describeStoreContract,
 } from "evalkeeper/testing";
 import { afterAll } from "vitest";
@@ -18,6 +23,9 @@ async function empty() {
   await prisma.evalCase.deleteMany();
   await prisma.evalJudgment.deleteMany();
   await prisma.evalFeedback.deleteMany();
+  await prisma.evalSettingsChange.deleteMany();
+  await prisma.evalSettingsLive.deleteMany();
+  await prisma.evalSettingsVersion.deleteMany();
 }
 
 describeStoreContract("prismaStore on SQLite", async () => {
@@ -28,6 +36,11 @@ describeStoreContract("prismaStore on SQLite", async () => {
 describeFeedbackStoreContract("prismaFeedbackStore on SQLite", async () => {
   await empty();
   return prismaFeedbackStore(prisma);
+});
+
+describeSettingsStoreContract("prismaSettingsStore on SQLite", async () => {
+  await empty();
+  return prismaSettingsStore(prisma);
 });
 
 afterAll(async () => {

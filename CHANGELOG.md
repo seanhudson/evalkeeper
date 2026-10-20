@@ -9,6 +9,16 @@ version may change an interface, and its entry says how to update.
 
 ### Added
 
+- Versioned settings (optional): `createSettings` keeps each feature's
+  live model, fallback, reasoning setting, and output limit as numbered
+  versions, logs every change, promotion, rollback, and deploy with who,
+  why, and evidence, and serves the runner's `route`. `SettingsStore`
+  with `prismaSettingsStore` (the `EvalSettings*` tables) and
+  `memoryStore`, and `describeSettingsStoreContract`. A switch decided
+  against a stale live version is refused (`SettingsConflict`). The
+  example uses it for routing, promotions from tests, "Use these" on the
+  suggestion, and a settings history with rollback.
+
 - The weekly check: `runner.startDriftCheck` and `runDriftCheck` run a
   suite's quick set on its live model with fresh answers, and
   `weeklySummary` reports drift (a drop of 15 points against last week's

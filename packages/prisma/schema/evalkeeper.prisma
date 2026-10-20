@@ -139,3 +139,53 @@ model EvalFeedback {
   @@unique([raterId, operation, targetId])
   @@index([operation, updatedAt])
 }
+
+// Versioned model settings (optional): add these three to record every
+// change to which model a feature runs on, with rollback. Skip them if
+// your app keeps its own routing.
+
+/// One feature's settings, numbered; never changed once made.
+model EvalSettingsVersion {
+  id              String   @id @default(uuid())
+  operation       String
+  number          Int
+  model           String
+  fallbackModel   String?
+  reasoningEffort String?
+  maxOutputTokens Int?
+  /// The instructions' hash when this version was made.
+  promptVersion   String?
+  createdAt       DateTime @default(now())
+
+  live      EvalSettingsLive[]
+  changesTo EvalSettingsChange[] @relation("changeTo")
+
+  @@unique([operation, number])
+}
+
+/// Which version each feature runs on now.
+model EvalSettingsLive {
+  operation String              @id
+  versionId String
+  updatedAt DateTime            @updatedAt
+  version   EvalSettingsVersion @relation(fields: [versionId], references: [id])
+}
+
+/// Every switch: who, when, why, and the evidence.
+model EvalSettingsChange {
+  id            String              @id @default(uuid())
+  operation     String
+  /// CHANGE, PROMOTE, ROLLBACK, or DEPLOY.
+  kind          String
+  fromVersionId String?
+  toVersionId   String
+  reason        String?
+  /// Who made it; null for the system.
+  by            String?
+  evidence      Json?
+  createdAt     DateTime            @default(now())
+
+  to EvalSettingsVersion @relation("changeTo", fields: [toVersionId], references: [id])
+
+  @@index([operation, createdAt])
+}

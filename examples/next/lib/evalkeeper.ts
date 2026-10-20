@@ -3,8 +3,10 @@ import { createMeaningJudge } from "@evalkeeper/ai-sdk";
 import {
   prismaFeedbackStore,
   prismaJudgmentCache,
+  prismaSettingsStore,
   prismaStore,
 } from "@evalkeeper/prisma";
+import { createSettings, type Settings } from "evalkeeper";
 import { createRunner, type Route } from "evalkeeper/runner";
 import { prisma } from "./db";
 import { MODELS, availableModels } from "./models";
@@ -18,26 +20,38 @@ import { PROMPT_VERSIONS, SUITES } from "./suites";
  * same in one file like this.
  */
 
-const DEFAULT_ROUTE: Record<string, Route> = {
+/** Each feature's settings in code, used until someone changes them. */
+const DEFAULTS: Record<string, Settings> = {
   ticket_triage: {
     model: "demo-legacy",
     fallbackModel: null,
     reasoningEffort: null,
+    maxOutputTokens: null,
   },
   action_items: {
     model: "demo-quick",
     fallbackModel: null,
     reasoningEffort: null,
+    maxOutputTokens: null,
   },
 };
 
-export async function routeFor(operation: string): Promise<Route> {
-  const r = await prisma.route.findUnique({ where: { operation } });
-  return r
-    ? { model: r.model, fallbackModel: r.fallbackModel, reasoningEffort: null }
-    : (DEFAULT_ROUTE[operation] ??
-        Promise.reject(new Error(`No route for ${operation}`)));
-}
+/**
+ * Which model each feature runs on, as numbered versions with a history
+ * and rollback. Your app's AI calls read `settings.route(operation)` too.
+ */
+export const settings = createSettings({
+  store: prismaSettingsStore(prisma),
+  defaults: (operation) => {
+    const d = DEFAULTS[operation];
+    if (!d) throw new Error(`No default settings for ${operation}`);
+    return d;
+  },
+  promptVersion: (operation) => PROMPT_VERSIONS[operation] ?? "unregistered",
+});
+
+export const routeFor = (operation: string): Promise<Route> =>
+  settings.route(operation);
 
 // A judge model for matching by meaning, when a key is set.
 const judgeModel = process.env.ANTHROPIC_API_KEY

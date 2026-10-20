@@ -15,10 +15,18 @@ import { AnswerKey } from "@/components/evalkeeper/AnswerKey";
 import { RefreshWhile } from "@/components/evalkeeper/RefreshWhile";
 import { Spinner, Submit } from "@/components/evalkeeper/Submit";
 import { Card, Chip, Score, pct } from "@/components/evalkeeper/ui";
-import { runner } from "@/lib/evalkeeper";
+import { runner, settings } from "@/lib/evalkeeper";
+import { SettingsHistory } from "@/components/evalkeeper/SettingsHistory";
 import { MODELS } from "@/lib/models";
 import { SUITE_BY_KEY } from "@/lib/suites";
-import { makeFallback, makeLive, rescore, testAll, testModel } from "./actions";
+import {
+  makeFallback,
+  makeLive,
+  rescore,
+  testAll,
+  testModel,
+  useSuggestion,
+} from "./actions";
 import { InfoTip, Tip } from "@/components/evalkeeper/Tip";
 
 export const dynamic = "force-dynamic";
@@ -38,9 +46,15 @@ export default async function SuitePage({
   const { suite: key } = await params;
   if (!SUITE_BY_KEY[key]) notFound();
   const b = await runner.board(key);
+  // Records a deploy if the instructions changed under the live settings.
+  await settings.syncPrompt(b.suite.operation);
   const { suite, rows } = b;
   const s = suggest(rows, suite.checks, suite.priority, MODELS);
   const testing = rows.some((r) => r.testing);
+  const [history, liveSettings] = await Promise.all([
+    settings.history(suite.operation),
+    settings.current(suite.operation),
+  ]);
   // What testing each model would cost now, counting answers it would reuse.
   const estimates = new Map(
     await Promise.all(
@@ -74,10 +88,16 @@ export default async function SuitePage({
 
       {s && !s.same && (
         <Card className="space-y-3">
-          <h2 className="font-semibold">
-            Suggested
-            <InfoTip term="suggestion" />
-          </h2>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <h2 className="font-semibold">
+              Suggested
+              <InfoTip term="suggestion" />
+            </h2>
+            <form action={useSuggestion}>
+              <input type="hidden" name="suite" value={key} />
+              <Submit>Use these</Submit>
+            </form>
+          </div>
           <p>
             Live: <strong>{s.live.label}</strong>
             {s.fallback && (
@@ -242,6 +262,13 @@ export default async function SuitePage({
           </table>
         </Card>
       </section>
+
+      <SettingsHistory
+        suite={key}
+        entries={history}
+        liveId={liveSettings.version?.id ?? null}
+        label={(m) => MODELS[m]?.label ?? m}
+      />
 
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Checks</h2>

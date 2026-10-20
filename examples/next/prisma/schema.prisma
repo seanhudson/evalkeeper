@@ -1,5 +1,6 @@
-// The example's database: Evalkeeper's tables plus one of the app's own
-// (Route), because your app owns which model each feature runs on.
+// The example's database: Evalkeeper's tables, including the optional
+// versioned settings (which model each feature runs on, with history and
+// rollback), plus DemoAnswer for the "try it" page.
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,13 +10,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/// Which model each AI feature runs on now, and its fallback. Yours may
-/// live in config, env vars, or a table like this one.
-model Route {
-  operation     String  @id
-  model         String
-  fallbackModel String?
-}
 
 /// An answer the "try it" page showed, kept so a rating can point at it.
 /// Your app has its own record of what its AI wrote (a message, a summary).
@@ -162,4 +156,54 @@ model EvalFeedback {
 
   @@unique([raterId, operation, targetId])
   @@index([operation, updatedAt])
+}
+
+// Versioned model settings (optional): add these three to record every
+// change to which model a feature runs on, with rollback. Skip them if
+// your app keeps its own routing.
+
+/// One feature's settings, numbered; never changed once made.
+model EvalSettingsVersion {
+  id              String   @id @default(uuid())
+  operation       String
+  number          Int
+  model           String
+  fallbackModel   String?
+  reasoningEffort String?
+  maxOutputTokens Int?
+  /// The instructions' hash when this version was made.
+  promptVersion   String?
+  createdAt       DateTime @default(now())
+
+  live      EvalSettingsLive[]
+  changesTo EvalSettingsChange[] @relation("changeTo")
+
+  @@unique([operation, number])
+}
+
+/// Which version each feature runs on now.
+model EvalSettingsLive {
+  operation String              @id
+  versionId String
+  updatedAt DateTime            @updatedAt
+  version   EvalSettingsVersion @relation(fields: [versionId], references: [id])
+}
+
+/// Every switch: who, when, why, and the evidence.
+model EvalSettingsChange {
+  id            String              @id @default(uuid())
+  operation     String
+  /// CHANGE, PROMOTE, ROLLBACK, or DEPLOY.
+  kind          String
+  fromVersionId String?
+  toVersionId   String
+  reason        String?
+  /// Who made it; null for the system.
+  by            String?
+  evidence      Json?
+  createdAt     DateTime            @default(now())
+
+  to EvalSettingsVersion @relation("changeTo", fields: [toVersionId], references: [id])
+
+  @@index([operation, createdAt])
 }

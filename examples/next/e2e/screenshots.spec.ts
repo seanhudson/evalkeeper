@@ -26,6 +26,10 @@ test("fill the pages with tests, a rating, and a weekly check", async ({
 }) => {
   await testEveryModel(page, "ticket_triage");
   await testEveryModel(page, "action_items");
+  // A promotion for the settings history.
+  await page.goto("/evals/ticket_triage");
+  await page.getByRole("button", { name: "Use these" }).click();
+  await expect(page.getByText("Live now").first()).toBeVisible();
 
   await page.goto("/try");
   await page.getByLabel("Subject").fill("Charged twice for March");
@@ -77,6 +81,15 @@ for (const scheme of SCHEMES) {
       window.scrollBy(0, -80);
     });
     await shot("answer-key");
+
+    await page.goto("/evals/ticket_triage");
+    await page
+      .getByRole("heading", { name: "Settings history" })
+      .evaluate((el) => {
+        el.scrollIntoView({ block: "start" });
+        window.scrollBy(0, -24);
+      });
+    await shot("history");
 
     await page.goto("/evals/feedback");
     await shot("feedback");

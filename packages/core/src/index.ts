@@ -23,6 +23,7 @@ export * from "./format";
 export * from "./glossary";
 export * from "./feedback";
 export * from "./weekly";
+export * from "./settings";
 export * from "./store";
 export * from "./labels";
 // Server-only (node:crypto): import from "evalkeeper/runner".

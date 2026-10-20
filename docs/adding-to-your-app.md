@@ -17,6 +17,13 @@ Record what each call costs (the AI SDK's `usage` priced with your
 catalog: `costOf` in `@evalkeeper/ai-sdk`) and pass it to the suite's
 `onCost`, so tests show real cost per answer.
 
+Or let Evalkeeper keep it: `createSettings({ store, defaults })` with
+`prismaSettingsStore(prisma)` (the optional `EvalSettings*` tables) keeps
+each feature's settings as versions with a history and rollback, and its
+`settings.route` is the runner's `route`. Your AI calls read
+`settings.route(operation)` too, and call `settings.syncPrompt(operation)`
+where they do, so a deploy that changed the instructions is recorded.
+
 ## 2. Describe your models
 
 A `ModelCatalog` lists each model's label, provider, price per million

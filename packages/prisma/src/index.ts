@@ -1,4 +1,4 @@
-import { cleanRating } from "evalkeeper";
+import { SettingsConflict, cleanRating } from "evalkeeper";
 import type {
   CaseRecord,
   FeedbackRecord,
@@ -13,6 +13,11 @@ import type {
   RunMetrics,
   RunRecord,
   RunStatus,
+  ChangeKind,
+  ReasoningEffort,
+  SettingsChange,
+  SettingsStore,
+  SettingsVersion,
 } from "evalkeeper";
 
 /**
@@ -424,6 +429,177 @@ export function prismaFeedbackStore(db: PrismaFeedbackClient): FeedbackStore {
         where: { id },
         data: { status, caseId },
       });
+    },
+  };
+}
+
+export type EvalSettingsVersionRow = {
+  id: string;
+  operation: string;
+  number: number;
+  model: string;
+  fallbackModel: string | null;
+  reasoningEffort: string | null;
+  maxOutputTokens: number | null;
+  promptVersion: string | null;
+  createdAt: Date;
+};
+export type EvalSettingsLiveRow = {
+  operation: string;
+  versionId: string;
+  updatedAt: Date;
+};
+export type EvalSettingsChangeRow = {
+  id: string;
+  operation: string;
+  kind: string;
+  fromVersionId: string | null;
+  toVersionId: string;
+  reason: string | null;
+  by: string | null;
+  evidence: Json;
+  createdAt: Date;
+};
+
+/** The settings tables, inside or outside a transaction. */
+export type PrismaSettingsTables = {
+  evalSettingsVersion: Delegate<EvalSettingsVersionRow>;
+  evalSettingsLive: Delegate<EvalSettingsLiveRow>;
+  evalSettingsChange: Delegate<EvalSettingsChangeRow>;
+};
+
+/** The part of a generated Prisma client the settings store uses. */
+export type PrismaSettingsClient = PrismaSettingsTables & {
+  $transaction<T>(fn: (tx: PrismaSettingsTables) => Promise<T>): Promise<T>;
+};
+
+const EFFORTS: readonly ReasoningEffort[] = ["none", "low", "medium", "high"];
+const KINDS: readonly ChangeKind[] = [
+  "CHANGE",
+  "PROMOTE",
+  "ROLLBACK",
+  "DEPLOY",
+];
+
+const version = (v: EvalSettingsVersionRow): SettingsVersion => ({
+  id: v.id,
+  operation: v.operation,
+  number: v.number,
+  model: v.model,
+  fallbackModel: v.fallbackModel,
+  reasoningEffort:
+    v.reasoningEffort === null
+      ? null
+      : oneOf(v.reasoningEffort, EFFORTS, "low"),
+  maxOutputTokens: v.maxOutputTokens,
+  promptVersion: v.promptVersion,
+  createdAt: v.createdAt,
+});
+
+const settingsChange = (c: EvalSettingsChangeRow): SettingsChange => ({
+  id: c.id,
+  operation: c.operation,
+  kind: oneOf(c.kind, KINDS, "CHANGE"),
+  fromVersionId: c.fromVersionId,
+  toVersionId: c.toVersionId,
+  reason: c.reason,
+  by: c.by,
+  evidence: c.evidence ?? null,
+  createdAt: c.createdAt,
+});
+
+/**
+ * A SettingsStore on the EvalSettings tables. Each switch runs in one
+ * transaction, and moves the live pointer only if it still points at the
+ * version the switch was decided against, so concurrent saves can't
+ * silently overwrite each other.
+ */
+export function prismaSettingsStore(db: PrismaSettingsClient): SettingsStore {
+  return {
+    async liveVersion(operation) {
+      const live = await db.evalSettingsLive.findUnique({
+        where: { operation },
+      });
+      if (!live) return null;
+      const v = await db.evalSettingsVersion.findUnique({
+        where: { id: live.versionId },
+      });
+      return v ? version(v) : null;
+    },
+    async listVersions(operation) {
+      return (
+        await db.evalSettingsVersion.findMany({
+          where: { operation },
+          orderBy: { number: "desc" },
+        })
+      ).map(version);
+    },
+    async listChanges(operation, opts = {}) {
+      return (
+        await db.evalSettingsChange.findMany({
+          where: { operation },
+          orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+          ...(opts.limit ? { take: opts.limit } : {}),
+        })
+      ).map(settingsChange);
+    },
+    async switchTo(operation, sw) {
+      try {
+        return await db.$transaction(async (tx) => {
+          let to: EvalSettingsVersionRow | null;
+          if (sw.create) {
+            const last = await tx.evalSettingsVersion.findFirst({
+              where: { operation },
+              orderBy: { number: "desc" },
+            });
+            to = await tx.evalSettingsVersion.create({
+              data: {
+                ...sw.create.settings,
+                operation,
+                number: (last?.number ?? 0) + 1,
+                promptVersion: sw.create.promptVersion,
+              },
+            });
+          } else {
+            to = await tx.evalSettingsVersion.findFirst({
+              where: { id: sw.versionId, operation },
+            });
+            if (!to) throw new Error("No such version for this feature");
+          }
+          if (sw.expectLive === null) {
+            // Fails on the primary key if another switch got in first.
+            await tx.evalSettingsLive.create({
+              data: { operation, versionId: to.id },
+            });
+          } else {
+            const moved = await tx.evalSettingsLive.updateMany({
+              where: { operation, versionId: sw.expectLive },
+              data: { versionId: to.id },
+            });
+            if (moved.count !== 1) throw new SettingsConflict(operation);
+          }
+          await tx.evalSettingsChange.create({
+            data: {
+              operation,
+              kind: sw.kind,
+              fromVersionId: sw.expectLive,
+              toVersionId: to.id,
+              reason: sw.reason,
+              by: sw.by,
+              evidence: json(sw.evidence),
+            },
+          });
+          return version(to);
+        });
+      } catch (e) {
+        if (e instanceof SettingsConflict) throw e;
+        if (e instanceof Error && e.message.startsWith("No such version"))
+          throw e;
+        // A unique-key clash: another switch numbered or went live first.
+        if (e instanceof Error && /Unique constraint|P2002/.test(e.message))
+          throw new SettingsConflict(operation);
+        throw e;
+      }
     },
   };
 }

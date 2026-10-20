@@ -54,6 +54,10 @@ design.
   with. Change any of them and older tests say they're out of date.
   Regrading stored answers is free and never pretends an old test ran on
   new inputs.
+- **Every change on the record (optional).** Which model each feature
+  runs on is kept as numbered versions: who changed it, when, why, and the
+  test behind it, with one-click rollback. A change to the instructions in
+  code is recorded too.
 - **A weekly drift check.** Each suite's quick set runs again on its live
   model every week, so a provider quietly changing a model shows up as
   drift, next to models about to retire and features people rate poorly.
@@ -104,6 +108,14 @@ and how every model did on it.
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/answer-key-dark.png">
   <img alt="An open case in the answer key: the ticket's subject and message, its confirmed category and urgency, and which models got it right or wrong, and why." src="docs/screenshots/answer-key-light.png">
+</picture>
+
+**Settings history:** every change to which model is live, with the
+test behind it, and a rollback that asks why.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/history-dark.png">
+  <img alt="A feature's settings history: version 2, promoted and live now, with what changed, who, when, the suggestion's reasons, and a link to the test behind it; version 1, the default from code, with a roll back button that asks why." src="docs/screenshots/history-light.png">
 </picture>
 
 **Feedback:** thumbs from people using the product, ready to become
@@ -229,7 +241,6 @@ you're new to evals, start there.
 ## Roadmap
 
 - A CLI that copies the pages into your app (`npx evalkeeper add pages`).
-- Versioned model settings with rollback, as an optional package.
 - Stores for Drizzle and plain Postgres.
 - Planned upgrades: Prisma 7, zod 4, and AI SDK 7.
 

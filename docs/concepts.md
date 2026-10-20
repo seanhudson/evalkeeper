@@ -109,6 +109,18 @@ worse at the job.
 **Health.** A suite's card says where it stands: not tested, test again,
 needs more cases, room to improve, fair, or good, with the reasons.
 
+**Versioned settings (optional).** A feature's settings (its live model,
+fallback, reasoning setting, and output limit, with the instructions they
+ran with) are numbered versions that never change. Each switch is logged
+with who, when, why, and its evidence: a _change_ by a person, a
+_promotion_ from a test (the test is the evidence), a _rollback_ to an
+earlier version, or a _deploy_ that changed the instructions in code
+under the live settings. A feature never changed runs on its default
+from code; the first change records that default as version 1, so
+there's always something to roll back to. A switch decided against a
+version that's no longer live is refused, so two people saving at once
+can't overwrite each other.
+
 **Weekly check.** Once a week, each suite's quick set runs again on its
 live model at its live reasoning setting, with fresh answers. A provider
 can change a model under the same name; this is how you find out. A drop

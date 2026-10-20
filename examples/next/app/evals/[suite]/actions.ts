@@ -2,9 +2,9 @@
 
 import { after } from "next/server";
 import { revalidatePath } from "next/cache";
-import { formText } from "evalkeeper";
-import { prisma } from "@/lib/db";
-import { routeFor, runner, store } from "@/lib/evalkeeper";
+import { formText, suggest } from "evalkeeper";
+import { runner, settings, store } from "@/lib/evalkeeper";
+import { MODELS } from "@/lib/models";
 import { availableModels } from "@/lib/models";
 
 /**
@@ -34,33 +34,102 @@ export async function testAll(form: FormData) {
   revalidatePath(`/evals/${suite.key}`);
 }
 
-/** Routing is the app's own: here, the example's Route table. */
-async function setRoute(
-  operation: string,
-  change: { model: string } | { fallbackModel: string },
-) {
-  const now = await routeFor(operation);
-  await prisma.route.upsert({
-    where: { operation },
-    create: {
-      operation,
-      model: now.model,
-      fallbackModel: now.fallbackModel,
-      ...change,
+/** Who's acting. In your app: the signed-in admin's id. */
+const BY = "Example admin";
+
+/**
+ * The evidence for a promotion: the model's current test, the live
+ * model's, and how they compared, so the history can show why.
+ */
+async function evidenceFor(suiteKey: string, model: string) {
+  const board = await runner.board(suiteKey);
+  const row = board.rows.find((r) => r.model === model && !r.variant);
+  if (!row?.test || row.test.stale)
+    throw new Error("Test this model on the current cases first");
+  return {
+    row,
+    evidence: {
+      runId: row.test.runId,
+      liveRunId: board.liveRunId,
+      vsLive: row.vsLive,
+      score: { right: row.test.right, total: row.test.total },
     },
-    update: change,
-  });
+  };
 }
+
+const VS: Record<string, string> = {
+  BETTER: "more accurate than live",
+  SAME: "about as accurate as live",
+  WORSE: "less accurate than live",
+  TOO_FEW: "too few cases to compare",
+};
 
 export async function makeLive(form: FormData) {
   const suite = suiteFrom(form);
-  await setRoute(suite.operation, { model: formText(form, "model") });
+  const model = formText(form, "model");
+  const { row, evidence } = await evidenceFor(suite.key, model);
+  await settings.update(
+    suite.operation,
+    { model },
+    {
+      by: BY,
+      reason: `Made ${row.label} live: ${evidence.score.right}/${evidence.score.total}, ${VS[row.vsLive ?? ""] ?? "no comparison"}`,
+      evidence,
+    },
+  );
   revalidatePath("/evals", "layout");
 }
 
 export async function makeFallback(form: FormData) {
   const suite = suiteFrom(form);
-  await setRoute(suite.operation, { fallbackModel: formText(form, "model") });
+  const model = formText(form, "model");
+  const { row, evidence } = await evidenceFor(suite.key, model);
+  await settings.update(
+    suite.operation,
+    { fallbackModel: model },
+    {
+      by: BY,
+      reason: `Made ${row.label} the fallback: ${evidence.score.right}/${evidence.score.total}, from another provider`,
+      evidence,
+    },
+  );
+  revalidatePath("/evals", "layout");
+}
+
+/** Applies the suggestion: its live and fallback models, in one change. */
+export async function useSuggestion(form: FormData) {
+  const suite = suiteFrom(form);
+  const board = await runner.board(suite.key);
+  const s = suggest(board.rows, suite.checks, suite.priority, MODELS);
+  if (!s || s.same) return;
+  await settings.update(
+    suite.operation,
+    {
+      model: s.live.model,
+      fallbackModel: s.fallback?.model ?? null,
+    },
+    {
+      by: BY,
+      reason: s.reasons.join(" "),
+      evidence: {
+        suggestion: s.reasons,
+        live: s.live.test?.runId ?? null,
+        fallback: s.fallback?.test?.runId ?? null,
+      },
+    },
+  );
+  revalidatePath("/evals", "layout");
+}
+
+/** Makes an earlier version live again; a reason is required. */
+export async function rollBackSettings(form: FormData) {
+  const suite = suiteFrom(form);
+  const reason = formText(form, "reason");
+  if (!reason) throw new Error("Say why you're rolling back");
+  await settings.rollBack(suite.operation, formText(form, "version"), {
+    by: BY,
+    reason,
+  });
   revalidatePath("/evals", "layout");
 }
 

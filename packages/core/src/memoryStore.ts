@@ -1,5 +1,11 @@
 import type { FeedbackRecord, FeedbackStore } from "./feedback";
 import { cleanRating } from "./feedback";
+import {
+  SettingsConflict,
+  type SettingsChange,
+  type SettingsStore,
+  type SettingsVersion,
+} from "./settings";
 import type { CaseRecord, EvalStore, OutputRecord, RunRecord } from "./store";
 
 /**
@@ -7,16 +13,22 @@ import type { CaseRecord, EvalStore, OutputRecord, RunRecord } from "./store";
  * adding tables. Everything is gone when the process ends.
  */
 export function memoryStore(): EvalStore &
-  FeedbackStore & {
+  FeedbackStore &
+  SettingsStore & {
     cases: CaseRecord[];
     runs: RunRecord[];
     outputs: OutputRecord[];
     feedback: FeedbackRecord[];
+    versions: SettingsVersion[];
+    changes: SettingsChange[];
   } {
   const cases: CaseRecord[] = [];
   const runs: RunRecord[] = [];
   const outputs: OutputRecord[] = [];
   const feedback: FeedbackRecord[] = [];
+  const versions: SettingsVersion[] = [];
+  const changes: SettingsChange[] = [];
+  const live = new Map<string, string>();
   let n = 0;
   const id = (prefix: string) => `${prefix}_${(++n).toString(36)}`;
   const now = () => new Date();
@@ -26,6 +38,62 @@ export function memoryStore(): EvalStore &
     runs,
     outputs,
     feedback,
+    versions,
+    changes,
+    async liveVersion(operation) {
+      const id = live.get(operation);
+      return versions.find((v) => v.id === id) ?? null;
+    },
+    async listVersions(operation) {
+      return versions
+        .filter((v) => v.operation === operation)
+        .sort((a, b) => b.number - a.number);
+    },
+    async listChanges(operation, opts = {}) {
+      // Kept in the order they happened, so newest first is the reverse.
+      return changes
+        .filter((c) => c.operation === operation)
+        .reverse()
+        .slice(0, opts.limit ?? Infinity);
+    },
+    async switchTo(operation, sw) {
+      // Synchronous from here on, so it's atomic in memory.
+      const fromId = live.get(operation) ?? null;
+      if (fromId !== sw.expectLive) throw new SettingsConflict(operation);
+      let to: SettingsVersion | undefined;
+      if (sw.create) {
+        const last = versions
+          .filter((v) => v.operation === operation)
+          .reduce((n, v) => Math.max(n, v.number), 0);
+        to = {
+          ...sw.create.settings,
+          id: id("ver"),
+          operation,
+          number: last + 1,
+          promptVersion: sw.create.promptVersion,
+          createdAt: now(),
+        };
+        versions.push(to);
+      } else {
+        to = versions.find(
+          (v) => v.id === sw.versionId && v.operation === operation,
+        );
+        if (!to) throw new Error("No such version for this feature");
+      }
+      live.set(operation, to.id);
+      changes.push({
+        id: id("chg"),
+        operation,
+        kind: sw.kind,
+        fromVersionId: fromId,
+        toVersionId: to.id,
+        reason: sw.reason,
+        by: sw.by,
+        evidence: sw.evidence ?? null,
+        createdAt: now(),
+      });
+      return to;
+    },
     async rate(r) {
       const c = cleanRating(r);
       const at = now();

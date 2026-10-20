@@ -94,7 +94,9 @@ export function wordCount(text: string): number {
 export function sentenceCount(text: string): number {
   const t = text.trim();
   if (!t) return 0;
-  const ends = t.match(/[.!?]+(\s|$)/g)?.length ?? 0;
+  // The last mark before a space or the end, so "?!" counts once. Linear:
+  // a run of marks is never retried from each position.
+  const ends = t.match(/[.!?](?=\s|$)/g)?.length ?? 0;
   return /[.!?]["')\]]?$/.test(t) ? ends : ends + 1;
 }
 
@@ -166,7 +168,11 @@ export const NUMBERS_CHECK: CheckDef = {
 /** Numbers in text, with "150k" and "1.5m" also read as 150000 and 1500000. */
 export function numbersIn(text: string): Set<string> {
   const out = new Set<string>();
-  for (const m of text.matchAll(/(\d[\d,]*(?:\.\d+)?)\s*([km])?\b/gi)) {
+  // Starts only where a number starts, and reads it once (the lookahead and
+  // backreference keep the digits from being retried), so long digit runs
+  // stay linear. A number glued to a word ("3rd", "10am") doesn't count.
+  const NUMBER = /(?<![\d,.])(?=(\d[\d,]*(?:\.\d+)?))\1\s*([km])?\b/gi;
+  for (const m of text.matchAll(NUMBER)) {
     const n = Number((m[1] ?? "").replace(/,/g, ""));
     if (!Number.isFinite(n)) continue;
     out.add(String(n));

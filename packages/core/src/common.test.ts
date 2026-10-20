@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   wordPairs,
+  numbersIn,
   inRange,
   inventedNumbers,
   numbersCheck,
@@ -138,5 +139,32 @@ describe("wordPairs", () => {
       [0, 1],
       [1, 0],
     ]);
+  });
+});
+
+describe("grader helpers on hostile input", () => {
+  // Model output is untrusted: these must stay fast on long, odd strings.
+  const fast = (fn: () => unknown) => {
+    const start = performance.now();
+    fn();
+    return performance.now() - start;
+  };
+
+  it("counts sentences in linear time, and the same way", () => {
+    expect(sentenceCount("Hi!! There?! Done")).toBe(3);
+    expect(sentenceCount("One. Two.")).toBe(2);
+    expect(fast(() => sentenceCount("!".repeat(50_000) + "x"))).toBeLessThan(
+      200,
+    );
+  });
+
+  it("finds numbers in linear time, and the same ones", () => {
+    expect([
+      ...numbersIn("Saved $1,200 in 3rd place at 10am, 1.5m users"),
+    ]).toEqual(expect.arrayContaining(["1200", "1.5", "1500000"]));
+    expect(numbersIn("3rd 10am").size).toBe(0);
+    expect(fast(() => numbersIn("9" + "0".repeat(50_000) + "x"))).toBeLessThan(
+      200,
+    );
   });
 });

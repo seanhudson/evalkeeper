@@ -42,7 +42,7 @@ version may change an interface, and its entry says how to update.
 
 ### Fixed
 
-- `sentenceCount` and `numbersIn` could take seconds on long, odd model
+- `sentenceCount`, `numbersIn`, and `inventedNumbers` could take seconds on long, odd model
   output (a run of "!" or a long digit string). Both are linear now, with
   timing tests. Found by CodeQL.
 

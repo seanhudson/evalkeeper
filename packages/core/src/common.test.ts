@@ -167,4 +167,13 @@ describe("grader helpers on hostile input", () => {
       200,
     );
   });
+
+  it("checks for invented numbers in linear time, and the same way", () => {
+    expect(
+      inventedNumbers("Grew revenue 30% to 150k", ["Revenue was 150,000"]),
+    ).toEqual(["30"]);
+    expect(
+      fast(() => inventedNumbers("9" + "0".repeat(50_000) + "x", ["nothing"])),
+    ).toBeLessThan(200);
+  });
 });

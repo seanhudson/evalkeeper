@@ -73,13 +73,21 @@ export function withCountedWords(text: string): string {
  * count as the same). Years and small counts are numbers too: a letter
  * that says "12 years" when the profile says 10 has invented one.
  */
+/**
+ * A number with an optional "k" or "m" ("150k", "1.5m"). It starts only
+ * where a number starts and reads it once (the lookahead and backreference
+ * keep the digits from being retried), so long digit runs in model output
+ * stay linear. A number glued to a word ("3rd", "10am") doesn't count.
+ */
+const NUMBER = /(?<![\d,.])(?=(\d[\d,]*(?:\.\d+)?))\1\s*([km])?\b/gi;
+
 export function inventedNumbers(text: string, sources: string[]): string[] {
   const known = new Set(
     sources.flatMap((s) => [...numbersIn(withNumberWords(s))]),
   );
   const out: string[] = [];
   const claims = withCountedWords(withoutStockPhrases(text));
-  for (const m of claims.matchAll(/\d[\d,]*(?:\.\d+)?\s*[km]?\b/gi)) {
+  for (const m of claims.matchAll(NUMBER)) {
     const found = numbersIn(m[0]);
     if (![...found].some((n) => known.has(n))) out.push(m[0].trim());
   }
@@ -168,10 +176,6 @@ export const NUMBERS_CHECK: CheckDef = {
 /** Numbers in text, with "150k" and "1.5m" also read as 150000 and 1500000. */
 export function numbersIn(text: string): Set<string> {
   const out = new Set<string>();
-  // Starts only where a number starts, and reads it once (the lookahead and
-  // backreference keep the digits from being retried), so long digit runs
-  // stay linear. A number glued to a word ("3rd", "10am") doesn't count.
-  const NUMBER = /(?<![\d,.])(?=(\d[\d,]*(?:\.\d+)?))\1\s*([km])?\b/gi;
   for (const m of text.matchAll(NUMBER)) {
     const n = Number((m[1] ?? "").replace(/,/g, ""));
     if (!Number.isFinite(n)) continue;

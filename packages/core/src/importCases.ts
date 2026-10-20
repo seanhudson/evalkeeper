@@ -1,0 +1,252 @@
+import { nextSplit } from "./quickSet.js";
+import { stableJson } from "./stableJson.js";
+import type { EvalStore, NewCase, NewLabel } from "./store.js";
+import type { AnySuite } from "./types.js";
+
+/** One row of an import, mapped to the suite's shapes. */
+export type ImportedCase = {
+  /** Stable within its source (a row id in the file), so a rerun skips it. */
+  id: string;
+  /** The suite's input; checked against `suite.input`. */
+  input: unknown;
+  /** The answer, checked against `suite.labelValue`; null: none yet. */
+  label: unknown;
+  tags?: string[];
+  note?: string | null;
+  /** This row's set, instead of the import's `split`. */
+  split?: "DEV" | "TEST";
+};
+
+/**
+ * How imported answers arrive. Pending (the default): a person confirms
+ * each one on the pages before tests use it. Provisional: tests use them
+ * now, every score says it rests on unreviewed answers, and the rows carry
+ * `tag` so the review queue is findable. Use provisional only when the
+ * owner said so; `allowedBy` and `at` record who and when. Nothing is
+ * imported confirmed: only a person confirms an answer.
+ */
+export type ImportAnswers =
+  | { status: "PENDING" }
+  | {
+      status: "PROVISIONAL";
+      /** Who drafted the answers: an agent's name, recorded as the rater. */
+      rater: string;
+      /** The person who allowed using them before review. */
+      allowedBy: string;
+      /** When they allowed it; default now. */
+      at?: Date;
+      /** Added to each row's tags; default "needs-review". */
+      tag?: string;
+    };
+
+/** A row that couldn't be imported, and why. */
+export type ImportProblem = { id: string; problem: string };
+
+/** Rows that don't fit the suite. Nothing was written. */
+export class CaseImportError extends Error {
+  readonly problems: ImportProblem[];
+  constructor(source: string, problems: ImportProblem[]) {
+    super(
+      `${problems.length} row${problems.length === 1 ? "" : "s"} in ${source} can't be imported, so none were: ${problems
+        .slice(0, 5)
+        .map((p) => `${p.id} (${p.problem})`)
+        .join("; ")}${problems.length > 5 ? "; …" : ""}`,
+    );
+    this.name = "CaseImportError";
+    this.problems = problems;
+  }
+}
+
+/** What an import did. */
+export type ImportResult = {
+  /** Cases created. */
+  added: number;
+  /** Rows imported before (by source and id), left alone. */
+  skipped: number;
+};
+
+const sourceRefOf = (source: string, id: string) => `${source}#${id}`;
+
+/**
+ * Imports existing test data as cases for one suite. Every row is mapped
+ * and checked against the suite's input and answer schemas first; if any
+ * row fails, nothing is written and `CaseImportError` lists them. Rows
+ * imported before (same source and id, retired ones included) are skipped,
+ * so it can run again after the file grows.
+ *
+ * Splits: "DEV" for cases you tune against, "TEST" for a held-out file,
+ * "auto" (the default) for new cases, split like cases added by hand.
+ *
+ * Run it against your development database; an app's own guard should
+ * refuse a production one.
+ *
+ * @example
+ * ```ts
+ * const { added, skipped } = await importCases({
+ *   store,
+ *   suite: ticketTriage,
+ *   source: "tickets-heldout.json",
+ *   rows: JSON.parse(await readFile("tickets-heldout.json", "utf8")),
+ *   map: (r) => ({ id: r.id, input: { body: r.text }, label: { queue: r.queue } }),
+ *   split: "TEST",
+ * });
+ * ```
+ */
+export async function importCases<Row>(opts: {
+  store: EvalStore;
+  suite: AnySuite;
+  /** Where the rows came from, such as a file name. */
+  source: string;
+  rows: readonly Row[];
+  map: (row: Row, index: number) => ImportedCase;
+  split?: "DEV" | "TEST" | "auto";
+  answers?: ImportAnswers;
+}): Promise<ImportResult> {
+  const { store, suite, source } = opts;
+  const answers = opts.answers ?? { status: "PENDING" as const };
+
+  // 1. Map and check every row before writing anything.
+  const problems: ImportProblem[] = [];
+  const seen = new Set<string>();
+  const mapped: (ImportedCase & { input: unknown; label: unknown })[] = [];
+  opts.rows.forEach((row, i) => {
+    let c: ImportedCase;
+    try {
+      c = opts.map(row, i);
+    } catch (e) {
+      problems.push({
+        id: `row ${i + 1}`,
+        problem: e instanceof Error ? e.message : String(e),
+      });
+      return;
+    }
+    const id = c.id || `row ${i + 1}`;
+    if (!c.id) problems.push({ id, problem: "no id" });
+    else if (seen.has(c.id))
+      problems.push({ id, problem: "the same id as an earlier row" });
+    seen.add(c.id);
+    const input = suite.input.safeParse(c.input);
+    if (!input.success)
+      problems.push({
+        id,
+        problem: `input: ${input.error.issues[0]?.message ?? "invalid"}`,
+      });
+    let label: unknown = null;
+    if (c.label !== null && c.label !== undefined) {
+      const l = suite.labelValue.safeParse(c.label);
+      if (!l.success)
+        problems.push({
+          id,
+          problem: `answer: ${l.error.issues[0]?.message ?? "invalid"}`,
+        });
+      else label = l.data;
+    }
+    if (input.success) mapped.push({ ...c, input: input.data, label });
+  });
+  if (problems.length) throw new CaseImportError(source, problems);
+
+  // 2. Skip what's already there, retired cases included.
+  const existing = await store.listCases(suite.key, { includeRetired: true });
+  const refs = new Set(existing.map((c) => c.sourceRef));
+  const counts = { DEV: 0, TEST: 0 };
+  for (const c of existing) if (c.status !== "RETIRED") counts[c.split] += 1;
+
+  const at =
+    answers.status === "PROVISIONAL" ? (answers.at ?? new Date()) : null;
+  let added = 0;
+  let skipped = 0;
+  for (const c of mapped) {
+    const sourceRef = sourceRefOf(source, c.id);
+    if (refs.has(sourceRef)) {
+      skipped += 1;
+      continue;
+    }
+    const split =
+      c.split ??
+      (opts.split === "DEV" || opts.split === "TEST"
+        ? opts.split
+        : nextSplit(counts));
+    counts[split] += 1;
+    const labels: NewLabel[] = [];
+    if (c.label !== null)
+      labels.push(
+        answers.status === "PROVISIONAL"
+          ? {
+              kind: "EXPECTED",
+              status: "PROVISIONAL",
+              value: c.label,
+              raterRole: "AGENT",
+              raterId: answers.rater,
+              note: `Drafted by ${answers.rater}; ${answers.allowedBy} allowed testing on it before review (${at?.toISOString().slice(0, 10)}).`,
+            }
+          : {
+              kind: "EXPECTED",
+              status: "PENDING",
+              value: c.label,
+              raterRole: "IMPORT",
+              raterId: null,
+              note: null,
+            },
+      );
+    const tags = [...(c.tags ?? [])];
+    if (answers.status === "PROVISIONAL" && c.label !== null) {
+      const tag = answers.tag ?? "needs-review";
+      if (!tags.includes(tag)) tags.push(tag);
+    }
+    const data: NewCase = {
+      suite: suite.key,
+      input: c.input,
+      tags,
+      split,
+      // In use only with an answer tests may grade against.
+      status:
+        c.label !== null && answers.status === "PROVISIONAL"
+          ? "ACTIVE"
+          : "DRAFT",
+      source: "IMPORT",
+      sourceRef,
+      note: c.note ?? null,
+      labels,
+    };
+    await store.createCase(data);
+    refs.add(sourceRef);
+    added += 1;
+  }
+  return { added, skipped };
+}
+
+/** A short, stable id for a starter case: a hash of its input. */
+function starterId(input: unknown): string {
+  // FNV-1a: the core stays free of node:crypto; this only names rows.
+  let h = 0x811c9dc5;
+  for (const ch of stableJson(input)) {
+    h ^= ch.charCodeAt(0);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h.toString(16).padStart(8, "0");
+}
+
+/**
+ * Adds a suite's `starter` cases as drafts with pending answers, for a
+ * person to confirm on the pages. Safe to run again: starters already
+ * added (by their input) are skipped.
+ */
+export function importStarters(
+  store: EvalStore,
+  suite: AnySuite,
+): Promise<ImportResult> {
+  return importCases({
+    store,
+    suite,
+    source: `starter:${suite.key}`,
+    rows: suite.starter ?? [],
+    map: (s) => ({
+      id: starterId(s.input),
+      input: s.input,
+      label: s.label,
+      tags: s.tags,
+      note: s.note,
+      split: s.split,
+    }),
+  });
+}

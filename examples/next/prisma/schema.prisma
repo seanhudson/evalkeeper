@@ -81,6 +81,8 @@ model EvalRun {
   reasoningEffort  String?
   /// The temperature tested; null: none sent.
   temperature      Float?
+  /// The output-token cap tested; null: the call's own default.
+  maxOutputTokens  Int?
   /// ALL, SMOKE, DEV, or TEST.
   set              String    @default("ALL")
   repeats          Int       @default(1)

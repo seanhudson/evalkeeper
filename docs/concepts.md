@@ -57,7 +57,9 @@ dataset version (cases and answers), and the grader version.
 test: score, serious mistakes, time and cost per answer, and how it
 compares with the live model. A _baseline_ (code the app runs instead of a
 model, such as a matcher) can sit on the board too, for comparison; it's
-never suggested.
+never suggested. A retiring model is on the board unless the runner
+says `retiringOnBoard: "inUse"`; then it's listed only while a feature
+still runs on it.
 
 **Decision suite.** A suite for a feature that uses a decision model
 (the AI SDK's `experimental_decide`): typed questions about a state, each
@@ -90,9 +92,9 @@ of paid for twice. Testing with `fresh` calls every time, to measure how
 much answers move between identical requests.
 
 **Out of date.** A test is current when its instructions, dataset
-version, and temperature match today's. Edit a prompt, an output schema's
-description, an answer, or the feature's temperature, and older tests say
-so. Rescoring regrades stored answers for
+version, temperature, and output cap match today's. Edit a prompt, an
+output schema's description, an answer, or the feature's temperature or
+output cap, and older tests say so. Rescoring regrades stored answers for
 free and brings a test up to today's answers, but never up to inputs
 that changed after it ran.
 
@@ -155,8 +157,9 @@ can't overwrite each other.
 live model at its live reasoning setting, with fresh answers. A provider
 can change a model under the same name; this is how you find out. A drop
 of 15 points or more against last week's check of the same model,
-instructions, temperature, and grading is _drift_. A different model,
-prompt, temperature, or grader isn't compared, since that change has a known reason. The check
+instructions, temperature, output cap, and grading is _drift_. A
+different model, prompt, temperature, output cap, or grader isn't
+compared, since that change has a known reason. The check
 also lists quick sets that didn't finish, live and fallback models
 retiring within 60 days, and features with a high thumbs-down share. It
 only reports; a person decides what to change.

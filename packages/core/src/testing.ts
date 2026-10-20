@@ -90,6 +90,10 @@ export function describeStoreContract(
       expect((await store.listCases("s")).map((c) => c.id)).toEqual([
         second.id,
       ]);
+      // On request, retired ones too, still oldest first.
+      expect(
+        (await store.listCases("s", { includeRetired: true })).map((c) => c.id),
+      ).toEqual([first.id, second.id]);
     });
 
     it("adds answers without overwriting, and changes their status", async () => {
@@ -133,6 +137,20 @@ export function describeStoreContract(
       const none = await store.createRun({ ...newRun("s"), temperature: null });
       expect((await store.getRun(warm.id))?.temperature).toBe(0.7);
       expect((await store.getRun(none.id))?.temperature ?? null).toBeNull();
+    });
+
+    it("keeps the output cap a run was tested at", async () => {
+      const store = await make();
+      const capped = await store.createRun({
+        ...newRun("s"),
+        maxOutputTokens: 4000,
+      });
+      const none = await store.createRun({
+        ...newRun("s"),
+        maxOutputTokens: null,
+      });
+      expect((await store.getRun(capped.id))?.maxOutputTokens).toBe(4000);
+      expect((await store.getRun(none.id))?.maxOutputTokens ?? null).toBeNull();
     });
 
     it("updates a run only while it has the status it's guarded by", async () => {
@@ -387,6 +405,21 @@ export function describeSettingsStoreContract(
       ).rejects.toBeInstanceOf(SettingsConflict);
       expect((await store.liveVersion("triage"))?.model).toBe("b");
       expect(await store.listVersions("triage")).toHaveLength(2);
+    });
+
+    it("keeps a version's reasoning setting as named, even a newer one", async () => {
+      const store = await make();
+      const v1 = await store.switchTo("triage", {
+        ...create("a", null),
+        create: {
+          settings: { ...settings("a"), reasoningEffort: "xhigh" },
+          promptVersion: "p1",
+        },
+      });
+      expect(v1.reasoningEffort).toBe("xhigh");
+      expect((await store.liveVersion("triage"))?.reasoningEffort).toBe(
+        "xhigh",
+      );
     });
 
     it("keeps a version's temperature", async () => {

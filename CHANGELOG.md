@@ -7,6 +7,47 @@ version may change an interface, and its entry says how to update.
 
 ## Unreleased
 
+### Added
+
+- The output cap is part of what a test ran with, like temperature:
+  `Route.maxOutputTokens` (`settings.route` returns it), `RunRecord` and
+  the suite's `run` context carry it, it's in the request hash when set,
+  and a test at another cap than the live one is out of date. A raised cap
+  no longer reuses answers cut short under the old one. **To update:** add
+  a nullable `maxOutputTokens Int?` column to `EvalRun`. (#18)
+- `createRunner({ retiringOnBoard: "inUse" })` lists a retiring model on
+  the board only while a feature runs on it as its live or fallback model.
+  The default, `"always"`, lists every candidate as before. (#20)
+- `importCases` imports existing test data as a suite's cases. It checks
+  every row against the suite's schemas before writing anything
+  (`CaseImportError` lists the bad rows), skips rows it imported before
+  (retired ones included), and splits DEV, TEST, or like new cases.
+  Answers arrive PENDING, or PROVISIONAL when the owner allowed it, tagged
+  `needs-review` and noting who allowed it. `importStarters` adds a
+  suite's `starter` cases the same way. `EvalStore.listCases` takes
+  `{ includeRetired }`; a custom store should honor it (the contract
+  checks). (#22)
+
+### Fixed
+
+- The pages explain a fresh install: with no suites, the hub says what a
+  suite is and how to add the first one, and the feedback page no longer
+  links to `/try`, a page only the example app has. (#23)
+
+### Changed
+
+- Reasoning settings beyond none to high: `ReasoningEffort` is any name a
+  provider uses, and `REASONING_EFFORTS` lists the known ones lowest first
+  (`none`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max`). `effortFor`
+  sends a setting below a model's lowest at its lowest (so `none` never
+  reaches a model that rejects it) and one above its highest at its
+  highest. The Prisma store keeps a setting as named; it used to turn any
+  name it didn't know into `low`. (#19)
+- `confirmedLabel` and `isProvisional` are generic over any label with a
+  `status` and `updatedAt`, so pages that read their own label rows share
+  the rule (newest confirmed, else newest provisional) and keep their row
+  type. Code passing `LabelRecord[]` is unaffected. (#21)
+
 ## 0.2.0 - 2026-10-20
 
 What a real app needed to adopt Evalkeeper: settings for apps whose models

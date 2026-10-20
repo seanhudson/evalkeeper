@@ -256,6 +256,7 @@ export function createSettings(opts: {
       fallbackModel: settings.fallbackModel,
       reasoningEffort: settings.reasoningEffort,
       temperature: settings.temperature ?? null,
+      maxOutputTokens: settings.maxOutputTokens,
     };
   }
 

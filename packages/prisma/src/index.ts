@@ -19,7 +19,6 @@ import type {
   RunRecord,
   RunStatus,
   ChangeKind,
-  ReasoningEffort,
   SettingsChange,
   SettingsStore,
   SettingsVersion,
@@ -73,6 +72,7 @@ export type EvalRunRow = {
   promptVersion: string;
   reasoningEffort: string | null;
   temperature: number | null;
+  maxOutputTokens: number | null;
   set: string;
   repeats: number;
   datasetVersion: string | null;
@@ -185,6 +185,7 @@ const run = (r: EvalRunRow): RunRecord => ({
   promptVersion: r.promptVersion,
   reasoningEffort: r.reasoningEffort,
   temperature: r.temperature,
+  maxOutputTokens: r.maxOutputTokens,
   set: oneOf(r.set, SETS, "ALL"),
   repeats: r.repeats,
   datasetVersion: r.datasetVersion,
@@ -235,9 +236,11 @@ const json = (v: unknown): object | string | number | boolean | undefined =>
  */
 export function prismaStore(db: PrismaEvalClient): EvalStore {
   return {
-    async listCases(suite) {
+    async listCases(suite, opts) {
       const rows = (await db.evalCase.findMany({
-        where: { suite, status: { not: "RETIRED" } },
+        where: opts?.includeRetired
+          ? { suite }
+          : { suite, status: { not: "RETIRED" } },
         include: { labels: true },
         orderBy: { createdAt: "asc" },
       })) as (EvalCaseRow & { labels: EvalCaseLabelRow[] })[];
@@ -500,7 +503,6 @@ export type PrismaSettingsClient = PrismaSettingsTables & {
   $transaction<T>(fn: (tx: PrismaSettingsTables) => Promise<T>): Promise<T>;
 };
 
-const EFFORTS: readonly ReasoningEffort[] = ["none", "low", "medium", "high"];
 const KINDS: readonly ChangeKind[] = [
   "CHANGE",
   "PROMOTE",
@@ -514,10 +516,8 @@ const version = (v: EvalSettingsVersionRow): SettingsVersion => ({
   number: v.number,
   model: v.model,
   fallbackModel: v.fallbackModel,
-  reasoningEffort:
-    v.reasoningEffort === null
-      ? null
-      : oneOf(v.reasoningEffort, EFFORTS, "low"),
+  // Any name a provider uses; the catalog says which a model takes.
+  reasoningEffort: v.reasoningEffort,
   maxOutputTokens: v.maxOutputTokens,
   temperature: v.temperature,
   promptVersion: v.promptVersion,

@@ -82,6 +82,11 @@ export type RunRecord = {
    * test at another temperature than the live one shows as out of date.
    */
   temperature?: number | null;
+  /**
+   * The output-token cap tested; null or unset: the call's own default.
+   * Kept like temperature: a test at another cap is out of date.
+   */
+  maxOutputTokens?: number | null;
   set: EvalSet;
   repeats: number;
   /** Changes when the cases or their answers do, so tests compare. */
@@ -139,8 +144,15 @@ export type NewCase = Omit<
  * database, and run describeStoreContract against it.
  */
 export interface EvalStore {
-  /** A suite's cases that aren't retired, with their answers, oldest first. */
-  listCases(suite: string): Promise<CaseRecord[]>;
+  /**
+   * A suite's cases that aren't retired, with their answers, oldest first.
+   * With `includeRetired`, retired ones too (an import checks them, so a
+   * case someone retired isn't added again).
+   */
+  listCases(
+    suite: string,
+    opts?: { includeRetired?: boolean },
+  ): Promise<CaseRecord[]>;
   createCase(data: NewCase): Promise<CaseRecord>;
   /** Adds an answer to a case (answers are never overwritten). */
   addLabel(caseId: string, label: NewLabel): Promise<LabelRecord>;

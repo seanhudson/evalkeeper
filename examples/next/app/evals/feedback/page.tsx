@@ -1,4 +1,3 @@
-import Link from "next/link";
 import {
   asText,
   thumbsSummary,
@@ -103,11 +102,17 @@ export default async function FeedbackPage() {
         </h2>
         {open.length === 0 && (
           <p className="text-sm text-muted">
-            Nothing waiting. Rate an answer on the{" "}
-            <Link href="/try" className="underline">
-              try it
-            </Link>{" "}
-            page to see one here.
+            Nothing waiting. Ratings show up here once an AI feature has a
+            thumbs up and down (step 8 of{" "}
+            <a
+              href="https://github.com/seanhudson/evalkeeper/blob/main/docs/adding-to-your-app.md#8-add-thumbs-to-your-ai-answers-optional"
+              target="_blank"
+              rel="noreferrer"
+              className="underline"
+            >
+              the guide
+            </a>
+            ).
           </p>
         )}
         <div className="space-y-3">

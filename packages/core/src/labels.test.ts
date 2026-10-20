@@ -42,4 +42,25 @@ describe("answers in use", () => {
       confirmedLabel([label("PENDING", 1), label("REJECTED", 2)]),
     ).toBeNull();
   });
+
+  it("works on an app's own label rows and keeps their type", () => {
+    const rows = [
+      {
+        status: "PROVISIONAL",
+        updatedAt: new Date(1),
+        rater: "agent",
+        confidence: 0.6,
+      },
+      {
+        status: "CONFIRMED",
+        updatedAt: new Date(2),
+        rater: "sam",
+        confidence: 1,
+      },
+    ];
+    const l = confirmedLabel(rows);
+    // The extra columns come back typed.
+    expect(l?.rater).toBe("sam");
+    expect(isProvisional(rows.slice(0, 1))).toBe(true);
+  });
 });

@@ -114,6 +114,11 @@ export type Suite<Input, Output, Label> = {
        * temperature was versioned.
        */
       temperature?: number | null;
+      /**
+       * The output-token cap the test runs at, like temperature. Null: send
+       * none (the call's own default).
+       */
+      maxOutputTokens?: number | null;
       onCost: (usd: number) => void;
     },
   ): Promise<Output>;

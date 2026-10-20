@@ -362,3 +362,122 @@ describe("baselines", () => {
     expect(rows.find((r) => r.model === "model-a")?.baseline).toBe(false);
   });
 });
+
+describe("output cap", () => {
+  it("leaves requests without a cap hashed as before", () => {
+    const base = {
+      suite: "upper",
+      model: "model-a",
+      effort: null,
+      prompt: "v1",
+      input: { text: "a" },
+      repeat: 1,
+    };
+    expect(requestHashFor({ ...base, maxOutputTokens: null })).toBe(
+      requestHashFor(base),
+    );
+    expect(requestHashFor({ ...base, maxOutputTokens: 4000 })).not.toBe(
+      requestHashFor(base),
+    );
+  });
+
+  it("tests at the live cap, and never reuses answers from another cap", async () => {
+    let cap: number | null = 1000;
+    const seen: (number | null | undefined)[] = [];
+    const suite = {
+      ...upper,
+      async run(input: { text: string }, ctx: Parameters<typeof upper.run>[1]) {
+        seen.push(ctx.maxOutputTokens);
+        return upper.run(input, ctx);
+      },
+    };
+    const { store, runner } = await setup(["a", "b"], {
+      suites: [suite],
+      route: () => ({
+        model: "model-a",
+        fallbackModel: null,
+        reasoningEffort: null,
+        maxOutputTokens: cap,
+      }),
+      candidates: () => ({ models: ["model-a"] }),
+    });
+    const first = await runner.createRun({ suite: "upper", model: "model-a" });
+    expect(first.run.maxOutputTokens).toBe(1000);
+    await runner.runEval(first.run.id);
+    expect((await runner.board("upper")).rows[0]?.test?.stale).toBe(false);
+
+    // The cap rises: the old test is out of date, and its answers (which an
+    // empty reply under a low cap would poison) aren't reused.
+    cap = 4000;
+    expect((await runner.board("upper")).rows[0]?.test?.stale).toBe(true);
+    await new Promise((r) => setTimeout(r, 5));
+    const second = await runner.createRun({ suite: "upper", model: "model-a" });
+    await runner.runEval(second.run.id);
+    expect(seen).toEqual([1000, 1000, 4000, 4000]);
+    const outputs = await store.listOutputs(second.run.id);
+    expect(outputs.every((o) => !o.reused)).toBe(true);
+    expect((await runner.board("upper")).rows[0]?.test?.stale).toBe(false);
+
+    const weekly = await runner.startDriftCheck("upper");
+    expect((await store.getRun(weekly ?? ""))?.maxOutputTokens).toBe(4000);
+    const given = await runner.createRun({
+      suite: "upper",
+      model: "model-a",
+      maxOutputTokens: 200,
+    });
+    expect(given.run.maxOutputTokens).toBe(200);
+  });
+});
+
+describe("retiring models on the board", () => {
+  const models = {
+    "model-a": { label: "Model A", provider: "acme" },
+    "old-live": { label: "Old live", provider: "acme", retiring: "2027-01" },
+    "old-spare": { label: "Old spare", provider: "other", retiring: "2027-01" },
+    "old-unused": {
+      label: "Old unused",
+      provider: "other",
+      retiring: "2027-01",
+    },
+  };
+  const route = () => ({
+    model: "old-live",
+    fallbackModel: "old-spare",
+    reasoningEffort: null,
+  });
+  const candidates = () => ({
+    models: ["model-a", "old-live", "old-spare", "old-unused"],
+  });
+
+  it("lists every candidate by default", async () => {
+    const { runner } = await setup(["a"], { models, route, candidates });
+    expect((await runner.board("upper")).rows.map((r) => r.model)).toEqual(
+      expect.arrayContaining([
+        "model-a",
+        "old-live",
+        "old-spare",
+        "old-unused",
+      ]),
+    );
+  });
+
+  it("with inUse, lists a retiring model only while a feature runs on it", async () => {
+    const { runner } = await setup(["a"], {
+      models,
+      route,
+      candidates,
+      retiringOnBoard: "inUse",
+    });
+    // A test run before it was hidden doesn't bring it back either.
+    const { run } = await runner.createRun({
+      suite: "upper",
+      model: "old-unused",
+    });
+    await runner.runEval(run.id);
+    const rows = (await runner.board("upper")).rows.map((r) => r.model);
+    expect(rows).toEqual(
+      expect.arrayContaining(["model-a", "old-live", "old-spare"]),
+    );
+    expect(rows).not.toContain("old-unused");
+  });
+});

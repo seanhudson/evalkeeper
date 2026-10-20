@@ -9,6 +9,7 @@ import { compareRuns, type RunOutput } from "./compare.js";
 import { isStuck, shouldContinue } from "./legs.js";
 import {
   effortFor,
+  isBaseline,
   type ModelCatalog,
   type ReasoningEffort,
 } from "./models.js";
@@ -897,6 +898,7 @@ export function createRunner(opts: RunnerOptions) {
               .verdict
           : null;
       const label = opts.models[model]?.label ?? model;
+      const baseline = isBaseline(opts.models, model);
       return {
         key,
         model,
@@ -907,6 +909,7 @@ export function createRunner(opts: RunnerOptions) {
           : label,
         live: key === liveKey,
         fallback: !variant && model === route.fallbackModel,
+        baseline,
         testing: testing.has(key),
         failed:
           lastRun?.status === "FAILED"
@@ -934,6 +937,7 @@ export function createRunner(opts: RunnerOptions) {
         vsLive,
         // Only on up-to-date tests: never promote on an old answer key.
         canMakeLive:
+          !baseline &&
           models.includes(model) &&
           fresh &&
           complete(r) &&
@@ -941,6 +945,7 @@ export function createRunner(opts: RunnerOptions) {
         liveOnly: !fallbackModels.includes(model),
         fallbackOnly: !models.includes(model),
         canMakeFallback:
+          !baseline &&
           fallbackModels.includes(model) &&
           !variant &&
           model !== route.model &&

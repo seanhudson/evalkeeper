@@ -11,11 +11,13 @@ const row = (
     cost = 0.01,
     stale = false,
     failed = 0,
+    baseline = false,
   } = {},
 ) =>
   ({
     label,
     live,
+    baseline,
     test: {
       right,
       total: 10,
@@ -49,6 +51,21 @@ describe("attention", () => {
     expect(a.slowest).toMatchObject({ key: "a", ms: 9000 });
     expect(a.costliest).toMatchObject({ key: "b", usd: 0.2 });
     expect(a.review).toMatchObject({ total: 13, key: "b", most: 10 });
+  });
+
+  it("judges a suite by its best model, not its baseline", () => {
+    const a = attention([
+      {
+        key: "a",
+        label: "A",
+        toReview: 0,
+        rows: [
+          row("L", { live: true, right: 6 }),
+          row("Code", { right: 10, baseline: true }),
+        ],
+      },
+    ]);
+    expect(a.improve).toMatchObject({ best: 0.6, model: "L" });
   });
 
   it("ignores stale and incomplete tests", () => {

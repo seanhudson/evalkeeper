@@ -55,7 +55,9 @@ dataset version (cases and answers), and the grader version.
 
 **Board.** For one suite, every model your app can use, with its latest
 test: score, serious mistakes, time and cost per answer, and how it
-compares with the live model.
+compares with the live model. A _baseline_ (code the app runs instead of a
+model, such as a matcher) can sit on the board too, for comparison; it's
+never suggested.
 
 **Decision suite.** A suite for a feature that uses a decision model
 (the AI SDK's `experimental_decide`): typed questions about a state, each
@@ -114,7 +116,8 @@ A suite may also set `maxSeconds`; slower models are never suggested.
 one:
 
 1. Ruled out: out-of-date or incomplete tests, retiring models, models
-   over the time limit, and anything clearly less accurate than live.
+   over the time limit, baselines, and anything clearly less accurate
+   than live.
 2. A switch scores at least as high as live with no more serious
    mistakes, and needs a real reason: clearly more accurate, at least two
    fewer serious mistakes, or 30% faster or cheaper when the suite favors

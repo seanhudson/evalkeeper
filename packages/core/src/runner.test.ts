@@ -332,3 +332,33 @@ describe("temperature", () => {
     expect((await store.getRun(id ?? ""))?.temperature).toBe(0.3);
   });
 });
+
+describe("baselines", () => {
+  it("shows a baseline on the board, never to make live or the fallback", async () => {
+    const { runner } = await setup(["a", "b", "c"], {
+      models: {
+        "model-a": { label: "Model A", provider: "acme" },
+        matcher: { label: "Matcher (code)", provider: "app", baseline: true },
+      },
+      route: () => ({
+        model: "model-a",
+        fallbackModel: null,
+        reasoningEffort: null,
+      }),
+      candidates: () => ({ models: ["model-a", "matcher"] }),
+    });
+    for (const model of ["model-a", "matcher"]) {
+      const { run } = await runner.createRun({ suite: "upper", model });
+      await runner.runEval(run.id);
+    }
+    const rows = (await runner.board("upper")).rows;
+    const matcher = rows.find((r) => r.model === "matcher");
+    expect(matcher).toMatchObject({
+      baseline: true,
+      canMakeLive: false,
+      canMakeFallback: false,
+    });
+    expect(matcher?.test?.stale).toBe(false);
+    expect(rows.find((r) => r.model === "model-a")?.baseline).toBe(false);
+  });
+});

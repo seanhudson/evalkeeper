@@ -43,7 +43,8 @@ export function attention(boards: SuiteBoard[]): Attention {
   let slowest: Attention["slowest"] = null;
   let costliest: Attention["costliest"] = null;
   for (const b of boards) {
-    const tested = b.rows.filter((r) => current(r));
+    // The best model's score: a baseline is code, not a model to switch to.
+    const tested = b.rows.filter((r) => !r.baseline && current(r));
     if (tested.length) {
       const rateOf = (r: BoardRow) => {
         const t = current(r);

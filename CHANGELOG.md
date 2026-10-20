@@ -31,6 +31,13 @@ version may change an interface, and its entry says how to update.
   `EvalSettingsVersion` (see `schema/evalkeeper.prisma`), and a custom
   `EvalStore` keeps `temperature` on runs. Requests without a temperature
   hash as before, so earlier answers are still reused. (#14)
+- Baselines: `ModelInfo.baseline` marks a catalog entry that is code, not
+  a model (a matcher, a rules engine), so the board shows whether a model
+  beats it. A baseline is tested and compared like any model, but never
+  suggested as live, as the fallback, or as one to watch, and it doesn't
+  count as a tested model in a suite's health or as a suite's best model.
+  `BoardRow.baseline` says which rows are baselines; code that builds board
+  rows by hand sets it. (#16)
 
 ### Changed
 

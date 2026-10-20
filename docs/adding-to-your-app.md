@@ -37,6 +37,11 @@ them), the reasoning settings it accepts, and when the
 provider retires it (`retiring: "2027-01"`). Retiring models are never
 suggested.
 
+To see whether a model beats the code it backs up (a matcher, a rules
+engine), add that code as a catalog entry with `baseline: true` and a
+`run` that calls it. The board compares it like any model, but it's never
+suggested as live or as the fallback.
+
 ## 3. Add the tables
 
 Copy the models from `packages/prisma/schema/evalkeeper.prisma` into your

@@ -1,4 +1,4 @@
-import { retiresLabel, type ModelCatalog } from "./models.js";
+import { isBaseline, retiresLabel, type ModelCatalog } from "./models.js";
 import type { Rate } from "./stats.js";
 import type { CheckDef, SuitePriority } from "./types.js";
 import type { Verdict } from "./compare.js";
@@ -109,8 +109,10 @@ export function suggest<R extends SuggestRow>(
   const retiring = (r: SuggestRow) => retiresLabel(models, r.model);
   const limitMs = priority.maxSeconds ? priority.maxSeconds * 1000 : Infinity;
   const tooSlow = (r: SuggestRow) => ms(r) !== Infinity && ms(r) > limitMs;
+  // Baselines are code, compared on the board but never suggested.
   const tested = rows.filter(
     (r) =>
+      !isBaseline(models, r.model) &&
       r.test &&
       !r.test.stale &&
       !r.test.failedAnswers &&

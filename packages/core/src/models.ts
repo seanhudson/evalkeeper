@@ -44,10 +44,22 @@ export type ModelInfo = {
    * model's own estimate written out, with no distribution for choices.
    */
   decisions?: "native" | "prompted";
+  /**
+   * Code your app runs instead of a model (a matcher, a rules engine) or
+   * alongside it, tested so the board shows whether a model beats it. A
+   * baseline is compared like any model but never suggested as live or as
+   * the fallback. Give it a label that says what it is.
+   */
+  baseline?: boolean;
 };
 
 /** Your app's models, by id. */
 export type ModelCatalog = Record<string, ModelInfo>;
+
+/** Whether a catalog entry is a baseline (code, not a model): never suggested. */
+export function isBaseline(models: ModelCatalog, model: string): boolean {
+  return models[model]?.baseline === true;
+}
 
 /** "January 2027" for a retiring model; null when it isn't retiring. */
 export function retiresLabel(

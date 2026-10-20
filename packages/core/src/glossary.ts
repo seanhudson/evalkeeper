@@ -1,0 +1,48 @@
+/**
+ * What each word on an eval page means, in plain words: one source for
+ * tooltips, pages, and docs, so they never disagree. Keep each entry to a
+ * sentence or two a person can read while hovering.
+ */
+export const GLOSSARY = {
+  score:
+    "How much the model got right on every case in use. With partial credit, parts right of parts expected; otherwise answers with every check passed.",
+  seriousMistakes:
+    "Failed serious checks: mistakes that change what your product does. Models are compared on these first.",
+  time: "Average seconds per answer, from answers the model actually made (reused answers keep their original time).",
+  cost: "Average cost per answer on this model, from your catalog's prices.",
+  againstLive:
+    "A paired comparison with the live model on the same cases: more accurate, about as accurate, less accurate, or too few cases to tell.",
+  live: "The model this feature runs on now.",
+  fallback:
+    "The model that answers when the live model's provider is down. It comes from another provider.",
+  retiring:
+    "The provider has announced a date it stops serving this model. It's never suggested, and a retiring live model gets replaced.",
+  outOfDate:
+    "Cases, answers, or instructions changed since this test ran. Test again, or rescore for free if only answers changed.",
+  serious:
+    "A mistake that changes what the product does. Serious checks should pass 95% of the time unless the check sets its own bar.",
+  minor:
+    "A fair difference of judgment. Minor checks should pass 75% of the time unless the check sets its own bar.",
+  bar: "The pass rate this check should reach.",
+  confirmed: "A person said this answer is right. Tests grade against it.",
+  provisional:
+    "Put to use before anyone reviewed it. Tests use it, and every score says it rests on unreviewed answers.",
+  pending:
+    "Proposed and not reviewed yet. Tests never grade against it until a person confirms it.",
+  dev: "Cases you tune against: change prompts and checks while looking at these.",
+  test: "Cases you only check: never tune against them, so they show how a change does on cases it wasn't fitted to.",
+  suggestion:
+    "Fixed rules pick it, so the reason given is the real one: accuracy first, then the suite's priority. Nothing changes until you choose.",
+  priority:
+    "What this suite cares about after accuracy: speed (someone waits), cost (it runs often in the background), or quality (only accuracy counts).",
+  rescore:
+    "Regrades stored answers with today's checks and answers. No model calls, so it's free.",
+  tags: "What a case tests. The quick set picks cases that cover the most tags.",
+  improve:
+    "The suite whose best tested model scores lowest: where better cases, checks, or instructions would help most.",
+  slowest:
+    "The live model with the longest average answer time, across suites.",
+  costliest: "The live model with the highest cost per answer, across suites.",
+} as const;
+
+export type GlossaryTerm = keyof typeof GLOSSARY;

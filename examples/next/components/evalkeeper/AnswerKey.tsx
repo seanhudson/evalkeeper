@@ -1,5 +1,6 @@
 import {
   allPassed,
+  type GlossaryTerm,
   type AnySuite,
   type BoardRow,
   type CheckResult,
@@ -14,6 +15,7 @@ import { prisma } from "@/lib/db";
 import { FieldValues, Fields } from "./Fields";
 import { Submit } from "./Submit";
 import { Card } from "./ui";
+import { InfoTip, Tip } from "./Tip";
 
 type CaseRow = Awaited<ReturnType<typeof loadCases>>[number];
 
@@ -25,10 +27,13 @@ function loadCases(suite: string) {
   });
 }
 
-const STATUS: Record<string, { text: string; tone: string }> = {
-  CONFIRMED: { text: "Confirmed", tone: "text-good" },
-  PROVISIONAL: { text: "Provisional", tone: "text-warn" },
-  PENDING: { text: "Waiting for review", tone: "text-warn" },
+const STATUS: Record<
+  string,
+  { text: string; tone: string; term: GlossaryTerm }
+> = {
+  CONFIRMED: { text: "Confirmed", tone: "text-good", term: "confirmed" },
+  PROVISIONAL: { text: "Provisional", tone: "text-warn", term: "provisional" },
+  PENDING: { text: "Waiting for review", tone: "text-warn", term: "pending" },
 };
 
 /**
@@ -87,6 +92,7 @@ export async function AnswerKey({
                     className="block text-sm font-medium"
                   >
                     Tags
+                    <InfoTip term="tags" id="new-tags" />
                   </label>
                   <input
                     id="new-tags"
@@ -105,6 +111,10 @@ export async function AnswerKey({
                     className="block text-sm font-medium"
                   >
                     Set
+                    <InfoTip
+                      text="DEV: cases you tune against. TEST: cases you only check, never tune against, so they show how a change does on cases it wasn't fitted to."
+                      id="new-split"
+                    />
                   </label>
                   <select
                     id="new-split"
@@ -178,7 +188,11 @@ function CaseItem({
           {suite.title(input)}
         </span>
         <span className="text-xs text-muted">
-          {status && <span className={status.tone}>{status.text}</span>}
+          {status && (
+            <Tip term={status.term} id={`status-${c.id}`}>
+              <span className={status.tone}>{status.text}</span>
+            </Tip>
+          )}
           {" · "}
           {c.split}
           {results.length > 0 &&
@@ -193,7 +207,11 @@ function CaseItem({
               Input
             </h4>
             {suite.fields ? (
-              <FieldValues fields={suite.fields.input} values={c.input} />
+              <FieldValues
+                fields={suite.fields.input}
+                values={c.input}
+                prefix={`${c.id}-in-`}
+              />
             ) : (
               <pre className="whitespace-pre-wrap text-xs">
                 {suite.describe?.(input) ?? JSON.stringify(c.input, null, 2)}
@@ -205,7 +223,11 @@ function CaseItem({
               Answer
             </h4>
             {answer && suite.fields ? (
-              <FieldValues fields={suite.fields.label} values={answer.value} />
+              <FieldValues
+                fields={suite.fields.label}
+                values={answer.value}
+                prefix={`${c.id}-ans-`}
+              />
             ) : (
               <pre className="whitespace-pre-wrap text-xs">
                 {JSON.stringify(answer?.value ?? null, null, 2)}

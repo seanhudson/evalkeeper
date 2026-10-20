@@ -17,6 +17,7 @@ import { runner } from "@/lib/evalkeeper";
 import { MODELS } from "@/lib/models";
 import { SUITE_BY_KEY } from "@/lib/suites";
 import { makeFallback, makeLive, rescore, testAll, testModel } from "./actions";
+import { InfoTip, Tip } from "@/components/evalkeeper/Tip";
 
 export const dynamic = "force-dynamic";
 
@@ -51,12 +52,16 @@ export default async function SuitePage({
         <p className="readable text-muted">{suite.description}</p>
         <p className="readable text-sm text-muted">
           Priority: {FAVOR_TEXT[suite.priority.favor]}.
+          <InfoTip term="priority" />
         </p>
       </div>
 
       {s && !s.same && (
         <Card className="space-y-3">
-          <h2 className="font-semibold">Suggested</h2>
+          <h2 className="font-semibold">
+            Suggested
+            <InfoTip term="suggestion" />
+          </h2>
           <p>
             Live: <strong>{s.live.label}</strong>
             {s.fallback && (
@@ -87,11 +92,26 @@ export default async function SuitePage({
             <thead className="text-left text-muted">
               <tr className="border-b border-line">
                 <th className="p-3 font-normal">Model</th>
-                <th className="p-3 font-normal">Score</th>
-                <th className="p-3 font-normal">Serious mistakes</th>
-                <th className="p-3 font-normal">Time</th>
-                <th className="p-3 font-normal">Cost</th>
-                <th className="p-3 font-normal">Against live</th>
+                <th className="p-3 font-normal">
+                  Score
+                  <InfoTip term="score" side="bottom" />
+                </th>
+                <th className="p-3 font-normal">
+                  Serious mistakes
+                  <InfoTip term="seriousMistakes" side="bottom" />
+                </th>
+                <th className="p-3 font-normal">
+                  Time
+                  <InfoTip term="time" side="bottom" align="end" />
+                </th>
+                <th className="p-3 font-normal">
+                  Cost
+                  <InfoTip term="cost" side="bottom" align="end" />
+                </th>
+                <th className="p-3 font-normal">
+                  Against live
+                  <InfoTip term="againstLive" side="bottom" align="end" />
+                </th>
                 <th className="p-3" />
               </tr>
             </thead>
@@ -105,14 +125,40 @@ export default async function SuitePage({
                       >
                         {r.label}
                       </span>
-                      {r.live && <Chip tone="live">Live</Chip>}
-                      {r.fallback && <Chip tone="fallback">Fallback</Chip>}
-                      {retiresLabel(MODELS, r.model) && (
-                        <Chip tone="warn">
-                          Retires {retiresLabel(MODELS, r.model)}
-                        </Chip>
+                      {r.live && (
+                        <Tip term="live" side="bottom" id={`live-${r.key}`}>
+                          <Chip tone="live">Live</Chip>
+                        </Tip>
                       )}
-                      {r.test?.stale && <Chip tone="neutral">Out of date</Chip>}
+                      {r.fallback && (
+                        <Tip
+                          term="fallback"
+                          side="bottom"
+                          id={`fallback-${r.key}`}
+                        >
+                          <Chip tone="fallback">Fallback</Chip>
+                        </Tip>
+                      )}
+                      {retiresLabel(MODELS, r.model) && (
+                        <Tip
+                          term="retiring"
+                          side="bottom"
+                          id={`retiring-${r.key}`}
+                        >
+                          <Chip tone="warn">
+                            Retires {retiresLabel(MODELS, r.model)}
+                          </Chip>
+                        </Tip>
+                      )}
+                      {r.test?.stale && (
+                        <Tip
+                          term="outOfDate"
+                          side="bottom"
+                          id={`stale-${r.key}`}
+                        >
+                          <Chip tone="neutral">Out of date</Chip>
+                        </Tip>
+                      )}
                     </div>
                   </td>
                   <td className="p-3">
@@ -184,12 +230,16 @@ export default async function SuitePage({
                 <div className="flex justify-between gap-4">
                   <h3 className="font-medium">{c.label}</h3>
                   <span className="flex items-center gap-2 text-sm text-muted">
-                    <Chip
-                      tone={c.severity === "serious" ? "serious" : "neutral"}
-                    >
-                      {c.severity}
-                    </Chip>
-                    bar {pct(checkBar(c))}
+                    <Tip term={c.severity} id={`severity-${c.key}`}>
+                      <Chip
+                        tone={c.severity === "serious" ? "serious" : "neutral"}
+                      >
+                        {c.severity}
+                      </Chip>
+                    </Tip>
+                    <Tip term="bar" id={`bar-${c.key}`}>
+                      <span>bar {pct(checkBar(c))}</span>
+                    </Tip>
                   </span>
                 </div>
                 <p className="readable text-sm text-muted">{c.description}</p>
@@ -209,9 +259,10 @@ export default async function SuitePage({
           <h2 className="text-lg font-semibold">
             Answer key ({b.cases} cases in use)
           </h2>
-          <form action={rescore}>
+          <form action={rescore} className="flex items-center gap-1">
             <input type="hidden" name="suite" value={key} />
             <Submit variant="quiet">Rescore tests</Submit>
+            <InfoTip term="rescore" />
           </form>
         </div>
         <p className="readable text-sm text-muted">

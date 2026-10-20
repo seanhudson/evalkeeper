@@ -1,9 +1,16 @@
 import Link from "next/link";
-import { attention, perAnswer, seconds, suiteHealth } from "evalkeeper";
+import {
+  attention,
+  perAnswer,
+  seconds,
+  suiteHealth,
+  type GlossaryTerm,
+} from "evalkeeper";
 import { Card, StatusBadge, pct } from "@/components/evalkeeper/ui";
 import { runner } from "@/lib/evalkeeper";
 import { MODELS } from "@/lib/models";
 import { SUITES } from "@/lib/suites";
+import { InfoTip } from "@/components/evalkeeper/Tip";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +38,7 @@ export default async function EvalsHub() {
       <div className="grid gap-4 sm:grid-cols-3">
         <Stat
           title="Most room to improve"
+          term="improve"
           value={needs.improve ? pct(needs.improve.best) : "—"}
           detail={
             needs.improve
@@ -40,6 +48,7 @@ export default async function EvalsHub() {
         />
         <Stat
           title="Slowest live model"
+          term="slowest"
           value={needs.slowest ? seconds(needs.slowest.ms) : "—"}
           detail={
             needs.slowest
@@ -49,6 +58,7 @@ export default async function EvalsHub() {
         />
         <Stat
           title="Costliest live model"
+          term="costliest"
           value={needs.costliest ? perAnswer(needs.costliest.usd) : "—"}
           detail={
             needs.costliest
@@ -102,16 +112,21 @@ export default async function EvalsHub() {
 
 function Stat({
   title,
+  term,
   value,
   detail,
 }: {
   title: string;
+  term: GlossaryTerm;
   value: string;
   detail: string;
 }) {
   return (
     <Card className="space-y-1">
-      <p className="text-sm text-muted">{title}</p>
+      <p className="text-sm text-muted">
+        {title}
+        <InfoTip term={term} />
+      </p>
       <p className="text-2xl font-semibold tabular-nums">{value}</p>
       <p className="text-sm text-muted">{detail}</p>
     </Card>

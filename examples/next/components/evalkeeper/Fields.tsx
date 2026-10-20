@@ -1,4 +1,5 @@
 import { asText, fieldValue, type FormField } from "evalkeeper";
+import { InfoTip } from "./Tip";
 
 /**
  * A suite's form fields, rendered from its field specs: label, input, and
@@ -69,9 +70,12 @@ export function Fields({
 export function FieldValues({
   fields,
   values,
+  prefix = "",
 }: {
   fields: FormField[];
   values: unknown;
+  /** Keeps tooltip ids unique when a page shows several. */
+  prefix?: string;
 }) {
   return (
     <dl className="space-y-2">
@@ -79,7 +83,10 @@ export function FieldValues({
         const v = (values as Record<string, unknown> | null)?.[f.name];
         return (
           <div key={f.name}>
-            <dt className="text-xs text-muted">{f.label}</dt>
+            <dt className="text-xs text-muted">
+              {f.label}
+              <InfoTip text={f.help} id={`${prefix}${f.name}-read`} />
+            </dt>
             <dd className="readable whitespace-pre-wrap">
               {Array.isArray(v) ? (
                 v.length ? (

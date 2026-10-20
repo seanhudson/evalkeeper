@@ -12,7 +12,7 @@
     "e2e": "playwright test"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.129",
+    "@ai-sdk/anthropic": "^4.0.82",
     "@ai-sdk/openai": "^3.0.125",
     "@evalkeeper/ai-sdk": "0.1.0",
     "@evalkeeper/prisma": "0.1.0",

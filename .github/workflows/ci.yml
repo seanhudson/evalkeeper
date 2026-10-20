@@ -31,3 +31,27 @@ jobs:
         run: npm audit --audit-level=high
       - name: Scrub, format, build, typecheck, lint, and test
         run: npm run check
+
+  e2e:
+    name: End-to-end (browser)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npx prisma generate
+        working-directory: examples/next
+      - run: npx playwright install --with-deps chromium
+        working-directory: examples/next
+      - run: npm run e2e
+        working-directory: examples/next
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: examples/next/test-results
+          retention-days: 7

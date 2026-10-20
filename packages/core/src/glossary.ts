@@ -54,7 +54,7 @@ export const GLOSSARY = {
   weeklyCheck:
     "Each suite's quick set, answered again on its live model every week. A drop of 15 points or more against last week's check of the same model, instructions, and grading is drift.",
   versions:
-    "Each numbered version of this feature's settings (model, fallback, reasoning), with who changed it, when, why, and the test behind it. v1 is the defaults from code. Any version can be made live again.",
+    "Each numbered version of this feature's settings (model, fallback, reasoning, output limit, temperature), with who changed it, when, why, and its evidence. Any version can be made live again.",
   suites:
     "One suite per AI feature: its cases, the answers people confirmed, and the checks that grade any model against them. Open one to compare models and choose the live one.",
   answerKey:

@@ -77,6 +77,11 @@ export type RunRecord = {
   promptVersion: string;
   /** The reasoning setting tested; null: the model's own default. */
   reasoningEffort: string | null;
+  /**
+   * The temperature tested; null or unset: none sent. Stores keep it, so a
+   * test at another temperature than the live one shows as out of date.
+   */
+  temperature?: number | null;
   set: EvalSet;
   repeats: number;
   /** Changes when the cases or their answers do, so tests compare. */

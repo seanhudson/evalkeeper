@@ -12,7 +12,8 @@ import type { Route } from "./runner.js";
  */
 
 /**
- * A feature's model settings: live model, fallback, reasoning setting, and output limit.
+ * A feature's model settings: live model, fallback, reasoning setting,
+ * output limit, and temperature.
  */
 export type Settings = {
   model: string;
@@ -21,6 +22,12 @@ export type Settings = {
   reasoningEffort: ReasoningEffort | null;
   /** Null: the call's own default. */
   maxOutputTokens: number | null;
+  /**
+   * The sampling temperature the feature sends. Null or unset: none sent,
+   * so the model's own default. Tests record it, and a test at another
+   * temperature than the live one is out of date.
+   */
+  temperature?: number | null;
 };
 
 /**
@@ -129,7 +136,8 @@ export function sameSettings(a: Settings, b: Settings): boolean {
     a.model === b.model &&
     a.fallbackModel === b.fallbackModel &&
     a.reasoningEffort === b.reasoningEffort &&
-    a.maxOutputTokens === b.maxOutputTokens
+    a.maxOutputTokens === b.maxOutputTokens &&
+    (a.temperature ?? null) === (b.temperature ?? null)
   );
 }
 
@@ -140,6 +148,7 @@ export function settingsOf(v: Settings): Settings {
     fallbackModel: v.fallbackModel,
     reasoningEffort: v.reasoningEffort,
     maxOutputTokens: v.maxOutputTokens,
+    temperature: v.temperature ?? null,
   };
 }
 
@@ -164,6 +173,10 @@ export function describeChange(
   if (from.maxOutputTokens !== to.maxOutputTokens)
     out.push(
       `Output limit: ${from.maxOutputTokens ?? "default"} → ${to.maxOutputTokens ?? "default"}`,
+    );
+  if ((from.temperature ?? null) !== (to.temperature ?? null))
+    out.push(
+      `Temperature: ${from.temperature ?? "default"} → ${to.temperature ?? "default"}`,
     );
   return out;
 }
@@ -242,6 +255,7 @@ export function createSettings(opts: {
       model: settings.model,
       fallbackModel: settings.fallbackModel,
       reasoningEffort: settings.reasoningEffort,
+      temperature: settings.temperature ?? null,
     };
   }
 

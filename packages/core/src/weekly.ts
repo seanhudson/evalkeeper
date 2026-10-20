@@ -104,13 +104,15 @@ export function weeklySummary(args: {
       continue;
     }
     if (r.status !== "SUCCEEDED") continue;
-    // The last check of the same model, instructions, and grading, a day or
-    // more earlier: anything else changed for a known reason.
+    // The last check of the same model, temperature, instructions, and
+    // grading, a day or more earlier: anything else changed for a known
+    // reason.
     const prior = scheduled.find(
       (p) =>
         p.suite === r.suite &&
         p.status === "SUCCEEDED" &&
         p.model === r.model &&
+        (p.temperature ?? null) === (r.temperature ?? null) &&
         p.promptVersion === r.promptVersion &&
         p.graderVersion === r.graderVersion &&
         +r.startedAt - +p.startedAt >= DAY,

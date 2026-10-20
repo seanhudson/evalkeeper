@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { memoryStore } from "./memoryStore.js";
-import { confirmedLabel, createRunner } from "./runner.js";
+import { confirmedLabel, createRunner, requestHashFor } from "./runner.js";
 import type { Suite } from "./types.js";
 
 // A tiny suite: uppercase the text. "boom" fails, "slow" takes a while.
@@ -244,5 +244,91 @@ describe("board", () => {
     // Untested, and the same provider as live.
     expect(b.rows[2]).toMatchObject({ test: null, canMakeFallback: false });
     expect(b.caseResults[store.cases[0]!.id]).toEqual({ passed: 2, models: 2 });
+  });
+});
+
+describe("temperature", () => {
+  it("leaves requests without a temperature hashed as before", () => {
+    const base = {
+      suite: "upper",
+      model: "model-a",
+      effort: null,
+      prompt: "v1",
+      input: { text: "a" },
+      repeat: 1,
+    };
+    expect(requestHashFor({ ...base, temperature: null })).toBe(
+      requestHashFor(base),
+    );
+    expect(requestHashFor({ ...base, temperature: 0.7 })).not.toBe(
+      requestHashFor(base),
+    );
+  });
+
+  it("tests at the live temperature, and says older tests are out of date", async () => {
+    let temperature: number | null = 0.2;
+    const seen: (number | null | undefined)[] = [];
+    const suite = {
+      ...upper,
+      async run(input: { text: string }, ctx: Parameters<typeof upper.run>[1]) {
+        seen.push(ctx.temperature);
+        return upper.run(input, ctx);
+      },
+    };
+    const { store, runner } = await setup(["a", "b"], {
+      suites: [suite],
+      route: () => ({
+        model: "model-a",
+        fallbackModel: null,
+        reasoningEffort: null,
+        temperature,
+      }),
+      candidates: () => ({ models: ["model-a"] }),
+    });
+    const first = await runner.createRun({ suite: "upper", model: "model-a" });
+    expect(first.run.temperature).toBe(0.2);
+    await runner.runEval(first.run.id);
+    expect(seen).toEqual([0.2, 0.2]);
+    expect((await runner.board("upper")).rows[0]?.test?.stale).toBe(false);
+
+    // The live temperature changes: the old test is out of date, and a new
+    // one doesn't reuse answers given at the old temperature.
+    temperature = 0.9;
+    expect((await runner.board("upper")).rows[0]?.test?.stale).toBe(true);
+    // Started later than the first, so the board reads it as the newest.
+    await new Promise((r) => setTimeout(r, 5));
+    const second = await runner.createRun({ suite: "upper", model: "model-a" });
+    await runner.runEval(second.run.id);
+    expect(seen).toEqual([0.2, 0.2, 0.9, 0.9]);
+    const outputs = await store.listOutputs(second.run.id);
+    expect(outputs.every((o) => !o.reused)).toBe(true);
+    expect((await runner.board("upper")).rows[0]?.test?.stale).toBe(false);
+  });
+
+  it("tests at a temperature it's given, and none without a route", async () => {
+    const { runner } = await setup(["a"]);
+    const given = await runner.createRun({
+      suite: "upper",
+      model: "model-a",
+      temperature: 0.5,
+    });
+    expect(given.run.temperature).toBe(0.5);
+    const none = await runner.createRun({ suite: "upper", model: "model-a" });
+    expect(none.run.temperature).toBeNull();
+  });
+
+  it("runs the weekly check at the live temperature", async () => {
+    const { store, runner } = await setup(["a", "b", "c"], {
+      route: () => ({
+        model: "model-a",
+        fallbackModel: null,
+        reasoningEffort: null,
+        temperature: 0.3,
+      }),
+      candidates: () => ({ models: ["model-a"] }),
+    });
+    const id = await runner.startDriftCheck("upper");
+    expect(id).not.toBeNull();
+    expect((await store.getRun(id ?? ""))?.temperature).toBe(0.3);
   });
 });

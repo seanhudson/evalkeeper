@@ -87,9 +87,10 @@ instructions, input, and repeat) from the last 7 days is reused instead
 of paid for twice. Testing with `fresh` calls every time, to measure how
 much answers move between identical requests.
 
-**Out of date.** A test is current when its instructions and dataset
-version match today's. Edit a prompt, an output schema's description, or
-an answer, and older tests say so. Rescoring regrades stored answers for
+**Out of date.** A test is current when its instructions, dataset
+version, and temperature match today's. Edit a prompt, an output schema's
+description, an answer, or the feature's temperature, and older tests say
+so. Rescoring regrades stored answers for
 free and brings a test up to today's answers, but never up to inputs
 that changed after it ran.
 
@@ -133,8 +134,8 @@ worse at the job.
 needs more cases, room to improve, fair, or good, with the reasons.
 
 **Versioned settings (optional).** A feature's settings (its live model,
-fallback, reasoning setting, and output limit, with the instructions they
-ran with) are numbered versions that never change. Each switch is logged
+fallback, reasoning setting, output limit, and temperature, with the
+instructions they ran with) are numbered versions that never change. Each switch is logged
 with who, when, why, and its evidence: a _change_ by a person, a
 _promotion_ from a test (the test is the evidence), a _rollback_ to an
 earlier version, or a _deploy_ that changed the instructions in code
@@ -151,8 +152,8 @@ can't overwrite each other.
 live model at its live reasoning setting, with fresh answers. A provider
 can change a model under the same name; this is how you find out. A drop
 of 15 points or more against last week's check of the same model,
-instructions, and grading is _drift_. A different model, prompt, or
-grader isn't compared, since that change has a known reason. The check
+instructions, temperature, and grading is _drift_. A different model,
+prompt, temperature, or grader isn't compared, since that change has a known reason. The check
 also lists quick sets that didn't finish, live and fallback models
 retiring within 60 days, and features with a high thumbs-down share. It
 only reports; a person decides what to change.

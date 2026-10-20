@@ -54,6 +54,7 @@ describe("versioned settings", () => {
       model: "small",
       fallbackModel: null,
       reasoningEffort: null,
+      temperature: null,
     });
   });
 
@@ -139,7 +140,31 @@ describe("versioned settings", () => {
       ...DEFAULT,
       model: "big",
       fallbackModel: "other",
+      temperature: null,
     });
+  });
+
+  it("versions the temperature with the model", async () => {
+    const { settings } = setup();
+    // Unset and null are the same: no temperature sent.
+    expect(
+      await settings.change(
+        "triage",
+        { ...DEFAULT, temperature: null },
+        { by: "sam", reason: null },
+      ),
+    ).toBeNull();
+    const v2 = await settings.update(
+      "triage",
+      { temperature: 0.4 },
+      { by: "sam", reason: "Steadier answers" },
+    );
+    expect(v2).toMatchObject({ number: 2, temperature: 0.4 });
+    expect((await settings.route("triage")).temperature).toBe(0.4);
+    const [change] = await settings.history("triage");
+    expect(describeChange(change?.from ?? null, v2 ?? DEFAULT)).toEqual([
+      "Temperature: default → 0.4",
+    ]);
   });
 
   it("rolls back to an earlier version, and again is a no-op", async () => {

@@ -21,6 +21,16 @@ version may change an interface, and its entry says how to update.
   an app's existing config as version 1 (only when the feature has none,
   so an import can run again). A first `change` with no default records
   the new settings as version 1. (#13)
+- Temperature is a versioned setting: `Settings.temperature` and
+  `Route.temperature` (null or unset: none sent). A test records the
+  temperature it ran at (`RunRecord.temperature`) and passes it to the
+  suite's `run` as `ctx.temperature`; a test at another temperature than
+  the live one is out of date, answers aren't reused across temperatures,
+  and a temperature change isn't called drift. **To update:** add a
+  nullable `temperature Float?` column to `EvalRun` and
+  `EvalSettingsVersion` (see `schema/evalkeeper.prisma`), and a custom
+  `EvalStore` keeps `temperature` on runs. Requests without a temperature
+  hash as before, so earlier answers are still reused. (#14)
 
 ### Changed
 

@@ -38,6 +38,8 @@ version may change an interface, and its entry says how to update.
   `EvalStore` must pass.
 - `addLabel`, `setLabelStatus`, and `setCaseStatus` on `EvalStore`.
 - Live, Fallback, Retires, and Out of date chips on the model board.
+- README screenshots, light and dark, taken from the production build by
+  `npm run screenshots`.
 - Tests for every feature: unit, runner, store contract, AI adapter (with
   a mock model), suite graders, and end-to-end browser tests of the pages.
 - Coverage limits, pre-commit and pre-push hooks, Dependabot, CodeQL, and
@@ -58,6 +60,11 @@ version may change an interface, and its entry says how to update.
 - Stricter compiler and lint settings across the repo.
 
 ### Fixed
+
+- Tooltips inside an open case all appeared at once (they answered the
+  case's hover too); they now open only for their own trigger.
+- Buttons on the model board no longer wrap onto two lines, and the hub
+  says when every suite already has a model at 100%.
 
 - `sentenceCount`, `numbersIn`, and `inventedNumbers` could take seconds on long, odd model
   output (a run of "!" or a long digit string). Both are linear now, with

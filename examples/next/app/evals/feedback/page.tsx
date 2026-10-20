@@ -3,8 +3,10 @@ import {
   asText,
   thumbsSummary,
   whyNotACase,
+  type AnySuite,
   type FeedbackRecord,
 } from "evalkeeper";
+import { FieldValues } from "@/components/evalkeeper/Fields";
 import { Submit } from "@/components/evalkeeper/Submit";
 import { InfoTip, Tip } from "@/components/evalkeeper/Tip";
 import { Card, Chip, pct } from "@/components/evalkeeper/ui";
@@ -112,6 +114,7 @@ export default async function FeedbackPage() {
           {open.map((f) => (
             <Rating
               key={f.id}
+              fields={suiteFor(f.operation)?.fields}
               f={f}
               feature={label(f.operation)}
               why={whyNotACase(f, suiteFor(f.operation))}
@@ -125,10 +128,12 @@ export default async function FeedbackPage() {
 
 function Rating({
   f,
+  fields,
   feature,
   why,
 }: {
   f: FeedbackRecord;
+  fields: AnySuite["fields"];
   feature: string;
   why: string | null;
 }) {
@@ -149,20 +154,42 @@ function Rating({
           </span>
         </div>
         {f.reason && <p className="readable">&ldquo;{f.reason}&rdquo;</p>}
-        <dl className="grid gap-3 md:grid-cols-2">
-          <div>
-            <dt className="text-xs text-muted">Input</dt>
-            <dd className="whitespace-pre-wrap font-mono text-xs">
-              {f.input === null ? "Not kept" : asText(f.input)}
-            </dd>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-1">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+              Input
+            </p>
+            {f.input === null ? (
+              <p className="text-muted">Not kept</p>
+            ) : fields ? (
+              <FieldValues
+                fields={fields.input}
+                values={f.input}
+                prefix={`${f.id}-in-`}
+              />
+            ) : (
+              <p className="whitespace-pre-wrap font-mono text-xs">
+                {asText(f.input)}
+              </p>
+            )}
           </div>
-          <div>
-            <dt className="text-xs text-muted">Answer</dt>
-            <dd className="whitespace-pre-wrap font-mono text-xs">
-              {asText(f.output) || f.excerpt || "—"}
-            </dd>
+          <div className="space-y-1">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+              Answer
+            </p>
+            {fields && f.output !== null ? (
+              <FieldValues
+                fields={fields.label}
+                values={f.output}
+                prefix={`${f.id}-out-`}
+              />
+            ) : (
+              <p className="whitespace-pre-wrap font-mono text-xs">
+                {asText(f.output) || f.excerpt || "—"}
+              </p>
+            )}
           </div>
-        </dl>
+        </div>
         <div className="flex flex-wrap items-center gap-2">
           {why === null ? (
             <form action={makeCase} className="flex items-center gap-1">

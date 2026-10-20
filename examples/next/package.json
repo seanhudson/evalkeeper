@@ -9,7 +9,8 @@
     "setup": "prisma db push --skip-generate && prisma generate && tsx prisma/seed.ts",
     "typecheck": "prisma generate >/dev/null && tsc --noEmit",
     "test": "DATABASE_URL=file:./test.db prisma db push --skip-generate >/dev/null && vitest run",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "screenshots": "SCREENSHOTS=1 playwright test e2e/screenshots.spec.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.129",

@@ -15,7 +15,7 @@ export function Submit({
     <button
       type="submit"
       disabled={pending}
-      className={`inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm disabled:opacity-60 ${
+      className={`inline-flex items-center gap-2 whitespace-nowrap rounded-md px-3 py-1.5 text-sm disabled:opacity-60 ${
         variant === "primary"
           ? "bg-accent text-white"
           : "border border-line bg-card text-ink hover:bg-tint"

@@ -3,7 +3,9 @@ import { GLOSSARY, type GlossaryTerm } from "evalkeeper";
 /**
  * Tooltips that explain how things work. They open on hover and on
  * keyboard focus, and screen readers read the text as the element's
- * description. No JavaScript: CSS shows them.
+ * description. No JavaScript: CSS shows them. The named group (group/tip)
+ * keeps a tooltip from opening when an outer "group" (an open case) is
+ * hovered.
  *
  *   <InfoTip term="score" />           an (i) after a label
  *   <Tip term="live"><Chip …/></Tip>   explains the thing it wraps
@@ -43,7 +45,7 @@ function Bubble({
     <span
       role="tooltip"
       id={id}
-      className={`pointer-events-none invisible absolute ${side === "top" ? "bottom-full mb-2" : "top-full mt-2"} ${align === "end" ? "right-0" : "left-1/2 -translate-x-1/2"} z-20 w-64 rounded-md border border-line bg-card px-3 py-2 text-left text-xs font-normal normal-case leading-snug tracking-normal text-ink opacity-0 shadow-lg transition-opacity group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100`}
+      className={`pointer-events-none invisible absolute ${side === "top" ? "bottom-full mb-2" : "top-full mt-2"} ${align === "end" ? "right-0" : "left-1/2 -translate-x-1/2"} z-20 w-64 rounded-md border border-line bg-card px-3 py-2 text-left text-xs font-normal normal-case leading-snug tracking-normal text-ink opacity-0 shadow-lg transition-opacity group-focus-within/tip:visible group-focus-within/tip:opacity-100 group-hover/tip:visible group-hover/tip:opacity-100`}
     >
       {text}
     </span>
@@ -55,7 +57,7 @@ export function InfoTip(props: Props) {
   const text = body(props);
   const id = `tip-${props.id ?? props.term ?? "info"}`;
   return (
-    <span className="group relative ml-1 inline-flex align-middle">
+    <span className="group/tip relative ml-1 inline-flex align-middle">
       <button
         type="button"
         aria-describedby={id}
@@ -75,7 +77,7 @@ export function Tip(props: Props & { children: React.ReactNode }) {
   const id = `tip-${props.id ?? props.term ?? "info"}`;
   return (
     <span
-      className="group relative inline-flex"
+      className="group/tip relative inline-flex"
       tabIndex={0}
       aria-describedby={id}
     >

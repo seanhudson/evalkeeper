@@ -24,11 +24,12 @@ CI runs everything again on Node 20 and 22, plus the browser tests,
 
 ## Tests
 
-| Command                            | What it runs                                    |
-| ---------------------------------- | ----------------------------------------------- |
-| `npm test`                         | Unit, contract, and grader tests, with coverage |
-| `npm run e2e` (in `examples/next`) | The pages in a real browser, on demo models     |
-| `npm run check`                    | Everything CI checks except the browser tests   |
+| Command                                    | What it runs                                    |
+| ------------------------------------------ | ----------------------------------------------- |
+| `npm test`                                 | Unit, contract, and grader tests, with coverage |
+| `npm run e2e` (in `examples/next`)         | The pages in a real browser, on demo models     |
+| `npm run check`                            | Everything CI checks except the browser tests   |
+| `npm run screenshots` (in `examples/next`) | Retakes the README screenshots, light and dark  |
 
 Every change ships with its tests; AGENTS.md has the table of which kind.
 Coverage limits never go down.

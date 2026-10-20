@@ -189,7 +189,7 @@ function CaseItem({
       <summary className="flex cursor-pointer list-none flex-wrap items-baseline justify-between gap-2 p-3 text-sm">
         <span className="font-medium">
           <span className="mr-2 inline-block text-muted transition-transform group-open:rotate-90">
-            ›
+            ▸
           </span>
           {suite.title(input)}
         </span>

@@ -7,7 +7,10 @@ evidence instead of vibes, then keep that choice honest as models change.
 [![CI](https://github.com/seanhudson/evalkeeper/actions/workflows/ci.yml/badge.svg)](https://github.com/seanhudson/evalkeeper/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-<!-- Screenshot: docs/screenshot.png, the suite page with its model board. -->
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/board-dark.png">
+  <img alt="A suite's model board: each model's score, serious mistakes, time, and cost, the live and retiring models marked, and the suggested live and fallback models with their reasons." src="docs/screenshots/board-light.png">
+</picture>
 
 ---
 
@@ -84,6 +87,32 @@ ticket, thumb the answer down, and turn it into a case from the feedback
 page. Add `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` to `.env` to test real
 models next to the demo ones; action items are then matched by meaning
 with a judge model instead of by shared words.
+
+## A look around
+
+**The hub:** where every suite stands, what needs attention, and the
+weekly check.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/hub-dark.png">
+  <img alt="The evals hub: stat cards for room to improve, the slowest and costliest live models, and thumbs down this week; the weekly check; and a card per suite." src="docs/screenshots/hub-light.png">
+</picture>
+
+**The answer key:** each case opens to its input, its confirmed answer,
+and how every model did on it.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/answer-key-dark.png">
+  <img alt="An open case in the answer key: the ticket's subject and message, its confirmed category and urgency, and which models got it right or wrong, and why." src="docs/screenshots/answer-key-light.png">
+</picture>
+
+**Feedback:** thumbs from people using the product, ready to become
+cases.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/feedback-dark.png">
+  <img alt="The feedback page: this week's thumbs per feature and a thumbs down waiting for a look, with its reason, input, and answer, and a button to make it a case." src="docs/screenshots/feedback-light.png">
+</picture>
 
 ## Add it to your app
 

@@ -52,9 +52,11 @@ export default async function EvalsHub() {
           term="improve"
           value={needs.improve ? pct(needs.improve.best) : "—"}
           detail={
-            needs.improve
-              ? `${needs.improve.label}, best on ${needs.improve.model}`
-              : "Test a suite to see"
+            !needs.improve
+              ? "Test a suite to see"
+              : needs.improve.best >= 1
+                ? "Every suite has a model scoring 100%"
+                : `${needs.improve.label}, best on ${needs.improve.model}`
           }
         />
         <Stat

@@ -7,6 +7,15 @@ version may change an interface, and its entry says how to update.
 
 ## Unreleased
 
+### Added
+
+- Cached-input prices: `ModelInfo.cachedInputPer1M` and
+  `cacheWriteInputPer1M`, and `priceCall` takes `cachedInput` and
+  `cacheWriteInput` (parts of `input`). `costOf` reads the AI SDK's
+  `usage.inputTokenDetails`, so a test of a mostly cached operation (a chat
+  turn) no longer reads several times its real cost. Models without cache
+  prices cost the same as before. (#15)
+
 ### Changed
 
 - Package descriptions say what Evalkeeper is: an eval harness for

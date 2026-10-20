@@ -181,4 +181,32 @@ describe("costOf", () => {
     expect(costOf(MODELS, "judge", usage)).toBe(2);
     expect(costOf(MODELS, "unknown", usage)).toBeNull();
   });
+
+  it("prices input read from and written to the cache at the cache prices", () => {
+    const models = {
+      cached: {
+        label: "Cached",
+        provider: "acme",
+        inputPer1M: 1,
+        outputPer1M: 2,
+        cachedInputPer1M: 0.1,
+        cacheWriteInputPer1M: 1.25,
+      },
+    };
+    const usage = {
+      inputTokens: 1_000_000,
+      outputTokens: 0,
+      inputTokenDetails: {
+        cacheReadTokens: 800_000,
+        cacheWriteTokens: 100_000,
+      },
+    };
+    expect(costOf(models, "cached", usage)).toBeCloseTo(
+      0.1 * 1 + 0.8 * 0.1 + 0.1 * 1.25,
+    );
+    // A decision's usage has no cache details: all input is plain.
+    expect(
+      costOf(models, "cached", { inputTokens: 1_000_000, outputTokens: 0 }),
+    ).toBe(1);
+  });
 });

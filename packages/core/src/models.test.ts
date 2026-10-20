@@ -8,6 +8,14 @@ import {
 
 const MODELS: ModelCatalog = {
   big: { label: "Big", provider: "acme", inputPer1M: 2, outputPer1M: 10 },
+  cached: {
+    label: "Cached",
+    provider: "acme",
+    inputPer1M: 2,
+    outputPer1M: 10,
+    cachedInputPer1M: 0.2,
+    cacheWriteInputPer1M: 2.5,
+  },
   old: { label: "Old", provider: "acme", retiring: "2027-01-15" },
   thinker: {
     label: "Thinker",
@@ -28,6 +36,35 @@ describe("models", () => {
       priceCall(MODELS, "big", { input: 1_000_000, output: 100_000 }),
     ).toBe(3);
     expect(priceCall(MODELS, "old", { input: 1, output: 1 })).toBeNull();
+  });
+
+  it("prices cached and cache-write input at the cache prices", () => {
+    // 1M input: 600k read from cache, 100k written, 300k plain.
+    const tokens = {
+      input: 1_000_000,
+      output: 0,
+      cachedInput: 600_000,
+      cacheWriteInput: 100_000,
+    };
+    expect(priceCall(MODELS, "cached", tokens)).toBeCloseTo(
+      0.3 * 2 + 0.6 * 0.2 + 0.1 * 2.5,
+    );
+    // Without cache prices, cached input costs the input price.
+    expect(priceCall(MODELS, "big", tokens)).toBeCloseTo(2);
+  });
+
+  it("never counts more cached input than the call had", () => {
+    expect(
+      priceCall(MODELS, "cached", {
+        input: 100,
+        output: 0,
+        cachedInput: 500,
+        cacheWriteInput: 50,
+      }),
+    ).toBeCloseTo((100 * 0.2) / 1e6);
+    expect(
+      priceCall(MODELS, "cached", { input: 100, output: 0, cachedInput: -5 }),
+    ).toBeCloseTo((100 * 2) / 1e6);
   });
 
   it("gives a model the reasoning setting it accepts", () => {

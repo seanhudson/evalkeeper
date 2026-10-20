@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto";
 import { generateText, Output, type LanguageModel } from "ai";
 import { z } from "zod";
-import { priceCall, type ModelCatalog } from "@crowandraven/evalkeeper";
+import type { ModelCatalog } from "@crowandraven/evalkeeper";
+import { costOf } from "./usage.js";
 
 /**
  * Matching expected items to a model's items by meaning, not wording: a
@@ -128,10 +129,7 @@ export function createMeaningJudge(opts: {
       }),
       output: Output.object({ schema }),
     });
-    const usd = priceCall(opts.models ?? {}, opts.modelId, {
-      input: r.usage.inputTokens ?? 0,
-      output: r.usage.outputTokens ?? 0,
-    });
+    const usd = costOf(opts.models ?? {}, opts.modelId, r.usage);
     if (usd !== null) onCost?.(usd);
     return cleanPairs(r.output.pairs, expected.length, actual.length);
   }

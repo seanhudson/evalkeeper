@@ -27,7 +27,8 @@ where they do, so a deploy that changed the instructions is recorded.
 ## 2. Describe your models
 
 A `ModelCatalog` lists each model's label, provider, price per million
-tokens (with its source), the reasoning settings it accepts, and when the
+tokens (with its source, and cached-input prices where the provider has
+them), the reasoning settings it accepts, and when the
 provider retires it (`retiring: "2027-01"`). Retiring models are never
 suggested.
 

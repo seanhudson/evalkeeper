@@ -403,6 +403,21 @@ export function describeSettingsStoreContract(
       expect(await store.listVersions("triage")).toHaveLength(2);
     });
 
+    it("keeps a version's reasoning setting as named, even a newer one", async () => {
+      const store = await make();
+      const v1 = await store.switchTo("triage", {
+        ...create("a", null),
+        create: {
+          settings: { ...settings("a"), reasoningEffort: "xhigh" },
+          promptVersion: "p1",
+        },
+      });
+      expect(v1.reasoningEffort).toBe("xhigh");
+      expect((await store.liveVersion("triage"))?.reasoningEffort).toBe(
+        "xhigh",
+      );
+    });
+
     it("keeps a version's temperature", async () => {
       const store = await make();
       const v1 = await store.switchTo("triage", {

@@ -19,7 +19,6 @@ import type {
   RunRecord,
   RunStatus,
   ChangeKind,
-  ReasoningEffort,
   SettingsChange,
   SettingsStore,
   SettingsVersion,
@@ -502,7 +501,6 @@ export type PrismaSettingsClient = PrismaSettingsTables & {
   $transaction<T>(fn: (tx: PrismaSettingsTables) => Promise<T>): Promise<T>;
 };
 
-const EFFORTS: readonly ReasoningEffort[] = ["none", "low", "medium", "high"];
 const KINDS: readonly ChangeKind[] = [
   "CHANGE",
   "PROMOTE",
@@ -516,10 +514,8 @@ const version = (v: EvalSettingsVersionRow): SettingsVersion => ({
   number: v.number,
   model: v.model,
   fallbackModel: v.fallbackModel,
-  reasoningEffort:
-    v.reasoningEffort === null
-      ? null
-      : oneOf(v.reasoningEffort, EFFORTS, "low"),
+  // Any name a provider uses; the catalog says which a model takes.
+  reasoningEffort: v.reasoningEffort,
   maxOutputTokens: v.maxOutputTokens,
   temperature: v.temperature,
   promptVersion: v.promptVersion,

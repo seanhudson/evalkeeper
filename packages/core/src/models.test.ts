@@ -22,6 +22,13 @@ const MODELS: ModelCatalog = {
     provider: "acme",
     efforts: ["low", "medium", "high"],
   },
+  // Takes the newer settings, and rejects "none".
+  astra: {
+    label: "Astra",
+    provider: "acme",
+    efforts: ["minimal", "low", "medium", "high", "xhigh", "max"],
+  },
+  odd: { label: "Odd", provider: "acme", efforts: ["fast", "deep"] },
 };
 
 describe("models", () => {
@@ -65,6 +72,22 @@ describe("models", () => {
     expect(
       priceCall(MODELS, "cached", { input: 100, output: 0, cachedInput: -5 }),
     ).toBeCloseTo((100 * 2) / 1e6);
+  });
+
+  it("places settings a model lacks against the ones it has", () => {
+    // The newer names are settings like any other.
+    expect(effortFor(MODELS, "astra", "xhigh")).toBe("xhigh");
+    expect(effortFor(MODELS, "astra", "max")).toBe("max");
+    // Below its lowest: its lowest, so "none" never reaches a model that
+    // rejects it.
+    expect(effortFor(MODELS, "astra", "none")).toBe("minimal");
+    expect(effortFor(MODELS, "thinker", "minimal")).toBe("low");
+    // Above its highest: its highest.
+    expect(effortFor(MODELS, "thinker", "xhigh")).toBe("high");
+    // A name it doesn't place, or a model with names of its own: its default.
+    expect(effortFor(MODELS, "thinker", "turbo")).toBeUndefined();
+    expect(effortFor(MODELS, "odd", "deep")).toBe("deep");
+    expect(effortFor(MODELS, "odd", "high")).toBeUndefined();
   });
 
   it("gives a model the reasoning setting it accepts", () => {

@@ -3,10 +3,27 @@
  * pass a catalog in; Evalkeeper never picks a provider itself. Pure.
  */
 
-/** How hard a reasoning model thinks, where the model takes a setting. */
-export const REASONING_EFFORTS = ["none", "low", "medium", "high"] as const;
-/** A reasoning setting a model may accept. */
-export type ReasoningEffort = (typeof REASONING_EFFORTS)[number];
+/**
+ * The reasoning settings providers name, lowest first, so a setting one
+ * model lacks can be placed against the ones it has. A model's own
+ * `efforts` say which it takes.
+ */
+export const REASONING_EFFORTS = [
+  "none",
+  "minimal",
+  "low",
+  "medium",
+  "high",
+  "xhigh",
+  "max",
+] as const;
+/** A setting from REASONING_EFFORTS. */
+export type KnownReasoningEffort = (typeof REASONING_EFFORTS)[number];
+/**
+ * A reasoning setting a model may accept: one of REASONING_EFFORTS, or any
+ * other name a provider uses. The catalog's `efforts` order them per model.
+ */
+export type ReasoningEffort = KnownReasoningEffort | (string & {});
 
 /**
  * What Evalkeeper needs to know about one model: its label, provider, prices, reasoning
@@ -112,8 +129,10 @@ export function priceCall(
 
 /**
  * The effort a model actually gets for a requested one: the same if it
- * takes it; for "none" on a model without it, its lowest; otherwise its own
- * default. Undefined: send nothing.
+ * takes it; one below the lowest it takes (say "none" on a model that
+ * starts at "minimal"), its lowest; one above its highest, its highest;
+ * otherwise (a name it doesn't place) its own default. Undefined: send
+ * nothing.
  */
 export function effortFor(
   models: ModelCatalog,
@@ -123,5 +142,14 @@ export function effortFor(
   const efforts = models[model]?.efforts;
   if (!requested || !efforts) return undefined;
   if (efforts.includes(requested)) return requested;
-  return requested === "none" ? efforts[0] : undefined;
+  const rank = (e: string) =>
+    (REASONING_EFFORTS as readonly string[]).indexOf(e);
+  const want = rank(requested);
+  const lowest = efforts[0];
+  const highest = efforts.at(-1);
+  if (want < 0 || lowest === undefined || highest === undefined)
+    return undefined;
+  if (rank(lowest) >= 0 && want < rank(lowest)) return lowest;
+  if (rank(highest) >= 0 && want > rank(highest)) return highest;
+  return undefined;
 }

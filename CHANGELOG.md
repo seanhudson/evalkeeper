@@ -18,6 +18,13 @@ version may change an interface, and its entry says how to update.
 
 ### Changed
 
+- Reasoning settings beyond none to high: `ReasoningEffort` is any name a
+  provider uses, and `REASONING_EFFORTS` lists the known ones lowest first
+  (`none`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max`). `effortFor`
+  sends a setting below a model's lowest at its lowest (so `none` never
+  reaches a model that rejects it) and one above its highest at its
+  highest. The Prisma store keeps a setting as named; it used to turn any
+  name it didn't know into `low`. (#19)
 - `confirmedLabel` and `isProvisional` are generic over any label with a
   `status` and `updatedAt`, so pages that read their own label rows share
   the rule (newest confirmed, else newest provisional) and keep their row

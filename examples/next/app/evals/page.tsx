@@ -120,6 +120,7 @@ export default async function EvalsHub() {
           Suites
           <InfoTip term="suites" />
         </h2>
+        {boards.length === 0 && <NoSuites />}
         <div className="space-y-4">
           {boards.map((b, i) => {
             const h = suiteHealth(
@@ -144,6 +145,45 @@ export default async function EvalsHub() {
         </div>
       </section>
     </div>
+  );
+}
+
+/** Before the first suite: what a suite is, and how to add one. */
+function NoSuites() {
+  return (
+    <Card className="readable space-y-3 text-sm">
+      <p className="font-semibold">No suites yet</p>
+      <p className="text-muted">
+        A suite tests one AI feature: its cases, the answers a person confirms,
+        and the checks that grade any model against them. To add one:
+      </p>
+      <ol className="list-decimal space-y-2 pl-4">
+        <li>
+          Write it: the input and answer shapes with zod, two or three checks,{" "}
+          <code>run</code>, and <code>grade</code>.
+        </li>
+        <li>
+          Add it to <code>SUITES</code> in <code>lib/evalkeeper/index.ts</code>,
+          with its instructions hash.
+        </li>
+        <li>
+          Add cases (here, or with <code>importCases</code> from files you
+          have), confirm their answers, and test models.
+        </li>
+      </ol>
+      <p className="text-muted">
+        Step by step:{" "}
+        <a
+          href="https://github.com/seanhudson/evalkeeper/blob/main/docs/adding-to-your-app.md#5-write-your-first-suite"
+          target="_blank"
+          rel="noreferrer"
+          className="underline"
+        >
+          Write your first suite
+        </a>
+        .
+      </p>
+    </Card>
   );
 }
 

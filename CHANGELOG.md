@@ -28,6 +28,12 @@ version may change an interface, and its entry says how to update.
   `{ includeRetired }`; a custom store should honor it (the contract
   checks). (#22)
 
+### Fixed
+
+- The pages explain a fresh install: with no suites, the hub says what a
+  suite is and how to add the first one, and the feedback page no longer
+  links to `/try`, a page only the example app has. (#23)
+
 ### Changed
 
 - Reasoning settings beyond none to high: `ReasoningEffort` is any name a

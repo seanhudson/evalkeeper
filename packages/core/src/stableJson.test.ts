@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { newStarters, stableJson } from "./stableJson";
+import { newStarters, stableJson } from "./stableJson.js";
 
 describe("stableJson", () => {
   it("ignores key order at every depth, not array order", () => {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { suggest as suggestWith, type SuggestRow } from "./suggest";
-import type { ModelCatalog } from "./models";
-import type { CheckDef } from "./types";
+import { suggest as suggestWith, type SuggestRow } from "./suggest.js";
+import type { ModelCatalog } from "./models.js";
+import type { CheckDef } from "./types.js";
 
 const checks: CheckDef[] = [
   {

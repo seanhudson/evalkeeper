@@ -1,7 +1,7 @@
-import { answerScore, wilson, type Rate } from "./stats";
-import type { CheckResult } from "./types";
-import { at } from "./util";
-import { mustGet } from "./util";
+import { answerScore, wilson, type Rate } from "./stats.js";
+import type { CheckResult } from "./types.js";
+import { at } from "./util.js";
+import { mustGet } from "./util.js";
 
 /**
  * Comparing two runs of a suite, case by case: the champion (usually the

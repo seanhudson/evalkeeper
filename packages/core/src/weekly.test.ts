@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import type { ThumbsSummary } from "./feedback";
-import type { ModelCatalog } from "./models";
-import type { RunMetrics, RunRecord } from "./store";
-import { SCHEDULED, headline, weeklySummary } from "./weekly";
+import type { ThumbsSummary } from "./feedback.js";
+import type { ModelCatalog } from "./models.js";
+import type { RunMetrics, RunRecord } from "./store.js";
+import { SCHEDULED, headline, weeklySummary } from "./weekly.js";
 
 const DAY = 86_400_000;
 const today = new Date("2026-10-20T12:00:00Z");

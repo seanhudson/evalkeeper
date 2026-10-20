@@ -1,4 +1,4 @@
-import type { CheckResult } from "./types";
+import type { CheckResult } from "./types.js";
 
 /**
  * Summary numbers for a run: pass rates per check with a 95% range, so a

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { GLOSSARY } from "./glossary";
+import { GLOSSARY } from "./glossary.js";
 
 describe("glossary", () => {
   it("keeps every entry short enough to read in a tooltip", () => {

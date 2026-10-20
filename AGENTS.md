@@ -80,10 +80,20 @@ Every change comes with the tests that prove it, at the right level:
 ### Structure
 
 - The core (`packages/core`) stays pure: no database, framework, or
-  provider imports, except `runner.ts`, which may use `node:crypto`.
+  provider imports, except `runner.ts` (`node:crypto`) and `cli/` (the
+  `evalkeeper` command, which reads and writes files).
   Anything that talks to a service is an adapter package.
 - Pages and actions talk to storage through `EvalStore`, never to tables
   directly, so they work with any store.
+- The example's eval pages are the CLI's templates
+  (`packages/core/scripts/build-templates.mjs` copies them). They import
+  only `@/lib/evalkeeper` (the app's wiring), `@/lib/evalkeeper/*` (the
+  copied glue), and `@/components/evalkeeper/*`; links come from
+  `evalsPath`; every page and action calls `requireAdmin()` first. A page
+  that imports anything else breaks the copied app, and
+  `examples/next/test/cli.test.ts` (which typechecks a copy) fails.
+- Relative imports in the packages end in `.js`, so the built packages
+  load in plain Node, not only through a bundler.
 - A change to what a suite's grading means bumps its `graderVersion`.
 - Packages follow semantic versioning. Until 1.0, a minor version may
   change an interface; its changelog entry says how to update.

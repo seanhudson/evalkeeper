@@ -1,4 +1,4 @@
-import type { LabelRecord } from "./store";
+import type { LabelRecord } from "./store.js";
 
 /**
  * The EXPECTED answer tests use: the newest confirmed one, or failing that a

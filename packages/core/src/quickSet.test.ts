@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { nextSplit, pickQuickSet } from "./quickSet";
+import { nextSplit, pickQuickSet } from "./quickSet.js";
 
 const c = (id: string, tags: string[], confirmed = true, day = 1) => ({
   id,

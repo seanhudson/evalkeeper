@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { suiteMetrics, wilson } from "./stats";
+import { suiteMetrics, wilson } from "./stats.js";
 
 describe("wilson", () => {
   it("is honest about small samples", () => {

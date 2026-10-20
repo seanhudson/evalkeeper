@@ -1,8 +1,8 @@
-import type { BoardRow } from "./board";
-import { confidenceFor, TARGET_CASES } from "./summary";
-import { suggest } from "./suggest";
-import type { ModelCatalog } from "./models";
-import { checkBar, type CheckDef, type SuitePriority } from "./types";
+import type { BoardRow } from "./board.js";
+import { confidenceFor, TARGET_CASES } from "./summary.js";
+import { suggest } from "./suggest.js";
+import type { ModelCatalog } from "./models.js";
+import { checkBar, type CheckDef, type SuitePriority } from "./types.js";
 
 /**
  * Where a suite stands, for its card on the evals hub: one status and the

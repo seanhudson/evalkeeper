@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { memoryStore } from "./memoryStore";
-import { createSettings, describeChange, type Settings } from "./settings";
+import { memoryStore } from "./memoryStore.js";
+import { createSettings, describeChange, type Settings } from "./settings.js";
 
 const DEFAULT: Settings = {
   model: "small",

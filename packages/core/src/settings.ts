@@ -1,5 +1,5 @@
-import type { ReasoningEffort } from "./models";
-import type { Route } from "./runner";
+import type { ReasoningEffort } from "./models.js";
+import type { Route } from "./runner.js";
 
 /**
  * Versioned model settings. Each AI feature's settings (its model,

@@ -6,7 +6,7 @@ import {
   fieldValue,
   formText,
   linesOf,
-} from "./types";
+} from "./types.js";
 
 describe("check bars", () => {
   it("defaults by severity and sorts rates against the bar", () => {

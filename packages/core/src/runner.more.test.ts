@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { memoryStore } from "./memoryStore";
-import { commonError, createRunner, datasetVersion } from "./runner";
-import type { NewCase } from "./store";
-import { SCHEDULED } from "./weekly";
-import type { Suite } from "./types";
+import { memoryStore } from "./memoryStore.js";
+import { commonError, createRunner, datasetVersion } from "./runner.js";
+import type { NewCase } from "./store.js";
+import { SCHEDULED } from "./weekly.js";
+import type { Suite } from "./types.js";
 
 /**
  * The runner's features beyond a basic test: sets, repeats, estimates,

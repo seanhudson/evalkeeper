@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { attention } from "./attention";
-import type { BoardRow } from "./board";
+import { attention } from "./attention.js";
+import type { BoardRow } from "./board.js";
 
 const row = (
   label: string,

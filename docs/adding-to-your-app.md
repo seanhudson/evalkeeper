@@ -86,12 +86,35 @@ export const runner = createRunner({
 The continue route checks a secret, answers at once, and calls
 `runner.runEval(runId, opts)` in the background (`after()` in Next.js).
 
-## 7. Copy the pages
+## 7. Add the pages
 
-Copy `examples/next/app/evals` and `examples/next/components/evalkeeper`
-into your app, put them behind your admin check, and restyle them. Server
-actions start tests in the background and the page refreshes while a
-test runs.
+```bash
+npx evalkeeper add pages --base admin/evals
+```
+
+It reads your `tsconfig.json` import alias (`@/*`, `~/*`, and code under
+`src/` all work) and copies:
+
+- the pages, at the base you choose (`app/admin/evals/…`)
+- their components (`components/evalkeeper/…`), including
+  `evalkeeper.css` with the colors the pages use
+- their glue (`lib/evalkeeper/actions.ts`, `weekly.ts`, `cronAuth.ts`,
+  `time.ts`, and `paths.ts` with your base path)
+- the weekly check's cron route (`--no-cron` to leave it out)
+- a starter `lib/evalkeeper/index.ts`, only if you don't have one
+
+Existing files stay as they are unless you pass `--force`, which still
+never touches your `lib/evalkeeper/index.ts`. `--dry-run` shows the plan
+and writes nothing.
+
+Then:
+
+1. Import the colors into your global CSS, right after Tailwind:
+   `@import "../components/evalkeeper/evalkeeper.css";`
+2. Fill in `lib/evalkeeper/index.ts`: your Prisma client, models, suites,
+   and `requireAdmin`. Every page and action calls `requireAdmin` first,
+   and the starter's refuses everyone until you write yours.
+3. Restyle the pages as you like; they're yours now.
 
 ## 8. Add thumbs to your AI answers (optional)
 

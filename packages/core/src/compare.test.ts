@@ -5,7 +5,7 @@ import {
   verdictFor,
   verdictSentence,
   type RunOutput,
-} from "./compare";
+} from "./compare.js";
 
 const out = (
   caseId: string,

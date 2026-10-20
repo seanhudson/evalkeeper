@@ -1,6 +1,6 @@
-import type { NewCase } from "./store";
-import type { AnySuite } from "./types";
-import { thumbsAlert } from "./upkeepRules";
+import type { NewCase } from "./store.js";
+import type { AnySuite } from "./types.js";
+import { thumbsAlert } from "./upkeepRules.js";
 
 /**
  * Thumbs up and down on AI answers in your product, and turning them into

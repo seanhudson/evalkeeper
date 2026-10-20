@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { confirmedLabel, isProvisional } from "./labels";
-import type { LabelRecord } from "./store";
+import { confirmedLabel, isProvisional } from "./labels.js";
+import type { LabelRecord } from "./store.js";
 
 const label = (
   status: LabelRecord["status"],

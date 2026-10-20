@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { suiteMetrics } from "./stats";
-import { confidenceFor, draftsToTarget, summarize } from "./summary";
+import { suiteMetrics } from "./stats.js";
+import { confidenceFor, draftsToTarget, summarize } from "./summary.js";
 
 const checks = [
   {

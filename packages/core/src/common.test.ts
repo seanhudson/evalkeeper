@@ -13,7 +13,7 @@ import {
   hasPhrase,
   withoutStockPhrases,
   withCountedWords,
-} from "./common";
+} from "./common.js";
 
 describe("shared eval checks", () => {
   it("finds he, she, and a sentence opening with they", () => {

@@ -6,8 +6,8 @@ import {
   thumbsSummary,
   whyNotACase,
   type FeedbackRecord,
-} from "./feedback";
-import type { AnySuite, Suite } from "./types";
+} from "./feedback.js";
+import type { AnySuite, Suite } from "./types.js";
 
 type In = { text: string };
 type Out = { label: string };

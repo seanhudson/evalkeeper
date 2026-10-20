@@ -1,4 +1,4 @@
-import type { CheckDef, CheckResult } from "./types";
+import type { CheckDef, CheckResult } from "./types.js";
 
 /**
  * Checks shared by suites: rules many operations' instructions state the

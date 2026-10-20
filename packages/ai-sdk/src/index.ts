@@ -3,6 +3,6 @@
  * editing them marks older tests out of date), price calls from usage, and
  * match answers by meaning with a cached judge model. Server-only.
  */
-export * from "./hash";
-export * from "./judge";
-export * from "./usage";
+export * from "./hash.js";
+export * from "./judge.js";
+export * from "./usage.js";

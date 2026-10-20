@@ -1,4 +1,4 @@
-import { at } from "./util";
+import { at } from "./util.js";
 /**
  * The quick-check set (internally SMOKE): a few cases for a cheap first
  * look, picked by the app rather than by hand. Greedy: confirmed cases

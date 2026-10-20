@@ -4,7 +4,7 @@ import {
   priceCall,
   retiresLabel,
   type ModelCatalog,
-} from "./models";
+} from "./models.js";
 
 const MODELS: ModelCatalog = {
   big: { label: "Big", provider: "acme", inputPer1M: 2, outputPer1M: 10 },

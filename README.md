@@ -199,11 +199,19 @@ await runner.runEval(run.id);
 const board = await runner.board("ticket_triage");
 ```
 
-**5. Copy the pages.** The admin pages in
-[`examples/next/app/evals`](examples/next/app/evals) and their components
-in [`examples/next/components/evalkeeper`](examples/next/components/evalkeeper)
-are meant to be copied into your app and restyled, the way shadcn/ui
-components are. Put them behind your admin check.
+**5. Add the pages.** The eval pages are copied into your app, the way
+shadcn/ui components are, so you can restyle and change them:
+
+```bash
+npx evalkeeper add pages --base admin/evals
+```
+
+It copies the pages, components, and their server actions, fitted to your
+import alias and folders, and never overwrites a file unless you pass
+`--force` (`--dry-run` shows the plan first). It writes
+`lib/evalkeeper/index.ts`, your wiring, only if you don't have one: fill
+in its TODOs, including `requireAdmin`. Until you do, nobody can open the
+pages.
 
 [Adding Evalkeeper to your app](docs/adding-to-your-app.md) has the full
 steps, and [AGENTS.md](AGENTS.md) gives a coding agent what it needs to do
@@ -240,7 +248,6 @@ you're new to evals, start there.
 
 ## Roadmap
 
-- A CLI that copies the pages into your app (`npx evalkeeper add pages`).
 - Stores for Drizzle and plain Postgres.
 - Planned upgrades: Prisma 7, zod 4, and AI SDK 7.
 

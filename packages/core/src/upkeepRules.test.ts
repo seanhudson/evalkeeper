@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { daysUntil, drifted, retiresSoon, thumbsAlert } from "./upkeepRules";
+import { daysUntil, drifted, retiresSoon, thumbsAlert } from "./upkeepRules.js";
 
 describe("weekly check rules", () => {
   it("flags a quick-set drop of 15 points or more", () => {

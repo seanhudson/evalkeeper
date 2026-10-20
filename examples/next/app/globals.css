@@ -1,44 +1,5 @@
 @import "tailwindcss";
-
-:root {
-  --bg: #f7f7f5;
-  --card: #ffffff;
-  --ink: #1c1d1f;
-  --muted: #6b6f76;
-  --line: #e4e4e0;
-  --tint: #f0f0ec;
-  --accent: #3b5bdb;
-  --good: #2f9e44;
-  --warn: #e8890c;
-  --bad: #e03131;
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #141517;
-    --card: #1c1d20;
-    --ink: #ececea;
-    --muted: #9a9ea6;
-    --line: #2c2e33;
-    --tint: #232529;
-    --accent: #748ffc;
-    --good: #51cf66;
-    --warn: #fcc419;
-    --bad: #ff6b6b;
-  }
-}
-
-@theme inline {
-  --color-bg: var(--bg);
-  --color-card: var(--card);
-  --color-ink: var(--ink);
-  --color-muted: var(--muted);
-  --color-line: var(--line);
-  --color-tint: var(--tint);
-  --color-accent: var(--accent);
-  --color-good: var(--good);
-  --color-warn: var(--warn);
-  --color-bad: var(--bad);
-}
+@import "../components/evalkeeper/evalkeeper.css";
 
 body {
   background: var(--bg);
@@ -49,11 +10,6 @@ body {
     -apple-system,
     "Segoe UI",
     sans-serif;
-}
-
-/* Prose never runs the full width of a wide page. */
-.readable {
-  max-width: 65ch;
 }
 
 :focus-visible {

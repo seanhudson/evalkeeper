@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import type { FeedbackStore, NewRating } from "./feedback";
-import { createRunner } from "./runner";
+import type { FeedbackStore, NewRating } from "./feedback.js";
+import { createRunner } from "./runner.js";
 import {
   SettingsConflict,
   type Settings,
   type SettingsStore,
-} from "./settings";
-import type { EvalStore, NewCase } from "./store";
-import type { Suite } from "./types";
+} from "./settings.js";
+import type { EvalStore, NewCase } from "./store.js";
+import type { Suite } from "./types.js";
 
 /**
  * The contract every EvalStore must meet, as Vitest tests. Run it against

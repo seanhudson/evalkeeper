@@ -6,7 +6,7 @@ import {
   isStaleDraft,
   nearDuplicates,
   tagCounts,
-} from "./prune";
+} from "./prune.js";
 
 describe("pruning", () => {
   it("calls a case easy only when enough models all get it right", () => {

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { memoryStore } from "./memoryStore";
-import { confirmedLabel, createRunner } from "./runner";
-import type { Suite } from "./types";
+import { memoryStore } from "./memoryStore.js";
+import { confirmedLabel, createRunner } from "./runner.js";
+import type { Suite } from "./types.js";
 
 // A tiny suite: uppercase the text. "boom" fails, "slow" takes a while.
 let calls = 0;

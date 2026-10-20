@@ -1,5 +1,5 @@
-import { stableJson } from "./stableJson";
-import { at } from "./util";
+import { stableJson } from "./stableJson.js";
+import { at } from "./util.js";
 
 /**
  * Keeping an answer key useful: cases every model gets right (easy), cases

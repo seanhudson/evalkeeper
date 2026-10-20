@@ -1,12 +1,17 @@
-import type { FeedbackRecord, FeedbackStore } from "./feedback";
-import { cleanRating } from "./feedback";
+import type { FeedbackRecord, FeedbackStore } from "./feedback.js";
+import { cleanRating } from "./feedback.js";
 import {
   SettingsConflict,
   type SettingsChange,
   type SettingsStore,
   type SettingsVersion,
-} from "./settings";
-import type { CaseRecord, EvalStore, OutputRecord, RunRecord } from "./store";
+} from "./settings.js";
+import type {
+  CaseRecord,
+  EvalStore,
+  OutputRecord,
+  RunRecord,
+} from "./store.js";
 
 /**
  * An EvalStore in memory: for tests, demos, and trying Evalkeeper before

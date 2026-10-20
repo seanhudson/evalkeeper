@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { MockLanguageModelV3 } from "ai/test";
 import { z } from "zod";
-import { cleanPairs, createMeaningJudge, type JudgmentCache } from "./judge";
-import { instructionsHash, promptHash, slot } from "./hash";
-import { costOf } from "./usage";
+import { cleanPairs, createMeaningJudge, type JudgmentCache } from "./judge.js";
+import { instructionsHash, promptHash, slot } from "./hash.js";
+import { costOf } from "./usage.js";
 
 const MODELS = {
   judge: { label: "Judge", provider: "acme", inputPer1M: 1, outputPer1M: 2 },

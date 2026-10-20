@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { suiteHealth } from "./health";
-import type { BoardRow } from "./board";
-import type { CheckDef } from "./types";
+import { suiteHealth } from "./health.js";
+import type { BoardRow } from "./board.js";
+import type { CheckDef } from "./types.js";
 
 const checks: CheckDef[] = [
   {

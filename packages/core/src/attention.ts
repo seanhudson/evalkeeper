@@ -1,4 +1,4 @@
-import type { BoardRow } from "./board";
+import type { BoardRow } from "./board.js";
 
 /**
  * What needs attention across suites, for the evals hub: the suite with

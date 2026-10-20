@@ -1,8 +1,8 @@
-import { retiresLabel, type ModelCatalog } from "./models";
-import type { Rate } from "./stats";
-import type { CheckDef, SuitePriority } from "./types";
-import type { Verdict } from "./compare";
-import { at } from "./util";
+import { retiresLabel, type ModelCatalog } from "./models.js";
+import type { Rate } from "./stats.js";
+import type { CheckDef, SuitePriority } from "./types.js";
+import type { Verdict } from "./compare.js";
+import { at } from "./util.js";
 
 /**
  * Which model to make live and which the fallback, from a suite's current

@@ -1,5 +1,5 @@
-import type { Verdict } from "./compare";
-import type { SuiteMetrics } from "./stats";
+import type { Verdict } from "./compare.js";
+import type { SuiteMetrics } from "./stats.js";
 
 /**
  * One row of a suite's model board: a model (and reasoning setting) with

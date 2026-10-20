@@ -1,26 +1,30 @@
 import { createHash } from "node:crypto";
-import { compareRuns, type RunOutput } from "./compare";
-import { isStuck, shouldContinue } from "./legs";
-import { effortFor, type ModelCatalog, type ReasoningEffort } from "./models";
-import type { BoardRow } from "./board";
-import { allPassed } from "./stats";
-import { pickQuickSet } from "./quickSet";
-import { stableJson } from "./stableJson";
-import { suiteMetrics, type ScoredOutput } from "./stats";
+import { compareRuns, type RunOutput } from "./compare.js";
+import { isStuck, shouldContinue } from "./legs.js";
+import {
+  effortFor,
+  type ModelCatalog,
+  type ReasoningEffort,
+} from "./models.js";
+import type { BoardRow } from "./board.js";
+import { allPassed } from "./stats.js";
+import { pickQuickSet } from "./quickSet.js";
+import { stableJson } from "./stableJson.js";
+import { suiteMetrics, type ScoredOutput } from "./stats.js";
 import type {
   CaseRecord,
   EvalSet,
   EvalStore,
   RunMetrics,
   RunRecord,
-} from "./store";
-import { withTimeout } from "./timeout";
-import { SCHEDULED } from "./weekly";
-import { confirmedLabel, isProvisional } from "./labels";
+} from "./store.js";
+import { withTimeout } from "./timeout.js";
+import { SCHEDULED } from "./weekly.js";
+import { confirmedLabel, isProvisional } from "./labels.js";
 export { confirmedLabel, isProvisional };
-import type { AnySuite, CheckResult } from "./types";
-import { at } from "./util";
-import { mustGet } from "./util";
+import type { AnySuite, CheckResult } from "./types.js";
+import { at } from "./util.js";
+import { mustGet } from "./util.js";
 
 /**
  * Runs eval suites: every case in a set, a number of times, on one model,

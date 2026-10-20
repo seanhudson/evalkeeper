@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { money, perAnswer, seconds } from "./format";
+import { money, perAnswer, seconds } from "./format.js";
 
 describe("format", () => {
   it("shows a test's spend in dollars, rounding small amounts", () => {

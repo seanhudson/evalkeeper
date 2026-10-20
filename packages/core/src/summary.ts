@@ -1,5 +1,5 @@
-import type { SuiteMetrics } from "./stats";
-import type { CheckDef } from "./types";
+import type { SuiteMetrics } from "./stats.js";
+import type { CheckDef } from "./types.js";
 
 /**
  * A test result in plain words, for people who don't want the statistics:

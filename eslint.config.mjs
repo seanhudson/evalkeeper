@@ -15,6 +15,9 @@ export default tseslint.config(
       "**/coverage/**",
       "**/test-results/**",
       "**/playwright-report/**",
+      // Built from the example app (linted there), and the starter for apps.
+      "packages/core/templates/**",
+      "packages/core/starter/**",
       "**/next-env.d.ts",
       "**/*.config.{js,mjs,ts}",
     ],

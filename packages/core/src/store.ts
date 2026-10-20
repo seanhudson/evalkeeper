@@ -1,5 +1,5 @@
-import type { CheckResult } from "./types";
-import type { SuiteMetrics } from "./stats";
+import type { CheckResult } from "./types.js";
+import type { SuiteMetrics } from "./stats.js";
 
 /**
  * Where Evalkeeper keeps cases, answers, tests, and outputs. The runner

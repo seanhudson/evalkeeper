@@ -1,5 +1,5 @@
 import type { z } from "zod";
-import type { ReasoningEffort } from "./models";
+import type { ReasoningEffort } from "./models.js";
 
 /**
  * An eval suite: how to run one AI operation on a frozen case and how to

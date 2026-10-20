@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { withTimeout } from "./timeout";
+import { withTimeout } from "./timeout.js";
 
 describe("withTimeout", () => {
   it("passes an answer through in time", async () => {

@@ -3,28 +3,28 @@
  * answers people confirmed, and choosing models on that evidence. No
  * database, framework, or provider: adapters bring those.
  */
-export * from "./types";
-export * from "./models";
-export * from "./board";
-export * from "./stats";
-export * from "./compare";
-export * from "./summary";
-export * from "./suggest";
-export * from "./health";
-export * from "./attention";
-export * from "./common";
-export * from "./legs";
-export * from "./timeout";
-export * from "./prune";
-export * from "./quickSet";
-export * from "./stableJson";
-export * from "./upkeepRules";
-export * from "./format";
-export * from "./glossary";
-export * from "./feedback";
-export * from "./weekly";
-export * from "./settings";
-export * from "./store";
-export * from "./labels";
+export * from "./types.js";
+export * from "./models.js";
+export * from "./board.js";
+export * from "./stats.js";
+export * from "./compare.js";
+export * from "./summary.js";
+export * from "./suggest.js";
+export * from "./health.js";
+export * from "./attention.js";
+export * from "./common.js";
+export * from "./legs.js";
+export * from "./timeout.js";
+export * from "./prune.js";
+export * from "./quickSet.js";
+export * from "./stableJson.js";
+export * from "./upkeepRules.js";
+export * from "./format.js";
+export * from "./glossary.js";
+export * from "./feedback.js";
+export * from "./weekly.js";
+export * from "./settings.js";
+export * from "./store.js";
+export * from "./labels.js";
 // Server-only (node:crypto): import from "evalkeeper/runner".
 // In-memory store for tests and demos: "evalkeeper/memory".

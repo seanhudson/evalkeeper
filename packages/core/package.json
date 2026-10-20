@@ -22,16 +22,23 @@
     "./testing": {
       "types": "./dist/testing.d.ts",
       "default": "./dist/testing.js"
+    },
+    "./cli": {
+      "types": "./dist/cli/main.d.ts",
+      "default": "./dist/cli/main.js"
     }
   },
   "files": [
     "dist",
     "src",
-    "!src/**/*.test.ts"
+    "!src/**/*.test.ts",
+    "bin",
+    "templates",
+    "starter"
   ],
   "sideEffects": false,
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "node scripts/build-templates.mjs && tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --coverage"
   },
@@ -69,5 +76,8 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "bin": {
+    "evalkeeper": "./bin/evalkeeper.mjs"
   }
 }

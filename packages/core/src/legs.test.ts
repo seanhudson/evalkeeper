@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX_LEGS, isStuck, shouldContinue } from "./legs";
+import { MAX_LEGS, isStuck, shouldContinue } from "./legs.js";
 
 describe("shouldContinue", () => {
   const base = { left: 10, done: 20, leg: 1, outOfCredits: false };

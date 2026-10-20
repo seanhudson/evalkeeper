@@ -1,9 +1,9 @@
-import { memoryStore } from "./memoryStore";
+import { memoryStore } from "./memoryStore.js";
 import {
   describeFeedbackStoreContract,
   describeSettingsStoreContract,
   describeStoreContract,
-} from "./testing";
+} from "./testing.js";
 
 describeStoreContract("memoryStore", () => memoryStore());
 describeFeedbackStoreContract("memoryStore", () => memoryStore());

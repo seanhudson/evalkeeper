@@ -9,6 +9,13 @@ version may change an interface, and its entry says how to update.
 
 ### Added
 
+- `npx evalkeeper add pages`: copies the eval pages, components, and their
+  server actions into a Next.js app, fitted to its import alias, folders,
+  and a base path; never overwrites without `--force`; writes a starter
+  `lib/evalkeeper/index.ts` whose `requireAdmin` refuses everyone until
+  you write yours. `--dry-run` and `--no-cron`. Tested by typechecking a
+  real copy.
+
 - Versioned settings (optional): `createSettings` keeps each feature's
   live model, fallback, reasoning setting, and output limit as numbered
   versions, logs every change, promotion, rollback, and deploy with who,
@@ -57,6 +64,11 @@ version may change an interface, and its entry says how to update.
 
 ### Changed
 
+- The example's eval pages import only the app's wiring module
+  (`lib/evalkeeper/index.ts`) and the copied glue beside it, check
+  `requireAdmin()` first, take links from one base path (`evalsPath`), and
+  read through the store, never Prisma directly.
+
 - `estimateRun` prices only the answers that won't be reused, and says how
   many will be (`answers`, `reused`), so a retest after rescoring shows as
   free. It takes `fresh` and `reasoningEffort`, and `createRun` passes
@@ -70,6 +82,10 @@ version may change an interface, and its entry says how to update.
 - Stricter compiler and lint settings across the repo.
 
 ### Fixed
+
+- The built packages now load in plain Node: relative imports end in
+  `.js` and the packages compile with Node's module rules. Before, only
+  bundlers could load them.
 
 - Tooltips inside an open case all appeared at once (they answered the
   case's hover too); they now open only for their own trigger.

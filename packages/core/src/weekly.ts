@@ -1,7 +1,7 @@
-import type { ThumbsSummary } from "./feedback";
-import { retiresLabel, type ModelCatalog } from "./models";
-import type { RunMetrics, RunRecord } from "./store";
-import { daysUntil, drifted, retiresSoon } from "./upkeepRules";
+import type { ThumbsSummary } from "./feedback.js";
+import { retiresLabel, type ModelCatalog } from "./models.js";
+import type { RunMetrics, RunRecord } from "./store.js";
+import { daysUntil, drifted, retiresSoon } from "./upkeepRules.js";
 
 /**
  * The weekly check: each suite's quick set on its live model, with fresh

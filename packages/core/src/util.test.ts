@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { at, mustGet } from "./util";
+import { at, mustGet } from "./util.js";
 
 describe("util", () => {
   it("reads checked indexes and keys, and fails loudly otherwise", () => {

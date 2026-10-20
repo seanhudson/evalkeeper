@@ -7,6 +7,13 @@ version may change an interface, and its entry says how to update.
 
 ## Unreleased
 
+### Changed
+
+- `confirmedLabel` and `isProvisional` are generic over any label with a
+  `status` and `updatedAt`, so pages that read their own label rows share
+  the rule (newest confirmed, else newest provisional) and keep their row
+  type. Code passing `LabelRecord[]` is unaffected. (#21)
+
 ## 0.2.0 - 2026-10-20
 
 What a real app needed to adopt Evalkeeper: settings for apps whose models

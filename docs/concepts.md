@@ -109,6 +109,18 @@ worse at the job.
 **Health.** A suite's card says where it stands: not tested, test again,
 needs more cases, room to improve, fair, or good, with the reasons.
 
+**Feedback.** People rate the feature's answers in your product, thumbs
+up or down, with a reason after a thumbs down. One rating per person per
+answer; rating again replaces it, and clicking the same thumb takes it
+back. A feature is flagged when it has at least 5 ratings in a week and at
+least 20% are thumbs down. When your app keeps the input behind an answer
+(de-identified, and only with the person's consent), a rating can become a
+draft case on that real input. From a thumbs down, the case has no answer:
+a person writes what a good one is. From a thumbs up, the model's answer is
+proposed as a pending answer for a person to confirm. Either way, nothing
+is confirmed on anyone's behalf, and a draft is left out of tests until it
+has an answer.
+
 **Long tests.** Each answer times out (60 seconds by default). On a
 platform with a request limit, a test answers what fits, then hands the
 rest to a fresh request (a _leg_), up to 6 legs, and only when the leg

@@ -60,15 +60,16 @@ flowchart LR
 
 ## Where changes go
 
-| Change                                   | Where                                                            | Tested by                         |
-| ---------------------------------------- | ---------------------------------------------------------------- | --------------------------------- |
-| A rule for suggestions, health, or stats | `packages/core/src`                                              | Unit test next to it              |
-| A new word on the pages                  | `packages/core/src/glossary.ts`                                  | `glossary.test.ts` (length, form) |
-| A storage method                         | `store.ts`, `memoryStore.ts`, every adapter                      | `describeStoreContract`           |
-| A database or ORM                        | A new adapter package implementing `EvalStore`                   | `describeStoreContract`           |
-| An AI library                            | A new adapter package                                            | Unit tests with a mock model      |
-| A suite                                  | Your app (`examples/next/lib/suites` for examples)               | Grader tests on fixed outputs     |
-| A page or component                      | `examples/next/app/evals`, `examples/next/components/evalkeeper` | End-to-end tests                  |
+| Change                                   | Where                                                            | Tested by                                           |
+| ---------------------------------------- | ---------------------------------------------------------------- | --------------------------------------------------- |
+| A rule for suggestions, health, or stats | `packages/core/src`                                              | Unit test next to it                                |
+| A new word on the pages                  | `packages/core/src/glossary.ts`                                  | `glossary.test.ts` (length, form)                   |
+| A storage method                         | `store.ts`, `memoryStore.ts`, every adapter                      | `describeStoreContract`                             |
+| A database or ORM                        | A new adapter package implementing `EvalStore`                   | `describeStoreContract`                             |
+| An AI library                            | A new adapter package                                            | Unit tests with a mock model                        |
+| A suite                                  | Your app (`examples/next/lib/suites` for examples)               | Grader tests on fixed outputs                       |
+| Feedback (ratings, cases from them)      | `feedback.ts`, a `FeedbackStore` in every adapter                | `feedback.test.ts`, `describeFeedbackStoreContract` |
+| A page or component                      | `examples/next/app/evals`, `examples/next/components/evalkeeper` | End-to-end tests                                    |
 
 ## Versions
 

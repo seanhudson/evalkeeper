@@ -9,6 +9,16 @@ version may change an interface, and its entry says how to update.
 
 ### Added
 
+- Feedback: thumbs up and down on AI answers (`FeedbackStore`,
+  `prismaFeedbackStore`, and the `EvalFeedback` table), a weekly summary
+  that flags a high thumbs-down share (`thumbsSummary`), and draft cases
+  made from ratings on kept inputs (`caseFromFeedback`). A thumbs down
+  leaves the answer for a person to write; a thumbs up proposes the
+  model's answer, pending. `labelFromOutput` on suites makes the proposal.
+  The example app adds a "try it" page, the thumbs component, a feedback
+  queue, and a hub card.
+- `describeFeedbackStoreContract` (`evalkeeper/testing`).
+
 - Answer key: open a case to see its input, answer, and each model's
   result; add a case, edit an answer, or retire a case.
 - `fields` and `labelFromForm` on suites, so pages render forms for any

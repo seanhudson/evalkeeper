@@ -1,17 +1,22 @@
+import type { FeedbackRecord, FeedbackStore } from "./feedback";
+import { cleanRating } from "./feedback";
 import type { CaseRecord, EvalStore, OutputRecord, RunRecord } from "./store";
 
 /**
  * An EvalStore in memory: for tests, demos, and trying Evalkeeper before
  * adding tables. Everything is gone when the process ends.
  */
-export function memoryStore(): EvalStore & {
-  cases: CaseRecord[];
-  runs: RunRecord[];
-  outputs: OutputRecord[];
-} {
+export function memoryStore(): EvalStore &
+  FeedbackStore & {
+    cases: CaseRecord[];
+    runs: RunRecord[];
+    outputs: OutputRecord[];
+    feedback: FeedbackRecord[];
+  } {
   const cases: CaseRecord[] = [];
   const runs: RunRecord[] = [];
   const outputs: OutputRecord[] = [];
+  const feedback: FeedbackRecord[] = [];
   let n = 0;
   const id = (prefix: string) => `${prefix}_${(++n).toString(36)}`;
   const now = () => new Date();
@@ -20,6 +25,65 @@ export function memoryStore(): EvalStore & {
     cases,
     runs,
     outputs,
+    feedback,
+    async rate(r) {
+      const c = cleanRating(r);
+      const at = now();
+      const prior = feedback.find(
+        (f) =>
+          f.raterId === c.raterId &&
+          f.operation === c.operation &&
+          f.targetId === c.targetId,
+      );
+      if (prior) {
+        // A changed rating needs a fresh look.
+        if (prior.rating !== c.rating) {
+          prior.status = "OPEN";
+          prior.caseId = null;
+        }
+        Object.assign(prior, c, { updatedAt: at });
+        return prior;
+      }
+      const f: FeedbackRecord = {
+        ...c,
+        id: id("fb"),
+        status: "OPEN",
+        caseId: null,
+        createdAt: at,
+        updatedAt: at,
+      };
+      feedback.push(f);
+      return f;
+    },
+    async clearRating(raterId, operation, targetId) {
+      const i = feedback.findIndex(
+        (f) =>
+          f.raterId === raterId &&
+          f.operation === operation &&
+          f.targetId === targetId,
+      );
+      if (i >= 0) feedback.splice(i, 1);
+    },
+    async listFeedback(opts = {}) {
+      return feedback
+        .filter(
+          (f) =>
+            (!opts.operation || f.operation === opts.operation) &&
+            (!opts.rating || f.rating === opts.rating) &&
+            (!opts.status || f.status === opts.status) &&
+            (!opts.since || f.updatedAt >= opts.since),
+        )
+        .sort((a, b) => +b.updatedAt - +a.updatedAt)
+        .slice(0, opts.limit ?? Infinity);
+    },
+    async setFeedbackStatus(feedbackId, status, caseId = null) {
+      const f = feedback.find((x) => x.id === feedbackId);
+      if (f) {
+        f.status = status;
+        f.caseId = caseId;
+        f.updatedAt = now();
+      }
+    },
     async listCases(suite) {
       return cases
         .filter((c) => c.suite === suite && c.status !== "RETIRED")

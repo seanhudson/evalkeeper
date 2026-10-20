@@ -168,7 +168,13 @@ function CaseItem({
     c.labels.find((l) => l.status === "CONFIRMED") ??
     c.labels.find((l) => l.status === "PROVISIONAL") ??
     c.labels.find((l) => l.status === "PENDING");
-  const status = answer ? STATUS[answer.status] : null;
+  const status = answer
+    ? STATUS[answer.status]
+    : {
+        text: "Needs an answer",
+        tone: "text-warn",
+        term: "needsAnswer" as const,
+      };
   const input = suite.input.parse(c.input);
   const right = results.filter(
     (r) =>
@@ -304,7 +310,7 @@ function CaseItem({
         {suite.fields && suite.labelFromForm && (
           <details className="rounded-md bg-card p-3">
             <summary className="cursor-pointer list-none text-sm font-medium">
-              Edit answer
+              {answer ? "Edit answer" : "Write the answer"}
             </summary>
             <form
               key={answer?.updatedAt.toISOString() ?? "none"}

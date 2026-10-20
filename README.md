@@ -51,6 +51,10 @@ design.
   with. Change any of them and older tests say they're out of date.
   Regrading stored answers is free and never pretends an old test ran on
   new inputs.
+- **Feedback that becomes tests.** Thumbs up and down on your AI answers,
+  a weekly flag when a feature's thumbs-down share climbs, and one click to
+  turn a rating on a kept input into a draft case (with consent, and
+  never confirmed for you).
 - **Built for real platforms.** Answers time out, long tests continue in a
   fresh request instead of dying at the platform's limit, stuck tests are
   marked failed, and a provider out of credits stops a test instead of
@@ -72,7 +76,9 @@ npm run dev
 ```
 
 Open <http://localhost:3000/evals> and press **Test every model** on a
-suite. Add `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` to `.env` to test real
+suite. Then try the product side at <http://localhost:3000/try>: triage a
+ticket, thumb the answer down, and turn it into a case from the feedback
+page. Add `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` to `.env` to test real
 models next to the demo ones; action items are then matched by meaning
 with a judge model instead of by shared words.
 
@@ -193,7 +199,6 @@ you're new to evals, start there.
 - A CLI that copies the pages into your app (`npx evalkeeper add pages`).
 - Versioned model settings with rollback, as an optional package.
 - A scheduled drift check: each suite's quick set on its live model, weekly.
-- Thumbs up and down on AI answers, turned into draft cases.
 - Stores for Drizzle and plain Postgres.
 - Planned upgrades: Prisma 7, zod 4, and AI SDK 7.
 - Count reusable answers in cost estimates.

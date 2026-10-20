@@ -20,7 +20,12 @@ export default function RootLayout({
             <Link href="/evals" className="font-semibold">
               Evalkeeper
             </Link>
-            <span className="text-sm text-muted">Example app</span>
+            <nav className="flex gap-4 text-sm text-muted">
+              <Link href="/evals">Evals</Link>
+              <Link href="/evals/feedback">Feedback</Link>
+              <Link href="/try">Try it</Link>
+            </nav>
+            <span className="ml-auto text-sm text-muted">Example app</span>
           </div>
         </header>
         <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>

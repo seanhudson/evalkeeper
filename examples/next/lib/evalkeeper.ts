@@ -1,6 +1,10 @@
 import "server-only";
 import { createMeaningJudge } from "@evalkeeper/ai-sdk";
-import { prismaJudgmentCache, prismaStore } from "@evalkeeper/prisma";
+import {
+  prismaFeedbackStore,
+  prismaJudgmentCache,
+  prismaStore,
+} from "@evalkeeper/prisma";
 import { createRunner, type Route } from "evalkeeper/runner";
 import { prisma } from "./db";
 import { MODELS, availableModels } from "./models";
@@ -54,6 +58,9 @@ if (judgeModel) {
 
 /** Where cases, answers, and tests live: these tables, through Prisma. */
 export const store = prismaStore(prisma);
+
+/** Thumbs up and down on answers in the product. */
+export const feedbackStore = prismaFeedbackStore(prisma);
 
 export const runner = createRunner({
   store,

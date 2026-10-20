@@ -17,6 +17,18 @@ model Route {
   fallbackModel String?
 }
 
+/// An answer the "try it" page showed, kept so a rating can point at it.
+/// Your app has its own record of what its AI wrote (a message, a summary).
+model DemoAnswer {
+  id        String   @id @default(uuid())
+  operation String
+  input     Json
+  output    Json
+  /// The person agreed to keep this input to improve the feature.
+  consented Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
 /// A frozen input to an AI feature, with the answers people gave it.
 model EvalCase {
   id        String   @id @default(uuid())
@@ -121,4 +133,33 @@ model EvalJudgment {
   value     Json
   model     String
   createdAt DateTime @default(now())
+}
+
+/// A person's thumbs up or down on one AI answer in your product.
+model EvalFeedback {
+  id        String   @id @default(uuid())
+  /// The AI feature that wrote the answer.
+  operation String
+  /// What was rated, in your app: a message id, a summary id, …
+  targetId  String
+  /// Who rated it, in your app. One rating per person per answer.
+  raterId   String
+  /// UP or DOWN.
+  rating    String
+  /// What was wrong, in their words (a thumbs down).
+  reason    String?
+  /// The text they rated, when your app doesn't keep it elsewhere.
+  excerpt   String?
+  /// The input behind the answer, de-identified, kept only with consent.
+  input     Json?
+  output    Json?
+  /// OPEN, CASED, or DISMISSED.
+  status    String   @default("OPEN")
+  /// The case made from it.
+  caseId    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([raterId, operation, targetId])
+  @@index([operation, updatedAt])
 }

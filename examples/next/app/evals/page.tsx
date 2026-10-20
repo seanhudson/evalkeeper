@@ -4,10 +4,12 @@ import {
   perAnswer,
   seconds,
   suiteHealth,
+  thumbsSummary,
   type GlossaryTerm,
 } from "evalkeeper";
 import { Card, StatusBadge, pct } from "@/components/evalkeeper/ui";
-import { runner } from "@/lib/evalkeeper";
+import { feedbackStore, runner } from "@/lib/evalkeeper";
+import { daysAgo } from "@/lib/time";
 import { MODELS } from "@/lib/models";
 import { SUITES } from "@/lib/suites";
 import { InfoTip } from "@/components/evalkeeper/Tip";
@@ -17,6 +19,10 @@ export const dynamic = "force-dynamic";
 /** The evals hub: where each suite stands, and what needs attention. */
 export default async function EvalsHub() {
   const boards = await Promise.all(SUITES.map((s) => runner.board(s.key)));
+  const thumbs = thumbsSummary(await feedbackStore.listFeedback(), daysAgo(7));
+  const down = thumbs.reduce((t, s) => t + s.down, 0);
+  const waiting = thumbs.reduce((t, s) => t + s.open, 0);
+  const flagged = thumbs.filter((s) => s.alert).length;
   const needs = attention(
     boards.map((b) => ({
       key: b.suite.key,
@@ -35,7 +41,7 @@ export default async function EvalsHub() {
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat
           title="Most room to improve"
           term="improve"
@@ -66,6 +72,18 @@ export default async function EvalsHub() {
               : "—"
           }
         />
+        <Link href="/evals/feedback">
+          <Stat
+            title="Thumbs down this week"
+            term="thumbs"
+            value={String(down)}
+            detail={
+              flagged
+                ? `${flagged} feature${flagged === 1 ? "" : "s"} need a look · ${waiting} waiting`
+                : `${waiting} waiting for a look`
+            }
+          />
+        </Link>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">

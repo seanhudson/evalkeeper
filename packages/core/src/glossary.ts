@@ -43,6 +43,14 @@ export const GLOSSARY = {
   slowest:
     "The live model with the longest average answer time, across suites.",
   costliest: "The live model with the highest cost per answer, across suites.",
+  thumbs:
+    "Thumbs up and down people gave the feature's answers in your product, over the last 7 days.",
+  keepInput:
+    "Keeps what you typed, without your name, so it can become a test case for future models. Without it, a rating still counts but can't become a case.",
+  makeCase:
+    "Turns this rating into a draft case on its real input. A thumbs down needs a person to write the right answer; a thumbs up proposes the model's answer for a person to confirm.",
+  needsAnswer:
+    "A draft case with no answer yet. Write what a good answer is; until then, tests leave it out.",
 } as const;
 
 export type GlossaryTerm = keyof typeof GLOSSARY;

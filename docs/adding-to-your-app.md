@@ -86,7 +86,23 @@ into your app, put them behind your admin check, and restyle them. Server
 actions start tests in the background and the page refreshes while a
 test runs.
 
-## 8. Keep it honest
+## 8. Add thumbs to your AI answers (optional)
+
+Add the `EvalFeedback` model from the schema and create
+`prismaFeedbackStore(prisma)`. Put a thumbs up and down on each AI answer
+(`examples/next/components/evalkeeper/Thumbs.tsx`), with a server action
+that looks the answer up by its id, never trusting what the browser sends,
+and calls `feedbackStore.rate(...)` with the person's id.
+
+To let ratings become cases, keep the input behind each answer, in the
+suite's input shape, with names and contact details removed, and only
+when the person agreed. Pass it as `input`, and the answer as `output`.
+Give suites whose outputs look like answers a `labelFromOutput`, so a
+thumbs up can propose the model's answer. The feedback page
+(`examples/next/app/evals/feedback`) lists ratings and makes cases with
+`caseFromFeedback`.
+
+## 9. Keep it honest
 
 - Retest after you change a prompt or a model ships; rescore after you
   change an answer or a check (free).

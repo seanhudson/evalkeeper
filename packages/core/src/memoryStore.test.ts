@@ -1,4 +1,8 @@
 import { memoryStore } from "./memoryStore";
-import { describeStoreContract } from "./testing";
+import {
+  describeFeedbackStoreContract,
+  describeStoreContract,
+} from "./testing";
 
 describeStoreContract("memoryStore", () => memoryStore());
+describeFeedbackStoreContract("memoryStore", () => memoryStore());

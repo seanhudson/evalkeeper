@@ -120,6 +120,12 @@ export type Suite<Input, Output, Label> = {
   /** Reads an answer from the add/edit form; throws on bad input. */
   labelFromForm?(form: FormData): Label;
   /**
+   * The operation's output as an answer, so a thumbs-up can propose it
+   * (pending until a person confirms it). Omit when outputs and answers
+   * differ too much to propose one.
+   */
+  labelFromOutput?(output: Output): Label;
+  /**
    * The form's fields, so pages can render one for any suite. Every field
    * has a plain label and help: people confirming answers weeks later
    * won't remember what a field means.

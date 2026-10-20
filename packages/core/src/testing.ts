@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
+import type { FeedbackStore, NewRating } from "./feedback";
 import { createRunner } from "./runner";
 import type { EvalStore, NewCase } from "./store";
 import type { Suite } from "./types";
@@ -201,6 +202,82 @@ export function describeStoreContract(
       const done = await store.getRun(run.id);
       expect(done?.status).toBe("SUCCEEDED");
       expect(done?.metrics?.allPass.passed).toBe(1);
+    });
+  });
+}
+
+/**
+ * The contract every FeedbackStore must meet. `make` must return an empty
+ * store each time it's called.
+ */
+export function describeFeedbackStoreContract(
+  name: string,
+  make: () => FeedbackStore | Promise<FeedbackStore>,
+) {
+  const rating = (over: Partial<NewRating> = {}): NewRating => ({
+    operation: "triage",
+    targetId: "answer-1",
+    raterId: "person-1",
+    rating: "DOWN",
+    reason: "Wrong queue",
+    excerpt: "billing",
+    input: { subject: "Refund", body: "Please refund me." },
+    output: { category: "bug" },
+    ...over,
+  });
+
+  describe(`FeedbackStore contract: ${name}`, () => {
+    it("keeps a rating with its reason, input, and output, open", async () => {
+      const store = await make();
+      const f = await store.rate(rating());
+      expect(f).toMatchObject({
+        operation: "triage",
+        rating: "DOWN",
+        reason: "Wrong queue",
+        excerpt: "billing",
+        input: { subject: "Refund", body: "Please refund me." },
+        output: { category: "bug" },
+        status: "OPEN",
+        caseId: null,
+      });
+    });
+
+    it("keeps one rating per person per answer, and reopens a changed one", async () => {
+      const store = await make();
+      const first = await store.rate(rating());
+      await store.setFeedbackStatus(first.id, "DISMISSED");
+      const changed = await store.rate(rating({ rating: "UP" }));
+      expect(changed.id).toBe(first.id);
+      expect(changed.status).toBe("OPEN");
+      expect(changed.reason).toBeNull();
+      await store.rate(rating({ raterId: "person-2" }));
+      expect(await store.listFeedback()).toHaveLength(2);
+    });
+
+    it("takes a rating back", async () => {
+      const store = await make();
+      await store.rate(rating());
+      await store.clearRating("person-1", "triage", "answer-1");
+      expect(await store.listFeedback()).toHaveLength(0);
+    });
+
+    it("filters by feature, rating, status, and date, newest first", async () => {
+      const store = await make();
+      const a = await store.rate(rating({ targetId: "a" }));
+      await new Promise((r) => setTimeout(r, 5));
+      const b = await store.rate(rating({ targetId: "b", rating: "UP" }));
+      await store.rate(rating({ targetId: "c", operation: "summary" }));
+      expect(
+        (await store.listFeedback({ operation: "triage" })).map((f) => f.id),
+      ).toEqual([b.id, a.id]);
+      expect(await store.listFeedback({ rating: "UP" })).toHaveLength(1);
+      await store.setFeedbackStatus(a.id, "CASED", "case-1");
+      const cased = await store.listFeedback({ status: "CASED" });
+      expect(cased.map((f) => [f.id, f.caseId])).toEqual([[a.id, "case-1"]]);
+      expect(
+        await store.listFeedback({ since: new Date(Date.now() + 60_000) }),
+      ).toHaveLength(0);
+      expect(await store.listFeedback({ limit: 1 })).toHaveLength(1);
     });
   });
 }

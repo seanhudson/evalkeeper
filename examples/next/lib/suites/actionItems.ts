@@ -251,6 +251,7 @@ export const actionItems: Suite<Input, Output, Label> = {
   inputFromForm(form) {
     return input.parse({ notes: formText(form, "notes") });
   },
+  labelFromOutput: (out) => ({ items: out.items }),
   labelFromForm(form) {
     return label.parse({ items: linesOf(form, "items") });
   },

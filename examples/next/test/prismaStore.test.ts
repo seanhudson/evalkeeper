@@ -1,6 +1,9 @@
 import { PrismaClient } from "@prisma/client";
-import { prismaStore } from "@evalkeeper/prisma";
-import { describeStoreContract } from "evalkeeper/testing";
+import { prismaFeedbackStore, prismaStore } from "@evalkeeper/prisma";
+import {
+  describeFeedbackStoreContract,
+  describeStoreContract,
+} from "evalkeeper/testing";
 import { afterAll } from "vitest";
 
 // A throwaway SQLite file (see the "test" script), emptied before each
@@ -14,11 +17,17 @@ async function empty() {
   await prisma.evalCaseLabel.deleteMany();
   await prisma.evalCase.deleteMany();
   await prisma.evalJudgment.deleteMany();
+  await prisma.evalFeedback.deleteMany();
 }
 
 describeStoreContract("prismaStore on SQLite", async () => {
   await empty();
   return prismaStore(prisma);
+});
+
+describeFeedbackStoreContract("prismaFeedbackStore on SQLite", async () => {
+  await empty();
+  return prismaFeedbackStore(prisma);
 });
 
 afterAll(async () => {

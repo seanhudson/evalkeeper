@@ -1,5 +1,9 @@
+import { cleanRating } from "evalkeeper";
 import type {
   CaseRecord,
+  FeedbackRecord,
+  FeedbackStatus,
+  FeedbackStore,
   CheckResult,
   EvalSet,
   EvalStore,
@@ -310,6 +314,116 @@ export function prismaJudgmentCache(db: PrismaEvalClient) {
       } catch {
         // Already kept by a concurrent grade: the same answer either way.
       }
+    },
+  };
+}
+
+export type EvalFeedbackRow = {
+  id: string;
+  operation: string;
+  targetId: string;
+  raterId: string;
+  rating: string;
+  reason: string | null;
+  excerpt: string | null;
+  input: Json;
+  output: Json;
+  status: string;
+  caseId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+/** The part of a generated Prisma client the feedback store uses. */
+export type PrismaFeedbackClient = {
+  evalFeedback: Delegate<EvalFeedbackRow> & {
+    upsert(args: object): PromiseLike<EvalFeedbackRow>;
+    deleteMany(args: object): PromiseLike<{ count: number }>;
+  };
+};
+
+const FEEDBACK_STATUSES: readonly FeedbackStatus[] = [
+  "OPEN",
+  "CASED",
+  "DISMISSED",
+];
+
+const feedback = (f: EvalFeedbackRow): FeedbackRecord => ({
+  id: f.id,
+  operation: f.operation,
+  targetId: f.targetId,
+  raterId: f.raterId,
+  rating: f.rating === "DOWN" ? "DOWN" : "UP",
+  reason: f.reason,
+  excerpt: f.excerpt,
+  input: f.input ?? null,
+  output: f.output ?? null,
+  status: oneOf(f.status, FEEDBACK_STATUSES, "OPEN"),
+  caseId: f.caseId,
+  createdAt: f.createdAt,
+  updatedAt: f.updatedAt,
+});
+
+/** A FeedbackStore on the EvalFeedback table. */
+export function prismaFeedbackStore(db: PrismaFeedbackClient): FeedbackStore {
+  return {
+    async rate(r) {
+      const c = cleanRating(r);
+      const key = {
+        raterId_operation_targetId: {
+          raterId: c.raterId,
+          operation: c.operation,
+          targetId: c.targetId,
+        },
+      };
+      const prior = await db.evalFeedback.findUnique({ where: key });
+      const data = {
+        rating: c.rating,
+        reason: c.reason,
+        excerpt: c.excerpt,
+        input: json(c.input),
+        output: json(c.output),
+        // A changed rating needs a fresh look.
+        ...(prior && prior.rating !== c.rating
+          ? { status: "OPEN", caseId: null }
+          : {}),
+      };
+      return feedback(
+        await db.evalFeedback.upsert({
+          where: key,
+          create: {
+            ...data,
+            operation: c.operation,
+            targetId: c.targetId,
+            raterId: c.raterId,
+          },
+          update: data,
+        }),
+      );
+    },
+    async clearRating(raterId, operation, targetId) {
+      await db.evalFeedback.deleteMany({
+        where: { raterId, operation, targetId },
+      });
+    },
+    async listFeedback(opts = {}) {
+      const rows = await db.evalFeedback.findMany({
+        where: {
+          ...(opts.operation ? { operation: opts.operation } : {}),
+          ...(opts.rating ? { rating: opts.rating } : {}),
+          ...(opts.status ? { status: opts.status } : {}),
+          ...(opts.since ? { updatedAt: { gte: opts.since } } : {}),
+        },
+        orderBy: { updatedAt: "desc" },
+        ...(opts.limit ? { take: opts.limit } : {}),
+      });
+      return rows.map(feedback);
+    },
+    async setFeedbackStatus(id, status, caseId = null) {
+      await db.evalFeedback.updateMany({
+        where: { id },
+        data: { status, caseId },
+      });
     },
   };
 }

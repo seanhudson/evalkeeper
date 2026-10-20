@@ -296,6 +296,8 @@ export const ticketTriage: Suite<Input, Output, Label> = {
       body: formText(form, "body"),
     });
   },
+  // The output is already in the answer's shape.
+  labelFromOutput: (out) => out,
   labelFromForm(form) {
     return label.parse({
       category: form.get("category"),

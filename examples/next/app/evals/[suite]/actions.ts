@@ -126,6 +126,8 @@ export async function editAnswer(form: FormData) {
     raterId: null,
     note: null,
   });
+  // A draft (from feedback) is in use once it has an answer.
+  await store.setCaseStatus(caseId, "ACTIVE");
   after(() => runner.rescoreRecent(suite.key));
   revalidatePath(`/evals/${suite.key}`);
 }

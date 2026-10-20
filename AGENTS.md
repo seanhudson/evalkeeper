@@ -132,5 +132,9 @@ at a time, and stop after each step for the person to check it. Read
   and bump the suite's `graderVersion`.
 - **Hash every instruction a model gets** (`instructionsHash`): system
   text, prompt templates, output schemas, and tool descriptions.
+- **Thumbs keep inputs only with consent.** When adding ratings, keep the
+  input behind an answer only when the person agreed, with names and
+  contact details removed. The rating action looks the answer up by its
+  id; it never takes the input or output from the browser.
 - **Give every suite field help and every check a description,** and test
   the suite's grader like any other code.

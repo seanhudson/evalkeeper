@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { barStatus, checkBar, fieldValue, linesOf } from "./types";
+import {
+  asText,
+  barStatus,
+  checkBar,
+  fieldValue,
+  formText,
+  linesOf,
+} from "./types";
 
 describe("check bars", () => {
   it("defaults by severity and sorts rates against the bar", () => {
@@ -50,5 +57,23 @@ describe("form fields", () => {
     form.set("items", " a \n\nb\n");
     expect(linesOf(form, "items")).toEqual(["a", "b"]);
     expect(fieldValue(f, null)).toBe("");
+  });
+});
+
+describe("form text", () => {
+  it("reads strings, and treats missing values and files as empty", () => {
+    const form = new FormData();
+    form.set("a", "  hi ");
+    form.set("f", new Blob(["x"]), "x.txt");
+    expect(formText(form, "a")).toBe("hi");
+    expect(formText(form, "f")).toBe("");
+    expect(formText(form, "missing")).toBe("");
+  });
+
+  it("shows any value as text", () => {
+    expect(asText(null)).toBe("");
+    expect(asText(3)).toBe("3");
+    expect(asText(true)).toBe("true");
+    expect(asText({ a: 1 })).toBe('{"a":1}');
   });
 });

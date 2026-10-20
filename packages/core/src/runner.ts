@@ -51,7 +51,10 @@ export type RunnerOptions = {
    * marks older tests out of date.
    */
   promptVersion: (operation: string) => string | Promise<string>;
-  /** The live reasoning setting for an operation; null: the model's own. */
+  /**
+   * The live reasoning setting for an operation; null: the model's own.
+   * Defaults to the route's, when `route` is given.
+   */
   liveEffort?: (
     operation: string,
   ) => ReasoningEffort | null | Promise<ReasoningEffort | null>;
@@ -209,7 +212,14 @@ export function createRunner(opts: RunnerOptions) {
     const [estimate, promptVersion, liveEffort] = await Promise.all([
       estimateRun(suite.key, args.model, set, repeats),
       opts.promptVersion(suite.operation),
-      opts.liveEffort?.(suite.operation) ?? null,
+      // The live setting: from liveEffort, else the route's.
+      opts.liveEffort
+        ? opts.liveEffort(suite.operation)
+        : opts.route
+          ? Promise.resolve(opts.route(suite.operation)).then(
+              (r) => r.reasoningEffort,
+            )
+          : null,
     ]);
     const run = await store.createRun({
       suite: suite.key,

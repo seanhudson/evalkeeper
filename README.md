@@ -6,6 +6,11 @@ evidence instead of vibes, then keep that choice honest as models change.
 
 [![CI](https://github.com/seanhudson/evalkeeper/actions/workflows/ci.yml/badge.svg)](https://github.com/seanhudson/evalkeeper/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![npm](https://img.shields.io/npm/v/@crowandraven/evalkeeper.svg)](https://www.npmjs.com/package/@crowandraven/evalkeeper)
+
+```bash
+npm install @crowandraven/evalkeeper
+```
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/board-dark.png">

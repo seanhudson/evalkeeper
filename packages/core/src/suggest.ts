@@ -2,6 +2,7 @@ import { retiresLabel, type ModelCatalog } from "./models";
 import type { Rate } from "./stats";
 import type { CheckDef, SuitePriority } from "./types";
 import type { Verdict } from "./compare";
+import { at } from "./util";
 
 /**
  * Which model to make live and which the fallback, from a suite's current
@@ -56,11 +57,12 @@ export type Suggestion<R extends SuggestRow = SuggestRow> = {
 };
 
 export function seriousMistakes(row: SuggestRow, checks: CheckDef[]): number {
-  if (!row.test) return Infinity;
+  const test = row.test;
+  if (!test) return Infinity;
   return checks
     .filter((c) => c.severity === "serious")
     .reduce((t, c) => {
-      const r = row.test!.byCheck[c.key];
+      const r = test.byCheck[c.key];
       return t + (r ? r.n - r.passed : 0);
     }, 0);
 }
@@ -113,13 +115,16 @@ export function suggest<R extends SuggestRow>(
   const liveable = tested.filter((r) => !r.fallbackOnly);
   if (!live) {
     if (!liveable.length) return null;
-    next = [...liveable].sort(
-      (a, b) =>
-        rate(b) - rate(a) || serious(a) - serious(b) || cost(a) - cost(b),
-    )[0];
+    next = at(
+      [...liveable].sort(
+        (a, b) =>
+          rate(b) - rate(a) || serious(a) - serious(b) || cost(a) - cost(b),
+      ),
+      0,
+    );
     reasons.push(
       liveRetires || liveSlow
-        ? `${liveRetires ? `${liveRow!.label} retires in ${liveRetires}.` : liveSlow} ${next.label} scores highest of the rest (${pct(rate(next))}) with ${mistakes(serious(next))}.`
+        ? `${liveRetires && liveRow ? `${liveRow.label} retires in ${liveRetires}.` : liveSlow} ${next.label} scores highest of the rest (${pct(rate(next))}) with ${mistakes(serious(next))}.`
         : `${next.label} scores highest (${pct(rate(next))}) with ${mistakes(serious(next))}. The live model has no up-to-date test to compare with.`,
     );
   } else {
@@ -172,8 +177,9 @@ export function suggest<R extends SuggestRow>(
             : cost(a) - cost(b) || ms(a) - ms(b)),
       );
     if (candidates.length) {
-      next = candidates[0];
-      reasons.push(why(next)!);
+      next = at(candidates, 0);
+      const reason = why(next);
+      if (reason) reasons.push(reason);
     } else {
       next = live;
       reasons.push(

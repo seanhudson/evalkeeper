@@ -4,6 +4,7 @@ import type {
   EvalSet,
   EvalStore,
   LabelRecord,
+  LabelStatus,
   OutputRecord,
   RunMetrics,
   RunRecord,
@@ -15,31 +16,122 @@ import type {
  * schema/evalkeeper.prisma. Pass the client you already have:
  *
  *   const store = prismaStore(prisma);
+ *
+ * The client is typed by the rows it returns, not by Prisma's generated
+ * types, so this package works with any client generated from the schema.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-type Delegate = {
-  findMany(args?: any): Promise<any[]>;
-  findFirst(args?: any): Promise<any | null>;
-  findUnique(args: any): Promise<any | null>;
-  create(args: any): Promise<any>;
-  update(args: any): Promise<any>;
-  updateMany(args: any): Promise<{ count: number }>;
+/** A stored JSON value, as Prisma returns it. */
+type Json = unknown;
+
+/** The rows of Evalkeeper's tables, as the schema defines them. */
+export type EvalCaseRow = {
+  id: string;
+  suite: string;
+  input: Json;
+  tags: Json;
+  split: string;
+  status: string;
+  source: string;
+  sourceRef: string | null;
+  note: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+export type EvalCaseLabelRow = {
+  id: string;
+  caseId: string;
+  kind: string;
+  status: string;
+  value: Json;
+  raterRole: string;
+  raterId: string | null;
+  note: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+export type EvalRunRow = {
+  id: string;
+  suite: string;
+  model: string;
+  promptVersion: string;
+  reasoningEffort: string | null;
+  set: string;
+  repeats: number;
+  datasetVersion: string | null;
+  graderVersion: string;
+  status: string;
+  metrics: Json;
+  error: string | null;
+  estimatedCostUsd: number | null;
+  startedBy: string | null;
+  startedAt: Date;
+  finishedAt: Date | null;
+};
+export type EvalOutputRow = {
+  id: string;
+  runId: string;
+  caseId: string;
+  repeat: number;
+  requestHash: string;
+  output: Json;
+  error: string | null;
+  scores: Json;
+  costUsd: number;
+  ms: number;
+  reused: boolean;
+  createdAt: Date;
+};
+export type EvalJudgmentRow = {
+  key: string;
+  value: Json;
+  model: string;
+  createdAt: Date;
+};
+
+/** The methods of a Prisma model delegate this package calls. */
+type Delegate<Row> = {
+  findMany(args: object): PromiseLike<Row[]>;
+  findFirst(args: object): PromiseLike<Row | null>;
+  findUnique(args: object): PromiseLike<Row | null>;
+  create(args: object): PromiseLike<Row>;
+  update(args: object): PromiseLike<Row>;
+  updateMany(args: object): PromiseLike<{ count: number }>;
 };
 
 /** The part of a generated Prisma client Evalkeeper uses. */
 export type PrismaEvalClient = {
-  evalCase: Delegate;
-  evalCaseLabel: Delegate;
-  evalRun: Delegate;
-  evalOutput: Delegate;
-  evalJudgment: Delegate;
+  evalCase: Delegate<EvalCaseRow>;
+  evalCaseLabel: Delegate<EvalCaseLabelRow>;
+  evalRun: Delegate<EvalRunRow>;
+  evalOutput: Delegate<EvalOutputRow>;
+  evalJudgment: Delegate<EvalJudgmentRow>;
 };
 
-const label = (l: any): LabelRecord => ({
+/** `value` when it's one of `allowed`, else `fallback`. */
+function oneOf<T extends string>(
+  value: string,
+  allowed: readonly T[],
+  fallback: T,
+): T {
+  return (allowed as readonly string[]).includes(value)
+    ? (value as T)
+    : fallback;
+}
+
+const LABEL_STATUSES: readonly LabelStatus[] = [
+  "PENDING",
+  "CONFIRMED",
+  "PROVISIONAL",
+  "REJECTED",
+];
+const RUN_STATUSES: readonly RunStatus[] = ["RUNNING", "SUCCEEDED", "FAILED"];
+const SETS: readonly EvalSet[] = ["ALL", "SMOKE", "DEV", "TEST"];
+
+const label = (l: EvalCaseLabelRow): LabelRecord => ({
   id: l.id,
-  kind: l.kind,
-  status: l.status,
+  kind: "EXPECTED",
+  status: oneOf(l.status, LABEL_STATUSES, "PENDING"),
   value: l.value,
   raterRole: l.raterRole,
   raterId: l.raterId,
@@ -48,13 +140,17 @@ const label = (l: any): LabelRecord => ({
   updatedAt: l.updatedAt,
 });
 
-const evalCase = (c: any): CaseRecord => ({
+const evalCase = (
+  c: EvalCaseRow & { labels?: EvalCaseLabelRow[] },
+): CaseRecord => ({
   id: c.id,
   suite: c.suite,
   input: c.input,
-  tags: Array.isArray(c.tags) ? c.tags : [],
-  split: c.split,
-  status: c.status,
+  tags: Array.isArray(c.tags)
+    ? c.tags.filter((t): t is string => typeof t === "string")
+    : [],
+  split: oneOf(c.split, ["DEV", "TEST"] as const, "DEV"),
+  status: oneOf(c.status, ["DRAFT", "ACTIVE", "RETIRED"] as const, "DRAFT"),
   source: c.source,
   sourceRef: c.sourceRef,
   note: c.note,
@@ -63,18 +159,19 @@ const evalCase = (c: any): CaseRecord => ({
   labels: (c.labels ?? []).map(label),
 });
 
-const run = (r: any): RunRecord => ({
+const run = (r: EvalRunRow): RunRecord => ({
   id: r.id,
   suite: r.suite,
   model: r.model,
   promptVersion: r.promptVersion,
   reasoningEffort: r.reasoningEffort,
-  set: r.set as EvalSet,
+  set: oneOf(r.set, SETS, "ALL"),
   repeats: r.repeats,
   datasetVersion: r.datasetVersion,
   graderVersion: r.graderVersion,
-  status: r.status as RunStatus,
-  metrics: (r.metrics as RunMetrics | null) ?? null,
+  status: oneOf(r.status, RUN_STATUSES, "FAILED"),
+  // Written only by the runner, in this shape.
+  metrics: (r.metrics ?? null) as RunMetrics | null,
   error: r.error,
   estimatedCostUsd: r.estimatedCostUsd,
   startedBy: r.startedBy,
@@ -82,7 +179,7 @@ const run = (r: any): RunRecord => ({
   finishedAt: r.finishedAt,
 });
 
-const output = (o: any): OutputRecord => ({
+const output = (o: EvalOutputRow): OutputRecord => ({
   id: o.id,
   runId: o.runId,
   caseId: o.caseId,
@@ -90,39 +187,56 @@ const output = (o: any): OutputRecord => ({
   requestHash: o.requestHash,
   output: o.output,
   error: o.error,
-  scores: (o.scores as CheckResult[] | null) ?? null,
+  // Written only by the runner, in this shape.
+  scores: (o.scores ?? null) as CheckResult[] | null,
   costUsd: o.costUsd,
   ms: o.ms,
   reused: o.reused,
   createdAt: o.createdAt,
 });
 
-/** Prisma wants JSON null spelled out; undefined leaves a field alone. */
-const json = (v: unknown) => (v === undefined ? undefined : (v as any));
+/**
+ * A value for a JSON column. Prisma reads `undefined` as "leave it alone"
+ * and wants JSON null spelled out, so a missing value stays undefined.
+ */
+const json = (v: unknown): object | string | number | boolean | undefined =>
+  v === undefined || v === null ? undefined : v;
 
 export function prismaStore(db: PrismaEvalClient): EvalStore {
   return {
     async listCases(suite) {
-      const rows = await db.evalCase.findMany({
+      const rows = (await db.evalCase.findMany({
         where: { suite, status: { not: "RETIRED" } },
         include: { labels: true },
         orderBy: { createdAt: "asc" },
-      });
+      })) as (EvalCaseRow & { labels: EvalCaseLabelRow[] })[];
       return rows.map(evalCase);
     },
     async createCase({ labels = [], ...data }) {
-      const c = await db.evalCase.create({
+      const c = (await db.evalCase.create({
         data: {
           ...data,
           input: json(data.input),
-          tags: data.tags,
           labels: {
             create: labels.map((l) => ({ ...l, value: json(l.value) })),
           },
         },
         include: { labels: true },
-      });
+      })) as EvalCaseRow & { labels: EvalCaseLabelRow[] };
       return evalCase(c);
+    },
+    async addLabel(caseId, data) {
+      return label(
+        await db.evalCaseLabel.create({
+          data: { ...data, caseId, value: json(data.value) },
+        }),
+      );
+    },
+    async setLabelStatus(id, status) {
+      await db.evalCaseLabel.update({ where: { id }, data: { status } });
+    },
+    async setCaseStatus(id, status) {
+      await db.evalCase.updateMany({ where: { id }, data: { status } });
     },
     async getRun(id) {
       const r = await db.evalRun.findUnique({ where: { id } });
@@ -140,9 +254,13 @@ export function prismaStore(db: PrismaEvalClient): EvalStore {
       return run(await db.evalRun.create({ data }));
     },
     async updateRun(id, patch, onlyIf) {
+      const { metrics, ...rest } = patch;
       await db.evalRun.updateMany({
         where: { id, ...(onlyIf ? { status: onlyIf.status } : {}) },
-        data: { ...patch, metrics: json(patch.metrics) },
+        data: {
+          ...rest,
+          ...(metrics !== undefined ? { metrics: json(metrics) } : {}),
+        },
       });
     },
     async listOutputs(runId) {
@@ -165,8 +283,8 @@ export function prismaStore(db: PrismaEvalClient): EvalStore {
         await db.evalOutput.create({
           data: {
             ...data,
-            output: json(data.output ?? undefined),
-            scores: json(data.scores ?? undefined),
+            output: json(data.output),
+            scores: json(data.scores),
           },
         }),
       );
@@ -180,14 +298,18 @@ export function prismaStore(db: PrismaEvalClient): EvalStore {
 /** A judgment cache on the EvalJudgment table, for @evalkeeper/ai-sdk. */
 export function prismaJudgmentCache(db: PrismaEvalClient) {
   return {
-    async get(key: string): Promise<unknown | null> {
+    async get(key: string): Promise<unknown> {
       const j = await db.evalJudgment.findUnique({ where: { key } });
       return j?.value ?? null;
     },
     async set(key: string, value: unknown, model: string): Promise<void> {
-      await db.evalJudgment
-        .create({ data: { key, value: json(value), model } })
-        .catch(() => undefined);
+      try {
+        await db.evalJudgment.create({
+          data: { key, value: json(value), model },
+        });
+      } catch {
+        // Already kept by a concurrent grade: the same answer either way.
+      }
     },
   };
 }

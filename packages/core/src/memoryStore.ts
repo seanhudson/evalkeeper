@@ -42,6 +42,30 @@ export function memoryStore(): EvalStore & {
       cases.push(c);
       return c;
     },
+    async addLabel(caseId, data) {
+      const c = cases.find((x) => x.id === caseId);
+      if (!c) throw new Error(`Unknown case ${caseId}`);
+      const at = now();
+      const l = { ...data, id: id("label"), createdAt: at, updatedAt: at };
+      c.labels.push(l);
+      c.updatedAt = at;
+      return l;
+    },
+    async setLabelStatus(labelId, status) {
+      for (const c of cases)
+        for (const l of c.labels)
+          if (l.id === labelId) {
+            l.status = status;
+            l.updatedAt = now();
+          }
+    },
+    async setCaseStatus(caseId, status) {
+      const c = cases.find((x) => x.id === caseId);
+      if (c) {
+        c.status = status;
+        c.updatedAt = now();
+      }
+    },
     async getRun(runId) {
       return runs.find((r) => r.id === runId) ?? null;
     },

@@ -7,7 +7,7 @@ import type { LabelRecord } from "./store";
 export function confirmedLabel(labels: LabelRecord[]): LabelRecord | null {
   const newest = (status: LabelRecord["status"]) =>
     labels
-      .filter((l) => l.status === status && l.kind === "EXPECTED")
+      .filter((l) => l.status === status)
       .sort((a, b) => +b.updatedAt - +a.updatedAt)[0] ?? null;
   return newest("CONFIRMED") ?? newest("PROVISIONAL");
 }

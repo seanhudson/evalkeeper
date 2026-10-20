@@ -87,7 +87,7 @@ describe("suiteHealth", () => {
       row("Haiku", "claude-haiku-5-5", { right: 24 }),
     ];
     // Haiku is already the fallback, so nothing changes.
-    rows[1].fallback = true;
+    rows[1]!.fallback = true;
     expect(suiteHealth(rows, checks, quality, 30).status).toBe("fair");
     expect(suiteHealth(rows, checks, quality, 60).status).toBe("good");
   });

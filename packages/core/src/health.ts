@@ -93,7 +93,7 @@ export function suiteHealth(
   if (testedModels < 2)
     details.push("Only one model tested: test others to compare.");
 
-  const confidence = confidenceFor(cases, live!.rate);
+  const confidence = confidenceFor(cases, live?.rate ?? 0.5);
   if (confidence.level === "too-few")
     return {
       ...base,

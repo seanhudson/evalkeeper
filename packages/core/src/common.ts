@@ -110,9 +110,11 @@ export function inRange(
   return {
     key,
     pass,
-    note: pass
-      ? undefined
-      : `${n} ${noun}; should be ${min === max ? min : `${min} to ${max}`}`,
+    ...(pass
+      ? {}
+      : {
+          note: `${n} ${noun}; should be ${min === max ? min : `${min} to ${max}`}`,
+        }),
   };
 }
 
@@ -165,7 +167,7 @@ export const NUMBERS_CHECK: CheckDef = {
 export function numbersIn(text: string): Set<string> {
   const out = new Set<string>();
   for (const m of text.matchAll(/(\d[\d,]*(?:\.\d+)?)\s*([km])?\b/gi)) {
-    const n = Number(m[1].replace(/,/g, ""));
+    const n = Number((m[1] ?? "").replace(/,/g, ""));
     if (!Number.isFinite(n)) continue;
     out.add(String(n));
     const suffix = m[2]?.toLowerCase();

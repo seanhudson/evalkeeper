@@ -1,7 +1,7 @@
 import { generateText, Output } from "ai";
 import { z } from "zod";
 import { costOf, instructionsHash, slot } from "@evalkeeper/ai-sdk";
-import type { CheckDef, Suite } from "evalkeeper";
+import { formText, type CheckDef, type Suite } from "evalkeeper";
 import { demoCall } from "../demo";
 import { MODELS, isDemo } from "../models";
 
@@ -254,7 +254,7 @@ export const ticketTriage: Suite<Input, Output, Label> = {
           category:
             CATEGORIES[
               (CATEGORIES.indexOf(right.category) + 1) % CATEGORIES.length
-            ],
+            ] ?? "other",
           urgency: right.urgency === "high" ? "low" : right.urgency,
         }),
         ctx.onCost,
@@ -292,8 +292,8 @@ export const ticketTriage: Suite<Input, Output, Label> = {
   },
   inputFromForm(form) {
     return input.parse({
-      subject: String(form.get("subject") ?? "").trim(),
-      body: String(form.get("body") ?? "").trim(),
+      subject: formText(form, "subject"),
+      body: formText(form, "body"),
     });
   },
   labelFromForm(form) {

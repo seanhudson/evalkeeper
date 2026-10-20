@@ -13,7 +13,7 @@ const runner = createRunner({
   store: prismaStore(prisma),
   suites: SUITES,
   models: MODELS,
-  promptVersion: (op) => PROMPT_VERSIONS[op],
+  promptVersion: (op) => PROMPT_VERSIONS[op] ?? "unregistered",
   route: (op) => ({
     model: op === "ticket_triage" ? "demo-legacy" : "demo-quick",
     fallbackModel: null,

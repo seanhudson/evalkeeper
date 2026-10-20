@@ -46,7 +46,7 @@ export function summarize(m: SuiteMetrics, checks: CheckDef[]): Summary {
         ? { key: c.key, label: c.label, failed: r.n - r.passed, of: r.n }
         : null;
     })
-    .filter((p): p is Problem => Boolean(p) && p!.failed > 0)
+    .filter((p): p is Problem => p !== null && p.failed > 0)
     .sort((a, b) => b.failed - a.failed);
   return { right, total, trust, problems };
 }

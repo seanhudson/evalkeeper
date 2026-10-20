@@ -11,7 +11,6 @@ import type {
   CaseRecord,
   EvalSet,
   EvalStore,
-  LabelRecord,
   RunMetrics,
   RunRecord,
 } from "./store";
@@ -19,6 +18,8 @@ import { withTimeout } from "./timeout";
 import { confirmedLabel, isProvisional } from "./labels";
 export { confirmedLabel, isProvisional };
 import type { AnySuite, CheckResult } from "./types";
+import { at } from "./util";
+import { mustGet } from "./util";
 
 /**
  * Runs eval suites: every case in a set, a number of times, on one model,
@@ -123,7 +124,7 @@ export function commonError(errors: (string | null)[]): string | null {
   const counts = new Map<string, number>();
   for (const e of errors)
     if (e) {
-      const line = e.split(/\n/)[0].slice(0, 160);
+      const line = (e.split(/\n/)[0] ?? "").slice(0, 160);
       counts.set(line, (counts.get(line) ?? 0) + 1);
     }
   return [...counts].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
@@ -135,12 +136,12 @@ export async function mapLimit<T, R>(
   limit: number,
   fn: (item: T) => Promise<R>,
 ): Promise<R[]> {
-  const results: R[] = new Array(items.length);
+  const results: R[] = [];
   let next = 0;
   async function worker() {
     while (next < items.length) {
       const i = next++;
-      results[i] = await fn(items[i]);
+      results[i] = await fn(at(items, i));
     }
   }
   await Promise.all(
@@ -261,7 +262,7 @@ export function createRunner(opts: RunnerOptions) {
       byRepeat.set(o.repeat, [...(byRepeat.get(o.repeat) ?? []), o]);
     for (const group of byRepeat.values()) {
       const answers = group.map((o) => {
-        const c = cases.get(o.caseId)!;
+        const c = mustGet(cases, o.caseId);
         const label = confirmedLabel(c.labels);
         const parsed = label ? suite.labelValue.safeParse(label.value) : null;
         return {
@@ -331,7 +332,8 @@ export function createRunner(opts: RunnerOptions) {
 
       let judgeCost = o.judgeCostUsd ?? 0;
       const onJudge = (usd: number) => (judgeCost += usd);
-      let outOfCredits: string | null = null;
+      // Set inside the answers below, which TypeScript can't follow.
+      let outOfCredits = null as string | null;
       const timeout = suite.answerTimeoutMs ?? ANSWER_TIMEOUT_MS;
       const deadline = opts.requestLimitMs
         ? Date.now() + opts.requestLimitMs - timeout
@@ -479,15 +481,15 @@ export function createRunner(opts: RunnerOptions) {
     await mapLimit(outputs, 6, async (x) =>
       store.setOutputScores(
         x.id,
-        await gradeOutput(suite, cases.get(x.caseId)!, x.output, onJudge),
+        await gradeOutput(suite, mustGet(cases, x.caseId), x.output, onJudge),
       ),
     );
     await gradeTogether(run, suite);
     const used = [...new Set(outputs.map((x) => x.caseId))].map((id) =>
-      cases.get(id)!,
+      mustGet(cases, id),
     );
     const madeOnOldInputs = outputs.some(
-      (x) => x.createdAt < cases.get(x.caseId)!.updatedAt,
+      (x) => x.createdAt < mustGet(cases, x.caseId).updatedAt,
     );
     await store.updateRun(runId, {
       graderVersion: suite.graderVersion,
@@ -623,9 +625,9 @@ export function createRunner(opts: RunnerOptions) {
     // Tests on the same cases and instructions as the live model's compare
     // with it, even if the answer key has changed since.
     const sameAsLive = (r: RunRecord) =>
-      Boolean(liveRun) &&
-      r.datasetVersion === liveRun!.datasetVersion &&
-      r.promptVersion === liveRun!.promptVersion;
+      liveRun !== undefined &&
+      r.datasetVersion === liveRun.datasetVersion &&
+      r.promptVersion === liveRun.promptVersion;
     const outputs = new Map<string, RunOutput[]>();
     for (const r of latestDone.values())
       outputs.set(
@@ -645,11 +647,11 @@ export function createRunner(opts: RunnerOptions) {
     const keys = [
       ...models.map((m) => ({
         model: m,
-        effort: defaultEffort as string | null,
+        effort: defaultEffort,
       })),
       ...fallbackModels.map((m) => ({
         model: m,
-        effort: defaultEffort as string | null,
+        effort: defaultEffort,
       })),
       ...[...newest.values()].map((r) => ({
         model: r.model,
@@ -679,6 +681,7 @@ export function createRunner(opts: RunnerOptions) {
       const variant =
         realEffort(model, effort) !== realEffort(model, defaultEffort);
       const r = latestDone.get(key);
+      const lastRun = newest.get(key);
       const m = r?.metrics ?? undefined;
       const fresh = Boolean(r && isCurrent(r));
       // Tests with failed answers are incomplete: never compared or promoted.
@@ -705,8 +708,8 @@ export function createRunner(opts: RunnerOptions) {
         fallback: !variant && model === route.fallbackModel,
         testing: testing.has(key),
         failed:
-          newest.get(key)?.status === "FAILED"
-            ? (newest.get(key)!.error ?? "unknown error").slice(0, 160)
+          lastRun?.status === "FAILED"
+            ? (lastRun.error ?? "unknown error").slice(0, 160)
             : null,
         estCostPerAnswer: estimates.get(model) ?? null,
         test:

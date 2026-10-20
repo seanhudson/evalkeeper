@@ -1,5 +1,7 @@
 import { answerScore, wilson, type Rate } from "./stats";
 import type { CheckResult } from "./types";
+import { at } from "./util";
+import { mustGet } from "./util";
 
 /**
  * Comparing two runs of a suite, case by case: the champion (usually the
@@ -65,14 +67,14 @@ export function bootstrapMean(
   const means: number[] = [];
   for (let i = 0; i < iterations; i++) {
     let sum = 0;
-    for (let j = 0; j < n; j++) sum += diffs[Math.floor(rand() * n)];
+    for (let j = 0; j < n; j++) sum += at(diffs, Math.floor(rand() * n));
     means.push(sum / n);
   }
   means.sort((a, b) => a - b);
   return {
     mean,
-    low: means[Math.floor(iterations * 0.025)],
-    high: means[Math.ceil(iterations * 0.975) - 1],
+    low: at(means, Math.floor(iterations * 0.025)),
+    high: at(means, Math.ceil(iterations * 0.975) - 1),
   };
 }
 
@@ -139,24 +141,23 @@ export function bootstrapRate(
   const rand = mulberry32(seed);
   const rates: number[] = [];
   for (let i = 0; i < iterations; i++) {
-    const sample = Array.from(
-      { length: cases.length },
-      () => cases[Math.floor(rand() * cases.length)],
+    const sample = Array.from({ length: cases.length }, () =>
+      at(cases, Math.floor(rand() * cases.length)),
     );
     rates.push(rate(sample));
   }
   rates.sort((x, y) => x - y);
   return {
     mean,
-    low: rates[Math.floor(iterations * 0.025)],
-    high: rates[Math.ceil(iterations * 0.975) - 1],
+    low: at(rates, Math.floor(iterations * 0.025)),
+    high: at(rates, Math.ceil(iterations * 0.975) - 1),
   };
 }
 
 function rates(outputs: RunOutput[], key: string): Rate {
   const applied = outputs
     .map((o) => o.checks?.find((c) => c.key === key))
-    .filter((c): c is CheckResult => Boolean(c) && c!.pass !== null);
+    .filter((c): c is CheckResult => c !== undefined && c.pass !== null);
   return wilson(applied.filter((c) => c.pass).length, applied.length);
 }
 
@@ -183,12 +184,12 @@ export function compareRuns(
     ua && ub
       ? bootstrapRate(
           shared.map((id) => ({
-            a: ua.get(id)!.right,
-            b: ub.get(id)!.right,
-            total: Math.max(ua.get(id)!.total, ub.get(id)!.total),
+            a: mustGet(ua, id).right,
+            b: mustGet(ub, id).right,
+            total: Math.max(mustGet(ua, id).total, mustGet(ub, id).total),
           })),
         )
-      : bootstrapMean(shared.map((id) => b.get(id)! - a.get(id)!));
+      : bootstrapMean(shared.map((id) => mustGet(b, id) - mustGet(a, id)));
   const inShared = (os: RunOutput[]) =>
     os.filter((o) => shared.includes(o.caseId));
   return {
@@ -197,8 +198,8 @@ export function compareRuns(
     low,
     high,
     verdict: verdictFor(shared.length, low, high),
-    fixed: shared.filter((id) => b.get(id) === 1 && a.get(id)! < 1),
-    broke: shared.filter((id) => a.get(id) === 1 && b.get(id)! < 1),
+    fixed: shared.filter((id) => b.get(id) === 1 && mustGet(a, id) < 1),
+    broke: shared.filter((id) => a.get(id) === 1 && mustGet(b, id) < 1),
     byCheck: Object.fromEntries(
       checkKeys.map((k) => [
         k,

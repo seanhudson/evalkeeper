@@ -19,13 +19,14 @@ const hash = (word) =>
   createHash("sha256").update(word).digest("hex").slice(0, 16);
 
 /** Addresses that are fine to publish. */
-const ALLOWED_EMAIL = /@(users\.noreply\.github\.com|anthropic\.com|example\.(com|org))$/i;
+const ALLOWED_EMAIL =
+  /@(users\.noreply\.github\.com|anthropic\.com|example\.(com|org))$/i;
 const EMAIL = /[\w.+-]+@[\w-]+(\.[\w-]+)+/g;
 
 const files = execFileSync(
   "git",
   ["ls-files", "--cached", "--others", "--exclude-standard"],
-  { encoding: "utf8" }
+  { encoding: "utf8" },
 )
   .split("\n")
   .filter((f) => f && !/\.(png|jpe?g|gif|ico|webp|db)$/.test(f));
@@ -55,7 +56,7 @@ for (const file of files) {
 }
 if (problems.length) {
   console.error(
-    `Scrub check failed (${problems.length}):\n${problems.join("\n")}`
+    `Scrub check failed (${problems.length}):\n${problems.join("\n")}`,
   );
   process.exit(1);
 }

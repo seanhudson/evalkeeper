@@ -37,13 +37,12 @@ export function attention(boards: SuiteBoard[]): Attention {
   for (const b of boards) {
     const tested = b.rows.filter((r) => current(r));
     if (tested.length) {
-      const best = tested.reduce((a, r) =>
-        current(r)!.right / current(r)!.total >
-        current(a)!.right / current(a)!.total
-          ? r
-          : a,
-      );
-      const rate = current(best)!.right / current(best)!.total;
+      const rateOf = (r: BoardRow) => {
+        const t = current(r);
+        return t ? t.right / t.total : -1;
+      };
+      const best = tested.reduce((a, r) => (rateOf(r) > rateOf(a) ? r : a));
+      const rate = rateOf(best);
       if (!improve || rate < improve.best)
         improve = { key: b.key, label: b.label, best: rate, model: best.label };
     }

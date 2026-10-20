@@ -1,4 +1,4 @@
-import { fieldValue, type FormField } from "evalkeeper";
+import { asText, fieldValue, type FormField } from "evalkeeper";
 
 /**
  * A suite's form fields, rendered from its field specs: label, input, and
@@ -85,14 +85,14 @@ export function FieldValues({
                 v.length ? (
                   <ul className="list-disc pl-5">
                     {v.map((x, i) => (
-                      <li key={i}>{String(x)}</li>
+                      <li key={i}>{asText(x)}</li>
                     ))}
                   </ul>
                 ) : (
                   <span className="text-muted">None</span>
                 )
               ) : (
-                String(v ?? "—").replace(/_/g, " ")
+                (asText(v) || "—").replace(/_/g, " ")
               )}
             </dd>
           </div>

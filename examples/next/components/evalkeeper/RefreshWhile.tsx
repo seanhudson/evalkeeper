@@ -14,8 +14,12 @@ export function RefreshWhile({
   const router = useRouter();
   useEffect(() => {
     if (!active) return;
-    const t = setInterval(() => router.refresh(), ms);
-    return () => clearInterval(t);
+    const t = setInterval(() => {
+      router.refresh();
+    }, ms);
+    return () => {
+      clearInterval(t);
+    };
   }, [active, ms, router]);
   return null;
 }

@@ -64,7 +64,7 @@ export default async function RunPage({
       <Card className="space-y-3">
         {outputs.map((o) => {
           const checks = (o.scores as Check[] | null) ?? null;
-          const ok = allPassed(checks as never);
+          const ok = allPassed(checks);
           return (
             <div key={o.id} className="rounded-md bg-tint p-3 text-sm">
               <div className="flex justify-between gap-4">

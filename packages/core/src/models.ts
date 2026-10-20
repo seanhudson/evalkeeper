@@ -34,7 +34,7 @@ export function retiresLabel(
 ): string | null {
   const when = models[model]?.retiring;
   if (!when) return null;
-  const [y, m] = when.split("-").map(Number);
+  const [y = 1970, m = 1] = when.split("-").map(Number);
   return new Date(Date.UTC(y, (m || 1) - 1, 1)).toLocaleDateString("en-US", {
     month: "long",
     year: "numeric",

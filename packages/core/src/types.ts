@@ -12,16 +12,16 @@ export type CheckResult = {
   key: string;
   pass: boolean | null;
   /** Why it failed (or a detail worth showing), in plain words. */
-  note?: string;
+  note?: string | undefined;
   /** For matching checks: which expected item matched which output, and why. */
-  matches?: { expected: string; actual: string; why: string }[];
+  matches?: { expected: string; actual: string; why: string }[] | undefined;
   /** "meaning": a judge model matched them; "words": shared words did. */
-  matchedBy?: "meaning" | "words";
+  matchedBy?: "meaning" | "words" | undefined;
   /**
    * Partial credit: of the parts this answer should have (e.g. expected
    * items), how many it got right. The headline score sums these.
    */
-  units?: { right: number; total: number };
+  units?: { right: number; total: number } | undefined;
 };
 
 export type CheckDef = {
@@ -186,21 +186,40 @@ export type FormField = {
   required?: boolean;
 };
 
+/** A value as plain text: strings as they are, other values as JSON. */
+export function asText(v: unknown): string {
+  if (v === undefined || v === null) return "";
+  if (typeof v === "string") return v;
+  if (typeof v === "number" || typeof v === "boolean") return String(v);
+  return JSON.stringify(v);
+}
+
+/** A form value as text: "" when missing or a file. */
+export function formText(form: FormData, name: string): string {
+  const v = form.get(name);
+  return typeof v === "string" ? v.trim() : "";
+}
+
 /** A field's value from a stored input or answer, as the form shows it. */
 export function fieldValue(field: FormField, value: unknown): string {
-  const v = (value as Record<string, unknown> | null)?.[field.name];
-  if (Array.isArray(v)) return v.join("\n");
-  return v === undefined || v === null ? "" : String(v);
+  const v =
+    value && typeof value === "object"
+      ? (value as Record<string, unknown>)[field.name]
+      : undefined;
+  if (Array.isArray(v)) return v.map(asText).join("\n");
+  return asText(v);
 }
 
 /** A "lines" field's value as a list: one item per non-empty line. */
 export function linesOf(form: FormData, name: string): string[] {
-  return String(form.get(name) ?? "")
+  return formText(form, name)
     .split("\n")
     .map((l) => l.trim())
     .filter(Boolean);
 }
 
-// The registry holds suites of different shapes.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type AnySuite = Suite<any, any, any>;
+/**
+ * A suite of any shape, for registries. Its methods take and return
+ * `unknown`; a suite's own code keeps its precise types.
+ */
+export type AnySuite = Suite<unknown, unknown, unknown>;

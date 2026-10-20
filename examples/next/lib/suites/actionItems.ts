@@ -6,7 +6,13 @@ import {
   slot,
   type Pairing,
 } from "@evalkeeper/ai-sdk";
-import { linesOf, wordPairs, type CheckDef, type Suite } from "evalkeeper";
+import {
+  formText,
+  linesOf,
+  wordPairs,
+  type CheckDef,
+  type Suite,
+} from "evalkeeper";
 import { demoCall } from "../demo";
 import { MODELS, isDemo } from "../models";
 
@@ -19,10 +25,9 @@ import { MODELS, isDemo } from "../models";
 
 const input = z.object({ notes: z.string() });
 const label = z.object({ items: z.array(z.string()) });
-const output = z.object({ items: z.array(z.string()) });
 type Input = z.infer<typeof input>;
 type Label = z.infer<typeof label>;
-type Output = z.infer<typeof output>;
+type Output = { items: string[] };
 
 const SYSTEM = `You read meeting notes and list the action items: things someone agreed to do. One short line each, with the owner when the notes name one. Leave out decisions, updates, and ideas nobody took on.`;
 const schema = z.object({
@@ -218,17 +223,19 @@ export const actionItems: Suite<Input, Output, Label> = {
       {
         key: "found",
         pass: want.items.length ? missed.length === 0 : out.items.length === 0,
-        units: want.items.length
+        ...(want.items.length
           ? {
-              right: want.items.length - missed.length,
-              total: want.items.length,
+              units: {
+                right: want.items.length - missed.length,
+                total: want.items.length,
+              },
             }
-          : undefined,
-        note: missed.length ? `Missed: ${missed.join("; ")}` : undefined,
+          : {}),
+        ...(missed.length ? { note: `Missed: ${missed.join("; ")}` } : {}),
         matchedBy: by,
         matches: pairs.map((p) => ({
-          expected: want.items[p.expected],
-          actual: out.items[p.actual],
+          expected: want.items[p.expected] ?? "",
+          actual: out.items[p.actual] ?? "",
           why: p.why,
         })),
       },
@@ -242,7 +249,7 @@ export const actionItems: Suite<Input, Output, Label> = {
     ];
   },
   inputFromForm(form) {
-    return input.parse({ notes: String(form.get("notes") ?? "").trim() });
+    return input.parse({ notes: formText(form, "notes") });
   },
   labelFromForm(form) {
     return label.parse({ items: linesOf(form, "items") });
@@ -267,7 +274,7 @@ export const actionItems: Suite<Input, Output, Label> = {
     ],
   },
   starter: ACTION_STARTERS,
-  title: (i) => i.notes.split(".")[0].slice(0, 60),
+  title: (i) => (i.notes.split(".")[0] ?? i.notes).slice(0, 60),
   describe: (i) => i.notes,
   labelHelp: "items: the action items, one line each, in your own words.",
 };

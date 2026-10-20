@@ -73,7 +73,7 @@ export type SuiteMetrics = {
 };
 
 export function allPassed(checks: CheckResult[] | null): boolean {
-  return Boolean(checks) && checks!.every((c) => c.pass !== false);
+  return checks !== null && checks.every((c) => c.pass !== false);
 }
 
 /** Sums each answer's partial credit; null when the suite gives none. */
@@ -109,7 +109,7 @@ export function suiteMetrics(
   for (const key of checkKeys) {
     const applied = outputs
       .map((o) => o.checks?.find((c) => c.key === key))
-      .filter((c): c is CheckResult => Boolean(c) && c!.pass !== null);
+      .filter((c): c is CheckResult => c !== undefined && c.pass !== null);
     byCheck[key] = wilson(applied.filter((c) => c.pass).length, applied.length);
   }
   const byCase = new Map<string, boolean[]>();

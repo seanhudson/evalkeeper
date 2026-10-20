@@ -45,19 +45,22 @@ export async function AnswerKey({
 }) {
   const cases = await loadCases(suite.key);
   // Each model's latest test (at the operation's setting), by case.
-  const tested = rows.filter((r) => r.test && !r.variant);
+  const modelByRun = new Map(
+    rows.flatMap((r) =>
+      r.test && !r.variant ? [[r.test.runId, r.label] as const] : [],
+    ),
+  );
   const outputs = await prisma.evalOutput.findMany({
-    where: { runId: { in: tested.map((r) => r.test!.runId) } },
+    where: { runId: { in: [...modelByRun.keys()] } },
   });
   const byCase = new Map<
     string,
     { model: string; output: (typeof outputs)[number] }[]
   >();
   for (const o of outputs) {
-    const row = tested.find((r) => r.test!.runId === o.runId)!;
     byCase.set(o.caseId, [
       ...(byCase.get(o.caseId) ?? []),
-      { model: row.label, output: o },
+      { model: modelByRun.get(o.runId) ?? o.runId, output: o },
     ]);
   }
   const fields = suite.fields;

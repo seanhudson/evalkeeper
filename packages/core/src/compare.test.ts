@@ -55,7 +55,7 @@ describe("compareRuns", () => {
     expect(c.verdict).toBe("BETTER");
     expect(c.fixed).toHaveLength(8);
     expect(c.broke).toHaveLength(0);
-    expect(c.byCheck.a.challenger.rate).toBe(1);
+    expect(c.byCheck.a!.challenger.rate).toBe(1);
     expect(verdictSentence(c, "Model B")).toMatch(
       /Model B is better.*50% less/,
     );

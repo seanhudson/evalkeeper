@@ -100,8 +100,8 @@ describe("runner", () => {
 
   it("ignores pending answers", async () => {
     const { store, runner } = await setup(["hello"]);
-    store.cases[0].labels[0].status = "PENDING";
-    expect(confirmedLabel(store.cases[0].labels)).toBeNull();
+    store.cases[0]!.labels[0]!.status = "PENDING";
+    expect(confirmedLabel(store.cases[0]!.labels)).toBeNull();
     expect(await runner.casesFor("upper", "ALL")).toHaveLength(0);
   });
 
@@ -124,11 +124,11 @@ describe("runner", () => {
     expect(handed).toEqual([2]);
     expect((await store.getRun(run.id))!.status).toBe("RUNNING");
     // The next leg (no limit now) skips what's answered and finishes.
-    const done = await setupLeg(store);
+    const done = setupLeg(store);
     await done.runEval(run.id, { leg: 2 });
     expect((await store.getRun(run.id))!.status).toBe("SUCCEEDED");
     expect((await store.getRun(run.id))!.metrics!.outputs).toBe(4);
-    upper.concurrency = undefined;
+    delete upper.concurrency;
   });
 
   it("stops when the provider is out of credits", async () => {
@@ -142,7 +142,7 @@ describe("runner", () => {
     const r = (await store.getRun(run.id))!;
     expect(r.status).toBe("FAILED");
     expect(r.error).toMatch(/acme account is out of credits.*1 of 3/);
-    upper.concurrency = undefined;
+    delete upper.concurrency;
   });
 
   it("marks a test stuck only when nothing happened recently", async () => {
@@ -151,7 +151,7 @@ describe("runner", () => {
       suite: "upper",
       model: "model-a",
     });
-    store.runs[0].startedAt = new Date(Date.now() - 20 * 60_000);
+    store.runs[0]!.startedAt = new Date(Date.now() - 20 * 60_000);
     await runner.stopStuckRuns("upper");
     expect((await store.getRun(run.id))!.status).toBe("FAILED");
   });
@@ -164,11 +164,13 @@ describe("runner", () => {
       model: "model-a",
     });
     await runner.runEval(run.id);
-    store.cases[0].labels[0].value = { want: "something else" };
-    store.cases[0].labels[0].updatedAt = new Date(Date.now() + 1000);
+    store.cases[0]!.labels[0]!.value = { want: "something else" };
+    store.cases[0]!.labels[0]!.updatedAt = new Date(Date.now() + 1000);
     await runner.rescoreRun(run.id);
     expect(calls).toBe(1);
-    expect((await store.getRun(run.id))!.metrics!.byCheck.match.passed).toBe(0);
+    expect((await store.getRun(run.id))!.metrics!.byCheck.match!.passed).toBe(
+      0,
+    );
   });
 });
 
@@ -231,7 +233,7 @@ describe("board", () => {
       "model-b",
       "model-c",
     ]);
-    expect(b.rows[0].live).toBe(true);
+    expect(b.rows[0]!.live).toBe(true);
     // Three cases are too few to call them equal, so it can't go live yet;
     // a fallback only needs a current, complete test from another provider.
     expect(b.rows[1]).toMatchObject({
@@ -241,6 +243,6 @@ describe("board", () => {
     });
     // Untested, and the same provider as live.
     expect(b.rows[2]).toMatchObject({ test: null, canMakeFallback: false });
-    expect(b.caseResults[store.cases[0].id]).toEqual({ passed: 2, models: 2 });
+    expect(b.caseResults[store.cases[0]!.id]).toEqual({ passed: 2, models: 2 });
   });
 });

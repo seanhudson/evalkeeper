@@ -30,7 +30,8 @@ export async function routeFor(operation: string): Promise<Route> {
   const r = await prisma.route.findUnique({ where: { operation } });
   return r
     ? { model: r.model, fallbackModel: r.fallbackModel, reasoningEffort: null }
-    : DEFAULT_ROUTE[operation];
+    : (DEFAULT_ROUTE[operation] ??
+        Promise.reject(new Error(`No route for ${operation}`)));
 }
 
 // A judge model for matching by meaning, when a key is set.
@@ -51,8 +52,11 @@ if (judgeModel) {
   useMatcher((e, a, onCost) => judge.match(e, a, wordPairs, onCost));
 }
 
+/** Where cases, answers, and tests live: these tables, through Prisma. */
+export const store = prismaStore(prisma);
+
 export const runner = createRunner({
-  store: prismaStore(prisma),
+  store,
   suites: SUITES,
   models: MODELS,
   promptVersion: (operation) => PROMPT_VERSIONS[operation] ?? "unregistered",

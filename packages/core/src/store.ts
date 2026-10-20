@@ -107,17 +107,24 @@ export type NewRun = Omit<
   "id" | "startedAt" | "finishedAt" | "status" | "metrics" | "error"
 >;
 export type NewOutput = Omit<OutputRecord, "id" | "createdAt">;
+export type NewLabel = Omit<LabelRecord, "id" | "createdAt" | "updatedAt">;
 export type NewCase = Omit<
   CaseRecord,
   "id" | "createdAt" | "updatedAt" | "labels"
 > & {
-  labels?: Omit<LabelRecord, "id" | "createdAt" | "updatedAt">[];
+  labels?: NewLabel[];
 };
 
 export interface EvalStore {
   /** A suite's cases that aren't retired, with their answers, oldest first. */
   listCases(suite: string): Promise<CaseRecord[]>;
   createCase(data: NewCase): Promise<CaseRecord>;
+  /** Adds an answer to a case (answers are never overwritten). */
+  addLabel(caseId: string, label: NewLabel): Promise<LabelRecord>;
+  /** Changes an answer's status, e.g. a person confirming a draft. */
+  setLabelStatus(labelId: string, status: LabelStatus): Promise<void>;
+  /** Changes a case's status, e.g. retiring it. */
+  setCaseStatus(caseId: string, status: CaseRecord["status"]): Promise<void>;
   getRun(id: string): Promise<RunRecord | null>;
   /** Newest first. */
   listRuns(

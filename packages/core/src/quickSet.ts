@@ -1,3 +1,4 @@
+import { at } from "./util";
 /**
  * The quick-check set (internally SMOKE): a few cases for a cheap first
  * look, picked by the app rather than by hand. Greedy: confirmed cases
@@ -29,7 +30,7 @@ export function pickQuickSet<
         best = i;
       }
     });
-    const [c] = pool.splice(best, 1);
+    const c = at(pool.splice(best, 1), 0);
     c.tags.forEach((t) => covered.add(t));
     picked.push(c);
   }

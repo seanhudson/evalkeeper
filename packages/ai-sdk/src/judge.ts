@@ -19,7 +19,7 @@ export type Pairing = {
 };
 
 export type JudgmentCache = {
-  get(key: string): Promise<unknown | null>;
+  get(key: string): Promise<unknown>;
   set(key: string, value: unknown, model: string): Promise<void>;
 };
 

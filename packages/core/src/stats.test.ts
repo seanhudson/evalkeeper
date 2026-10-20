@@ -66,7 +66,7 @@ describe("suiteMetrics", () => {
     expect(m.cases).toBe(3);
     expect(m.failed).toBe(1);
     expect(m.byCheck.a).toMatchObject({ passed: 3, n: 4 });
-    expect(m.byCheck.b.n).toBe(0);
+    expect(m.byCheck.b!.n).toBe(0);
     // Case 1 passed once and failed once; case 2 passed both times.
     expect(m.consistency).toMatchObject({ passed: 1, n: 2 });
     expect(m.allPass).toMatchObject({ passed: 3, n: 5 });

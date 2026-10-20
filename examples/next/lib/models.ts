@@ -75,7 +75,7 @@ const KEYS: Record<string, string | undefined> = {
 /** Models you can test now: the demo ones, plus any whose key is set. */
 export function availableModels(): string[] {
   return Object.keys(MODELS).filter((m) => {
-    const p = MODELS[m].provider;
+    const p = MODELS[m]?.provider ?? "";
     return p.startsWith("demo") || Boolean(KEYS[p]);
   });
 }

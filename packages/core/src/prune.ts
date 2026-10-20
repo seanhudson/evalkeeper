@@ -1,4 +1,5 @@
 import { stableJson } from "./stableJson";
+import { at } from "./util";
 
 /**
  * Keeping an answer key useful: cases every model gets right (easy), cases
@@ -22,7 +23,9 @@ export const DUPLICATE_SIMILARITY = 0.9;
 export type CaseResult = { passed: number; models: number };
 
 export function isEasy(r: CaseResult | undefined): boolean {
-  return Boolean(r) && r!.models >= EASY_MIN_MODELS && r!.passed === r!.models;
+  return (
+    r !== undefined && r.models >= EASY_MIN_MODELS && r.passed === r.models
+  );
 }
 
 export function isSplit(r: CaseResult | undefined): boolean {
@@ -60,13 +63,15 @@ export function nearDuplicates<C extends { id: string; input: unknown }>(
   const pairs: [C, C][] = [];
   for (let i = 0; i < sets.length; i++)
     for (let j = i + 1; j < sets.length; j++) {
-      const a = sets[i].w;
-      const b = sets[j].w;
+      const x = at(sets, i);
+      const y = at(sets, j);
+      const a = x.w;
+      const b = y.w;
       let shared = 0;
-      for (const x of a) if (b.has(x)) shared++;
+      for (const w of a) if (b.has(w)) shared++;
       const union = a.size + b.size - shared;
       if (union && shared / union >= DUPLICATE_SIMILARITY)
-        pairs.push([sets[i].c, sets[j].c]);
+        pairs.push([x.c, y.c]);
     }
   return pairs;
 }

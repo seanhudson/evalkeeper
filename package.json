@@ -15,7 +15,9 @@
     "format": "prettier --write .",
     "check": "npm run scrub && npm run format:check && npm run build && npm run typecheck && npm run lint && npm test",
     "lint": "eslint .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "prepare": "simple-git-hooks",
+    "test:unit": "npm run test -w packages/core -w packages/ai-sdk"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
@@ -24,7 +26,9 @@
     "eslint": "^9.39.5",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.13.0",
+    "lint-staged": "^16.4.0",
     "prettier": "^3.9.10",
+    "simple-git-hooks": "^2.14.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.72.0",
     "vitest": "^5.0.3"
@@ -38,5 +42,18 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/seanhudson/evalkeeper.git"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "npx lint-staged && node scripts/scrub-check.mjs",
+    "pre-push": "npm run build && npm run typecheck && npm run test:unit"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,mjs}": [
+      "prettier --write",
+      "eslint --fix --max-warnings=0 --no-warn-ignored"
+    ],
+    "*.{json,md,yml,yaml,css}": [
+      "prettier --write"
+    ]
   }
 }

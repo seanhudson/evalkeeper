@@ -1,7 +1,7 @@
 {
   "name": "@crowandraven/evalkeeper",
   "version": "0.1.1",
-  "description": "Pure eval logic: suites, checks, stats, model comparisons, and model suggestions on evidence.",
+  "description": "An open-source eval harness for TypeScript apps: test each AI feature against answers people confirm, compare models on accuracy, cost, and speed, and choose the live model on evidence.",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",

@@ -1,8 +1,10 @@
 # Evalkeeper
 
-**Evals for the AI features in your app.** Write down what a good answer
-looks like, test every model against it, and choose the live model on
-evidence instead of vibes, then keep that choice honest as models change.
+**An eval harness for the AI features in your TypeScript app.** For each
+feature, keep an answer key people confirm, run any model against it, and
+compare models on accuracy, serious mistakes, cost, and speed. Evalkeeper
+suggests a live model and a fallback with its reasons, records every
+switch, and checks weekly that the live model hasn't drifted.
 
 [![CI](https://github.com/seanhudson/evalkeeper/actions/workflows/ci.yml/badge.svg)](https://github.com/seanhudson/evalkeeper/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)

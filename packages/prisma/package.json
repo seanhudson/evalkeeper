@@ -1,7 +1,7 @@
 {
   "name": "@crowandraven/evalkeeper-prisma",
   "version": "0.1.1",
-  "description": "Evalkeeper's tables for Prisma, and a store on your Prisma client.",
+  "description": "Prisma storage for Evalkeeper, the eval harness: its tables and a store on your Prisma client.",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",

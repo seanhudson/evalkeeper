@@ -7,6 +7,11 @@ version may change an interface, and its entry says how to update.
 
 ## Unreleased
 
+### Changed
+
+- Package descriptions say what Evalkeeper is: an eval harness for
+  TypeScript apps.
+
 ## 0.1.1 - 2026-10-20
 
 The first version to install from npm.

@@ -149,7 +149,7 @@ its own routing, auth, and pages.
 **1. Install.**
 
 ```bash
-npm install evalkeeper @crowandraven/evalkeeper-prisma @crowandraven/evalkeeper-ai-sdk
+npm install @crowandraven/evalkeeper @crowandraven/evalkeeper-prisma @crowandraven/evalkeeper-ai-sdk
 ```
 
 **2. Add the tables.** Copy the models from
@@ -160,7 +160,7 @@ into your schema. They work on PostgreSQL, MySQL, and SQLite.
 how to call the feature on a given model, and how to grade the output.
 
 ```ts
-import type { Suite } from "evalkeeper";
+import type { Suite } from "@crowandraven/evalkeeper";
 import { z } from "zod";
 
 export const ticketTriage: Suite<Input, Output, Label> = {
@@ -194,7 +194,7 @@ export const ticketTriage: Suite<Input, Output, Label> = {
 routing.
 
 ```ts
-import { createRunner } from "evalkeeper/runner";
+import { createRunner } from "@crowandraven/evalkeeper/runner";
 import { prismaStore } from "@crowandraven/evalkeeper-prisma";
 
 export const runner = createRunner({
@@ -218,7 +218,7 @@ const board = await runner.board("ticket_triage");
 shadcn/ui components are, so you can restyle and change them:
 
 ```bash
-npx evalkeeper add pages --base admin/evals
+npx @crowandraven/evalkeeper add pages --base admin/evals
 ```
 
 It copies the pages, components, and their server actions, fitted to your

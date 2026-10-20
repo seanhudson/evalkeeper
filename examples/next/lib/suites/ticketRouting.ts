@@ -3,7 +3,12 @@ import {
   decideAndPrice,
   instructionsHash,
 } from "@crowandraven/evalkeeper-ai-sdk";
-import { decisionCheck, formText, type CheckDef, type Suite } from "evalkeeper";
+import {
+  decisionCheck,
+  formText,
+  type CheckDef,
+  type Suite,
+} from "@crowandraven/evalkeeper";
 import { demoDecisionModel, isDemoDecider } from "../demoDecision";
 import { MODELS } from "../models";
 import { CATEGORIES, TRIAGE_STARTERS } from "./ticketTriage";

@@ -22,7 +22,7 @@ import type { Suite } from "./types.js";
  *
  * @example
  * ```ts
- * import { describeStoreContract } from "evalkeeper/testing";
+ * import { describeStoreContract } from "@crowandraven/evalkeeper/testing";
  *
  * describeStoreContract("my store", () => myStore(freshDatabase()));
  * ```

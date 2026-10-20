@@ -2,7 +2,7 @@ import { spawnSync } from "node:child_process";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { run } from "evalkeeper/cli";
+import { run } from "@crowandraven/evalkeeper/cli";
 
 // The copy-in CLI's output must compile in a real app: scaffold into a
 // scratch app here (so it uses this app's packages), with a "~" alias and
@@ -14,7 +14,7 @@ afterAll(() => {
   rmSync(scratch, { recursive: true, force: true });
 });
 
-describe("npx evalkeeper add pages", () => {
+describe("npx @crowandraven/evalkeeper add pages", () => {
   it("writes pages that typecheck against the starter wiring", () => {
     rmSync(scratch, { recursive: true, force: true });
     mkdirSync(join(scratch, "src", "app"), { recursive: true });

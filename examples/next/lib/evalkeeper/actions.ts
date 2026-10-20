@@ -2,7 +2,7 @@
 
 import { after } from "next/server";
 import { revalidatePath } from "next/cache";
-import { caseFromFeedback, formText, suggest } from "evalkeeper";
+import { caseFromFeedback, formText, suggest } from "@crowandraven/evalkeeper";
 import {
   MODELS,
   SUITES,

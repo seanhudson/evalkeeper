@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { ThumbsDown, ThumbsUp } from "lucide-react";
-import { formText } from "evalkeeper";
+import { formText } from "@crowandraven/evalkeeper";
 
 type Rating = "UP" | "DOWN";
 

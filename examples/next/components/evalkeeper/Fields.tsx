@@ -1,4 +1,4 @@
-import { asText, fieldValue, type FormField } from "evalkeeper";
+import { asText, fieldValue, type FormField } from "@crowandraven/evalkeeper";
 import { InfoTip } from "./Tip";
 
 /**

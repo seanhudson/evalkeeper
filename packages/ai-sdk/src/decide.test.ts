@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Experimental_DecisionModel } from "ai";
-import { decisionCheck } from "evalkeeper";
+import { decisionCheck } from "@crowandraven/evalkeeper";
 import { decideAndPrice } from "./decide.js";
 
 /** A decision model that answers from a fixed result, through the real SDK path. */

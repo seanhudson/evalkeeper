@@ -1,5 +1,5 @@
 /**
- * The `evalkeeper` command: `npx evalkeeper add pages`.
+ * The `evalkeeper` command: `npx @crowandraven/evalkeeper add pages`.
  *
  * @module evalkeeper/cli
  */
@@ -10,7 +10,7 @@ import { addPages, nextSteps, type AddPagesOptions } from "./addPages.js";
 /** The `evalkeeper` command. */
 
 /** The command's help text. */
-export const HELP = `Usage: npx evalkeeper add pages [options]
+export const HELP = `Usage: npx @crowandraven/evalkeeper add pages [options]
 
 Copies Evalkeeper's eval pages, components, and their glue into your
 Next.js app, fitted to its folders and import alias.

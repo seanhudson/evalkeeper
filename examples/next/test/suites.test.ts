@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { wordPairs } from "evalkeeper";
+import { wordPairs } from "@crowandraven/evalkeeper";
 import { ticketTriage, TRIAGE_STARTERS } from "../lib/suites/ticketTriage";
 import {
   actionItems,

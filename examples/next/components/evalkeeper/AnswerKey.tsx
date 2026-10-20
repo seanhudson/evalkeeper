@@ -6,7 +6,7 @@ import {
   type AnySuite,
   type BoardRow,
   type CheckResult,
-} from "evalkeeper";
+} from "@crowandraven/evalkeeper";
 import {
   addCase,
   confirmAnswer,

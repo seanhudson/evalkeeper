@@ -2,8 +2,8 @@
 // each board and the suggestion: the same path the pages take.
 import { PrismaClient } from "@prisma/client";
 import { prismaStore } from "@crowandraven/evalkeeper-prisma";
-import { suggest } from "evalkeeper";
-import { createRunner } from "evalkeeper/runner";
+import { suggest } from "@crowandraven/evalkeeper";
+import { createRunner } from "@crowandraven/evalkeeper/runner";
 import { MODELS } from "../lib/models";
 import { PROMPT_VERSIONS, SUITES } from "../lib/suites";
 

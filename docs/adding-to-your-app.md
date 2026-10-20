@@ -89,7 +89,7 @@ The continue route checks a secret, answers at once, and calls
 ## 7. Add the pages
 
 ```bash
-npx evalkeeper add pages --base admin/evals
+npx @crowandraven/evalkeeper add pages --base admin/evals
 ```
 
 It reads your `tsconfig.json` import alias (`@/*`, `~/*`, and code under

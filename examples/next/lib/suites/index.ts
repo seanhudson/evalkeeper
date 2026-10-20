@@ -1,4 +1,4 @@
-import type { AnySuite } from "evalkeeper";
+import type { AnySuite } from "@crowandraven/evalkeeper";
 import { actionItems, actionItemsVersion } from "./actionItems";
 import { ticketRouting, routingVersion } from "./ticketRouting";
 import { ticketTriage, triageVersion } from "./ticketTriage";

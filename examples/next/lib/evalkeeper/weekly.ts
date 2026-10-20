@@ -1,5 +1,9 @@
 import "server-only";
-import { thumbsSummary, weeklySummary, type WeeklySummary } from "evalkeeper";
+import {
+  thumbsSummary,
+  weeklySummary,
+  type WeeklySummary,
+} from "@crowandraven/evalkeeper";
 import { MODELS, SUITES, feedbackStore, routeFor, runner, store } from ".";
 import { daysAgo } from "./time";
 

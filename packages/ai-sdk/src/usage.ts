@@ -1,4 +1,4 @@
-import { priceCall, type ModelCatalog } from "evalkeeper";
+import { priceCall, type ModelCatalog } from "@crowandraven/evalkeeper";
 
 /**
  * What a call cost, from the AI SDK's usage and your catalog's prices;

@@ -12,7 +12,7 @@ import {
   seconds,
   seriousMistakes,
   suggest,
-} from "evalkeeper";
+} from "@crowandraven/evalkeeper";
 import { AnswerKey } from "@/components/evalkeeper/AnswerKey";
 import { RefreshWhile } from "@/components/evalkeeper/RefreshWhile";
 import { IconSubmit, Spinner, Submit } from "@/components/evalkeeper/Submit";

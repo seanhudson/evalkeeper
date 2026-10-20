@@ -8,7 +8,7 @@ import {
 import { dirname, join, relative } from "node:path";
 
 /**
- * `npx evalkeeper add pages`: copies the eval pages, components, and their
+ * `npx @crowandraven/evalkeeper add pages`: copies the eval pages, components, and their
  * glue into a Next.js app, fitted to its folders and import alias. It never
  * overwrites a file unless told to, and writes the app's wiring module only
  * when there isn't one. Node-only (it reads and writes files).
@@ -245,7 +245,7 @@ export function nextSteps(r: {
   );
   const css = join(r.root, "components/evalkeeper/evalkeeper.css");
   return [
-    "npm install evalkeeper @crowandraven/evalkeeper-prisma @crowandraven/evalkeeper-ai-sdk server-only lucide-react",
+    "npm install @crowandraven/evalkeeper @crowandraven/evalkeeper-prisma @crowandraven/evalkeeper-ai-sdk server-only lucide-react",
     "Add Evalkeeper's models to your Prisma schema (node_modules/@crowandraven/evalkeeper-prisma/schema/evalkeeper.prisma), then write a migration from the schema file.",
     `Import the colors into your global CSS, right after Tailwind: @import "${css}"; (a path relative to that CSS file).`,
     wiring?.action === "skip"

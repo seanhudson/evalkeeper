@@ -1,5 +1,5 @@
 // Copies the example app's eval pages into templates/, which ship with the
-// package for `npx evalkeeper add pages`. The example is the template: what
+// package for `npx @crowandraven/evalkeeper add pages`. The example is the template: what
 // it runs and tests is exactly what gets copied.
 import { cpSync, existsSync, mkdirSync, rmSync } from "node:fs";
 import { dirname, join } from "node:path";

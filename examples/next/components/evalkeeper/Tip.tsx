@@ -1,5 +1,5 @@
 import { Info } from "lucide-react";
-import { GLOSSARY, type GlossaryTerm } from "evalkeeper";
+import { GLOSSARY, type GlossaryTerm } from "@crowandraven/evalkeeper";
 
 /**
  * Tooltips that explain how things work. They open on hover and on

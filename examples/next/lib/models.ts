@@ -1,4 +1,4 @@
-import type { ModelCatalog } from "evalkeeper";
+import type { ModelCatalog } from "@crowandraven/evalkeeper";
 
 /**
  * The models this app can use. Demo models run locally with no key, so the

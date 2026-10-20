@@ -1,6 +1,6 @@
 {
   "name": "@crowandraven/evalkeeper-ai-sdk",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Evalkeeper for the Vercel AI SDK: instruction hashes, call pricing, and a cached meaning judge.",
   "license": "MIT",
   "type": "module",
@@ -23,7 +23,7 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "evalkeeper": "0.1.0"
+    "@crowandraven/evalkeeper": "0.1.1"
   },
   "peerDependencies": {
     "ai": ">=7",

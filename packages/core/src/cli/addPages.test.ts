@@ -218,7 +218,9 @@ describe("evalkeeper add pages", () => {
       /Unknown option/,
     );
     expect(cli(app(AT), "add", "pages", "--base").err).toMatch(/needs a value/);
-    expect(cli(app(AT)).out).toMatch(/Usage: npx evalkeeper add pages/);
+    expect(cli(app(AT)).out).toMatch(
+      /Usage: npx @crowandraven\/evalkeeper add pages/,
+    );
     expect(cli(app(AT), "--help").code).toBe(0);
   });
 

@@ -1,6 +1,6 @@
 {
-  "name": "evalkeeper",
-  "version": "0.1.0",
+  "name": "@crowandraven/evalkeeper",
+  "version": "0.1.1",
   "description": "Pure eval logic: suites, checks, stats, model comparisons, and model suggestions on evidence.",
   "license": "MIT",
   "type": "module",

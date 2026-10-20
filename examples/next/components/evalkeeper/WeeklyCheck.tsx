@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { money, type WeeklySummary } from "evalkeeper";
+import { money, type WeeklySummary } from "@crowandraven/evalkeeper";
 import { runWeeklyNow } from "@/lib/evalkeeper/actions";
 import { RefreshWhile } from "./RefreshWhile";
 import { Submit } from "./Submit";

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import type { HealthStatus } from "evalkeeper";
+import type { HealthStatus } from "@crowandraven/evalkeeper";
 
 export const pct = (x: number) => `${Math.round(x * 100)}%`;
 

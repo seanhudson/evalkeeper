@@ -8,7 +8,7 @@ import {
   describeFeedbackStoreContract,
   describeSettingsStoreContract,
   describeStoreContract,
-} from "evalkeeper/testing";
+} from "@crowandraven/evalkeeper/testing";
 import { afterAll } from "vitest";
 
 // A throwaway SQLite file (see the "test" script), emptied before each

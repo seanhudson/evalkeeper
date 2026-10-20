@@ -6,8 +6,8 @@ import {
   prismaSettingsStore,
   prismaStore,
 } from "@crowandraven/evalkeeper-prisma";
-import { createSettings, type Settings } from "evalkeeper";
-import { createRunner, type Route } from "evalkeeper/runner";
+import { createSettings, type Settings } from "@crowandraven/evalkeeper";
+import { createRunner, type Route } from "@crowandraven/evalkeeper/runner";
 import { prisma } from "../db";
 import { MODELS, availableModels } from "../models";
 import { useMatcher } from "../suites/actionItems";
@@ -73,7 +73,7 @@ if (judgeModel) {
     models: MODELS,
     cache: prismaJudgmentCache(prisma),
   });
-  const { wordPairs } = await import("evalkeeper");
+  const { wordPairs } = await import("@crowandraven/evalkeeper");
   useMatcher((e, a, onCost) => judge.match(e, a, wordPairs, onCost));
 }
 

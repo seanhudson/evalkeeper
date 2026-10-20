@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { generateText, Output, type LanguageModel } from "ai";
 import { z } from "zod";
-import { priceCall, type ModelCatalog } from "evalkeeper";
+import { priceCall, type ModelCatalog } from "@crowandraven/evalkeeper";
 
 /**
  * Matching expected items to a model's items by meaning, not wording: a

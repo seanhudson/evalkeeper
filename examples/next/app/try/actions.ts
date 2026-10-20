@@ -3,7 +3,7 @@
 import { randomUUID } from "node:crypto";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
-import { formText } from "evalkeeper";
+import { formText } from "@crowandraven/evalkeeper";
 import { prisma } from "@/lib/db";
 import { feedbackStore, routeFor } from "@/lib/evalkeeper";
 import { ticketTriage } from "@/lib/suites/ticketTriage";

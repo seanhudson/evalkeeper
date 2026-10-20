@@ -5,7 +5,7 @@ import {
   whyNotACase,
   type AnySuite,
   type FeedbackRecord,
-} from "evalkeeper";
+} from "@crowandraven/evalkeeper";
 import { FieldValues } from "@/components/evalkeeper/Fields";
 import { Submit } from "@/components/evalkeeper/Submit";
 import { InfoTip, Tip } from "@/components/evalkeeper/Tip";

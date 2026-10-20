@@ -9,7 +9,7 @@ import {
   type HistoryEntry,
   type Settings,
   type SettingsVersion,
-} from "evalkeeper";
+} from "@crowandraven/evalkeeper";
 import { Card, StatusBadge, pct } from "@/components/evalkeeper/ui";
 import {
   feedbackStore,

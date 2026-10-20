@@ -4,7 +4,7 @@ import {
   type ChangeKind,
   type HistoryEntry,
   type Settings,
-} from "evalkeeper";
+} from "@crowandraven/evalkeeper";
 import { rollBackSettings } from "@/lib/evalkeeper/actions";
 import { Submit } from "./Submit";
 import { InfoTip, Tip } from "./Tip";

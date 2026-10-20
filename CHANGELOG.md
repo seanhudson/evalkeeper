@@ -7,6 +7,10 @@ version may change an interface, and its entry says how to update.
 
 ## Unreleased
 
+## 0.1.1 - 2026-10-20
+
+The first version to install from npm.
+
 ### Added
 
 - Decision suites: `decisions: true` on a suite, and `decisionCheck`,
@@ -28,7 +32,7 @@ version may change an interface, and its entry says how to update.
   and an API reference built with TypeDoc (`npm run docs:api`) and
   published from CI to GitHub Pages.
 
-- `npx evalkeeper add pages`: copies the eval pages, components, and their
+- `npx @crowandraven/evalkeeper add pages`: copies the eval pages, components, and their
   server actions into a Next.js app, fitted to its import alias, folders,
   and a base path; never overwrites without `--force`; writes a starter
   `lib/evalkeeper/index.ts` whose `requireAdmin` refuses everyone until
@@ -62,7 +66,7 @@ version may change an interface, and its entry says how to update.
   model's answer, pending. `labelFromOutput` on suites makes the proposal.
   The example app adds a "try it" page, the thumbs component, a feedback
   queue, and a hub card.
-- `describeFeedbackStoreContract` (`evalkeeper/testing`).
+- `describeFeedbackStoreContract` (`@crowandraven/evalkeeper/testing`).
 
 - Answer key: open a case to see its input, answer, and each model's
   result; add a case, edit an answer, or retire a case.
@@ -70,7 +74,7 @@ version may change an interface, and its entry says how to update.
   suite, with help on every field.
 - `GLOSSARY`: plain definitions for every term on the pages, shown as
   tooltips.
-- `describeStoreContract` (`evalkeeper/testing`): the tests every
+- `describeStoreContract` (`@crowandraven/evalkeeper/testing`): the tests every
   `EvalStore` must pass.
 - `addLabel`, `setLabelStatus`, and `setCaseStatus` on `EvalStore`.
 - Live, Fallback, Retires, and Out of date chips on the model board.
@@ -83,11 +87,13 @@ version may change an interface, and its entry says how to update.
 
 ### Changed
 
-- The adapters are published as `@crowandraven/evalkeeper-prisma` and
-  `@crowandraven/evalkeeper-ai-sdk` (were `@evalkeeper/prisma` and
-  `@evalkeeper/ai-sdk`). The core is still `evalkeeper`. Each package
-  ships its LICENSE, and `vitest` is an optional peer (only
-  `evalkeeper/testing` needs it).
+- Published on npm under `@crowandraven`: `@crowandraven/evalkeeper` (was
+  `evalkeeper`, now deprecated), `@crowandraven/evalkeeper-prisma` (was
+  `@evalkeeper/prisma`), and `@crowandraven/evalkeeper-ai-sdk` (was
+  `@evalkeeper/ai-sdk`). Change your imports and installs; the command is
+  still `evalkeeper` (`npx @crowandraven/evalkeeper add pages`). Each
+  package ships its LICENSE, and `vitest` is an optional peer (only
+  `@crowandraven/evalkeeper/testing` needs it).
 - The example's icons are Lucide (`lucide-react`, now in the CLI's install
   line): back arrows, thumbs, the case chevron, the info tip, and the
   circle loader. Everything you can press shows a pointer

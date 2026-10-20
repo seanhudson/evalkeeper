@@ -12,7 +12,7 @@ import {
   wordPairs,
   type CheckDef,
   type Suite,
-} from "evalkeeper";
+} from "@crowandraven/evalkeeper";
 import { demoCall } from "../demo";
 import { MODELS, isDemo } from "../models";
 

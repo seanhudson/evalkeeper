@@ -3,7 +3,7 @@
  *
  * @module \@crowandraven/evalkeeper-prisma
  */
-import { SettingsConflict, cleanRating } from "evalkeeper";
+import { SettingsConflict, cleanRating } from "@crowandraven/evalkeeper";
 import type {
   CaseRecord,
   FeedbackRecord,
@@ -23,7 +23,7 @@ import type {
   SettingsChange,
   SettingsStore,
   SettingsVersion,
-} from "evalkeeper";
+} from "@crowandraven/evalkeeper";
 
 /**
  * An EvalStore on your Prisma client, using the models in

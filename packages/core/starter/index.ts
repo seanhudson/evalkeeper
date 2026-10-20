@@ -1,13 +1,13 @@
 // Your app's Evalkeeper wiring: the one file the copied eval pages import.
-// Written by `npx evalkeeper add pages`; it's yours now. Fill in each TODO.
+// Written by `npx @crowandraven/evalkeeper add pages`; it's yours now. Fill in each TODO.
 import "server-only";
 import {
   createSettings,
   type AnySuite,
   type ModelCatalog,
   type Settings,
-} from "evalkeeper";
-import { createRunner, type Route } from "evalkeeper/runner";
+} from "@crowandraven/evalkeeper";
+import { createRunner, type Route } from "@crowandraven/evalkeeper/runner";
 import {
   prismaFeedbackStore,
   prismaSettingsStore,

@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { allPassed, money, summarize } from "evalkeeper";
+import { allPassed, money, summarize } from "@crowandraven/evalkeeper";
 import { BackLink, Card, pct } from "@/components/evalkeeper/ui";
 import { MODELS, requireAdmin, runner, store } from "@/lib/evalkeeper";
 import { evalsPath } from "@/lib/evalkeeper/paths";

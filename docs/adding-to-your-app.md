@@ -1,0 +1,96 @@
+# Adding Evalkeeper to your app
+
+These steps assume TypeScript, a server that can run background work, and
+a database. The adapters cover Prisma and the Vercel AI SDK; anything else
+means writing a small store or a few lines of glue. Stop after each step
+and check it works.
+
+## 1. Route every AI call through named operations
+
+Each AI feature needs a name and a way to run on a model you choose:
+`triage(input, { model })`. If feature code picks its model inline today,
+move that choice to one place (a table, config, or env vars) that says
+which model each operation runs on and its fallback. Evalkeeper reads
+that route for its board; your app keeps owning it.
+
+Record what each call costs (the AI SDK's `usage` priced with your
+catalog: `costOf` in `@evalkeeper/ai-sdk`) and pass it to the suite's
+`onCost`, so tests show real cost per answer.
+
+## 2. Describe your models
+
+A `ModelCatalog` lists each model's label, provider, price per million
+tokens (with its source), the reasoning settings it accepts, and when the
+provider retires it (`retiring: "2027-01"`). Retiring models are never
+suggested.
+
+## 3. Add the tables
+
+Copy the models from `packages/prisma/schema/evalkeeper.prisma` into your
+Prisma schema and write a migration from the schema file. Then:
+
+```ts
+const store = prismaStore(prisma);
+```
+
+Not on Prisma? Implement `EvalStore` (see `packages/core/src/store.ts`)
+on your database; `memoryStore.ts` is a complete example.
+
+## 4. Hash each operation's instructions
+
+```ts
+export const triageVersion = instructionsHash({
+  texts: [SYSTEM, prompt({ subject: slot("subject"), body: slot("body") })],
+  schemas: [outputSchema],
+});
+```
+
+Include everything the model is told besides its settings: the system
+text, prompt templates with placeholders instead of data, and output
+schemas and tool descriptions. Anything else that shapes an answer (an
+admin-edited rule injected at call time) belongs in the hash too.
+
+## 5. Write your first suite
+
+Pick the AI feature people would notice most if it got worse. Write its
+input and answer shapes with zod, two or three checks (at least one
+serious), `run`, and `grade`. Keep grading pure where you can, and unit
+test it: a low score is often the grader's fault.
+
+Start with 10 to 20 real cases, with personal details removed. Confirm
+each answer yourself. Grow toward 50.
+
+## 6. Create the runner
+
+```ts
+export const runner = createRunner({
+  store,
+  suites: [ticketTriage],
+  models: MODELS,
+  promptVersion: (op) => PROMPT_VERSIONS[op],
+  route: routeFor,
+  candidates: (op) => ({ models: modelsFor(op) }),
+  // On a platform with a request limit (Vercel: 300s), hand off long tests:
+  requestLimitMs: 270_000,
+  continueRun: (runId, opts) => postToYourContinueRoute(runId, opts),
+});
+```
+
+The continue route checks a secret, answers at once, and calls
+`runner.runEval(runId, opts)` in the background (`after()` in Next.js).
+
+## 7. Copy the pages
+
+Copy `examples/next/app/evals` and `examples/next/components/evalkeeper`
+into your app, put them behind your admin check, and restyle them. Server
+actions start tests in the background and the page refreshes while a
+test runs.
+
+## 8. Keep it honest
+
+- Retest after you change a prompt or a model ships; rescore after you
+  change an answer or a check (free).
+- Run each suite's quick set (`set: "SMOKE"`) on its live model weekly,
+  with `fresh: true`, to catch a provider changing a model under the same
+  name.
+- Read failures before changing a prompt.

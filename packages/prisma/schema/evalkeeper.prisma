@@ -1,0 +1,112 @@
+// Evalkeeper's tables. Copy these models into your prisma/schema.prisma,
+// then write a migration from the schema file:
+//   npx prisma migrate diff --from-schema-datamodel <before> \
+//     --to-schema-datamodel prisma/schema.prisma --script
+// Works on PostgreSQL, MySQL, and SQLite: no enums, scalar lists, or
+// database-specific types, so the same models fit any of them.
+
+/// A frozen input to an AI feature, with the answers people gave it.
+model EvalCase {
+  id        String   @id @default(uuid())
+  /// The suite's key (see your suites' `key`).
+  suite     String
+  /// The suite's input, frozen. Remove anything personal before saving.
+  input     Json
+  /// Short labels for what the case tests: a JSON array of strings.
+  tags      Json
+  /// DEV or TEST.
+  split     String   @default("DEV")
+  /// DRAFT, ACTIVE, or RETIRED.
+  status    String   @default("DRAFT")
+  /// Where it came from: OWNER, MODEL_DRAFT, FEEDBACK, …
+  source    String
+  /// What it was made from (an id in your app), to avoid adding it twice.
+  sourceRef String?
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  labels  EvalCaseLabel[]
+  outputs EvalOutput[]
+
+  @@index([suite, status])
+}
+
+/// An answer to a case. Tests grade against the newest CONFIRMED one.
+model EvalCaseLabel {
+  id        String   @id @default(uuid())
+  caseId    String
+  /// EXPECTED.
+  kind      String   @default("EXPECTED")
+  /// PENDING, CONFIRMED, PROVISIONAL, or REJECTED. A model's draft is
+  /// PENDING until a person confirms it.
+  status    String   @default("PENDING")
+  value     Json
+  /// Who gave it: OWNER, MODEL, a reviewer's role.
+  raterRole String
+  raterId   String?
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  case EvalCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([caseId])
+}
+
+/// One test: a suite's cases on one model, at one reasoning setting.
+model EvalRun {
+  id               String    @id @default(uuid())
+  suite            String
+  model            String
+  promptVersion    String
+  reasoningEffort  String?
+  /// ALL, SMOKE, DEV, or TEST.
+  set              String    @default("ALL")
+  repeats          Int       @default(1)
+  datasetVersion   String?
+  graderVersion    String
+  /// RUNNING, SUCCEEDED, or FAILED.
+  status           String    @default("RUNNING")
+  metrics          Json?
+  error            String?
+  estimatedCostUsd Float?
+  /// Who started it; null for a scheduled check.
+  startedBy        String?
+  startedAt        DateTime  @default(now())
+  finishedAt       DateTime?
+
+  outputs EvalOutput[]
+
+  @@index([suite, startedAt])
+}
+
+/// One answer in a test, with its grades.
+model EvalOutput {
+  id          String   @id @default(uuid())
+  runId       String
+  caseId      String
+  repeat      Int      @default(1)
+  requestHash String
+  output      Json?
+  error       String?
+  scores      Json?
+  costUsd     Float    @default(0)
+  ms          Int      @default(0)
+  reused      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  run  EvalRun  @relation(fields: [runId], references: [id], onDelete: Cascade)
+  case EvalCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([runId])
+  @@index([requestHash, createdAt])
+}
+
+/// A judge model's answer, kept so the same question is never paid twice.
+model EvalJudgment {
+  key       String   @id
+  value     Json
+  model     String
+  createdAt DateTime @default(now())
+}

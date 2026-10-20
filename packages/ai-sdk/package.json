@@ -1,0 +1,36 @@
+{
+  "name": "@evalkeeper/ai-sdk",
+  "version": "0.1.0",
+  "description": "Evalkeeper for the Vercel AI SDK: instruction hashes, call pricing, and a cached meaning judge.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "!src/**/*.test.ts"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "evalkeeper": "0.1.0"
+  },
+  "peerDependencies": {
+    "ai": ">=5",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "ai": "^6.0.303",
+    "zod": "^3.25.76"
+  }
+}

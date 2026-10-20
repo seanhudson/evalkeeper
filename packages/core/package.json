@@ -1,0 +1,47 @@
+{
+  "name": "evalkeeper",
+  "version": "0.1.0",
+  "description": "Pure eval logic: suites, checks, stats, model comparisons, and model suggestions on evidence.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./runner": {
+      "types": "./dist/runner.d.ts",
+      "default": "./dist/runner.js"
+    },
+    "./memory": {
+      "types": "./dist/memoryStore.d.ts",
+      "default": "./dist/memoryStore.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "!src/**/*.test.ts"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "zod": "^3.25.76"
+  },
+  "keywords": [
+    "evals",
+    "llm",
+    "ai",
+    "testing",
+    "model-selection"
+  ]
+}

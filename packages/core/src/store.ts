@@ -1,0 +1,142 @@
+import type { CheckResult } from "./types";
+import type { SuiteMetrics } from "./stats";
+
+/**
+ * Where Evalkeeper keeps cases, answers, tests, and outputs. The runner
+ * talks only to this interface: `@evalkeeper/prisma` implements it on your
+ * database, and `memoryStore()` keeps everything in memory for tests and
+ * demos. Every method is a plain read or write; the rules live in the
+ * runner.
+ */
+
+/** ALL: every case in use. SMOKE: the quick set. DEV and TEST: by split. */
+export type EvalSet = "ALL" | "SMOKE" | "DEV" | "TEST";
+export const EVAL_SETS: EvalSet[] = ["ALL", "SMOKE", "DEV", "TEST"];
+
+export type LabelStatus = "PENDING" | "CONFIRMED" | "PROVISIONAL" | "REJECTED";
+
+/**
+ * An answer to a case. EXPECTED is what a good answer looks like; a case's
+ * newest CONFIRMED one is what tests grade against. PENDING answers (from a
+ * model, or not yet reviewed) are never graded against; PROVISIONAL ones are
+ * put to use before review and say so.
+ */
+export type LabelRecord = {
+  id: string;
+  kind: "EXPECTED";
+  status: LabelStatus;
+  value: unknown;
+  /** Who gave it: "OWNER", "MODEL", a reviewer's role. */
+  raterRole: string;
+  raterId: string | null;
+  note: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type CaseRecord = {
+  id: string;
+  suite: string;
+  /** The suite's input, frozen. */
+  input: unknown;
+  tags: string[];
+  split: "DEV" | "TEST";
+  status: "DRAFT" | "ACTIVE" | "RETIRED";
+  /** Where it came from: "OWNER", "MODEL_DRAFT", "FEEDBACK", … */
+  source: string;
+  /** What it was made from (an id in your app), to avoid adding it twice. */
+  sourceRef: string | null;
+  note: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  labels: LabelRecord[];
+};
+
+export type RunStatus = "RUNNING" | "SUCCEEDED" | "FAILED";
+
+/** What the runner stores on a finished test. */
+export type RunMetrics = SuiteMetrics & {
+  judgeCostUsd: number;
+  failureReason: string | null;
+};
+
+export type RunRecord = {
+  id: string;
+  suite: string;
+  model: string;
+  /** Hash of the instructions it ran with (see `instructionsHash`). */
+  promptVersion: string;
+  /** The reasoning setting tested; null: the model's own default. */
+  reasoningEffort: string | null;
+  set: EvalSet;
+  repeats: number;
+  /** Changes when the cases or their answers do, so tests compare. */
+  datasetVersion: string | null;
+  /** The suite's grader version when last graded. */
+  graderVersion: string;
+  status: RunStatus;
+  metrics: RunMetrics | null;
+  error: string | null;
+  estimatedCostUsd: number | null;
+  /** Who started it; null for a scheduled check. */
+  startedBy: string | null;
+  startedAt: Date;
+  finishedAt: Date | null;
+};
+
+export type OutputRecord = {
+  id: string;
+  runId: string;
+  caseId: string;
+  repeat: number;
+  /** The request's hash, so an identical one is reused, not paid twice. */
+  requestHash: string;
+  output: unknown;
+  /** Why the answer failed; null when it came back. */
+  error: string | null;
+  scores: CheckResult[] | null;
+  costUsd: number;
+  ms: number;
+  /** Copied from an identical earlier request: cost nothing this time. */
+  reused: boolean;
+  createdAt: Date;
+};
+
+export type NewRun = Omit<
+  RunRecord,
+  "id" | "startedAt" | "finishedAt" | "status" | "metrics" | "error"
+>;
+export type NewOutput = Omit<OutputRecord, "id" | "createdAt">;
+export type NewCase = Omit<
+  CaseRecord,
+  "id" | "createdAt" | "updatedAt" | "labels"
+> & {
+  labels?: Omit<LabelRecord, "id" | "createdAt" | "updatedAt">[];
+};
+
+export interface EvalStore {
+  /** A suite's cases that aren't retired, with their answers, oldest first. */
+  listCases(suite: string): Promise<CaseRecord[]>;
+  createCase(data: NewCase): Promise<CaseRecord>;
+  getRun(id: string): Promise<RunRecord | null>;
+  /** Newest first. */
+  listRuns(
+    suite: string,
+    opts?: { status?: RunStatus; limit?: number },
+  ): Promise<RunRecord[]>;
+  createRun(data: NewRun): Promise<RunRecord>;
+  updateRun(
+    id: string,
+    patch: Partial<Omit<RunRecord, "id">>,
+    /** Only if the run still has this status (a guard against races). */
+    onlyIf?: { status: RunStatus },
+  ): Promise<void>;
+  listOutputs(runId: string): Promise<OutputRecord[]>;
+  /** The newest original (not reused, no error) output with this hash. */
+  findReusableOutput(
+    requestHash: string,
+    since: Date,
+  ): Promise<OutputRecord | null>;
+  createOutput(data: NewOutput): Promise<OutputRecord>;
+  setOutputScores(id: string, scores: CheckResult[]): Promise<void>;
+}

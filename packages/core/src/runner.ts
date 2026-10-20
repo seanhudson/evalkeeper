@@ -15,6 +15,7 @@ import type {
   RunRecord,
 } from "./store";
 import { withTimeout } from "./timeout";
+import { SCHEDULED } from "./weekly";
 import { confirmedLabel, isProvisional } from "./labels";
 export { confirmedLabel, isProvisional };
 import type { AnySuite, CheckResult } from "./types";
@@ -521,6 +522,40 @@ export function createRunner(opts: RunnerOptions) {
       await rescoreRun(r.id);
   }
 
+  /**
+   * Records one suite's weekly drift check without running it: its quick
+   * set on its live model, at its live reasoning setting, marked as
+   * started by the schedule. Record every suite's first, so a page can show
+   * them running, then run each with `runEval(id, { fresh: true })`.
+   * Returns the test's id, or null when the suite has no cases in use.
+   * Needs `route`.
+   */
+  async function startDriftCheck(suiteKey: string): Promise<string | null> {
+    if (!opts.route) throw new Error("The drift check needs the route option");
+    const suite = suiteOrThrow(suiteKey);
+    if (!(await casesFor(suite.key, "SMOKE")).length) return null;
+    const route = await opts.route(suite.operation);
+    const { run } = await createRun({
+      suite: suite.key,
+      model: route.model,
+      set: "SMOKE",
+      startedBy: SCHEDULED,
+      reasoningEffort: route.reasoningEffort,
+    });
+    return run.id;
+  }
+
+  /**
+   * One suite's weekly drift check, start to finish, with fresh answers so
+   * a quietly changed model shows. Returns the test's id, or null when the
+   * suite has no cases in use.
+   */
+  async function runDriftCheck(suiteKey: string): Promise<string | null> {
+    const id = await startDriftCheck(suiteKey);
+    if (id) await runEval(id, { fresh: true });
+    return id;
+  }
+
   /** Marks tests the server stopped mid-way as failed. */
   async function stopStuckRuns(suiteKey: string, now = Date.now()) {
     for (const r of await store.listRuns(suiteKey, { status: "RUNNING" })) {
@@ -793,6 +828,8 @@ export function createRunner(opts: RunnerOptions) {
   }
 
   return {
+    startDriftCheck,
+    runDriftCheck,
     board,
     suiteOrThrow,
     casesFor,

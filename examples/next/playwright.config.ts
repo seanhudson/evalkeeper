@@ -10,6 +10,7 @@ const env = {
   DATABASE_URL: "file:./e2e.db",
   OPENAI_API_KEY: "",
   ANTHROPIC_API_KEY: "",
+  CRON_SECRET: "e2e-cron-secret",
 };
 
 export default defineConfig({

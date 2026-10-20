@@ -3,6 +3,7 @@ import { z } from "zod";
 import { memoryStore } from "./memoryStore";
 import { commonError, createRunner, datasetVersion } from "./runner";
 import type { NewCase } from "./store";
+import { SCHEDULED } from "./weekly";
 import type { Suite } from "./types";
 
 /**
@@ -309,6 +310,36 @@ describe("runner, beyond a basic test", () => {
     expect(
       b.rows.find((r) => r.model === "thinker" && !r.variant)?.liveOnly,
     ).toBe(true);
+  });
+
+  it("runs the weekly drift check: the quick set, live model and setting, fresh", async () => {
+    const { store, runner } = await setup([2, 4]);
+    const first = await runner.runDriftCheck("double");
+    const second = await runner.runDriftCheck("double");
+    const r = await store.getRun(first ?? "");
+    expect(r).toMatchObject({
+      set: "SMOKE",
+      model: "good",
+      reasoningEffort: "low",
+      startedBy: SCHEDULED,
+      status: "SUCCEEDED",
+    });
+    // Fresh: the second check called the model again instead of reusing.
+    expect((await store.getRun(second ?? ""))?.metrics?.reused).toBe(0);
+  });
+
+  it("records a drift check as running before any answer comes back", async () => {
+    const { store, runner } = await setup([2, 4]);
+    const id = await runner.startDriftCheck("double");
+    expect((await store.getRun(id ?? ""))?.status).toBe("RUNNING");
+    expect(await store.listOutputs(id ?? "")).toHaveLength(0);
+    await runner.runEval(id ?? "", { fresh: true });
+    expect((await store.getRun(id ?? ""))?.status).toBe("SUCCEEDED");
+  });
+
+  it("skips the drift check for a suite with no cases in use", async () => {
+    const { runner } = await setup([]);
+    expect(await runner.runDriftCheck("double")).toBeNull();
   });
 
   it("needs routing to draw a board", async () => {

@@ -106,7 +106,10 @@ thumbs up can propose the model's answer. The feedback page
 
 - Retest after you change a prompt or a model ships; rescore after you
   change an answer or a check (free).
-- Run each suite's quick set (`set: "SMOKE"`) on its live model weekly,
-  with `fresh: true`, to catch a provider changing a model under the same
-  name.
+- Schedule the weekly check. Call `runner.startDriftCheck(suite)` for
+  each suite (it records the test, so a page can show it running), then
+  `runner.runEval(id, { fresh: true })` for each, from a cron route that
+  checks a secret (`examples/next/app/api/cron/evals-weekly`, scheduled in
+  `examples/next/vercel.json`). Show `weeklySummary(...)` on your hub; it
+  flags drift, unfinished checks, retiring models, and thumbs-down.
 - Read failures before changing a prompt.

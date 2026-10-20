@@ -51,6 +51,9 @@ design.
   with. Change any of them and older tests say they're out of date.
   Regrading stored answers is free and never pretends an old test ran on
   new inputs.
+- **A weekly drift check.** Each suite's quick set runs again on its live
+  model every week, so a provider quietly changing a model shows up as
+  drift, next to models about to retire and features people rate poorly.
 - **Feedback that becomes tests.** Thumbs up and down on your AI answers,
   a weekly flag when a feature's thumbs-down share climbs, and one click to
   turn a rating on a kept input into a draft case (with consent, and
@@ -198,7 +201,6 @@ you're new to evals, start there.
 
 - A CLI that copies the pages into your app (`npx evalkeeper add pages`).
 - Versioned model settings with rollback, as an optional package.
-- A scheduled drift check: each suite's quick set on its live model, weekly.
 - Stores for Drizzle and plain Postgres.
 - Planned upgrades: Prisma 7, zod 4, and AI SDK 7.
 - Count reusable answers in cost estimates.

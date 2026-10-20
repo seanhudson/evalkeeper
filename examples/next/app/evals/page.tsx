@@ -10,6 +10,8 @@ import {
 import { Card, StatusBadge, pct } from "@/components/evalkeeper/ui";
 import { feedbackStore, runner } from "@/lib/evalkeeper";
 import { daysAgo } from "@/lib/time";
+import { loadWeekly } from "@/lib/weekly";
+import { WeeklyCheck } from "@/components/evalkeeper/WeeklyCheck";
 import { MODELS } from "@/lib/models";
 import { SUITES } from "@/lib/suites";
 import { InfoTip } from "@/components/evalkeeper/Tip";
@@ -18,7 +20,10 @@ export const dynamic = "force-dynamic";
 
 /** The evals hub: where each suite stands, and what needs attention. */
 export default async function EvalsHub() {
-  const boards = await Promise.all(SUITES.map((s) => runner.board(s.key)));
+  const [boards, weekly] = await Promise.all([
+    Promise.all(SUITES.map((s) => runner.board(s.key))),
+    loadWeekly(),
+  ]);
   const thumbs = thumbsSummary(await feedbackStore.listFeedback(), daysAgo(7));
   const down = thumbs.reduce((t, s) => t + s.down, 0);
   const waiting = thumbs.reduce((t, s) => t + s.open, 0);
@@ -85,6 +90,8 @@ export default async function EvalsHub() {
           />
         </Link>
       </div>
+
+      <WeeklyCheck weekly={weekly} />
 
       <div className="grid gap-4 md:grid-cols-2">
         {boards.map((b) => {

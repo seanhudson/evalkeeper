@@ -51,6 +51,8 @@ export const GLOSSARY = {
     "Turns this rating into a draft case on its real input. A thumbs down needs a person to write the right answer; a thumbs up proposes the model's answer for a person to confirm.",
   needsAnswer:
     "A draft case with no answer yet. Write what a good answer is; until then, tests leave it out.",
+  weeklyCheck:
+    "Each suite's quick set, answered again on its live model every week. A drop of 15 points or more against last week's check of the same model, instructions, and grading is drift.",
 } as const;
 
 export type GlossaryTerm = keyof typeof GLOSSARY;

@@ -9,6 +9,15 @@ version may change an interface, and its entry says how to update.
 
 ### Added
 
+- The weekly check: `runner.startDriftCheck` and `runDriftCheck` run a
+  suite's quick set on its live model with fresh answers, and
+  `weeklySummary` reports drift (a drop of 15 points against last week's
+  check of the same model, instructions, and grading), checks that didn't
+  finish, live and fallback models retiring within 60 days, and features
+  with a high thumbs-down share. The example adds a cron route with a
+  constant-time secret check, a `vercel.json` schedule, and a Weekly check
+  card with "Run it now".
+
 - Feedback: thumbs up and down on AI answers (`FeedbackStore`,
   `prismaFeedbackStore`, and the `EvalFeedback` table), a weekly summary
   that flags a high thumbs-down share (`thumbsSummary`), and draft cases

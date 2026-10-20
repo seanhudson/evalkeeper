@@ -69,6 +69,7 @@ flowchart LR
 | An AI library                            | A new adapter package                                            | Unit tests with a mock model                        |
 | A suite                                  | Your app (`examples/next/lib/suites` for examples)               | Grader tests on fixed outputs                       |
 | Feedback (ratings, cases from them)      | `feedback.ts`, a `FeedbackStore` in every adapter                | `feedback.test.ts`, `describeFeedbackStoreContract` |
+| The weekly check                         | `weekly.ts`, `runner.startDriftCheck` / `runDriftCheck`          | `weekly.test.ts`, runner tests, browser tests       |
 | A page or component                      | `examples/next/app/evals`, `examples/next/components/evalkeeper` | End-to-end tests                                    |
 
 ## Versions

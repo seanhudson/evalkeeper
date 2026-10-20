@@ -109,6 +109,16 @@ worse at the job.
 **Health.** A suite's card says where it stands: not tested, test again,
 needs more cases, room to improve, fair, or good, with the reasons.
 
+**Weekly check.** Once a week, each suite's quick set runs again on its
+live model at its live reasoning setting, with fresh answers. A provider
+can change a model under the same name; this is how you find out. A drop
+of 15 points or more against last week's check of the same model,
+instructions, and grading is _drift_. A different model, prompt, or
+grader isn't compared, since that change has a known reason. The check
+also lists quick sets that didn't finish, live and fallback models
+retiring within 60 days, and features with a high thumbs-down share. It
+only reports; a person decides what to change.
+
 **Feedback.** People rate the feature's answers in your product, thumbs
 up or down, with a reason after a thumbs down. One rating per person per
 answer; rating again replaces it, and clicking the same thumb takes it

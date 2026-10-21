@@ -37,11 +37,14 @@ test("use the suggestion, see it in the history, and roll it back", async ({
   const first = history.getByRole("article", { name: "Version 1: Changed" });
   await expect(first.getByText(/default from code/)).toBeVisible();
 
-  // Roll back to v1, with a reason.
+  // Roll back to v1: the button stays off until there's a reason.
+  const rollBack = first.getByRole("button", { name: "Roll back to v1" });
+  await expect(rollBack).toBeDisabled();
   await first
     .getByPlaceholder("Why roll back?")
     .fill("Checking the old model in production");
-  await first.getByRole("button", { name: "Roll back to v1" }).click();
+  await expect(rollBack).toBeEnabled();
+  await rollBack.click();
   await expect(
     modelRow(page, "Demo Legacy").getByText("Live", { exact: true }),
   ).toBeVisible();
@@ -52,4 +55,12 @@ test("use the suggestion, see it in the history, and roll it back", async ({
     rolled.getByText("Checking the old model in production"),
   ).toBeVisible();
   await expect(rolled.getByText("Live now")).toBeVisible();
+
+  // On the hub, the card puts the live version (v1 again, after the
+  // rollback) beside the versions count.
+  await page.goto("/evals");
+  const versions = page
+    .locator("summary")
+    .filter({ hasText: /v1 live since .* · 2 versions/ });
+  await expect(versions).toHaveCount(1);
 });

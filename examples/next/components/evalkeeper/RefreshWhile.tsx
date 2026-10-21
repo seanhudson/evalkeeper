@@ -22,7 +22,9 @@ export function RefreshWhile({
   useEffect(() => {
     if (!active || refreshing) return;
     const t = setTimeout(() => {
-      startTransition(() => { router.refresh(); });
+      startTransition(() => {
+        router.refresh();
+      });
     }, ms);
     return () => {
       clearTimeout(t);

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Plus } from "lucide-react";
+import { QUIET_BUTTON } from "./Submit";
 import { Card } from "./ui";
 
 /**
@@ -31,7 +32,7 @@ export function AddCaseHeader({
               onClick={() => {
                 setOpen(!open);
               }}
-              className="inline-flex items-center gap-1.5 rounded-md border border-line bg-card px-3 py-1.5 text-sm hover:bg-tint"
+              className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm ${QUIET_BUTTON}`}
             >
               <Plus aria-hidden className="h-4 w-4" />
               Add a case

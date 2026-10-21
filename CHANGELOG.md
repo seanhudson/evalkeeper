@@ -7,6 +7,13 @@ version may change an interface, and its entry says how to update.
 
 ## Unreleased
 
+## 0.4.1 - 2026-10-21
+
+The person choosing a fallback decides: "Make fallback" shows on every
+model the operation allows, and scores show whole numbers. **To update:**
+copy the suite page, `lib/evalkeeper/actions.ts`, and
+`components/evalkeeper/ui.tsx`.
+
 ### Changed
 
 - "Make fallback" shows on every model the operation allows as a

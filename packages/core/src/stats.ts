@@ -92,21 +92,34 @@ export function allPassed(checks: CheckResult[] | null): boolean {
   return checks !== null && checks.every((c) => c.pass !== false);
 }
 
-/** Sums each answer's partial credit; null when the suite gives none. */
+/**
+ * Sums each answer's partial credit; null when the suite gives none. A
+ * failed answer (no checks) earns nothing and costs what a graded answer
+ * is worth on average, so a model that fails answers can't score 100%.
+ */
 export function sumUnits(
   outputs: { checks: CheckResult[] | null }[],
 ): { right: number; total: number } | null {
   let right = 0;
   let total = 0;
-  let any = false;
-  for (const o of outputs)
-    for (const c of o.checks ?? [])
+  let graded = 0;
+  let failed = 0;
+  for (const o of outputs) {
+    if (!o.checks) {
+      failed++;
+      continue;
+    }
+    let counted = false;
+    for (const c of o.checks)
       if (c.units) {
-        any = true;
+        counted = true;
         right += c.units.right;
         total += c.units.total;
       }
-  return any ? { right, total } : null;
+    if (counted) graded++;
+  }
+  if (!graded) return null;
+  return { right, total: total + failed * (total / graded) };
 }
 
 /** One answer's score from 0 to 1: its partial credit, else all-or-nothing. */

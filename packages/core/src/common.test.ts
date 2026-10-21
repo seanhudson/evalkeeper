@@ -49,6 +49,17 @@ describe("shared eval checks", () => {
     });
   });
 
+  it("leaves a comma after a number out of it, but reads thousands", () => {
+    const sources = [JSON.stringify({ startDate: "2020-03", team: 150000 })];
+    expect(inventedNumbers("In March 2020, I joined", sources)).toEqual([]);
+    expect(inventedNumbers("Since 2020 I have", sources)).toEqual([]);
+    expect(inventedNumbers("a team of 150,000, then more", sources)).toEqual(
+      [],
+    );
+    expect(inventedNumbers("In 2019, I left", sources)).toEqual(["2019"]);
+    expect(numbersIn("1,500.5 and 12,34")).toEqual(new Set(["1500.5", "12"]));
+  });
+
   it("wraps voice and numbers as checks", () => {
     expect(voiceCheck("voice", ["You fit.", "He fits."]).pass).toBe(false);
     expect(

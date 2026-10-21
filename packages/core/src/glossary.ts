@@ -14,7 +14,7 @@ export const GLOSSARY = {
     "A paired comparison with the live model on the same cases: more accurate, about as accurate, less accurate, or too few cases to tell.",
   live: "The model this feature runs on now.",
   fallback:
-    "The model that answers when the live model's provider is down. It comes from another provider.",
+    "The model that answers when the live model's provider is down. Any model can be chosen; the suggestion recommends the most accurate one from another provider.",
   retiring:
     "The provider has announced a date it stops serving this model. It's never suggested, and a retiring live model gets replaced.",
   outOfDate:

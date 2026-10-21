@@ -49,7 +49,11 @@ export type BoardRow = {
   /** Against the live model's test, when both are current. */
   vsLive: Verdict | null;
   canMakeLive: boolean;
-  /** Tested, current, and from another provider than the live model. */
+  /**
+   * Can be chosen as the fallback: any model the operation allows as one,
+   * except the live model and the current fallback. Tested or not; the
+   * board shows how it did and the suggestion recommends one.
+   */
   canMakeFallback: boolean;
   /** Can be live but not the fallback (a model that only answers typed questions). */
   liveOnly: boolean;

@@ -1021,17 +1021,15 @@ export function createRunner(opts: RunnerOptions) {
           (vsLive === "BETTER" || vsLive === "SAME"),
         liveOnly: !fallbackModels.includes(model),
         fallbackOnly: !models.includes(model),
+        // The person choosing decides: tested or not, failed answers or
+        // not, same provider or not. The board shows the evidence, the
+        // suggestion recommends, and the change records its score.
         canMakeFallback:
           !baseline &&
           fallbackModels.includes(model) &&
           !variant &&
           model !== route.model &&
-          model !== route.fallbackModel &&
-          opts.models[model]?.provider !== opts.models[route.model]?.provider &&
-          // A fallback only runs during an outage: it needs to be tested on
-          // these cases, not to beat the live model.
-          fresh &&
-          complete(r),
+          model !== route.fallbackModel,
       };
     });
     // Live, then fallback, then tested rows by most right, then the rest.

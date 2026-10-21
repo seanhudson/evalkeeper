@@ -335,6 +335,13 @@ export default async function SuitePage({
                         id={r.key}
                         estimate={estimates.get(r.key)}
                       />
+                      {r.test && !r.test.stale && r.test.failedAnswers > 0 && (
+                        <span className="text-right text-xs text-muted">
+                          {r.test.failedAnswers}{" "}
+                          {r.test.failedAnswers === 1 ? "answer" : "answers"}{" "}
+                          failed on its last test
+                        </span>
+                      )}
                     </div>
                   </td>
                 </tr>

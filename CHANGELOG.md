@@ -7,6 +7,23 @@ version may change an interface, and its entry says how to update.
 
 ## Unreleased
 
+### Changed
+
+- "Make fallback" shows on every model the operation allows as a
+  fallback, except the live model and the current fallback: tested or
+  not, with failed answers or not, same provider or not. The suggestion
+  still recommends the most accurate model from another provider, and the
+  change records the model's score, or "not tested". A model's failed
+  answers show as a note on its row instead of hiding the button.
+  **To update:** copy the suite page (`app/evals/[suite]/page.tsx`) and
+  `lib/evalkeeper/actions.ts`.
+
+### Fixed
+
+- Scores show whole numbers (`48/50`, not `47.6/49.6`) when a failed
+  answer counts a graded answer's average parts. **To update:** copy
+  `components/evalkeeper/ui.tsx`.
+
 ## 0.4.0 - 2026-10-20
 
 From running Evalkeeper in production on a remote database: the pages

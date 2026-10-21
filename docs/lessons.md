@@ -91,6 +91,13 @@ model retires, and suggestions skip it.
 no fallback. _So:_ the fallback is the most accurate model from another
 provider.
 
+**A hidden button looked like a broken system.** "Make fallback" showed
+only for a model with a current, complete test from another provider. An
+owner saw no fallback button at all, with no reason given, and wanted to
+choose one anyway. _So:_ every model the operation allows can be made the
+fallback; the board shows how it did and the suggestion recommends one.
+The evidence informs the person deciding; it doesn't decide for them.
+
 **A model that rejects a setting scores 0, not "bad".** Two models scored
 0 of 44 because a hard-coded reasoning setting was below their minimum.
 _So:_ the catalog lists each model's settings, and a 0 means reading the

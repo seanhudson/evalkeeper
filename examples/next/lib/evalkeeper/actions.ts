@@ -66,6 +66,24 @@ async function evidenceFor(suiteKey: string, model: string) {
   };
 }
 
+/** What a fallback choice records: its current test, if it has one. */
+async function fallbackEvidence(suiteKey: string, model: string) {
+  const board = await runner.board(suiteKey);
+  const row = board.rows.find((r) => r.model === model && !r.variant);
+  if (!row?.canMakeFallback)
+    throw new Error("This model can't be the fallback");
+  const test = row.test && !row.test.stale ? row.test : null;
+  const failed = test?.failedAnswers ? `, ${test.failedAnswers} failed` : "";
+  return {
+    reason: `Made ${row.label} the fallback: ${test ? `${Math.round(test.right)}/${Math.round(test.total)}${failed}` : "not tested"}`,
+    evidence: {
+      runId: test?.runId ?? null,
+      liveRunId: board.liveRunId,
+      score: test ? { right: test.right, total: test.total } : null,
+    },
+  };
+}
+
 const VS: Record<string, string> = {
   BETTER: "more accurate than live",
   SAME: "about as accurate as live",
@@ -94,15 +112,11 @@ export async function makeFallback(form: FormData) {
   const admin = await requireAdmin();
   const suite = suiteFrom(form);
   const model = formText(form, "model");
-  const { row, evidence } = await evidenceFor(suite.key, model);
+  const { reason, evidence } = await fallbackEvidence(suite.key, model);
   await settings.update(
     suite.operation,
     { fallbackModel: model },
-    {
-      by: admin.name,
-      reason: `Made ${row.label} the fallback: ${evidence.score.right}/${evidence.score.total}, from another provider`,
-      evidence,
-    },
+    { by: admin.name, reason, evidence },
   );
   revalidatePath(EVALS_BASE, "layout");
 }

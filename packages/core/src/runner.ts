@@ -24,6 +24,7 @@ import type {
   EvalStore,
   RunMetrics,
   RunRecord,
+  OutputRecord,
 } from "./store.js";
 import { withTimeout } from "./timeout.js";
 import { SCHEDULED } from "./weekly.js";
@@ -334,29 +335,36 @@ export function createRunner(opts: RunnerOptions) {
       ]);
     const answers = cases.length * repeats;
     const since = new Date(Date.now() - REUSE_DAYS * 86_400_000);
-    const reused = o.fresh
-      ? 0
-      : (
-          await Promise.all(
-            cases.flatMap((c) =>
-              Array.from({ length: repeats }, (_, i) =>
-                store.findReusableOutput(
-                  requestHashFor({
-                    suite: suite.key,
-                    model,
-                    effort,
-                    prompt,
-                    input: c.input,
-                    repeat: i + 1,
-                    temperature,
-                    maxOutputTokens: cap,
-                  }),
-                  since,
-                ),
+    const hashes = o.fresh
+      ? []
+      : cases.flatMap((c) =>
+          Array.from({ length: repeats }, (_, i) =>
+            requestHashFor({
+              suite: suite.key,
+              model,
+              effort,
+              prompt,
+              input: c.input,
+              repeat: i + 1,
+              temperature,
+              maxOutputTokens: cap,
+            }),
+          ),
+        );
+    // One query where the store can: a lookup per answer is slow on a
+    // remote database.
+    const found = store.findReusableHashes
+      ? await store.findReusableHashes(hashes, since)
+      : new Set(
+          (
+            await Promise.all(
+              hashes.map(async (h) =>
+                (await store.findReusableOutput(h, since)) ? h : null,
               ),
-            ),
-          )
-        ).filter(Boolean).length;
+            )
+          ).filter((h): h is string => h !== null),
+        );
+    const reused = hashes.filter((h) => found.has(h)).length;
     return {
       cases: cases.length,
       answers,
@@ -745,11 +753,30 @@ export function createRunner(opts: RunnerOptions) {
     return id;
   }
 
+  /**
+   * Several tests' outputs by test id: one call where the store can, so a
+   * remote database isn't asked once per test.
+   */
+  async function outputsByRun(
+    runIds: string[],
+  ): Promise<Map<string, OutputRecord[]>> {
+    const byRun = new Map(runIds.map((id) => [id, [] as OutputRecord[]]));
+    if (!runIds.length) return byRun;
+    const rows = store.listOutputsFor
+      ? await store.listOutputsFor(runIds)
+      : (await Promise.all(runIds.map((id) => store.listOutputs(id)))).flat();
+    for (const o of rows) byRun.get(o.runId)?.push(o);
+    return byRun;
+  }
+
   /** Marks tests the server stopped mid-way as failed. */
   async function stopStuckRuns(suiteKey: string, now = Date.now()) {
-    for (const r of await store.listRuns(suiteKey, { status: "RUNNING" })) {
-      if (now - +r.startedAt <= STUCK_MS) continue;
-      const outs = await store.listOutputs(r.id);
+    const old = (await store.listRuns(suiteKey, { status: "RUNNING" })).filter(
+      (r) => now - +r.startedAt > STUCK_MS,
+    );
+    const outputs = await outputsByRun(old.map((r) => r.id));
+    for (const r of old) {
+      const outs = outputs.get(r.id) ?? [];
       const last = outs.reduce<Date | null>(
         (m, x) => (!m || x.createdAt > m ? x.createdAt : m),
         null,
@@ -820,12 +847,12 @@ export function createRunner(opts: RunnerOptions) {
     if (!opts.route || !opts.candidates)
       throw new Error("The board needs the route and candidates options");
     const suite = suiteOrThrow(suiteKey);
-    await stopStuckRuns(suite.key);
-    const [route, cases] = await Promise.all([
+    const [route, cases, prompt] = await Promise.all([
       opts.route(suite.operation),
       casesFor(suite.key, "ALL"),
+      opts.promptVersion(suite.operation),
+      stopStuckRuns(suite.key),
     ]);
-    const prompt = await opts.promptVersion(suite.operation);
     const current = datasetVersion(cases);
     const { models, fallbackModels = models } = opts.candidates(
       suite.operation,
@@ -872,10 +899,12 @@ export function createRunner(opts: RunnerOptions) {
       (r.temperature ?? null) === (liveRun.temperature ?? null) &&
       (r.maxOutputTokens ?? null) === (liveRun.maxOutputTokens ?? null);
     const outputs = new Map<string, RunOutput[]>();
-    for (const r of latestDone.values())
+    for (const [id, outs] of await outputsByRun(
+      [...latestDone.values()].map((r) => r.id),
+    ))
       outputs.set(
-        r.id,
-        (await store.listOutputs(r.id)).map((x) => ({
+        id,
+        outs.map((x) => ({
           caseId: x.caseId,
           checks: x.error ? null : (x.scores ?? []),
           costUsd: x.costUsd,

@@ -64,9 +64,12 @@ export async function AnswerKey({
       r.test && !r.variant ? [[r.test.runId, r.label] as const] : [],
     ),
   );
-  const outputs = (
-    await Promise.all([...modelByRun.keys()].map((id) => store.listOutputs(id)))
-  ).flat();
+  // One query where the store can: one per test is slow on a remote
+  // database.
+  const runIds = [...modelByRun.keys()];
+  const outputs = store.listOutputsFor
+    ? await store.listOutputsFor(runIds)
+    : (await Promise.all(runIds.map((id) => store.listOutputs(id)))).flat();
   const byCase = new Map<string, { model: string; output: OutputRecord }[]>();
   for (const o of outputs) {
     byCase.set(o.caseId, [

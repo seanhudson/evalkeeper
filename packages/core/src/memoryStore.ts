@@ -246,6 +246,10 @@ export function memoryStore(): EvalStore &
     async listOutputs(runId) {
       return outputs.filter((o) => o.runId === runId);
     },
+    async listOutputsFor(runIds) {
+      const ids = new Set(runIds);
+      return outputs.filter((o) => ids.has(o.runId));
+    },
     async findReusableOutput(requestHash, since) {
       return (
         outputs
@@ -257,6 +261,20 @@ export function memoryStore(): EvalStore &
               o.createdAt >= since,
           )
           .sort((a, b) => +b.createdAt - +a.createdAt)[0] ?? null
+      );
+    },
+    async findReusableHashes(requestHashes, since) {
+      const wanted = new Set(requestHashes);
+      return new Set(
+        outputs
+          .filter(
+            (o) =>
+              wanted.has(o.requestHash) &&
+              !o.reused &&
+              !o.error &&
+              o.createdAt >= since,
+          )
+          .map((o) => o.requestHash),
       );
     },
     async createOutput(data) {

@@ -179,6 +179,20 @@ export interface EvalStore {
     requestHash: string,
     since: Date,
   ): Promise<OutputRecord | null>;
+  /**
+   * The outputs of several tests in one call, for the board on a remote
+   * database. Optional: without it the runner calls listOutputs per test.
+   */
+  listOutputsFor?(runIds: string[]): Promise<OutputRecord[]>;
+  /**
+   * Which of these request hashes have an output findReusableOutput would
+   * return, in one call, for estimating a test's cost. Optional: without it
+   * the runner looks each hash up.
+   */
+  findReusableHashes?(
+    requestHashes: string[],
+    since: Date,
+  ): Promise<Set<string>>;
   createOutput(data: NewOutput): Promise<OutputRecord>;
   setOutputScores(id: string, scores: CheckResult[]): Promise<void>;
 }

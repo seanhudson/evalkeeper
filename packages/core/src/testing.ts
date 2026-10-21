@@ -84,6 +84,9 @@ export function describeStoreContract(
     it("lists a suite's cases oldest first, leaving out retired ones", async () => {
       const store = await make();
       const first = await store.createCase(newCase("s"));
+      // Apart in time: two cases made in the same millisecond have no
+      // oldest one.
+      await new Promise((r) => setTimeout(r, 5));
       const second = await store.createCase(newCase("s"));
       await store.createCase(newCase("other"));
       await store.setCaseStatus(first.id, "RETIRED");

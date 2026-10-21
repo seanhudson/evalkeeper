@@ -42,6 +42,18 @@ Coverage limits never go down.
 - Use made-up names and data in examples and tests.
 - Write in plain words, US English, with the Oxford comma.
 
+## Releasing
+
+1. Move the "Unreleased" entries in CHANGELOG.md under a new
+   `## X.Y.Z - date` heading, bump the three packages and the example to
+   that version, and commit.
+2. Tag it (`git tag vX.Y.Z`) and push the tag. The Release workflow writes
+   the GitHub release from that changelog section
+   (`scripts/release-notes.mjs`); rerun it from the Actions tab with a tag
+   to rewrite an older release.
+3. Publish to npm: `npm run build`, then
+   `npm publish -w packages/core -w packages/prisma -w packages/ai-sdk`.
+
 ## Ideas
 
 The roadmap in the README lists what's planned. A store for another

@@ -7,6 +7,46 @@ version may change an interface, and its entry says how to update.
 
 ## Unreleased
 
+### Added
+
+- Two optional `EvalStore` methods load in one query what took one per
+  item: `listOutputsFor(runIds)` and `findReusableHashes(hashes, since)`.
+  The memory and Prisma stores have them, and `describeStoreContract`
+  checks them when present. A custom store without them still works: the
+  runner falls back to a call per item (#25).
+
+### Changed
+
+- The board, the suite page, and the answer key load in fewer, parallel
+  queries. On a remote database the suite page was waiting on dozens of
+  round trips in turn (#25). **To update:** copy the suite page and
+  `AnswerKey.tsx` again, or make the same changes to your copies.
+- Rolling back needs a note: the button stays off, with a tooltip saying
+  why, until there's one (#28). **To update:** copy `RollBack.tsx`,
+  `SettingsHistory.tsx`, and `Submit.tsx`.
+- Buttons that aren't the page's main action use the app's accent as an
+  outline instead of plain gray (`QUIET_BUTTON` in `Submit.tsx`), so the
+  pages carry the app's colors wherever `--accent` is set (#29).
+- On the evals hub, each card shows the live version beside its versions
+  count, and the live and fallback models in bold (#30).
+- Confirming an answer closes its case and opens the next one waiting
+  for a confirmation at once, while the save and the page's refresh
+  finish behind it, so reviewing drafts doesn't wait on the whole page
+  each time. **To update:** copy `ConfirmAnswer.tsx` and `AnswerKey.tsx`.
+
+### Fixed
+
+- The suite page could spin forever while a test ran: `RefreshWhile`
+  refreshed on a timer, and each refresh cancelled the one still in
+  flight, so a page slower than the interval never updated. It now waits
+  for each refresh to land (#25). **To update:** copy `RefreshWhile.tsx`.
+- `numbersCheck` read a comma after a number as part of it, so "In March
+  2020, I joined" claimed "2020," and failed. A comma joins a number only
+  as a thousands separator now (#26).
+- With partial credit (`units`), a failed answer dropped out of the total,
+  so a model that failed answers could score 100%. It now counts as wrong,
+  worth what a graded answer is on average (#27).
+
 ## 0.3.0 - 2026-10-20
 
 From adopting Evalkeeper in two apps: the output cap counts like

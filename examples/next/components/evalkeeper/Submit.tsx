@@ -3,23 +3,32 @@
 import { LoaderCircle } from "lucide-react";
 import { useFormStatus } from "react-dom";
 
+/**
+ * A button that isn't the page's main action: the app's accent as an
+ * outline, so it still reads as a button in the app's colors (set
+ * `--accent` in evalkeeper.css).
+ */
+export const QUIET_BUTTON =
+  "border border-accent/40 bg-card text-accent hover:bg-accent/10";
+
 /** A submit button that spins while its form's action runs. */
 export function Submit({
   children,
   variant = "primary",
+  disabled = false,
 }: {
   children: React.ReactNode;
   variant?: "primary" | "quiet";
+  /** Off until the form is ready; wrap it in a `<Tip>` saying why. */
+  disabled?: boolean;
 }) {
   const { pending } = useFormStatus();
   return (
     <button
       type="submit"
-      disabled={pending}
+      disabled={pending || disabled}
       className={`inline-flex items-center gap-2 whitespace-nowrap rounded-md px-3 py-1.5 text-sm disabled:opacity-60 ${
-        variant === "primary"
-          ? "bg-accent text-white"
-          : "border border-line bg-card text-ink hover:bg-tint"
+        variant === "primary" ? "bg-accent text-white" : QUIET_BUTTON
       }`}
     >
       {pending && <Spinner />}

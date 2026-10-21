@@ -77,9 +77,12 @@ export function withCountedWords(text: string): string {
  * A number with an optional "k" or "m" ("150k", "1.5m"). It starts only
  * where a number starts and reads it once (the lookahead and backreference
  * keep the digits from being retried), so long digit runs in model output
- * stay linear. A number glued to a word ("3rd", "10am") doesn't count.
+ * stay linear. A number glued to a word ("3rd", "10am") doesn't count. A
+ * comma belongs to a number only as a thousands separator ("150,000"), so
+ * "In 2020, I joined" reads 2020, not "2020,".
  */
-const NUMBER = /(?<![\d,.])(?=(\d[\d,]*(?:\.\d+)?))\1\s*([km])?\b/gi;
+const NUMBER =
+  /(?<![\d,.])(?=((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?))\1\s*([km])?\b/gi;
 
 /**
  * Numbers the text states that appear in none of the sources: likely invented.

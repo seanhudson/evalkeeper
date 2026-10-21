@@ -300,6 +300,26 @@ export function prismaStore(db: PrismaEvalClient): EvalStore {
     async listOutputs(runId) {
       return (await db.evalOutput.findMany({ where: { runId } })).map(output);
     },
+    async listOutputsFor(runIds) {
+      if (!runIds.length) return [];
+      return (
+        await db.evalOutput.findMany({ where: { runId: { in: runIds } } })
+      ).map(output);
+    },
+    async findReusableHashes(requestHashes, since) {
+      if (!requestHashes.length) return new Set<string>();
+      const rows = await db.evalOutput.findMany({
+        where: {
+          requestHash: { in: requestHashes },
+          createdAt: { gte: since },
+          error: null,
+          reused: false,
+        },
+        select: { requestHash: true },
+        distinct: ["requestHash"],
+      });
+      return new Set(rows.map((r) => r.requestHash));
+    },
     async findReusableOutput(requestHash, since) {
       const o = await db.evalOutput.findFirst({
         where: {

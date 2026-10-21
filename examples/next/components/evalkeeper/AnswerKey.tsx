@@ -7,17 +7,13 @@ import {
   type BoardRow,
   type CheckResult,
 } from "@crowandraven/evalkeeper";
-import {
-  addCase,
-  confirmAnswer,
-  editAnswer,
-  retireCase,
-} from "@/lib/evalkeeper/actions";
+import { addCase, editAnswer, retireCase } from "@/lib/evalkeeper/actions";
 import { Check, ChevronRight, CircleAlert, X } from "lucide-react";
 import { store } from "@/lib/evalkeeper";
 import { FieldValues, Fields } from "./Fields";
 import { AddCaseHeader } from "./AddCase";
 import { CaseMenu } from "./CaseMenu";
+import { ConfirmAnswer } from "./ConfirmAnswer";
 import { Submit } from "./Submit";
 import { Chip, type ChipTone } from "./ui";
 import { InfoTip, Tip } from "./Tip";
@@ -64,9 +60,12 @@ export async function AnswerKey({
       r.test && !r.variant ? [[r.test.runId, r.label] as const] : [],
     ),
   );
-  const outputs = (
-    await Promise.all([...modelByRun.keys()].map((id) => store.listOutputs(id)))
-  ).flat();
+  // One query where the store can: one per test is slow on a remote
+  // database.
+  const runIds = [...modelByRun.keys()];
+  const outputs = store.listOutputsFor
+    ? await store.listOutputsFor(runIds)
+    : (await Promise.all(runIds.map((id) => store.listOutputs(id)))).flat();
   const byCase = new Map<string, { model: string; output: OutputRecord }[]>();
   for (const o of outputs) {
     byCase.set(o.caseId, [
@@ -189,7 +188,11 @@ function CaseItem({
   const tags = Array.isArray(c.tags) ? c.tags : [];
 
   return (
-    <details className="group rounded-md border border-line bg-card">
+    <details
+      className="group rounded-md border border-line bg-card"
+      // Where ConfirmAnswer moves on to after confirming the case above.
+      data-pending={answer?.status === "PENDING" ? "true" : undefined}
+    >
       <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2 p-3 text-sm">
         <span className="font-medium">
           <ChevronRight
@@ -312,11 +315,7 @@ function CaseItem({
         )}
 
         {answer?.status === "PENDING" && (
-          <form action={confirmAnswer}>
-            <input type="hidden" name="suite" value={suite.key} />
-            <input type="hidden" name="label" value={answer.id} />
-            <Submit>Confirm this answer</Submit>
-          </form>
+          <ConfirmAnswer suite={suite.key} labelId={answer.id} />
         )}
 
         <CaseMenu

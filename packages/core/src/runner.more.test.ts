@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { memoryStore } from "./memoryStore.js";
 import { commonError, createRunner, datasetVersion } from "./runner.js";
-import type { NewCase } from "./store.js";
+import type { EvalStore, NewCase } from "./store.js";
 import { SCHEDULED } from "./weekly.js";
 import type { Suite } from "./types.js";
 
@@ -95,11 +95,16 @@ const MODELS = {
   },
 };
 
-async function setup(ns = [1, 2, 3, 4, 5, 6]) {
+async function setup(ns = [1, 2, 3, 4, 5, 6], { batch = true } = {}) {
   const store = memoryStore();
   for (const n of ns) await store.createCase(kase(n));
+  // Without batch: a store written before listOutputsFor and
+  // findReusableHashes, which the runner must still serve.
+  const plain: EvalStore = { ...store };
+  delete plain.listOutputsFor;
+  delete plain.findReusableHashes;
   const runner = createRunner({
-    store,
+    store: batch ? store : plain,
     suites: [double],
     models: MODELS,
     promptVersion: () => "v1",
@@ -327,6 +332,24 @@ describe("runner, beyond a basic test", () => {
     const after = await store.getRun(run.id);
     expect(after?.metrics?.byCheck.right?.passed).toBe(0);
     expect(after?.datasetVersion).not.toBe(before);
+  });
+
+  it("gives the same board and estimates with or without the batch store methods", async () => {
+    const results = [];
+    for (const batch of [true, false]) {
+      const { runner } = await setup([2, 4, 6], { batch });
+      for (const model of ["good", "thinker"]) {
+        const { run } = await runner.createRun({ suite: "double", model });
+        await runner.runEval(run.id);
+      }
+      const b = await runner.board("double");
+      results.push({
+        rows: b.rows.map((r) => [r.key, r.test?.right, r.test?.total]),
+        estimate: await runner.estimateRun("double", "good", "ALL", 2),
+      });
+    }
+    expect(results[0]).toEqual(results[1]);
+    expect(results[0]?.estimate).toMatchObject({ answers: 6, reused: 3 });
   });
 
   it("splits board rows by reasoning setting, and marks fallback-only models", async () => {

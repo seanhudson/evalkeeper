@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { suiteMetrics, wilson } from "./stats.js";
+import { answerScore, sumUnits, suiteMetrics, wilson } from "./stats.js";
 
 describe("wilson", () => {
   it("is honest about small samples", () => {
@@ -75,5 +75,35 @@ describe("suiteMetrics", () => {
     expect(m.avgMs).toBe(200);
     expect(m.costPerAnswer).toBeCloseTo(0.01);
     expect(m.costUsd).toBeCloseTo(0.02);
+  });
+});
+
+describe("sumUnits", () => {
+  const graded = (right: number, total: number) => ({
+    checks: [{ key: "items", pass: right === total, units: { right, total } }],
+  });
+
+  it("counts a failed answer as wrong, worth what a graded one is", () => {
+    const outputs = [
+      ...Array.from({ length: 45 }, () => graded(1, 1)),
+      ...Array.from({ length: 5 }, () => ({ checks: null })),
+    ];
+    expect(sumUnits(outputs)).toEqual({ right: 45, total: 50 });
+  });
+
+  it("charges the average units when answers carry several", () => {
+    expect(sumUnits([graded(6, 7), graded(7, 7), { checks: null }])).toEqual({
+      right: 13,
+      total: 21,
+    });
+  });
+
+  it("is null without partial credit, or when every answer failed", () => {
+    expect(sumUnits([{ checks: [{ key: "a", pass: true }] }])).toBeNull();
+    expect(sumUnits([{ checks: null }, { checks: null }])).toBeNull();
+  });
+
+  it("scores a failed answer zero", () => {
+    expect(answerScore(null)).toBe(0);
   });
 });

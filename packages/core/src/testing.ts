@@ -84,6 +84,9 @@ export function describeStoreContract(
     it("lists a suite's cases oldest first, leaving out retired ones", async () => {
       const store = await make();
       const first = await store.createCase(newCase("s"));
+      // Apart in time: two cases made in the same millisecond have no
+      // oldest one.
+      await new Promise((r) => setTimeout(r, 5));
       const second = await store.createCase(newCase("s"));
       await store.createCase(newCase("other"));
       await store.setCaseStatus(first.id, "RETIRED");
@@ -196,6 +199,61 @@ export function describeStoreContract(
       expect(
         await store.findReusableOutput("h", new Date(Date.now() + 60_000)),
       ).toBeNull();
+    });
+
+    it("lists several tests' outputs and reusable hashes in one call, where it can", async () => {
+      const store = await make();
+      const c = await store.createCase(newCase("s"));
+      const [r1, r2, r3] = await Promise.all([
+        store.createRun(newRun("s")),
+        store.createRun(newRun("s")),
+        store.createRun(newRun("s")),
+      ]);
+      const base = {
+        caseId: c.id,
+        repeat: 1,
+        output: { text: "HELLO" },
+        error: null,
+        scores: null,
+        costUsd: 0.01,
+        ms: 12,
+        reused: false,
+      };
+      await store.createOutput({ ...base, runId: r1.id, requestHash: "a" });
+      await store.createOutput({ ...base, runId: r2.id, requestHash: "b" });
+      await store.createOutput({
+        ...base,
+        runId: r2.id,
+        requestHash: "c",
+        reused: true,
+      });
+      await store.createOutput({
+        ...base,
+        runId: r3.id,
+        requestHash: "d",
+        error: "boom",
+        output: null,
+      });
+      if (store.listOutputsFor) {
+        const outs = await store.listOutputsFor([r1.id, r2.id]);
+        expect(outs.map((o) => o.requestHash).sort()).toEqual(["a", "b", "c"]);
+        expect(await store.listOutputsFor([])).toEqual([]);
+      }
+      if (store.findReusableHashes) {
+        expect(
+          [
+            ...(await store.findReusableHashes(
+              ["a", "b", "c", "d", "e"],
+              new Date(0),
+            )),
+          ].sort(),
+        ).toEqual(["a", "b"]);
+        expect(
+          (await store.findReusableHashes(["a"], new Date(Date.now() + 60_000)))
+            .size,
+        ).toBe(0);
+        expect((await store.findReusableHashes([], new Date(0))).size).toBe(0);
+      }
     });
 
     it("runs a whole test through the runner", async () => {

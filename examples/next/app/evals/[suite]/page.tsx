@@ -55,17 +55,23 @@ export default async function SuitePage({
 }) {
   await requireAdmin();
   const { suite: key } = await params;
-  if (!SUITE_BY_KEY[key]) notFound();
-  const b = await runner.board(key);
-  // Records a deploy if the instructions changed under the live settings.
-  await settings.syncPrompt(b.suite.operation);
+  const operation = SUITE_BY_KEY[key]?.operation;
+  if (!operation) notFound();
+  // The board and the settings load together: on a remote database each
+  // waits on round trips, so one after the other doubles the wait.
+  const [b, [history, liveSettings]] = await Promise.all([
+    runner.board(key),
+    // Records a deploy if the instructions changed under the live
+    // settings, before reading them.
+    settings
+      .syncPrompt(operation)
+      .then(() =>
+        Promise.all([settings.history(operation), settings.current(operation)]),
+      ),
+  ]);
   const { suite, rows } = b;
   const s = suggest(rows, suite.checks, suite.priority, MODELS);
   const testing = rows.some((r) => r.testing);
-  const [history, liveSettings] = await Promise.all([
-    settings.history(suite.operation),
-    settings.current(suite.operation),
-  ]);
   // What testing each model would cost now, counting answers it would reuse.
   const estimates = new Map(
     await Promise.all(

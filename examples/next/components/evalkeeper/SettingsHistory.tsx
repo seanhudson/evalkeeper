@@ -5,8 +5,7 @@ import {
   type HistoryEntry,
   type Settings,
 } from "@crowandraven/evalkeeper";
-import { rollBackSettings } from "@/lib/evalkeeper/actions";
-import { Submit } from "./Submit";
+import { RollBack } from "./RollBack";
 import { InfoTip, Tip } from "./Tip";
 import { Chip } from "./ui";
 import { evalsPath } from "@/lib/evalkeeper/paths";
@@ -163,24 +162,11 @@ export function HistoryEntries({
                 </Link>
               )}
               {!isLive && (
-                <form
-                  action={rollBackSettings}
-                  className="flex flex-wrap items-center gap-2"
-                >
-                  <input type="hidden" name="suite" value={suite} />
-                  <input type="hidden" name="version" value={e.to.id} />
-                  <label htmlFor={`why-${e.id}`} className="sr-only">
-                    Why roll back to v{e.to.number}?
-                  </label>
-                  <input
-                    id={`why-${e.id}`}
-                    name="reason"
-                    required
-                    placeholder="Why roll back?"
-                    className="rounded-md border border-line bg-card px-2 py-1 text-xs focus:border-accent focus:outline-none"
-                  />
-                  <Submit variant="quiet">Roll back to v{e.to.number}</Submit>
-                </form>
+                <RollBack
+                  suite={suite}
+                  versionId={e.to.id}
+                  number={e.to.number}
+                />
               )}
             </div>
           </article>

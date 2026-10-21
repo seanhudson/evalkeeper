@@ -279,21 +279,21 @@ function SuiteCard({
       </div>
 
       {s && (
-        <div className="space-y-0.5 text-sm">
-          <p>
-            <span className="font-medium">v{version?.number ?? 1}</span>{" "}
-            <span className="text-muted">
-              · {since ? `live since ${day(since)}` : "defaults from code"}
-            </span>
-          </p>
-          <p className="text-xs text-muted">
-            {label(s.model)}
-            {s.fallbackModel
-              ? ` · fallback ${label(s.fallbackModel)}`
-              : " · no fallback"}
-            {s.reasoningEffort ? ` · reasoning ${s.reasoningEffort}` : ""}
-          </p>
-        </div>
+        <p className="text-sm text-muted">
+          <span className="font-semibold text-ink">{label(s.model)}</span>
+          {s.fallbackModel ? (
+            <>
+              {" "}
+              · fallback{" "}
+              <span className="font-semibold text-ink">
+                {label(s.fallbackModel)}
+              </span>
+            </>
+          ) : (
+            " · no fallback"
+          )}
+          {s.reasoningEffort ? ` · reasoning ${s.reasoningEffort}` : ""}
+        </p>
       )}
 
       <p className="text-sm">
@@ -329,6 +329,10 @@ function SuiteCard({
           <summary className="flex list-none items-center justify-between gap-2 p-3 text-sm font-medium">
             Versions
             <span className="flex items-center gap-1 text-xs font-normal text-muted">
+              <span className="font-medium text-ink">
+                v{version?.number ?? 1}
+              </span>{" "}
+              {since ? `live since ${day(since)}` : "defaults from code"} ·{" "}
               {versions} version{versions === 1 ? "" : "s"}
               <ChevronDown
                 aria-hidden

@@ -7,6 +7,15 @@ version may change an interface, and its entry says how to update.
 
 ## Unreleased
 
+## 0.4.0 - 2026-10-20
+
+From running Evalkeeper in production on a remote database: the pages
+load in fewer queries and no longer spin while a test runs, confirming
+an answer moves straight to the next draft, and two scoring fixes.
+**To update:** copy the changed pages and components (each entry below
+names them); a custom `EvalStore` needs nothing, and can add
+`listOutputsFor` and `findReusableHashes` to load faster.
+
 ### Added
 
 - Two optional `EvalStore` methods load in one query what took one per

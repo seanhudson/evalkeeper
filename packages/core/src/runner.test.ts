@@ -235,14 +235,14 @@ describe("board", () => {
     ]);
     expect(b.rows[0]!.live).toBe(true);
     // Three cases are too few to call them equal, so it can't go live yet;
-    // a fallback only needs a current, complete test from another provider.
+    // any model can be chosen as the fallback.
     expect(b.rows[1]).toMatchObject({
       vsLive: "TOO_FEW",
       canMakeLive: false,
       canMakeFallback: true,
     });
-    // Untested, and the same provider as live.
-    expect(b.rows[2]).toMatchObject({ test: null, canMakeFallback: false });
+    // Untested, and the same provider as live: still the person's call.
+    expect(b.rows[2]).toMatchObject({ test: null, canMakeFallback: true });
     expect(b.caseResults[store.cases[0]!.id]).toEqual({ passed: 2, models: 2 });
   });
 });

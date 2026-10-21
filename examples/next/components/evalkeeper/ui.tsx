@@ -49,7 +49,9 @@ export function Score({ right, total }: { right: number; total: number }) {
         />
       </span>
       <span className="text-xs text-muted tabular-nums">
-        {right}/{total}
+        {/* Whole numbers: a failed answer counts a graded answer's average
+            parts, which can be a fraction. */}
+        {Math.round(right)}/{Math.round(total)}
       </span>
     </div>
   );

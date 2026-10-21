@@ -7,6 +7,13 @@ version may change an interface, and its entry says how to update.
 
 ## Unreleased
 
+### Added
+
+- Each version tag gets its GitHub release, written from its CHANGELOG.md
+  section with the install line and the packages on npm
+  (`scripts/release-notes.mjs`, the Release workflow). Before, the
+  releases page stopped at 0.1.1.
+
 ## 0.4.1 - 2026-10-21
 
 The person choosing a fallback decides: "Make fallback" shows on every

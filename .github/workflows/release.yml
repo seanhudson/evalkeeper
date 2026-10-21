@@ -1,0 +1,37 @@
+name: Release
+
+# A version tag (v0.4.1) gets its GitHub release, written from that
+# version's CHANGELOG.md section (scripts/release-notes.mjs). Publishing to
+# npm stays a person's step; this only keeps the release page in step.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "An existing tag to write or rewrite the release for, like v0.4.0"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Release notes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Write the notes, then create or update the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          node scripts/release-notes.mjs "$TAG" > notes.md
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --title "$TAG" --notes-file notes.md
+          else
+            gh release create "$TAG" --title "$TAG" --notes-file notes.md --verify-tag
+          fi

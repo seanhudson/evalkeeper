@@ -77,7 +77,11 @@ admin-edited rule injected at call time) belongs in the hash too.
 Pick the AI feature people would notice most if it got worse. Write its
 input and answer shapes with zod, two or three checks (at least one
 serious), `run`, and `grade`. Keep grading pure where you can, and unit
-test it: a low score is often the grader's fault.
+test it: a low score is often the grader's fault. Give every field of the
+input and answer a plain label and help (`fields`), and every check a
+description; `describeSuiteContract("our suites", SUITES)` from
+`@crowandraven/evalkeeper/testing` fails until they're there, and checks
+your starter cases fit their schemas.
 
 Start with 10 to 20 real cases, with personal details removed. Confirm
 each answer yourself. Grow toward 50.

@@ -7,6 +7,16 @@ version may change an interface, and its entry says how to update.
 
 ## Unreleased
 
+### Added
+
+- `describeSuiteContract(name, suites)` in `@crowandraven/evalkeeper/testing`:
+  one test per suite that fails, in plain words, when a top-level field
+  of its input or answer has no label and help, a check has no
+  description, a starter case doesn't fit its schemas, or two suites
+  share a key. `suiteContractProblems` is the same check as a pure
+  function (#39). **To update:** nothing; add the contract to your suite
+  tests when you're ready, and it lists what's missing.
+
 ### Fixed
 
 - When the live model's current test has failed answers (a timeout,

@@ -5,7 +5,7 @@ Notable changes, newest first. The format follows
 follow [semantic versioning](https://semver.org/): until 1.0, a minor
 version may change an interface, and its entry says how to update.
 
-## Unreleased
+## 0.5.0 - 2026-10-21
 
 For apps that had evals before Evalkeeper: keep your own tables,
 versions, and pages. **To update:** nothing; every change is opt-in, and

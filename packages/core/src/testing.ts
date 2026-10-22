@@ -1,5 +1,5 @@
 /**
- * The contracts every store must meet, as Vitest tests.
+ * The contracts every store and set of suites must meet, as Vitest tests.
  *
  * @module evalkeeper/testing
  */
@@ -13,7 +13,8 @@ import {
   type SettingsStore,
 } from "./settings.js";
 import type { EvalStore, NewCase } from "./store.js";
-import type { Suite } from "./types.js";
+import { suiteContractProblems } from "./suiteContract.js";
+import type { AnySuite, Suite } from "./types.js";
 
 /**
  * Options for a store contract, for a store on tables that lack an
@@ -540,5 +541,46 @@ export function describeSettingsStoreContract(
       expect(other.number).toBe(1);
       expect((await store.liveVersion("triage"))?.model).toBe("a");
     });
+  });
+}
+
+/**
+ * The contract every set of suites should meet, so people confirming
+ * answers weeks later (and the pages) can read them: unique keys, a label
+ * and help for every top-level field of each suite's input and answer,
+ * a description for every check, and starter cases that fit the suite's
+ * own schemas. One test per suite, listing what's missing in plain words
+ * (`suiteContractProblems`).
+ *
+ * @param name - What the tests are called, e.g. "our suites".
+ * @param suites - Every suite the app registers.
+ *
+ * @example
+ * ```ts
+ * import { describeSuiteContract } from "@crowandraven/evalkeeper/testing";
+ * import { SUITES } from "../lib/suites";
+ *
+ * describeSuiteContract("our suites", SUITES);
+ * ```
+ */
+export function describeSuiteContract(
+  name: string,
+  suites: readonly AnySuite[],
+) {
+  describe(`Suite contract: ${name}`, () => {
+    it("has unique keys", () => {
+      expect(
+        suiteContractProblems(suites).filter((p) =>
+          p.endsWith("another suite has the same key."),
+        ),
+      ).toEqual([]);
+    });
+    for (const suite of suites)
+      it(`${suite.key}: every field, check, and starter can be read`, () => {
+        expect(
+          suiteContractProblems([suite]),
+          "What's missing for people to read this suite",
+        ).toEqual([]);
+      });
   });
 }

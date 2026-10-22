@@ -55,17 +55,17 @@ each kind of change goes.
 
 Every change comes with the tests that prove it, at the right level:
 
-| Change                         | Tests                                                                    |
-| ------------------------------ | ------------------------------------------------------------------------ |
-| A pure function or rule (core) | A unit test next to it, covering edge cases and each branch              |
-| A runner behavior              | A runner test on `memoryStore` (`runner.test.ts`, `runner.more.test.ts`) |
-| A storage method               | A case in `describeStoreContract`; every store must pass it              |
-| A new store or adapter         | Run `describeStoreContract` against it                                   |
-| An AI adapter                  | Unit tests with `MockLanguageModelV3` from `ai/test`; no network         |
-| A suite                        | Grader tests on fixed outputs: right, wrong, edge cases, no answer       |
-| A form reader                  | A test that it reads good input and rejects bad input                    |
-| A page, action, or component   | An end-to-end test in `examples/next/e2e`, demo models only              |
-| A bug fix                      | A test that fails before the fix and passes after                        |
+| Change                         | Tests                                                                                                         |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| A pure function or rule (core) | A unit test next to it, covering edge cases and each branch                                                   |
+| A runner behavior              | A runner test on `memoryStore` (`runner.test.ts`, `runner.more.test.ts`)                                      |
+| A storage method               | A case in `describeStoreContract`; every store must pass it                                                   |
+| A new store or adapter         | Run `describeStoreContract` against it                                                                        |
+| An AI adapter                  | Unit tests with `MockLanguageModelV3` from `ai/test`; no network                                              |
+| A suite                        | Grader tests on fixed outputs: right, wrong, edge cases, no answer; `describeSuiteContract` over the registry |
+| A form reader                  | A test that it reads good input and rejects bad input                                                         |
+| A page, action, or component   | An end-to-end test in `examples/next/e2e`, demo models only                                                   |
+| A bug fix                      | A test that fails before the fix and passes after                                                             |
 
 - Coverage limits (`packages/*/vitest.config.ts`) never go down. Raise
   them when coverage rises.
@@ -189,4 +189,5 @@ you found and which you'd map, keep, or replace.
   contact details removed. The rating action looks the answer up by its
   id; it never takes the input or output from the browser.
 - **Give every suite field help and every check a description,** and test
-  the suite's grader like any other code.
+  the suite's grader like any other code. Run `describeSuiteContract`
+  over the app's suites so a missing label or help fails a test.

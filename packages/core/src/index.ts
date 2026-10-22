@@ -28,6 +28,7 @@ export * from "./weekly.js";
 export * from "./settings.js";
 export * from "./decisions.js";
 export * from "./store.js";
+export * from "./suiteContract.js";
 export * from "./labels.js";
 // Server-only (node:crypto): import from "@crowandraven/evalkeeper/runner".
 // In-memory store for tests and demos: "@crowandraven/evalkeeper/memory".

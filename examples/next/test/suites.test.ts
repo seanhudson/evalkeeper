@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { describeSuiteContract } from "@crowandraven/evalkeeper/testing";
 import { wordPairs } from "@crowandraven/evalkeeper";
 import { ticketTriage, TRIAGE_STARTERS } from "../lib/suites/ticketTriage";
 import {
@@ -12,33 +13,9 @@ import { demoCall } from "../lib/demo";
 const check = (r: { key: string; pass: boolean | null }[], key: string) =>
   r.find((c) => c.key === key)?.pass;
 
+describeSuiteContract("the example's suites", SUITES);
+
 describe("every suite", () => {
-  it("gives every form field a label and help", () => {
-    for (const suite of SUITES) {
-      const fields = [
-        ...(suite.fields?.input ?? []),
-        ...(suite.fields?.label ?? []),
-      ];
-      expect(fields.length, suite.key).toBeGreaterThan(0);
-      for (const f of fields) {
-        expect(f.label, `${suite.key}.${f.name}`).not.toBe("");
-        expect(f.help.length, `${suite.key}.${f.name} help`).toBeGreaterThan(
-          10,
-        );
-      }
-    }
-  });
-
-  it("has valid starters whose answers parse", () => {
-    for (const suite of SUITES)
-      for (const s of suite.starter ?? []) {
-        expect(suite.input.safeParse(s.input).success, suite.key).toBe(true);
-        expect(suite.labelValue.safeParse(s.label).success, suite.key).toBe(
-          true,
-        );
-      }
-  });
-
   it("puts some starters in TEST, never all", () => {
     for (const suite of SUITES) {
       const test = (suite.starter ?? []).filter(

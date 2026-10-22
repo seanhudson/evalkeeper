@@ -30,6 +30,7 @@ export * from "./decisions.js";
 export * from "./store.js";
 export * from "./suiteContract.js";
 export * from "./labels.js";
+export * from "./blind.js";
 // Server-only (node:crypto): import from "@crowandraven/evalkeeper/runner".
 // In-memory store for tests and demos: "@crowandraven/evalkeeper/memory".
 export * from "./importCases.js";

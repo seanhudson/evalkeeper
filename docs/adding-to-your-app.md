@@ -200,6 +200,13 @@ inputFromForm: inputFromJson(profileSchema),
 labelFromForm: labelFromJson(fitSchema),
 ```
 
+**Cases from your app's own data.** When the cases are items your app
+already handled (and the answers are what someone did with them), set
+the suite's `caseKind: "imported"` and have people rate them blind: the
+answer key then links to a "Rate blind" page (`rate`) that shows one
+case's input at a time, never the app's output, and takes an answer, a
+reason, or a skip. Each rating is that person's own confirmed answer.
+
 When an agent drafts the answers, two habits catch most mistakes: have it
 list the cases it's unsure of, so a person reviews those first, and check
 every expected term against the input. In one app, 43 of 218 drafted terms
@@ -351,8 +358,8 @@ export const judgmentCache = prismaJudgmentCache(prisma, map);
 - **Columns Evalkeeper lacks** (a creator, a quick-set flag, legacy
   results) are left alone, so they need a default or to be nullable.
 - **Statuses your enum lacks.** Evalkeeper writes its own status names
-  (an answer can be REJECTED). If your enum lacks one, add the value, or
-  that write fails.
+  (an answer can be REJECTED, and rating blind writes SKIPPED). If your
+  enum lacks one, add the value, or that write fails.
 - **Check it.** Run the contract against the mapped store on a copy of
   your data, with `without` naming any setting you mapped to `null`:
 
@@ -433,7 +440,7 @@ Copy only the pages and components you're replacing, and keep your own:
 npx @crowandraven/evalkeeper add pages --base admin/evals --only suite,run,AnswerKey --dry-run
 ```
 
-`--only` takes pages by name (hub, suite, run, feedback, cron),
+`--only` takes pages by name (hub, suite, run, rate, feedback, cron),
 components and glue by name (AnswerKey, actions, evalkeeper.css, …), the
 groups `pages` and `components`, and `index` for a starter wiring module
 (left out otherwise). `--dry-run` lists what would be written, skipped,

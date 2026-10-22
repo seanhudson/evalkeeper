@@ -15,9 +15,13 @@ export type EvalSet = "ALL" | "SMOKE" | "DEV" | "TEST";
 export const EVAL_SETS: EvalSet[] = ["ALL", "SMOKE", "DEV", "TEST"];
 
 /**
- * Where an answer stands: pending review, confirmed, provisional, or rejected.
+ * Where an answer stands: pending review, confirmed, provisional, or
+ * rejected. SKIPPED isn't an answer: it marks a case one rater passed on
+ * when rating blind (see `skipMark`), with no value, so it's never graded
+ * against and doesn't change what tests use.
  */
-export type LabelStatus = "PENDING" | "CONFIRMED" | "PROVISIONAL" | "REJECTED";
+export type LabelStatus =
+  "PENDING" | "CONFIRMED" | "PROVISIONAL" | "REJECTED" | "SKIPPED";
 
 /**
  * An answer to a case. EXPECTED is what a good answer looks like; a case's
@@ -154,7 +158,11 @@ export interface EvalStore {
     opts?: { includeRetired?: boolean },
   ): Promise<CaseRecord[]>;
   createCase(data: NewCase): Promise<CaseRecord>;
-  /** Adds an answer to a case (answers are never overwritten). */
+  /**
+   * Adds an answer to a case (answers are never overwritten). A SKIPPED
+   * mark (value null) is kept the same way, and leaves the case's
+   * `updatedAt` alone, so a skip doesn't make tests out of date.
+   */
   addLabel(caseId: string, label: NewLabel): Promise<LabelRecord>;
   /** Changes an answer's status, e.g. a person confirming a draft. */
   setLabelStatus(labelId: string, status: LabelStatus): Promise<void>;

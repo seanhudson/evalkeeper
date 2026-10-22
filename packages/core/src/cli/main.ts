@@ -21,7 +21,7 @@ Options:
   --root <dir>    Where the alias points, e.g. "src" (default: from tsconfig.json)
   --no-cron       Leave out the weekly check's cron route
   --only <names>  Copy only these, comma-separated: pages (hub, suite, run,
-                  feedback, cron), components and glue by name (AnswerKey,
+                  rate, feedback, cron), components and glue by name (AnswerKey,
                   actions, …), the groups "pages" and "components", or
                   "index" for a starter lib/evalkeeper/index.ts
   --force         Overwrite files that already exist (never your lib/evalkeeper/index.ts)

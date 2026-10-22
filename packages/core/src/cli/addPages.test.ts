@@ -145,6 +145,7 @@ describe("evalkeeper add pages", () => {
     for (const f of [
       "app/evals/page.tsx",
       "app/evals/[suite]/page.tsx",
+      "app/evals/[suite]/rate/page.tsx",
       "app/evals/feedback/page.tsx",
       "components/evalkeeper/AnswerKey.tsx",
       "components/evalkeeper/evalkeeper.css",
@@ -274,6 +275,7 @@ describe("evalkeeper add pages", () => {
     });
     expect(plan.files.map((f) => f.path).sort()).toEqual([
       "app/evals/[suite]/page.tsx",
+      "app/evals/[suite]/rate/page.tsx",
       "app/evals/[suite]/runs/[runId]/page.tsx",
       "app/evals/feedback/page.tsx",
       "app/evals/page.tsx",
@@ -294,6 +296,12 @@ describe("evalkeeper add pages", () => {
     expect(pickOnly(["app/evals/page.tsx"], [" ", "HUB"])).toEqual([
       "app/evals/page.tsx",
     ]);
+    expect(
+      pickOnly(
+        ["app/evals/[suite]/page.tsx", "app/evals/[suite]/rate/page.tsx"],
+        ["rate"],
+      ),
+    ).toEqual(["app/evals/[suite]/rate/page.tsx"]);
   });
 
   it("reads a template's imports from the copied set", () => {

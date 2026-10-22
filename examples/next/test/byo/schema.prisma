@@ -38,6 +38,8 @@ enum AnswerState {
   PENDING
   CONFIRMED
   PROVISIONAL
+  /// Added for Evalkeeper's blind rating: a rater passed on a case.
+  SKIPPED
 }
 
 model GoldCase {

@@ -163,21 +163,32 @@ const LABEL_STATUSES: readonly LabelStatus[] = [
   "CONFIRMED",
   "PROVISIONAL",
   "REJECTED",
+  "SKIPPED",
 ];
 const RUN_STATUSES: readonly RunStatus[] = ["RUNNING", "SUCCEEDED", "FAILED"];
 const SETS: readonly EvalSet[] = ["ALL", "SMOKE", "DEV", "TEST"];
 
-const label = (l: Row): LabelRecord => ({
-  id: str(l.id),
-  kind: "EXPECTED",
-  status: oneOf(l.status, LABEL_STATUSES, "PENDING"),
-  value: l.value,
-  raterRole: str(l.raterRole),
-  raterId: strOrNull(l.raterId),
-  note: strOrNull(l.note),
-  createdAt: date(l.createdAt),
-  updatedAt: date(l.updatedAt),
-});
+/**
+ * A skip mark has no answer, but the value column can't be null (and
+ * Prisma wants JSON null spelled with its own namespace), so a skip is
+ * written as `{}` and read back as null.
+ */
+const SKIP_VALUE = {};
+
+const label = (l: Row): LabelRecord => {
+  const status = oneOf(l.status, LABEL_STATUSES, "PENDING");
+  return {
+    id: str(l.id),
+    kind: "EXPECTED",
+    status,
+    value: status === "SKIPPED" ? null : l.value,
+    raterRole: str(l.raterRole),
+    raterId: strOrNull(l.raterId),
+    note: strOrNull(l.note),
+    createdAt: date(l.createdAt),
+    updatedAt: date(l.updatedAt),
+  };
+};
 
 const run = (r: Row): RunRecord => ({
   id: str(r.id),
@@ -223,6 +234,10 @@ const output = (o: Row): OutputRecord => ({
  */
 const json = (v: unknown): object | string | number | boolean | undefined =>
   v === undefined || v === null ? undefined : v;
+
+/** A label's value for its JSON column; a skip's is `SKIP_VALUE`. */
+const labelValue = (l: { status: LabelStatus; value: unknown }) =>
+  l.status === "SKIPPED" ? SKIP_VALUE : json(l.value);
 
 /** Evalkeeper's eval tables, by the names its schema gives them. */
 export type EvalTable =
@@ -351,7 +366,7 @@ export function prismaStore(db: object, map: PrismaStoreMap = {}): EvalStore {
               ...t.cases.out({ ...data, input: json(data.input) }),
               [labelsOf]: {
                 create: first.map((l) =>
-                  t.labels.out({ ...l, value: json(l.value) }),
+                  t.labels.out({ ...l, value: labelValue(l) }),
                 ),
               },
             },
@@ -364,7 +379,7 @@ export function prismaStore(db: object, map: PrismaStoreMap = {}): EvalStore {
       return label(
         t.labels.in(
           await labels.create({
-            data: t.labels.out({ ...data, caseId, value: json(data.value) }),
+            data: t.labels.out({ ...data, caseId, value: labelValue(data) }),
           }),
         ),
       );

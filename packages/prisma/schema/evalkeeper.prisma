@@ -38,8 +38,9 @@ model EvalCaseLabel {
   caseId    String
   /// EXPECTED.
   kind      String   @default("EXPECTED")
-  /// PENDING, CONFIRMED, PROVISIONAL, or REJECTED. A model's draft is
-  /// PENDING until a person confirms it.
+  /// PENDING, CONFIRMED, PROVISIONAL, REJECTED, or SKIPPED. A model's
+  /// draft is PENDING until a person confirms it. SKIPPED isn't an answer:
+  /// a rater passed on the case while rating blind (value is {}).
   status    String   @default("PENDING")
   value     Json
   /// Who gave it: OWNER, MODEL, a reviewer's role.

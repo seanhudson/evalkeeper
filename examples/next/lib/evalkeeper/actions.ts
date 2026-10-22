@@ -3,9 +3,12 @@
 import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import {
+  blindRating,
   caseFromFeedback,
   formText,
   leakNote,
+  raterStatus,
+  skipMark,
   suggest,
   withoutLeaks,
 } from "@crowandraven/evalkeeper";
@@ -244,6 +247,53 @@ export async function editAnswer(form: FormData) {
   await store.setCaseStatus(caseId, "ACTIVE");
   after(() => runner.rescoreRecent(suite.key));
   revalidatePath(evalsPath(suite.key));
+}
+
+/**
+ * The case a blind rating or skip is for: in this imported suite, not
+ * retired, and not yet rated or skipped by this person, so nobody answers
+ * twice and nothing lands over another person's answer.
+ */
+async function caseToRate(form: FormData, raterId: string) {
+  const suite = suiteFrom(form);
+  if (suite.caseKind !== "imported" || !suite.labelFromForm)
+    throw new Error("This suite isn't rated blind");
+  const caseId = formText(form, "case");
+  const c = (await store.listCases(suite.key)).find((x) => x.id === caseId);
+  if (!c) throw new Error("Unknown case");
+  if (raterStatus(c, raterId))
+    throw new Error("You've already rated or skipped this case");
+  return { suite, c };
+}
+
+/**
+ * A person rates an imported case blind: their own confirmed answer, with
+ * their reason, added beside anyone else's. Tests are rescored for free.
+ */
+export async function rateBlind(form: FormData) {
+  const admin = await requireAdmin();
+  const { suite, c } = await caseToRate(form, admin.id);
+  if (!suite.labelFromForm) throw new Error("This suite has no answer form");
+  await store.addLabel(
+    c.id,
+    blindRating({
+      raterId: admin.id,
+      value: suite.labelFromForm(form),
+      reason: formText(form, "reason"),
+    }),
+  );
+  // A draft is in use once it has an answer.
+  if (c.status === "DRAFT") await store.setCaseStatus(c.id, "ACTIVE");
+  after(() => runner.rescoreRecent(suite.key));
+  revalidatePath(evalsPath(suite.key), "layout");
+}
+
+/** A person passes on an imported case: it leaves their queue only. */
+export async function skipCase(form: FormData) {
+  const admin = await requireAdmin();
+  const { suite, c } = await caseToRate(form, admin.id);
+  await store.addLabel(c.id, skipMark(admin.id));
+  revalidatePath(evalsPath(suite.key, "rate"));
 }
 
 /** Takes a case out of use; its stored answers stay. */

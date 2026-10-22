@@ -35,6 +35,17 @@ answer shape. Every answer has a status:
 A case is _in use_ when it isn't retired and has a confirmed or
 provisional answer. Nothing is ever confirmed on someone's behalf.
 
+**Rating blind.** For a suite whose cases are imported from your app's
+data (`caseKind: "imported"`), what someone did with an item isn't its
+answer, and seeing what the app decided anchors a rating. The answer
+key's "Rate blind" page shows one person the oldest case they haven't
+rated or skipped (`rateQueue`), with its input only: never the app's
+output or what anyone did with it. They give the answer and a reason, or
+skip it. A rating is their own confirmed answer (rater role
+`BLIND_RATER`), added beside other people's, never over them. A skip is
+kept as a SKIPPED mark with no value: it's never graded against and only
+keeps the case out of that person's queue.
+
 **Check.** One thing a good answer gets right. A check passes, fails, or
 doesn't apply (null). It's either _serious_ (a mistake that changes what
 your product does: the wrong queue, a missed urgent ticket) or _minor_ (a

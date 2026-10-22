@@ -195,7 +195,8 @@ export function memoryStore(): EvalStore &
       const at = now();
       const l = { ...data, id: id("label"), createdAt: at, updatedAt: at };
       c.labels.push(l);
-      c.updatedAt = at;
+      // A skip isn't an answer: it leaves the case as tests last saw it.
+      if (data.status !== "SKIPPED") c.updatedAt = at;
       return l;
     },
     async setLabelStatus(labelId, status) {

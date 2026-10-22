@@ -114,7 +114,70 @@ Answers arrive pending: a person confirms each on the pages. If the owner
 says "use them so you can test, I'll review later", pass
 `answers: { status: "PROVISIONAL", rater, allowedBy }`. Tests use them,
 every score says it rests on unreviewed answers, and each row is tagged
-`needs-review`. Nothing is imported confirmed.
+`needs-review`.
+
+**Answers people already reviewed.** An app moving from its own harness
+into Evalkeeper's tables (rather than mapping its tables, see "Bring your
+own") may have an answer key people reviewed there. Import those answers
+confirmed, reading who confirmed each one and when from its row:
+
+```ts
+await importCases({
+  store,
+  suite: ticketTriage,
+  source: "old-harness",
+  rows,
+  map,
+  answers: {
+    status: "CONFIRMED",
+    confirmedBy: (r) => r.reviewer,
+    at: (r) => r.reviewedAt,
+  },
+});
+```
+
+The import is refused unless every row names a person and a date (never
+one in the future); neither is ever filled in for you. The person is
+recorded as the answer's rater, and its note says it was imported as
+reviewed, from where, by whom, and on what date. Use this only for answers
+a person confirmed in the old system: answers an agent drafted or scraped
+from somewhere stay pending.
+
+**Leave out what a case learned from itself.** A case frozen from your
+app's data can carry its own answer: facts the app learned from the
+person's reaction to that same item, or a help desk's note written after
+the ticket was sorted. Give the suite a `withoutLeaks` that removes them;
+`importCases`, `importStarters`, and the "Add a case" form run it before
+freezing, `removed` in the import's result lists what came out of each
+case, and the case's note says so, for a person to check. Match on
+something specific to the case (the company's name), not something
+general (a job title), or it removes what other cases rightly share.
+
+```ts
+export const ticketTriage: Suite<Ticket, Triage, Triage> = {
+  // …
+  withoutLeaks(input) {
+    const lines = input.body.split("\n");
+    const leaked = (l: string) => l.startsWith("Internal note:");
+    return {
+      input: { ...input, body: lines.filter((l) => !leaked(l)).join("\n") },
+      removed: lines.filter(leaked),
+    };
+  },
+};
+```
+
+**Cases edited as JSON.** A fixture suite (`caseKind: "fixture"`) edits
+each case as JSON in one field. `inputFromJson(schema)` and
+`labelFromJson(schema)` read the `input` and `label` fields, parse them,
+and check them with the schema, with a plain error when a field is empty,
+isn't JSON, or doesn't fit ("Input doesn't fit at facts, item 2, text:
+…"):
+
+```ts
+inputFromForm: inputFromJson(profileSchema),
+labelFromForm: labelFromJson(fitSchema),
+```
 
 When an agent drafts the answers, two habits catch most mistakes: have it
 list the cases it's unsure of, so a person reviews those first, and check
@@ -270,6 +333,10 @@ export const judgmentCache = prismaJudgmentCache(prisma, map);
 don't have. The request hash that reuses identical answers may differ from
 your old harness's, so the first test of each model after the move pays
 for its answers again, once.
+
+If you'd rather move your rows into Evalkeeper's tables, import them with
+`importCases` (step 5), and bring answers people reviewed in as confirmed
+with who and when from each row.
 
 ### Your own router
 

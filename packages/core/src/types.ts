@@ -201,6 +201,25 @@ export type Suite<Input, Output, Label> = {
    * edited as JSON.
    */
   caseKind?: "typed" | "imported" | "fixture";
+  /**
+   * Removes anything the input learned from its own case before it's
+   * frozen, so a case can't carry its answer: facts the app learned from
+   * the person's reaction to that same item, for example. `importCases`,
+   * `importStarters`, and adding a case on the pages run it, and report
+   * what it removed per case so a person can check it. Match on something
+   * specific to the case (the company's name), not something general (a
+   * job title), or it removes what other cases rightly share.
+   *
+   * @param input - The case's input, already checked against `input`.
+   * @param source - Where the case came from: its `sourceRef`, or null
+   *   for a case added by hand.
+   * @returns The input without what leaked, and a plain line for each
+   *   item removed (empty when nothing was).
+   */
+  withoutLeaks?(
+    input: Input,
+    source: { sourceRef: string | null },
+  ): { input: Input; removed: string[] };
   /** A short line naming the case in lists. */
   title(input: Input): string;
   /** Fixture suites: the whole input, readable, for reviewing a case. */
@@ -261,3 +280,88 @@ export function linesOf(form: FormData, name: string): string[] {
  * `unknown`; a suite's own code keeps its precise types.
  */
 export type AnySuite = Suite<unknown, unknown, unknown>;
+
+/** Where a zod issue sits, in plain words: "facts, item 2, name". */
+function issuePath(path: readonly (string | number)[]): string {
+  return path
+    .map((p) => (typeof p === "number" ? `item ${p + 1}` : p))
+    .join(", ");
+}
+
+/**
+ * Reads one form field as JSON and checks it with a schema; throws a
+ * plain error when the field is empty, isn't JSON, or doesn't fit (naming
+ * the first part that doesn't).
+ */
+function readJson<T>(
+  form: FormData,
+  field: string,
+  what: string,
+  schema: z.ZodType<T>,
+): T {
+  const text = formText(form, field);
+  if (!text) throw new Error(`${what} is empty: fill in the "${field}" field`);
+  let value: unknown;
+  try {
+    value = JSON.parse(text);
+  } catch (e) {
+    throw new Error(
+      `${what} isn't valid JSON: ${e instanceof Error ? e.message : String(e)}`,
+      { cause: e },
+    );
+  }
+  const parsed = schema.safeParse(value);
+  if (parsed.success) return parsed.data;
+  const issue = parsed.error.issues[0];
+  const where = issue ? issuePath(issue.path) : "";
+  const message = issue?.message ?? "invalid";
+  throw new Error(
+    where
+      ? `${what} doesn't fit at ${where}: ${message}`
+      : `${what} doesn't fit: ${message}`,
+  );
+}
+
+/**
+ * A suite's `inputFromForm` for fixture suites (`caseKind: "fixture"`),
+ * whose cases are edited as JSON in one textarea. Reads the field, parses
+ * it, and checks it with the schema; throws a plain error when it's empty,
+ * isn't valid JSON ("Input isn't valid JSON: …"), or doesn't fit, naming
+ * the first part that doesn't ("Input doesn't fit at facts, item 2, name:
+ * Required").
+ *
+ * @param schema - The suite's input schema.
+ * @param field - The form field holding the JSON; default "input".
+ * @returns A form reader to use as the suite's `inputFromForm`.
+ *
+ * @example
+ * ```ts
+ * const profileFit: Suite<Profile, Fit, FitLabel> = {
+ *   // …
+ *   caseKind: "fixture",
+ *   inputFromForm: inputFromJson(profileSchema),
+ *   labelFromForm: labelFromJson(fitLabelSchema),
+ * };
+ * ```
+ */
+export function inputFromJson<T>(
+  schema: z.ZodType<T>,
+  field = "input",
+): (form: FormData) => T {
+  return (form) => readJson(form, field, "Input", schema);
+}
+
+/**
+ * A suite's `labelFromForm` for fixture suites: like `inputFromJson`, for
+ * the expected answer ("Answer isn't valid JSON: …").
+ *
+ * @param schema - The suite's answer schema (`labelValue`).
+ * @param field - The form field holding the JSON; default "label".
+ * @returns A form reader to use as the suite's `labelFromForm`.
+ */
+export function labelFromJson<T>(
+  schema: z.ZodType<T>,
+  field = "label",
+): (form: FormData) => T {
+  return (form) => readJson(form, field, "Answer", schema);
+}

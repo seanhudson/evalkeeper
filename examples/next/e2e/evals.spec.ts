@@ -110,7 +110,9 @@ test("the answer key: open a case, add one, edit its answer, and retire it", asy
   await page
     .getByLabel("Message")
     .first()
-    .fill("The export button does nothing.");
+    .fill(
+      "The export button does nothing.\nInternal note: known bug, fixed in 2.1.",
+    );
   await page.getByLabel("Category").first().selectOption("bug");
   await page.getByLabel("Urgency").first().selectOption("normal");
   await page.getByRole("button", { name: "Add case" }).click();
@@ -120,8 +122,16 @@ test("the answer key: open a case, add one, edit its answer, and retire it", asy
     page.getByRole("heading", { name: /17 cases in use/ }),
   ).toBeVisible();
 
-  // Edit its answer.
+  // The leak check took out the help desk's note, and the case says so.
   await added.locator("summary").first().click();
+  await expect(
+    added.getByText(
+      "Removed before freezing, as learned from this case: Internal note: known bug, fixed in 2.1.",
+    ),
+  ).toBeVisible();
+  await expect(added.getByText("known bug", { exact: false })).toHaveCount(1);
+
+  // Edit its answer.
   await added.getByRole("button", { name: "Case actions" }).click();
   await added.getByRole("menuitem", { name: "Edit answer" }).click();
   await added.getByLabel("Urgency").selectOption("high");

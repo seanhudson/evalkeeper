@@ -43,7 +43,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      - run: npx prisma generate
+      # Both clients: next build type-checks the tests too.
+      - run: npm run generate
         working-directory: examples/next
       - run: npx playwright install --with-deps chromium
         working-directory: examples/next

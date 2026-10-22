@@ -44,15 +44,21 @@ Coverage limits never go down.
 
 ## Releasing
 
-1. Move the "Unreleased" entries in CHANGELOG.md under a new
+1. Merge every pull request meant for the release, docs included. npm
+   shows each package's README as of its last publish, so docs merged
+   afterward wait for the next release.
+2. Move the "Unreleased" entries in CHANGELOG.md under a new
    `## X.Y.Z - date` heading, bump the three packages and the example to
    that version, and commit.
-2. Tag it (`git tag vX.Y.Z`) and push the tag. The Release workflow writes
+3. Tag it (`git tag vX.Y.Z`) and push the tag. The Release workflow writes
    the GitHub release from that changelog section
    (`scripts/release-notes.mjs`); rerun it from the Actions tab with a tag
    to rewrite an older release.
-3. Publish to npm: `npm run build`, then
-   `npm publish -w packages/core -w packages/prisma -w packages/ai-sdk`.
+4. Build from the tagged commit: `npm run build`.
+5. Publish in dependency order: core, then prisma, then ai-sdk
+   (`npm publish -w packages/core`, then `-w packages/prisma`, then
+   `-w packages/ai-sdk`). npm stages each publish for the owner to
+   approve, so approve each one before publishing the next.
 
 ## Ideas
 

@@ -49,6 +49,11 @@ export const GLOSSARY = {
     "Keeps what you typed, without your name, so it can become a test case for future models. Without it, a rating still counts but can't become a case.",
   makeCase:
     "Turns this rating into a draft case on its real input. A thumbs down needs a person to write the right answer; a thumbs up proposes the model's answer for a person to confirm.",
+  rateBlind:
+    "Rating imported cases one at a time from their input alone, never the app's output or what anyone did, so nothing anchors your answer. Each rating is your own confirmed answer, kept beside other people's.",
+  rateQueue:
+    "Your progress: cases you rated, cases you skipped, and cases still waiting for you, oldest first. Other people's answers don't count toward yours.",
+  skip: "Passes on this case for you only. It gives no answer and changes no test; others can still rate it, and you can still answer it in the answer key.",
   needsAnswer:
     "A draft case with no answer yet. Write what a good answer is; until then, tests leave it out.",
   weeklyCheck:

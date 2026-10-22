@@ -111,7 +111,10 @@ export const ticketRouting: Suite<Input, Output, Label> = {
     "Routing a support ticket with a decision model: which queue, and is it urgent, each with a probability.",
   graderVersion: "1",
   unitNoun: "tickets",
-  caseKind: "typed",
+  // In a real app these tickets come from its own queue, so people rate
+  // them blind (the answer key's "Rate blind" page) rather than taking
+  // where an agent routed them as the answer.
+  caseKind: "imported",
   input,
   labelValue: label,
   checks: CHECKS,

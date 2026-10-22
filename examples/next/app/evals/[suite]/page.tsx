@@ -421,15 +421,27 @@ export default async function SuitePage({
             </h2>
           }
           tools={
-            <form action={rescore}>
-              <input type="hidden" name="suite" value={key} />
-              <Tip control term="rescore" side="bottom" align="end">
-                <IconSubmit
-                  label="Rescore tests"
-                  icon={<RotateCw aria-hidden className="h-4 w-4" />}
-                />
-              </Tip>
-            </form>
+            <>
+              {suite.caseKind === "imported" && suite.labelFromForm && (
+                <Tip control term="rateBlind" side="bottom" align="end">
+                  <Link
+                    href={evalsPath(key, "rate")}
+                    className="inline-flex items-center rounded-md border border-accent/40 bg-card px-3 py-1.5 text-sm text-accent hover:bg-accent/10"
+                  >
+                    Rate blind
+                  </Link>
+                </Tip>
+              )}
+              <form action={rescore}>
+                <input type="hidden" name="suite" value={key} />
+                <Tip control term="rescore" side="bottom" align="end">
+                  <IconSubmit
+                    label="Rescore tests"
+                    icon={<RotateCw aria-hidden className="h-4 w-4" />}
+                  />
+                </Tip>
+              </form>
+            </>
           }
         />
       </section>

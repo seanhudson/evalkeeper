@@ -5,7 +5,9 @@
  */
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
+import { BLIND_RATER, blindRating, nextToRate, skipMark } from "./blind.js";
 import type { FeedbackStore, NewRating } from "./feedback.js";
+import { confirmedLabel } from "./labels.js";
 import { createRunner } from "./runner.js";
 import {
   CHANGE_KINDS,
@@ -159,6 +161,48 @@ export function describeStoreContract(
       const [listed] = await store.listCases("s");
       expect(listed?.labels).toHaveLength(1);
       expect(listed?.labels[0]?.status).toBe("CONFIRMED");
+    });
+
+    it("keeps each rater's blind rating and skip beside others' answers", async () => {
+      const store = await make();
+      const c = await store.createCase(newCase("s"));
+      const before = (await store.listCases("s"))[0]?.updatedAt;
+      // Apart in time, so a skip that touched the case would show.
+      await new Promise((r) => setTimeout(r, 5));
+      await store.addLabel(c.id, skipMark("rater-1"));
+      const [skipped] = await store.listCases("s");
+      expect(skipped?.updatedAt).toEqual(before);
+      expect(skipped?.labels.find((l) => l.status === "SKIPPED")).toMatchObject(
+        { value: null, raterId: "rater-1", raterRole: BLIND_RATER },
+      );
+      // The skip is never graded against: the owner's answer stays in use.
+      expect(confirmedLabel(skipped?.labels ?? [])?.value).toEqual({
+        want: "HELLO",
+      });
+      expect(nextToRate(await store.listCases("s"), "rater-1")).toBeNull();
+      expect(nextToRate(await store.listCases("s"), "rater-2")?.id).toBe(c.id);
+
+      await store.addLabel(
+        c.id,
+        blindRating({
+          raterId: "rater-2",
+          value: { want: "HI" },
+          reason: "It greets",
+        }),
+      );
+      const [rated] = await store.listCases("s");
+      expect(rated?.labels).toHaveLength(3);
+      expect(rated?.labels.find((l) => l.raterId === "rater-2")).toMatchObject({
+        status: "CONFIRMED",
+        value: { want: "HI" },
+        note: "It greets",
+      });
+      // The owner's answer is still there, unchanged.
+      expect(rated?.labels.find((l) => l.raterRole === "OWNER")).toMatchObject({
+        status: "CONFIRMED",
+        value: { want: "HELLO" },
+      });
+      expect(nextToRate(await store.listCases("s"), "rater-2")).toBeNull();
     });
 
     it("starts runs as running, lists them newest first, and filters", async () => {

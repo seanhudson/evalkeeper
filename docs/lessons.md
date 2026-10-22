@@ -58,7 +58,8 @@ grader toward a pass.
 **History isn't a verdict.** Answers taken from what someone did
 (saved means yes, dismissed means no) were mostly reasonless dismissals,
 and many of those items fit on paper. _So:_ imported answers are drafts;
-a person rates them, with a reason.
+a person rates them, with a reason, on the "Rate blind" page, which shows
+the input only: seeing what the app decided anchors the rating.
 
 **Cases a model writes need a person's eye.** Agents wrote about 250 cases
 in minutes and flagged their own doubtful ones. _So:_ drafts arrive

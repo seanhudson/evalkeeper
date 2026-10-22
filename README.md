@@ -46,6 +46,9 @@ design.
   Answers people reviewed in an old harness can come in confirmed, with
   who and when from each row; a suite's leak check strips what a case
   learned from itself before it's frozen.
+- **Blind rating for imported cases.** Cases frozen from your app's own
+  data are rated one at a time from their input alone, never the app's
+  output, so what the app decided doesn't anchor the answer.
 - **Tests per model.** Every case, on any model, with time and cost per
   answer. Identical requests are reused for a week, so retesting is free.
 - **Checks that say what matters.** Each check is serious (it changes what

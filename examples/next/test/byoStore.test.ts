@@ -9,6 +9,12 @@ import {
   describeSettingsStoreContract,
   describeStoreContract,
 } from "@crowandraven/evalkeeper/testing";
+import {
+  BLIND_RATER,
+  blindRating,
+  nextToRate,
+  skipMark,
+} from "@crowandraven/evalkeeper";
 import path from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import { PrismaClient } from "./byo/client/index.js";
@@ -186,6 +192,38 @@ describe("a mapped store on an app's own tables", () => {
     const row = await db.goldAnswer.findUniqueOrThrow({ where: { id: l.id } });
     expect(row.rationale).toBe("Checked against the policy");
     expect(row.kind).toBe("EXPECTED");
+  });
+
+  it("keeps a blind rating and a skip in the app's answers table", async () => {
+    await empty();
+    const store = prismaStore(db, map);
+    const c = await store.createCase(newCase);
+    const skip = await store.addLabel(c.id, skipMark("pat"));
+    const rating = await store.addLabel(
+      c.id,
+      blindRating({ raterId: "lee", value: { want: "x" }, reason: "Plain" }),
+    );
+    expect(skip).toMatchObject({ status: "SKIPPED", value: null });
+    const skipRow = await db.goldAnswer.findUniqueOrThrow({
+      where: { id: skip.id },
+    });
+    // The value column can't be null: a skip is kept as {}.
+    expect(skipRow).toMatchObject({
+      status: "SKIPPED",
+      value: {},
+      raterId: "pat",
+      raterRole: BLIND_RATER,
+    });
+    const ratingRow = await db.goldAnswer.findUniqueOrThrow({
+      where: { id: rating.id },
+    });
+    expect(ratingRow).toMatchObject({
+      status: "CONFIRMED",
+      rationale: "Plain",
+      raterId: "lee",
+    });
+    expect(nextToRate(await store.listCases("s"), "pat")).toBeNull();
+    expect(nextToRate(await store.listCases("s"), "kim")?.id).toBe(c.id);
   });
 
   it("reads legacy rows the app wrote before Evalkeeper", async () => {

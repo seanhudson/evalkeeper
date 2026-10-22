@@ -5,7 +5,7 @@ import {
   readdirSync,
   writeFileSync,
 } from "node:fs";
-import { dirname, join, relative } from "node:path";
+import { basename, dirname, join, posix, relative } from "node:path";
 
 /**
  * `npx @crowandraven/evalkeeper add pages`: copies the eval pages, components, and their
@@ -30,6 +30,76 @@ export const TEMPLATE_FILES = {
   cron: ["app/api/cron/evals-weekly/route.ts"],
 } as const;
 
+/** The pages, by the names `--only` takes. */
+export const PAGE_NAMES: Readonly<Record<string, string>> = {
+  hub: "app/evals/page.tsx",
+  suite: "app/evals/[suite]/page.tsx",
+  run: "app/evals/[suite]/runs/[runId]/page.tsx",
+  feedback: "app/evals/feedback/page.tsx",
+  cron: "app/api/cron/evals-weekly/route.ts",
+};
+
+/** The name `--only` knows a template file by: a page's, or the file's own. */
+export function templateName(templatePath: string): string {
+  const page = Object.entries(PAGE_NAMES).find(([, p]) => p === templatePath);
+  return page ? page[0] : basename(templatePath).replace(/\.tsx?$/, "");
+}
+
+/**
+ * The template files `--only` picks: each name is a page (hub, suite,
+ * run, feedback, cron), a component or glue file by its name (AnswerKey,
+ * actions, evalkeeper.css), or a group (pages, components), in any case.
+ * "index" (the wiring module) is allowed and handled by `planAddPages`.
+ * Throws on a name it doesn't know, listing the ones it does.
+ */
+export function pickOnly(sources: string[], only: string[]): string[] {
+  const groups: Record<string, (t: string) => boolean> = {
+    pages: (t) =>
+      Object.values(PAGE_NAMES).includes(t) && !t.includes("/cron/"),
+    components: (t) => t.startsWith("components/"),
+  };
+  const picked = new Set<string>();
+  for (const raw of only) {
+    const name = raw.trim().toLowerCase();
+    // Empty, or the wiring module, which isn't a template (see planAddPages).
+    if (!name || name === "index") continue;
+    const group = groups[name];
+    const matches = sources.filter((t) =>
+      group ? group(t) : templateName(t).toLowerCase() === name,
+    );
+    if (!matches.length)
+      throw new Error(
+        `--only: no page or component called "${raw.trim()}". Known: ${[
+          ...Object.keys(groups),
+          ...sources.map(templateName),
+          "index",
+        ].join(", ")}.`,
+      );
+    for (const m of matches) picked.add(m);
+  }
+  return sources.filter((t) => picked.has(t));
+}
+
+/**
+ * The template files `templatePath` imports from the copied set
+ * (components and glue), relative or through the alias. The wiring
+ * module is "lib/evalkeeper/index.ts".
+ */
+export function importsOf(templatePath: string, text: string): string[] {
+  const found: string[] = [];
+  for (const m of text.matchAll(/from\s+["']([^"']+)["']/g)) {
+    const spec = m[1] ?? "";
+    let target: string;
+    if (spec.startsWith("@/")) target = spec.slice(2);
+    else if (spec.startsWith("."))
+      target = posix.join(posix.dirname(templatePath), spec);
+    else continue;
+    if (target === "lib/evalkeeper") found.push("lib/evalkeeper/index.ts");
+    else if (/^(components|lib)\/evalkeeper\//.test(target)) found.push(target);
+  }
+  return found;
+}
+
 /**
  * What `addPages` needs: the app's folder, the templates, and the choices from the command line.
  */
@@ -49,6 +119,12 @@ export type AddPagesOptions = {
   cron?: boolean;
   force?: boolean;
   dryRun?: boolean;
+  /**
+   * Copy only these pages and components (see `pickOnly`), for an app
+   * that keeps its own where it has better ones. The wiring module is
+   * then written only if it's named ("index").
+   */
+  only?: string[];
 };
 
 /** One file the command would write, overwrite, or leave alone. */
@@ -158,6 +234,11 @@ export function planAddPages(o: AddPagesOptions): {
   alias: string;
   root: string;
   base: string;
+  /**
+   * Files the chosen ones import that are neither in the app nor being
+   * written, by their `--only` names. Empty without `--only`.
+   */
+  needs: string[];
 } {
   const base = cleanBase(o.base ?? "evals");
   const found = readAlias(o.cwd);
@@ -173,7 +254,7 @@ export function planAddPages(o: AddPagesOptions): {
       `No app folder at ${relative(o.cwd, join(rootDir, "app")) || "app"}: Evalkeeper's pages are for the Next.js App Router.`,
     );
 
-  const sources = [
+  const all = [
     ...TEMPLATE_FILES.always,
     ...(o.cron === false ? [] : TEMPLATE_FILES.cron),
   ].flatMap((entry) => {
@@ -184,8 +265,11 @@ export function planAddPages(o: AddPagesOptions): {
       );
     return entry.endsWith(".ts") || entry.endsWith(".tsx")
       ? [entry]
-      : listFiles(full).map((f) => relative(o.templatesDir, f));
+      : listFiles(full).map((f) =>
+          relative(o.templatesDir, f).split("\\").join("/"),
+        );
   });
+  const sources = o.only ? pickOnly(all, o.only) : all;
 
   const plan = (path: string, contents: string, alwaysSkipExisting = false) => {
     const exists = existsSync(join(o.cwd, path));
@@ -207,17 +291,32 @@ export function planAddPages(o: AddPagesOptions): {
     ),
   );
   // The wiring module is the app's own: written once, never overwritten.
-  files.push(
-    plan(
-      join(root, "lib/evalkeeper/index.ts"),
-      fitFile("lib/evalkeeper/index.ts", readFileSync(o.starterFile, "utf8"), {
-        alias,
-        base,
-      }),
-      true,
-    ),
-  );
-  return { files, alias, root, base };
+  const wiring = "lib/evalkeeper/index.ts";
+  if (!o.only || o.only.some((n) => n.trim().toLowerCase() === "index"))
+    files.push(
+      plan(
+        join(root, wiring),
+        fitFile(wiring, readFileSync(o.starterFile, "utf8"), { alias, base }),
+        true,
+      ),
+    );
+
+  // What the chosen files import that the app won't have.
+  const has = (t: string) =>
+    sources.includes(t) ||
+    (t === wiring && files.some((f) => f.path === join(root, wiring))) ||
+    [t, `${t}.ts`, `${t}.tsx`].some((p) =>
+      existsSync(join(rootDir, destinationOf(p, base))),
+    );
+  const needs = new Set<string>();
+  if (o.only)
+    for (const t of sources)
+      for (const dep of importsOf(
+        t,
+        readFileSync(join(o.templatesDir, t), "utf8"),
+      ))
+        if (!has(dep)) needs.add(templateName(dep));
+  return { files, alias, root, base, needs: [...needs] };
 }
 
 /** Writes the plan (unless it's a dry run) and returns it. */
@@ -248,9 +347,9 @@ export function nextSteps(r: {
     "npm install @crowandraven/evalkeeper @crowandraven/evalkeeper-prisma @crowandraven/evalkeeper-ai-sdk server-only lucide-react",
     "Add Evalkeeper's models to your Prisma schema (node_modules/@crowandraven/evalkeeper-prisma/schema/evalkeeper.prisma), then write a migration from the schema file.",
     `Import the colors into your global CSS, right after Tailwind: @import "${css}"; (a path relative to that CSS file).`,
-    wiring?.action === "skip"
-      ? `Check ${wiring.path} exports what the pages use: MODELS, availableModels, modelsFor, SUITES, SUITE_BY_KEY, store, feedbackStore, settings, routeFor, runner, and requireAdmin.`
-      : `Fill in ${wiring?.path ?? "lib/evalkeeper/index.ts"}: your Prisma client, models, suites, and requireAdmin (until then, nobody can open the pages).`,
+    !wiring || wiring.action === "skip"
+      ? `Check ${wiring?.path ?? join(r.root, "lib/evalkeeper/index.ts")} exports what the pages use: MODELS, availableModels, modelsFor, SUITES, SUITE_BY_KEY, store, feedbackStore, settings, routeFor, runner, and requireAdmin.`
+      : `Fill in ${wiring.path}: your Prisma client, models, suites, and requireAdmin (until then, nobody can open the pages).`,
     `Open /${r.base} in your app.`,
   ];
 }

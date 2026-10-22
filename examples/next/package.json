@@ -7,8 +7,8 @@
     "dev": "next dev",
     "build": "next build",
     "setup": "prisma db push --skip-generate && prisma generate && tsx prisma/seed.ts",
-    "typecheck": "prisma generate >/dev/null && tsc --noEmit",
-    "test": "DATABASE_URL=file:./test.db prisma db push --skip-generate >/dev/null && vitest run",
+    "typecheck": "prisma generate >/dev/null && prisma generate --schema test/byo/schema.prisma >/dev/null && tsc --noEmit",
+    "test": "DATABASE_URL=file:./test.db prisma db push --skip-generate >/dev/null && BYO_DATABASE_URL=file:./byo.db prisma db push --schema test/byo/schema.prisma >/dev/null && vitest run",
     "e2e": "playwright test",
     "screenshots": "SCREENSHOTS=1 playwright test e2e/screenshots.spec.ts"
   },

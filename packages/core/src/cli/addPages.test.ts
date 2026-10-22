@@ -14,6 +14,8 @@ import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import {
   cleanBase,
   fitFile,
+  importsOf,
+  pickOnly,
   planAddPages,
   readAlias,
   withoutJsonComments,
@@ -205,6 +207,112 @@ describe("evalkeeper add pages", () => {
       false,
     );
     expect(existsSync(join(dir, "app/evals/page.tsx"))).toBe(true);
+  });
+
+  it("copies only the pages and components named, and says what they need", () => {
+    const dir = app(AT);
+    const r = cli(dir, "add", "pages", "--only", "suite,AnswerKey");
+    expect(r.code).toBe(0);
+    expect(existsSync(join(dir, "app/evals/[suite]/page.tsx"))).toBe(true);
+    expect(existsSync(join(dir, "components/evalkeeper/AnswerKey.tsx"))).toBe(
+      true,
+    );
+    expect(existsSync(join(dir, "app/evals/page.tsx"))).toBe(false);
+    expect(existsSync(join(dir, "components/evalkeeper/Tip.tsx"))).toBe(false);
+    // The wiring module is the app's; --only leaves it out unless named.
+    expect(existsSync(join(dir, "lib/evalkeeper/index.ts"))).toBe(false);
+    expect(r.out).toMatch(/which your app doesn't have/);
+    expect(r.out).toMatch(/\bui\b/);
+    expect(r.out).toMatch(/Check lib\/evalkeeper\/index\.ts exports/);
+  });
+
+  it("finds nothing missing when the app has what the chosen files import", () => {
+    const dir = app(AT);
+    cli(dir, "add", "pages");
+    rmSync(join(dir, "app/evals/feedback"), { recursive: true });
+    const r = cli(dir, "add", "pages", "--only", "feedback", "--dry-run");
+    expect(r.out).toMatch(/write\s+app\/evals\/feedback\/page\.tsx/);
+    expect(r.out).not.toMatch(/which your app doesn't have/);
+    expect(existsSync(join(dir, "app/evals/feedback/page.tsx"))).toBe(false);
+  });
+
+  it("lists what --only would write, skip, and overwrite on a dry run", () => {
+    const dir = app(AT);
+    cli(dir, "add", "pages", "--only", "hub");
+    const dry = cli(
+      dir,
+      "add",
+      "pages",
+      "--only",
+      "hub",
+      "--only",
+      "Tip",
+      "--dry-run",
+    );
+    expect(dry.out).toMatch(/skip\s+app\/evals\/page\.tsx \(exists\)/);
+    expect(dry.out).toMatch(/write\s+components\/evalkeeper\/Tip\.tsx/);
+    const forced = cli(
+      dir,
+      "add",
+      "pages",
+      "--only",
+      "hub",
+      "--force",
+      "--dry-run",
+    );
+    expect(forced.out).toMatch(/overwrite\s+app\/evals\/page\.tsx/);
+    expect(existsSync(join(dir, "components/evalkeeper/Tip.tsx"))).toBe(false);
+  });
+
+  it("takes groups and the wiring by name, and refuses names it doesn't know", () => {
+    const dir = app(AT);
+    const plan = planAddPages({
+      cwd: dir,
+      templatesDir,
+      starterFile,
+      only: ["pages", "index"],
+    });
+    expect(plan.files.map((f) => f.path).sort()).toEqual([
+      "app/evals/[suite]/page.tsx",
+      "app/evals/[suite]/runs/[runId]/page.tsx",
+      "app/evals/feedback/page.tsx",
+      "app/evals/page.tsx",
+      "lib/evalkeeper/index.ts",
+    ]);
+    expect(
+      planAddPages({
+        cwd: dir,
+        templatesDir,
+        starterFile,
+        only: ["components"],
+      }).files.every((f) => f.path.startsWith("components/evalkeeper/")),
+    ).toBe(true);
+    const bad = cli(dir, "add", "pages", "--only", "Nope");
+    expect(bad.code).toBe(1);
+    expect(bad.err).toMatch(/no page or component called "Nope"/);
+    expect(bad.err).toMatch(/AnswerKey/);
+    expect(pickOnly(["app/evals/page.tsx"], [" ", "HUB"])).toEqual([
+      "app/evals/page.tsx",
+    ]);
+  });
+
+  it("reads a template's imports from the copied set", () => {
+    expect(
+      importsOf(
+        "components/evalkeeper/AnswerKey.tsx",
+        [
+          'import { a } from "./ui";',
+          'import { b } from "@/lib/evalkeeper";',
+          'import { c } from "@/lib/evalkeeper/paths";',
+          'import { d } from "react";',
+          'import { e } from "@/lib/other";',
+        ].join("\n"),
+      ),
+    ).toEqual([
+      "components/evalkeeper/ui",
+      "lib/evalkeeper/index.ts",
+      "lib/evalkeeper/paths",
+    ]);
   });
 
   it("explains what's wrong instead of guessing", () => {

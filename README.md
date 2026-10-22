@@ -230,7 +230,8 @@ npx @crowandraven/evalkeeper add pages --base admin/evals
 
 It copies the pages, components, and their server actions, fitted to your
 import alias and folders, and never overwrites a file unless you pass
-`--force` (`--dry-run` shows the plan first). It writes
+`--force` (`--dry-run` shows the plan first, and `--only` copies just the
+pages you name). It writes
 `lib/evalkeeper/index.ts`, your wiring, only if you don't have one: fill
 in its TODOs, including `requireAdmin`. Until you do, nobody can open the
 pages.

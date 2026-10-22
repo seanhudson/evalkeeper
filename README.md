@@ -291,7 +291,7 @@ Already on Prisma with tables of your own? Pass a map to `prismaStore`
 instead of writing a store. Bring another database by implementing
 `EvalStore` (thirteen plain reads and writes, and two optional ones for
 speed); `memoryStore()` is a complete one to copy. Either way, check it
-with `describeStoreContract`.
+with `describeStoreContract`, under Vitest or `node:test`.
 
 ## Concepts
 

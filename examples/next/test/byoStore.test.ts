@@ -1,11 +1,15 @@
 import {
+  deleteScopedRows,
   prismaJudgmentCache,
+  prismaReadCheck,
   prismaSettingsStore,
   prismaStore,
   type PrismaSettingsMap,
   type PrismaStoreMap,
 } from "@crowandraven/evalkeeper-prisma";
+import { checkStoreReads, type AnySuite } from "@crowandraven/evalkeeper";
 import {
+  describeMappedReadCheck,
   describeSettingsStoreContract,
   describeStoreContract,
 } from "@crowandraven/evalkeeper/testing";
@@ -16,7 +20,8 @@ import {
   skipMark,
 } from "@crowandraven/evalkeeper";
 import path from "node:path";
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { z } from "zod";
 import { PrismaClient } from "./byo/client/index.js";
 
 // An app that had its own eval and versions tables before Evalkeeper
@@ -366,6 +371,184 @@ describe("a mapped store on an app's own tables", () => {
     expect(await db.routeVersion.count()).toBe(0);
   });
 });
+
+// The scoped contracts on the app's own tables while they hold the app's
+// rows, as a shared development database would: they pass without
+// emptying anything, and cleanup deletes only the rows the scope names.
+describe("scoped contracts on an app's own tables with other rows", () => {
+  const scope = "contract-";
+  const cleanup = (s: string) => deleteScopedRows(db, s, { map, settingsMap });
+  const snapshot = async () => ({
+    cases: await db.goldCase.findMany({ orderBy: { id: "asc" } }),
+    answers: await db.goldAnswer.findMany({ orderBy: { id: "asc" } }),
+    trials: await db.trial.findMany({ orderBy: { id: "asc" } }),
+    attempts: await db.attempt.findMany({ orderBy: { id: "asc" } }),
+    versions: await db.routeVersion.findMany({ orderBy: { id: "asc" } }),
+    live: await db.routeLive.findMany({ orderBy: { operation: "asc" } }),
+    switches: await db.versionSwitch.findMany({ orderBy: { id: "asc" } }),
+  });
+  let before: Awaited<ReturnType<typeof snapshot>>;
+
+  beforeAll(async () => {
+    await empty();
+    // Rows the app wrote itself, before Evalkeeper.
+    for (const suite of ["s", "Contract-kept"]) {
+      const c = await db.goldCase.create({
+        data: {
+          suite,
+          input: { text: "ours" },
+          tags: [],
+          source: "OWNER",
+          status: "ACTIVE",
+          answers: {
+            create: { raterRole: "OWNER", kind: "EXPECTED", value: {} },
+          },
+        },
+      });
+      const t = await db.trial.create({
+        data: { suite, model: "m", promptVersion: "p", status: "SUCCEEDED" },
+      });
+      await db.attempt.create({
+        data: { trialId: t.id, caseId: c.id, repeat: 1, requestHash: "h" },
+      });
+      const v = await db.routeVersion.create({
+        data: { operation: suite, number: 1, model: "m" },
+      });
+      await db.routeLive.create({
+        data: { operation: suite, versionId: v.id },
+      });
+      await db.versionSwitch.create({
+        data: { operation: suite, kind: "DEPLOY", toVersionId: v.id },
+      });
+    }
+    before = await snapshot();
+  });
+
+  describeStoreContract(
+    "mapped prismaStore, scoped",
+    () => prismaStore(db, map),
+    {
+      scope,
+      cleanup,
+    },
+  );
+  describeSettingsStoreContract(
+    "mapped prismaSettingsStore, scoped",
+    () => prismaSettingsStore(db, settingsMap),
+    { scope, cleanup, without: ["temperature"] },
+  );
+
+  it("left the app's rows as they were, and took its own away", async () => {
+    expect(await snapshot()).toEqual(before);
+  });
+});
+
+describe("the read check on an app's own tables", () => {
+  const suite = {
+    key: "s",
+    input: z.object({ text: z.string() }),
+    labelValue: z.object({ want: z.string() }),
+  };
+  // Trust boundary: only the key and schemas are read by the check.
+  const asSuite = suite as unknown as AnySuite;
+
+  beforeAll(async () => {
+    await empty();
+    const c = await db.goldCase.create({
+      data: {
+        suite: "s",
+        input: { text: 5 },
+        tags: ["a"],
+        source: "OWNER",
+        status: "ACTIVE",
+        answers: {
+          create: [
+            { raterRole: "OWNER", kind: "EXPECTED", value: { want: "A" } },
+            { raterRole: "OWNER", kind: "REFERENCE", value: { want: "B" } },
+          ],
+        },
+      },
+    });
+    // Legacy rows read as they are: no set, no grader version.
+    const legacy = await db.trial.create({
+      data: { suite: "s", model: "m", promptVersion: "p", status: "SUCCEEDED" },
+    });
+    const odd = await db.trial.create({
+      data: {
+        suite: "s",
+        model: "m",
+        promptVersion: "p",
+        status: "DONE",
+        split: "QUICK",
+        estimatedCostUsd: 0.25,
+      },
+    });
+    for (const trialId of [legacy.id, odd.id])
+      await db.attempt.create({
+        data: { trialId, caseId: c.id, repeat: 1, requestHash: "h" },
+      });
+  });
+
+  it("finds values the mapped store would quietly read as defaults", async () => {
+    const report = await prismaReadCheck(db, map, { suites: [asSuite] });
+    const [s] = report.suites;
+    expect(s?.counts).toEqual({ cases: 1, answers: 2, tests: 2, outputs: 2 });
+    expect(s?.problems.map((p) => [p.kind, p.field, p.problem])).toEqual([
+      ["case", "input", expect.stringContaining("doesn't fit")],
+      ["answer", "kind", '"REFERENCE" isn\'t one of EXPECTED'],
+      ["test", "set", expect.stringContaining('"QUICK"')],
+      ["test", "status", expect.stringContaining('"DONE"')],
+    ]);
+    // Through the store, the unknown kind, set, and status read as
+    // defaults; only the input that doesn't fit the suite shows.
+    const viaStore = await checkStoreReads(prismaStore(db, map), {
+      suites: [asSuite],
+    });
+    expect(viaStore.suites[0]?.problems.map((p) => p.field)).toEqual(["input"]);
+    expect(viaStore.suites[0]?.counts).toEqual(s?.counts);
+  });
+
+  it("reads tables without the run settings", async () => {
+    const report = await prismaReadCheck(db, withoutRunSettings, {
+      suites: ["s"],
+      tests: 1,
+    });
+    expect(report.suites[0]?.counts).toMatchObject({ tests: 1, outputs: 1 });
+  });
+});
+
+describeMappedReadCheck(
+  "an app's own tables, read as they are",
+  async () => {
+    await empty();
+    const store = prismaStore(db, map);
+    await store.createCase({
+      suite: "s",
+      input: { text: "hi" },
+      tags: [],
+      split: "DEV",
+      status: "RETIRED",
+      source: "OWNER",
+      sourceRef: null,
+      note: null,
+      labels: [
+        {
+          kind: "EXPECTED",
+          status: "PROVISIONAL",
+          value: { want: "HI" },
+          raterRole: "OWNER",
+          raterId: null,
+          note: null,
+        },
+      ],
+    });
+    await db.trial.create({
+      data: { suite: "s", model: "m", promptVersion: "p", status: "FAILED" },
+    });
+    return prismaReadCheck(db, map, { suites: ["s"] });
+  },
+  { suites: ["s"] },
+);
 
 afterAll(async () => {
   await empty();

@@ -29,6 +29,7 @@ export * from "./settings.js";
 export * from "./decisions.js";
 export * from "./store.js";
 export * from "./suiteContract.js";
+export * from "./readCheck.js";
 export * from "./labels.js";
 export * from "./blind.js";
 // Server-only (node:crypto): import from "@crowandraven/evalkeeper/runner".

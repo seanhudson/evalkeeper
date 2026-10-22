@@ -150,10 +150,17 @@ you found and which you'd map, keep, or replace.
   model names, column names, Decimal costs, enums, and missing columns.
   Don't copy Evalkeeper's models into a schema that already has its own,
   and don't move or re-import reviewed answers.
-- **Prove the map before using it.** Run `describeStoreContract` (and
-  `describeSettingsStoreContract` for versions) against the mapped store
-  on a local copy of the data, with `without` naming any setting mapped
-  to `null`. Never against production.
+- **Prove the map before using it.** First the read-only check:
+  `prismaReadCheck` (or `checkStoreReads`) through
+  `describeMappedReadCheck` lists what in the existing rows doesn't
+  parse. Then `describeStoreContract` (and
+  `describeSettingsStoreContract` for versions), with `without` naming
+  any setting mapped to `null`, either scoped (`scope` and
+  `deleteScopedRows`, which delete only rows the scope names) or on a
+  throwaway local database made from the schema file. Nothing ever
+  empties a database that isn't throwaway: check the database's name
+  before emptying anything, and say which database and that it will be
+  emptied before running. Never against production.
 - **Keep the app's router.** Wire `route`, `candidates`, `promptVersion`,
   and `continueRun` to the functions the app already has; don't add a
   second way to pick a model.

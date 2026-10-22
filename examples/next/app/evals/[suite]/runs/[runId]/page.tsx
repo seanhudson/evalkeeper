@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { allPassed, money, summarize } from "@crowandraven/evalkeeper";
 import { BackLink, Card, pct } from "@/components/evalkeeper/ui";
@@ -41,6 +42,17 @@ export default async function RunPage({
         <p className="text-sm text-muted">
           {run.startedAt.toLocaleString()} · {run.status.toLowerCase()}
           {metrics && ` · spent ${money(metrics.costUsd)}`}
+          {run.status === "SUCCEEDED" && (
+            <>
+              {" · "}
+              <Link
+                href={`${evalsPath(key, "compare")}?${new URLSearchParams({ b: runId })}`}
+                className="hover:text-ink"
+              >
+                Compare with another test
+              </Link>
+            </>
+          )}
         </p>
         {run.error && <p className="readable text-bad">{run.error}</p>}
       </div>

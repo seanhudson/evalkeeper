@@ -136,10 +136,18 @@ export default async function SuitePage({
       <section className="space-y-3">
         <div className="flex items-center justify-between gap-4">
           <h2 className="text-lg font-semibold">Models</h2>
-          <form action={testAll}>
-            <input type="hidden" name="suite" value={key} />
-            <Submit variant="quiet">Test every model</Submit>
-          </form>
+          <div className="flex items-center gap-4">
+            <Link
+              href={evalsPath(key, "compare")}
+              className="text-sm text-muted hover:text-ink"
+            >
+              Compare two tests
+            </Link>
+            <form action={testAll}>
+              <input type="hidden" name="suite" value={key} />
+              <Submit variant="quiet">Test every model</Submit>
+            </form>
+          </div>
         </div>
         <Card className="overflow-x-auto p-0 lg:overflow-visible">
           <table className="w-full text-sm">
@@ -293,7 +301,19 @@ export default async function SuitePage({
                   <td className="p-3 tabular-nums">
                     {r.test ? perAnswer(r.test.costPerAnswer) : "—"}
                   </td>
-                  <td className="p-3">{r.vsLive ? VS[r.vsLive] : "—"}</td>
+                  <td className="p-3">
+                    {r.vsLive && live?.test && r.test && !r.live ? (
+                      <Link
+                        href={`${evalsPath(key, "compare")}?${new URLSearchParams({ a: live.test.runId, b: r.test.runId })}`}
+                      >
+                        {VS[r.vsLive]}
+                      </Link>
+                    ) : r.vsLive ? (
+                      VS[r.vsLive]
+                    ) : (
+                      "—"
+                    )}
+                  </td>
                   <td className="p-3">
                     <div className="flex flex-col items-end gap-0.5">
                       <div className="flex justify-end gap-2">

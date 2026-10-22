@@ -314,6 +314,13 @@ describe("runner, beyond a basic test", () => {
     expect(c?.comparison.byCheck.right?.champion.passed).toBe(6);
     expect(c?.comparison.byCheck.right?.challenger.passed).toBe(3);
     expect(c?.caveats).toEqual([]);
+    // The cases graded differently, for reading side by side: here both
+    // miss them, on different checks.
+    expect(c?.disagreements.map((d) => [d.caseId, d.kind])).toEqual([
+      ["case_1", "differ"],
+      ["case_5", "differ"],
+      ["case_9", "differ"],
+    ]);
     expect(await runner.compare("double", a.run.id, a.run.id)).toBeNull();
     expect(await runner.compare("double", a.run.id, "missing")).toBeNull();
   });

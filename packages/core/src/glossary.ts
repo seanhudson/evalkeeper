@@ -80,6 +80,31 @@ export const GLOSSARY = {
     "The model returns its own probabilities for every option, so they can be scored and compared.",
   promptedProbabilities:
     "The model writes out its own estimate. Choices come without a distribution, so only true-or-false questions get probability scores.",
+  comparison:
+    "Two finished tests of one suite, compared case by case on the cases both answered, so which cases each happened to get can't decide it.",
+  inPlace:
+    "The test the other is weighed against, usually the live model's. Differences are counted from it.",
+  challenger:
+    "The test weighed against the one in place: another model, reasoning setting, or set of instructions.",
+  verdict:
+    "More accurate, about as accurate, or less accurate, read off a 95% range from resampling the shared cases. Under 5 shared cases, too few to tell.",
+  sharedCases: "Cases both tests answered. Only these are compared.",
+  measuredDifferently:
+    "The tests differ in more than the model: other cases, answers, checks, or instructions. Rescore both, or test again, before trusting the verdict.",
+  passRate:
+    "How often the check passed on the answers it applies to, and on how many answers.",
+  disagreements:
+    "Cases the two tests graded differently. About as accurate can hide cases one model gets right and the other wrong, so read them side by side.",
+  broke: "The test in place got this case fully right; the challenger didn't.",
+  fixed: "The challenger got this case fully right; the test in place didn't.",
+  missedDifferently:
+    "Neither got this case fully right, but they missed it in different ways: other checks failed, fewer parts right, or no answer on one side.",
+  caseScore:
+    "A test's score on this one case: 100% when every check passed, or parts right of parts expected with partial credit, averaged over repeats.",
+  sideBySide:
+    "Both tests' answers to one case, next to the expected answer, with what each check found. Step through every case where they differ.",
+  expectedAnswer:
+    "The answer the checks grade against: confirmed by a person, or provisional when put to use before review.",
 } as const;
 
 /** A word the glossary defines, for tooltips. */

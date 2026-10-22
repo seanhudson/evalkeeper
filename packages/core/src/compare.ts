@@ -259,3 +259,88 @@ export function verdictSentence(c: Comparison, challengerName: string): string {
       return `No clear difference: ${challengerName} is somewhere between ${Math.round(c.low * 100)} and ${c.high > 0 ? "+" : ""}${Math.round(c.high * 100)} points${cost}.`;
   }
 }
+
+/**
+ * How two tests' answers to one case differ: the challenger broke a case
+ * the champion got fully right, fixed one the champion didn't, or both
+ * missed it in different ways (other checks failed, or one gave no answer).
+ */
+export type DisagreementKind = "broke" | "fixed" | "differ";
+
+/** One case the two tests graded differently, for reading side by side. */
+export type Disagreement = {
+  caseId: string;
+  kind: DisagreementKind;
+  /** Each test's score on the case, averaged over its repeats (0 to 1). */
+  champion: number;
+  challenger: number;
+};
+
+/** The order disagreements are listed in: what got worse first. */
+const KIND_ORDER: Record<DisagreementKind, number> = {
+  broke: 0,
+  fixed: 1,
+  differ: 2,
+};
+
+/** What went wrong on a case across its repeats: failed checks, and "no answer". */
+function missesByCase(outputs: RunOutput[]): Map<string, string> {
+  const by = new Map<string, Set<string>>();
+  for (const o of outputs) {
+    const misses = by.get(o.caseId) ?? new Set<string>();
+    if (!o.checks) misses.add("(no answer)");
+    for (const c of o.checks ?? []) if (c.pass === false) misses.add(c.key);
+    by.set(o.caseId, misses);
+  }
+  return new Map([...by].map(([id, m]) => [id, [...m].sort().join("|")]));
+}
+
+/**
+ * The cases two tests graded differently, on the cases they share: a
+ * different score, different checks failed, or an answer on one side and
+ * none on the other. Cases the challenger broke come first, then fixed,
+ * then the rest, each in case order. Use it to read where two models
+ * disagree: next to `compareRuns`, which says by how much.
+ *
+ * @param champion - The answers of the test in place (usually the live model's).
+ * @param challenger - The answers of the test it's compared with.
+ */
+export function disagreements(
+  champion: RunOutput[],
+  challenger: RunOutput[],
+): Disagreement[] {
+  const a = passShareByCase(champion);
+  const b = passShareByCase(challenger);
+  const ma = missesByCase(champion);
+  const mb = missesByCase(challenger);
+  const found: Disagreement[] = [];
+  for (const id of [...a.keys()].filter((k) => b.has(k)).sort()) {
+    const sa = mustGet(a, id);
+    const sb = mustGet(b, id);
+    if (sa === sb && ma.get(id) === mb.get(id)) continue;
+    const kind: DisagreementKind =
+      sa === 1 && sb < 1 ? "broke" : sb === 1 && sa < 1 ? "fixed" : "differ";
+    found.push({ caseId: id, kind, champion: sa, challenger: sb });
+  }
+  return found.sort((x, y) => KIND_ORDER[x.kind] - KIND_ORDER[y.kind]);
+}
+
+/**
+ * Where a case sits in a list of disagreements, and the cases before and
+ * after it, for stepping through them one at a time. `index` is -1 (and
+ * `previous` null, `next` the first) when the case isn't in the list.
+ *
+ * @param list - The disagreements, in the order they're read.
+ * @param caseId - The case being read now.
+ */
+export function aroundCase(
+  list: Disagreement[],
+  caseId: string,
+): { index: number; previous: string | null; next: string | null } {
+  const index = list.findIndex((d) => d.caseId === caseId);
+  return {
+    index,
+    previous: index > 0 ? (list[index - 1]?.caseId ?? null) : null,
+    next: list[index + 1]?.caseId ?? null,
+  };
+}

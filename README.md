@@ -57,6 +57,10 @@ design.
 - **A model board.** Every model's latest test, its serious mistakes, speed,
   and cost, and a bootstrap comparison with the live model: _more accurate_,
   _about as accurate_, _less accurate_, or _too few cases to tell_.
+- **Where two models disagree.** Compare any two tests: the verdict in
+  plain words, each check's pass rate side by side, and the cases they
+  graded differently, each opened with both answers next to the expected
+  one.
 - **A suggestion with its reason.** Accuracy is the floor. A switch needs a
   real reason: clearly more accurate, fewer serious mistakes, or, for a
   suite that favors cost or speed, the same results at half the cost or

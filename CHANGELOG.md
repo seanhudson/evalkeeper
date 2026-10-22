@@ -5,6 +5,20 @@ Notable changes, newest first. The format follows
 follow [semantic versioning](https://semver.org/): until 1.0, a minor
 version may change an interface, and its entry says how to update.
 
+## Unreleased
+
+### Fixed
+
+- When the live model's current test has failed answers (a timeout,
+  say), the suggestion said to switch, reading live as untested. It now
+  says to test live again, with how many answers failed and why
+  (`Suggestion.retestLive`), and keeps suggesting the fallback; the
+  suite page hides "Use these" when it would change nothing, and the hub
+  card says the same (#34). A live model that's retiring, out of date, or
+  over the time limit is still replaced. **To update:** copy the suite
+  page (`app/evals/[suite]/page.tsx`); custom pages that read `same` keep
+  working, and can show `reasons` when `retestLive` is true.
+
 ## 0.5.1 - 2026-10-21
 
 Docs only: the READMEs on npm now say you can bring your own tables,

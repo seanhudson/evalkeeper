@@ -18,7 +18,9 @@ import { at } from "./util.js";
  * model is named as one to watch. The fallback is the most accurate model
  * from another provider; it needn't beat live, it only runs in an outage.
  * Models the provider is retiring are never suggested, and a retiring live
- * model is replaced by the best-scoring one that isn't. Pure.
+ * model is replaced by the best-scoring one that isn't. A live model whose
+ * current test has failed answers is tested again, not replaced: it can't
+ * be compared yet, and a timeout or two isn't a reason to switch. Pure.
  */
 
 /** One model's row, as the suggestion reads it. */
@@ -43,6 +45,8 @@ export type SuggestRow = {
     stale: boolean;
     /** Answers that failed; a test with any is incomplete. */
     failedAnswers?: number;
+    /** The error most failed answers share, for the reason. */
+    failureReason?: string | null;
   } | null;
 };
 
@@ -56,6 +60,11 @@ export type Suggestion<R extends SuggestRow = SuggestRow> = {
   keepLive: boolean;
   /** Nothing to change at all: live stays and the fallback is already set. */
   same: boolean;
+  /**
+   * Live's current test has failed answers: test it again before comparing.
+   * Live stays; the reasons say why.
+   */
+  retestLive: boolean;
   /** Why, in plain sentences. */
   reasons: string[];
 };
@@ -119,7 +128,6 @@ export function suggest<R extends SuggestRow>(
       !retiring(r) &&
       !tooSlow(r),
   );
-  if (!tested.length) return null;
   const serious = (r: R) => seriousMistakes(r, checks);
   const live = tested.find((r) => r.live) ?? null;
   const reasons: string[] = [];
@@ -129,11 +137,30 @@ export function suggest<R extends SuggestRow>(
     liveRow?.test && !liveRow.test.stale && tooSlow(liveRow)
       ? `${liveRow.label} takes ${(ms(liveRow) / 1000).toFixed(1)}s, over this suite's ${priority.maxSeconds}s limit.`
       : null;
+  // Live was tested, but some answers failed (a timeout, say): it can't be
+  // compared yet, which isn't a reason to switch (#34).
+  const liveFailed =
+    liveRow?.test &&
+    !liveRow.test.stale &&
+    liveRow.test.failedAnswers &&
+    !isBaseline(models, liveRow.model) &&
+    !liveRetires &&
+    !liveSlow
+      ? liveRow
+      : null;
+  if (!tested.length && !liveFailed) return null;
 
   // Live: switch only for a real, safe improvement.
   let next: R;
   const liveable = tested.filter((r) => !r.fallbackOnly);
-  if (!live) {
+  if (liveFailed?.test) {
+    next = liveFailed;
+    const n = liveFailed.test.failedAnswers ?? 0;
+    const why = liveFailed.test.failureReason;
+    reasons.push(
+      `Test ${liveFailed.label} again: ${n} of its answers failed on its last test${why ? ` (${why})` : ""}, so it can't be compared yet.`,
+    );
+  } else if (!live) {
     if (!liveable.length) return null;
     next = at(
       [...liveable].sort(
@@ -237,11 +264,13 @@ export function suggest<R extends SuggestRow>(
     );
 
   const keepLive = next.live;
+  const retestLive = Boolean(liveFailed);
   return {
     live: next,
     fallback,
     keepLive,
-    same: keepLive && (!fallback || fallback.fallback),
+    same: keepLive && !retestLive && (!fallback || fallback.fallback),
+    retestLive,
     reasons,
   };
 }

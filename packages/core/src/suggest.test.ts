@@ -359,3 +359,61 @@ describe("suggest", () => {
     expect(s.live.key).toBe("Live");
   });
 });
+
+describe("a live model whose test has failed answers (#34)", () => {
+  const liveWithFailures = (failed: number, reason: string | null) => {
+    const r = row("Luna", "gpt-6-luna", { live: true, right: 22 });
+    r.test!.failedAnswers = failed;
+    r.test!.failureReason = reason;
+    return r;
+  };
+
+  it("says to test live again instead of switching", () => {
+    const s = suggest(
+      [
+        liveWithFailures(1, "No answer within 180s"),
+        row("Sonnet", "claude-sonnet-5-5", { right: 20, rule: 1 }),
+      ],
+      checks,
+    )!;
+    expect(s.live.key).toBe("Luna");
+    expect(s.keepLive).toBe(true);
+    expect(s.retestLive).toBe(true);
+    expect(s.same).toBe(false);
+    expect(s.reasons[0]).toBe(
+      "Test Luna again: 1 of its answers failed on its last test (No answer within 180s), so it can't be compared yet.",
+    );
+    // The fallback is still suggested from the complete tests.
+    expect(s.fallback?.key).toBe("Sonnet");
+  });
+
+  it("says so even when no other model has a complete test", () => {
+    const s = suggest([liveWithFailures(3, null)], checks)!;
+    expect(s.retestLive).toBe(true);
+    expect(s.reasons[0]).toBe(
+      "Test Luna again: 3 of its answers failed on its last test, so it can't be compared yet.",
+    );
+  });
+
+  it("still replaces a live model that's retiring", () => {
+    const old = row("Old", "gpt-4o", { live: true });
+    old.test!.failedAnswers = 1;
+    const s = suggest(
+      [old, row("Sonnet", "claude-sonnet-5-5", { right: 24 })],
+      checks,
+    )!;
+    expect(s.retestLive).toBe(false);
+    expect(s.live.key).toBe("Sonnet");
+  });
+
+  it("still switches when live's test is out of date", () => {
+    const stale = liveWithFailures(1, null);
+    stale.test!.stale = true;
+    const s = suggest(
+      [stale, row("Sonnet", "claude-sonnet-5-5", { right: 24 })],
+      checks,
+    )!;
+    expect(s.retestLive).toBe(false);
+    expect(s.live.key).toBe("Sonnet");
+  });
+});

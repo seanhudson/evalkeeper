@@ -103,9 +103,11 @@ export function suiteHealth(
   const change = s && !s.same;
   if (change)
     details.push(
-      s.keepLive
-        ? `A better fallback is suggested: ${s.fallback?.label}.`
-        : `${s.live.label} is suggested over ${liveRow.label}.`,
+      s.retestLive
+        ? (s.reasons[0] ?? `Test ${s.live.label} again.`)
+        : s.keepLive
+          ? `A better fallback is suggested: ${s.fallback?.label}.`
+          : `${s.live.label} is suggested over ${liveRow.label}.`,
     );
   if (testedModels < 2)
     details.push("Only one model tested: test others to compare.");

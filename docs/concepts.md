@@ -119,7 +119,9 @@ one:
 
 1. Ruled out: out-of-date or incomplete tests, retiring models, models
    over the time limit, baselines, and anything clearly less accurate
-   than live.
+   than live. If live's own current test has failed answers (a timeout,
+   say), the suggestion is to test live again: it can't be compared yet,
+   and that isn't a reason to switch.
 2. A switch scores at least as high as live with no more serious
    mistakes, and needs a real reason: clearly more accurate, at least two
    fewer serious mistakes, or 30% faster or cheaper when the suite favors

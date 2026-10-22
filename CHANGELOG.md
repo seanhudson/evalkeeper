@@ -5,6 +5,18 @@ Notable changes, newest first. The format follows
 follow [semantic versioning](https://semver.org/): until 1.0, a minor
 version may change an interface, and its entry says how to update.
 
+## 0.5.1 - 2026-10-21
+
+Docs only: the READMEs on npm now say you can bring your own tables,
+versions, router, and pages. **To update:** nothing.
+
+### Changed
+
+- Each package's README (shown on npm) points to "Bring your own": core
+  for `add pages --only` and `--dry-run`, prisma for mapping onto your
+  own tables, and ai-sdk for working with your own router and billing.
+  0.5.0 went out with the older READMEs.
+
 ## 0.5.0 - 2026-10-21
 
 For apps that had evals before Evalkeeper: keep your own tables,
@@ -36,9 +48,9 @@ stores without a mapping behave as before.
   skipped, or overwritten, and what the chosen files import that your app
   doesn't have.
 - "Bring your own" in docs/adding-to-your-app.md: your own tables,
-  router, versions, and pages, and what each costs. The README, each
-  package's README, and AGENTS.md point to it, and AGENTS.md tells coding
-  agents to check what an app already has before adding anything.
+  router, versions, and pages, and what each costs. The README and
+  AGENTS.md point to it, and AGENTS.md tells coding agents to check what
+  an app already has before adding anything.
 
 ## 0.4.1 - 2026-10-21
 

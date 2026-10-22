@@ -148,8 +148,12 @@ fallback, reasoning setting, output limit, and temperature, with the
 instructions they ran with) are numbered versions that never change. Each switch is logged
 with who, when, why, and its evidence: a _change_ by a person, a
 _promotion_ from a test (the test is the evidence), a _rollback_ to an
-earlier version, or a _deploy_ that changed the instructions in code
-under the live settings. A feature never changed runs on its default
+earlier version, a _deploy_ that changed the instructions in code
+under the live settings, a change made _outside_ the settings (the app's
+own settings row changed by a script, SQL, or another page, recorded as
+found before the next save), or _instructions edited_ at runtime (an
+admin override or guidance added at call time, dated when noticed). Only
+settings roll back; instructions stay as they are now. A feature never changed runs on its default
 from code; the first change records that default as version 1, so
 there's always something to roll back to. An app that chooses models in
 an admin page, with no defaults in code, records each feature's current

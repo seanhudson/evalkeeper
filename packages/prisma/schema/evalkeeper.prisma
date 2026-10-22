@@ -181,7 +181,7 @@ model EvalSettingsLive {
 model EvalSettingsChange {
   id            String              @id @default(uuid())
   operation     String
-  /// CHANGE, PROMOTE, ROLLBACK, or DEPLOY.
+  /// CHANGE, PROMOTE, ROLLBACK, DEPLOY, OUTSIDE, or INSTRUCTIONS.
   kind          String
   fromVersionId String?
   toVersionId   String

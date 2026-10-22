@@ -183,7 +183,11 @@ you found and which you'd map, keep, or replace.
   often the grader's fault. Fix the grader with a test that shows the bug,
   and bump the suite's `graderVersion`.
 - **Hash every instruction a model gets** (`instructionsHash`): system
-  text, prompt templates, output schemas, and tool descriptions.
+  text, prompt templates, output schemas, and tool descriptions, plus
+  anything added or replaced at runtime (an admin override, edited
+  guidance), joined with `promptVersionOf`.
+- **Pass `readActual` when call sites read the app's own settings row,**
+  so changes made outside Evalkeeper are recorded before the next save.
 - **Thumbs keep inputs only with consent.** When adding ratings, keep the
   input behind an answer only when the person agreed, with names and
   contact details removed. The rating action looks the answer up by its

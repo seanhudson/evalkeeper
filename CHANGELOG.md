@@ -5,6 +5,101 @@ Notable changes, newest first. The format follows
 follow [semantic versioning](https://semver.org/): until 1.0, a minor
 version may change an interface, and its entry says how to update.
 
+## 0.7.0 - 2026-10-22
+
+A ready-made crisis risk suite; answer keys that grow from real activity
+and blind ratings; compare and side-by-side pages; settings that notice
+changes made outside them; and store contracts that run outside Vitest
+and on databases holding other rows. **To update:** most of it is
+opt-in. Read "Changed" for the four interface changes, and copy the
+pages you want (`npx @crowandraven/evalkeeper add pages --only
+rate,compare,side-by-side,DisagreementChip,suite,run,actions --dry-run`
+first).
+
+### Added
+
+- `crisisRiskSuite` in the new `@crowandraven/evalkeeper/suites` entry
+  point: a ready-made suite for an app's crisis risk detector, with about
+  90 made-up messages in groups that arrive pending. Use it as it is, add
+  your own cases, or read it as a pattern. It tests detection on these
+  examples; it doesn't certify an app as safe (#54).
+- `importCases` imports answers people already reviewed as confirmed:
+  `answers: { status: "CONFIRMED", confirmedBy, at }` reads who confirmed
+  each answer and when from its row, and refuses the import unless every
+  row names both. Use it only for answers a person confirmed in the old
+  system (#40).
+- `withoutLeaks` on a suite removes what a case learned from itself
+  before it's frozen. `importCases`, `importStarters`, and the example's
+  "Add a case" run it, and `ImportResult.removed` and the case's note say
+  what was removed. `withoutLeaks(suite, input, sourceRef)` and
+  `leakNote(removed)` do the same for other code that makes cases (#41).
+- `inputFromJson(schema)` and `labelFromJson(schema)` read a fixture
+  suite's JSON fields, with plain errors for empty fields, bad JSON, and
+  the first part that doesn't fit (#45).
+- `Suite.draftFromActivity`: suites draft new cases from the app's real
+  activity. Call `runner.draftFromActivity(suite.key)` from the weekly
+  job. Drafts arrive pending (or with no answer), are never added twice
+  (by `sourceRef`, retired cases included), and are capped at 5 per suite
+  per week by default. Strip names and contact details from each input.
+  `weeklySummary` takes `cases` and returns `drafted`, and the example hub
+  links to them (#42).
+- Rate blind for imported suites: a page (`rate`) that shows one case at
+  a time by its input only, never the app's output, and takes the answer
+  with a required reason, or a skip. Each rating is the rater's own
+  confirmed answer, added beside other people's. In the core:
+  `rateQueue`, `nextToRate`, `raterStatus`, `blindRating`, `skipMark`,
+  and `BLIND_RATER` (#44).
+- Compare and side-by-side pages: compare two finished tests (the verdict
+  in plain words, each check's pass rate side by side, and the cases they
+  graded differently), then read both answers to each of those cases
+  next to the expected answer, stepping through them. The suite board
+  and a test's page link to them. In the core, `disagreements()` and
+  `aroundCase()`, and `runner.compare()` returns `disagreements` (#43).
+- Settings record changes made outside them: `createSettings({
+readActual })` compares the app's own settings row with the live
+  version and records a mismatch as an OUTSIDE version, so a rollback
+  can always get back to it. `promptVersionOf({ code, runtime })` and
+  `splitPromptVersion` split an instructions hash into its code and
+  runtime parts, and `syncPrompt` records INSTRUCTIONS when only the
+  runtime part changed. `prismaSettingsStore`'s map takes `kinds` for an
+  enum column without every kind. The settings history labels both new
+  kinds (#48).
+- Every contract in `@crowandraven/evalkeeper/testing` takes its test
+  functions (`{ test: { describe, it, expect, afterAll } }`) and still
+  defaults to Vitest; the testing entry loads without Vitest installed,
+  and `assertExpect` gives `node:test` the matchers the contracts use
+  (#47).
+- Store contracts can run on a database that holds other rows: `{ scope:
+"contract-", cleanup }` prefixes everything they write, and
+  `deleteScopedRows` in `@crowandraven/evalkeeper-prisma` deletes only
+  those rows. A read-only check, `prismaReadCheck` or `checkStoreReads`,
+  lists existing rows that don't parse, with counts;
+  `describeMappedReadCheck` runs it as tests (#46).
+- The store contract checks that a case's `source`, `sourceRef`, and
+  `createdAt` read back as written, and covers blind ratings, skips, and
+  every settings change kind.
+- Docs: lessons from moving a real app onto Evalkeeper, a release
+  checklist in CONTRIBUTING.md, and seven roadmap items (#49).
+
+### Changed
+
+- `ImportResult` has a `removed` list, and `ImportAnswers` takes the row
+  type (`ImportAnswers<Row>`). **To update:** code that compares a whole
+  import result adds `removed: []`.
+- `LabelStatus` gains `SKIPPED`: a rater passed on a case. It has no
+  value, is never graded against, and doesn't make tests out of date.
+  **To update:** if your mapped label table's status is an enum, add
+  `SKIPPED`; code that switches over `LabelStatus` needs the case.
+- `ChangeKind` gains `OUTSIDE` and `INSTRUCTIONS`. **To update:** add
+  them wherever you switch over every kind (or re-copy `SettingsHistory`
+  and `RollBack`); if your mapped change log's kind column is an enum,
+  add both values with a migration or set `kinds` in the map.
+- The testing entry loads Vitest with a top-level `await import`, so it
+  loads without Vitest. Import it only from test code, as before.
+- "Bring your own" → "Check it" runs the read-only check first. The
+  emptying contract runs only on a throwaway local database made from
+  your schema file, after checking its name and saying so.
+
 ## 0.6.0 - 2026-10-21
 
 A suite contract test, so missing field help fails a test, and the

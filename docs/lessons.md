@@ -107,9 +107,30 @@ errors before the scores.
 feature's fallback under the tested model's name. _So:_ eval calls run on
 the chosen model only, and a failure is a failed answer.
 
+**A fallback can be a different kind of model.** One feature ran live on
+a calibrated decision model and fell back to a chat model asked the same
+questions, which can't run on the live model's settings and has its own
+scores. A board that only listed models fit for live had nowhere to show
+it. _So:_ the board marks models that can only be live or only be the
+fallback, and each kind is tested and scored on its own.
+
 **Rules accumulate.** Each rule is reasonable; together they get harder to
 explain. _So:_ add a rule only when a real case needs one, and give every
 suggestion its one reason.
+
+## Settings
+
+**The live settings stayed a row, not a pointer.** The app's call sites
+each read one settings row, so making versions the source of truth would
+have meant changing every one of them. _So:_ an app like that keeps the
+row live and saves versions beside it, both written in one transaction,
+and a row edited outside the page is recorded as a version before the
+next save, so history never skips a change.
+
+**Two changes in one save tied on time.** Recording the old and new
+settings together gave both the same timestamp, so "the latest by time"
+could pick either. _So:_ write them a millisecond apart, or order by a
+number rather than a time.
 
 ## Running tests
 
@@ -134,6 +155,17 @@ description changes answers as surely as editing the system text. _So:_
 the instructions hash covers schemas and tool descriptions, and anything
 injected at call time.
 
+**An open page can run the previous deploy's code.** A test started from a
+page loaded before a deploy graded on the old checks, because the
+platform sends an old page's server actions to the deployment that served
+it. _So:_ reload the page after a deploy that changes grading, and check a
+test's grader version before trusting its score.
+
+**A suite and a command-line eval ran the same feature two ways.** A fix
+to one call left the other answering differently. _So:_ the exact call
+lives in the suite module, and any script imports it from there, so a fix
+to one is a fix to both.
+
 **Analysis outside the harness used the wrong tests.** A hand-written
 review picked up tests from before a fix. _So:_ take numbers from the same
 code the pages use, and say which tests a number comes from.
@@ -150,3 +182,30 @@ cases and how far a score could be off.
 **Fields nobody remembers.** People confirming answers weeks later forgot
 what a field meant. _So:_ every case and answer field gets a plain label
 and help.
+
+## Adopting it with your own setup
+
+**Contract tests empty their tables.** The store contract writes and
+deletes rows as it checks each method, so pointed at a database with real
+rows it would wipe them. _So:_ run contract tests only on a throwaway
+database built from the schema file, and say which database before
+running them.
+
+**Reasoning settings are open strings in Evalkeeper.** The app had a
+fixed set of reasoning levels, and a test could hand its router one it
+didn't know. _So:_ an app with a fixed set narrows the value where an
+eval enters its own router, and an unknown one runs on the model's
+default, as an unsupported one already does.
+
+**Request hashes differ from an older harness's.** After the move, the
+first test of each model paid for its answers again instead of reusing
+the old ones. Matching the old hashes would have tied Evalkeeper to one
+app's format. _So:_ the cost is paid once per model, and the person hears
+about it before running the first test.
+
+## Releasing
+
+**npm shows a package's README as of its last publish.** A release went
+out before the README updates merged, so the package page showed the old
+docs until a docs-only release followed. _So:_ merge docs before
+publishing, and follow the release checklist in CONTRIBUTING.md.

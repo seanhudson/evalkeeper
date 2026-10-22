@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { ThumbsSummary } from "./feedback.js";
 import type { ModelCatalog } from "./models.js";
-import type { RunMetrics, RunRecord } from "./store.js";
+import { ACTIVITY_SOURCE } from "./activity.js";
+import type {
+  CaseRecord,
+  LabelRecord,
+  RunMetrics,
+  RunRecord,
+} from "./store.js";
 import { SCHEDULED, headline, weeklySummary } from "./weekly.js";
 
 const DAY = 86_400_000;
@@ -234,5 +240,70 @@ describe("weeklySummary", () => {
     );
     expect(headline(metrics(0.5))).toBe(0.5);
     expect(headline(null)).toBeNull();
+  });
+});
+
+describe("weeklySummary: drafts from activity", () => {
+  const draftCase = (over: Partial<CaseRecord>): CaseRecord => ({
+    id: `c${++n}`,
+    suite: "triage",
+    input: { text: "x" },
+    tags: [],
+    split: "DEV",
+    status: "DRAFT",
+    source: ACTIVITY_SOURCE,
+    sourceRef: `ref${n}`,
+    note: null,
+    createdAt: new Date(+today - DAY),
+    updatedAt: new Date(+today - DAY),
+    labels: [],
+    ...over,
+  });
+  const confirmed: LabelRecord = {
+    id: "l1",
+    kind: "EXPECTED",
+    status: "CONFIRMED",
+    value: {},
+    raterRole: "OWNER",
+    raterId: null,
+    note: null,
+    createdAt: today,
+    updatedAt: today,
+  };
+
+  it("counts each suite's drafts from the last 7 days, and those waiting", () => {
+    const s = weeklySummary({
+      runs: [run({})],
+      suites: SUITES,
+      routes,
+      models: MODELS,
+      today,
+      cases: [
+        draftCase({}),
+        draftCase({ labels: [confirmed], status: "ACTIVE" }),
+        draftCase({ status: "RETIRED" }),
+        // Older than a week, by hand, or another suite's: counted apart.
+        draftCase({ createdAt: new Date(+today - 8 * DAY) }),
+        draftCase({ source: "OWNER" }),
+        draftCase({ suite: "summary" }),
+      ],
+    });
+    expect(s.drafted).toEqual([
+      { suite: "triage", label: "Triage", count: 3, waiting: 1 },
+      { suite: "summary", label: "Summary", count: 1, waiting: 1 },
+    ]);
+    // News, not trouble: drafts leave an otherwise clear week clear.
+    expect(s.clear).toBe(true);
+  });
+
+  it("lists none without cases", () => {
+    const s = weeklySummary({
+      runs: [run({})],
+      suites: SUITES,
+      routes,
+      models: MODELS,
+      today,
+    });
+    expect(s.drafted).toEqual([]);
   });
 });

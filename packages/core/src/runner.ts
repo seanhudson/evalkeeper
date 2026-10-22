@@ -27,6 +27,10 @@ import type {
   OutputRecord,
 } from "./store.js";
 import { withTimeout } from "./timeout.js";
+import {
+  draftFromActivity as draftCases,
+  type ActivityDraftResult,
+} from "./activity.js";
 import { SCHEDULED } from "./weekly.js";
 import { confirmedLabel, isProvisional } from "./labels.js";
 export { confirmedLabel, isProvisional };
@@ -754,6 +758,20 @@ export function createRunner(opts: RunnerOptions) {
   }
 
   /**
+   * One suite's weekly drafts from your app's activity: asks the suite's
+   * `draftFromActivity` for up to `limit` cases a week (default
+   * ACTIVITY_DRAFTS_PER_WEEK) and adds new ones as drafts with PENDING
+   * answers, skipping anything drafted before. Call it for each suite from
+   * the weekly job; suites without the method draft nothing.
+   */
+  async function draftFromActivity(
+    suiteKey: string,
+    o: { limit?: number; since?: Date; today?: Date } = {},
+  ): Promise<ActivityDraftResult> {
+    return draftCases({ store, suite: suiteOrThrow(suiteKey), ...o });
+  }
+
+  /**
    * Several tests' outputs by test id: one call where the store can, so a
    * remote database isn't asked once per test.
    */
@@ -1067,6 +1085,7 @@ export function createRunner(opts: RunnerOptions) {
   return {
     startDriftCheck,
     runDriftCheck,
+    draftFromActivity,
     board,
     suiteOrThrow,
     casesFor,

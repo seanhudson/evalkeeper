@@ -1,13 +1,15 @@
+import { ACTIVITY_SOURCE } from "./activity.js";
 import type { ThumbsSummary } from "./feedback.js";
 import { retiresLabel, type ModelCatalog } from "./models.js";
-import type { RunMetrics, RunRecord } from "./store.js";
+import type { CaseRecord, RunMetrics, RunRecord } from "./store.js";
 import { daysUntil, drifted, retiresSoon } from "./upkeepRules.js";
 
 /**
  * The weekly check: each suite's quick set on its live model, with fresh
  * answers, so a provider quietly changing a model under the same name shows
  * up as drift. The summary also flags models retiring soon and features
- * people rate poorly. It only reports; a person decides what to change.
+ * people rate poorly, and counts the cases suites drafted from the app's
+ * activity. It only reports; a person decides what to change.
  * Pure.
  */
 
@@ -18,7 +20,8 @@ const DAY = 86_400_000;
 
 /**
  * What the last weekly check found: drift, unfinished checks, retiring models, and
- * thumbs-down, plus when it ran and what it cost.
+ * thumbs-down, plus when it ran, what it cost, and the cases drafted from
+ * activity.
  */
 export type WeeklySummary = {
   /** When the last weekly check started; null before the first. */
@@ -47,6 +50,12 @@ export type WeeklySummary = {
   }[];
   /** Features with a high thumbs-down share this week. */
   thumbs: ThumbsSummary[];
+  /**
+   * Cases each suite drafted from the app's activity in the last 7 days,
+   * and how many of them still wait for a person (no confirmed answer, not
+   * retired). Drafts are news, not trouble: they don't affect `clear`.
+   */
+  drafted: { suite: string; label: string; count: number; waiting: number }[];
   /** Ran, and nothing needs a look. */
   clear: boolean;
 };
@@ -78,6 +87,11 @@ export function weeklySummary(args: {
   models: ModelCatalog;
   /** From thumbsSummary over the last week; only flagged ones are shown. */
   thumbs?: ThumbsSummary[];
+  /**
+   * Every suite's cases (`store.listCases`), to count the drafts from
+   * activity. Leave out to skip the count.
+   */
+  cases?: CaseRecord[];
   today?: Date;
 }): WeeklySummary {
   const today = args.today ?? new Date();
@@ -152,6 +166,27 @@ export function weeklySummary(args: {
   }
 
   const thumbs = (args.thumbs ?? []).filter((t) => t.alert);
+
+  const drafted: WeeklySummary["drafted"] = [];
+  for (const s of args.suites) {
+    const recent = (args.cases ?? []).filter(
+      (c) =>
+        c.suite === s.key &&
+        c.source === ACTIVITY_SOURCE &&
+        +today - +c.createdAt < 7 * DAY,
+    );
+    if (recent.length)
+      drafted.push({
+        suite: s.key,
+        label: s.label,
+        count: recent.length,
+        waiting: recent.filter(
+          (c) =>
+            c.status !== "RETIRED" &&
+            !c.labels.some((l) => l.status === "CONFIRMED"),
+        ).length,
+      });
+  }
   return {
     lastAt,
     costUsd: batch.reduce((t, r) => t + (r.metrics?.costUsd ?? 0), 0),
@@ -160,6 +195,7 @@ export function weeklySummary(args: {
     failed,
     retiring,
     thumbs,
+    drafted,
     clear:
       lastAt !== null &&
       !drift.length &&

@@ -175,6 +175,24 @@ export type Suite<Input, Output, Label> = {
     focus: string | null;
   }): Promise<{ input: Input; label: Label; tags: string[]; note: string }[]>;
   /**
+   * Drafts cases from what the feature saw in your app since a date (inputs
+   * people rated or admins flagged), so the answer key keeps up with real
+   * use. The weekly check calls it through `draftFromActivity`; drafts
+   * arrive with a PENDING answer or none, never confirmed. Strip names,
+   * contact details, and anything identifying from each input. Return at
+   * most `limit`, and skip anything whose `sourceRef` is in `known`.
+   */
+  draftFromActivity?(args: {
+    /** Look at activity from this date on. */
+    since: Date;
+    /** The suite's cases, retired ones too, to avoid near-repeats. */
+    existing: { input: Input; tags: string[] }[];
+    /** The most drafts to return: what's left of this week's allowance. */
+    limit: number;
+    /** The `sourceRef` of every draft made before: skip these. */
+    known: ReadonlySet<string>;
+  }): Promise<ActivityDraft<Input, Label>[]>;
+  /**
    * How long one answer may take before it counts as failed. Default 60s;
    * multi-step agent turns need more. Keep it under the run budget.
    */
@@ -207,6 +225,25 @@ export type Suite<Input, Output, Label> = {
   describe?(input: Input): string;
   /** Fixture suites: what the expected answer's fields mean. */
   labelHelp?: string;
+};
+
+/**
+ * A case a suite drafted from your app's activity, for a person to review.
+ * Return these from `Suite.draftFromActivity`.
+ */
+export type ActivityDraft<Input, Label> = {
+  /** The input the feature saw, with names and contact details removed. */
+  input: Input;
+  /** A proposed answer, stored PENDING; null: the reviewer writes one. */
+  label: Label | null;
+  tags: string[];
+  /** Why it was drafted, shown to the reviewer ("Rated thumbs down."). */
+  note: string;
+  /**
+   * What it was drafted from (an id in your app), so it's never drafted
+   * twice, even weeks later or after someone retires it.
+   */
+  sourceRef: string;
 };
 
 /**

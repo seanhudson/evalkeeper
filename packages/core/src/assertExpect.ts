@@ -16,6 +16,10 @@ export type ContractMatchers = {
   toHaveLength(length: number): void;
   /** Passes when the value is null. */
   toBeNull(): void;
+  /** Passes when the value is a number at least this. */
+  toBeGreaterThanOrEqual(expected: number): void;
+  /** Passes when the value is a number at most this. */
+  toBeLessThanOrEqual(expected: number): void;
   /** For a promise: passes when it fails as described. */
   rejects: {
     /** Passes when the promise fails with an error whose message has this text. */
@@ -131,6 +135,18 @@ export const assertExpect: ContractExpect = (actual, message) => ({
   },
   toBeNull() {
     assert.strictEqual(actual, null, message);
+  },
+  toBeGreaterThanOrEqual(expected) {
+    assert.ok(
+      typeof actual === "number" && actual >= expected,
+      message ?? `Expected ${String(actual)} to be at least ${expected}`,
+    );
+  },
+  toBeLessThanOrEqual(expected) {
+    assert.ok(
+      typeof actual === "number" && actual <= expected,
+      message ?? `Expected ${String(actual)} to be at most ${expected}`,
+    );
   },
   rejects: {
     async toThrow(expected) {

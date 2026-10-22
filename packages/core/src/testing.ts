@@ -237,9 +237,10 @@ export function describeStoreContract(
       // Drafts from activity and imports skip what they made before by
       // source and sourceRef, so both must read back as written.
       const store = await make();
+      const n = names();
       const before = Date.now();
       const c = await store.createCase(
-        newCase("s", {
+        newCase(n("s"), {
           status: "DRAFT",
           source: "ACTIVITY",
           sourceRef: "answer-42",
@@ -248,7 +249,9 @@ export function describeStoreContract(
         }),
       );
       await store.setCaseStatus(c.id, "RETIRED");
-      const [listed] = await store.listCases("s", { includeRetired: true });
+      const [listed] = await store.listCases(n("s"), {
+        includeRetired: true,
+      });
       expect(listed).toMatchObject({
         status: "RETIRED",
         source: "ACTIVITY",
@@ -813,16 +816,17 @@ export function describeSettingsStoreContract(
 
     it("keeps every kind of change, with its evidence", async () => {
       const store = await make();
-      let live = (await store.switchTo("triage", create("a", null))).id;
+      const op = names()("triage");
+      let live = (await store.switchTo(op, create("a", null))).id;
       for (const kind of CHANGE_KINDS.slice(1))
         live = (
-          await store.switchTo("triage", {
+          await store.switchTo(op, {
             ...create(kind.toLowerCase(), live),
             kind,
             evidence: kind === "PROMOTE" ? { runId: "r1" } : undefined,
           })
         ).id;
-      const changes = await store.listChanges("triage");
+      const changes = await store.listChanges(op);
       expect(changes.map((c) => c.kind)).toEqual([...CHANGE_KINDS].reverse());
       expect(changes.map((c) => c.evidence)).toEqual([
         null,

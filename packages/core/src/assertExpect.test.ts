@@ -65,6 +65,17 @@ describe("assertExpect", () => {
     }).toThrow();
   });
 
+  it("compares numbers", () => {
+    assertExpect(2).toBeGreaterThanOrEqual(2);
+    assertExpect(2).toBeLessThanOrEqual(2);
+    expect(() => {
+      assertExpect(1).toBeGreaterThanOrEqual(2);
+    }).toThrow(/at least 2/);
+    expect(() => {
+      assertExpect("3").toBeLessThanOrEqual(5);
+    }).toThrow(/at most 5/);
+  });
+
   it("checks how a promise fails", async () => {
     await assertExpect(
       Promise.reject(new Error("no temperature column")),

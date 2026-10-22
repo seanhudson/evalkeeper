@@ -36,7 +36,9 @@ stores without a mapping behave as before.
   skipped, or overwritten, and what the chosen files import that your app
   doesn't have.
 - "Bring your own" in docs/adding-to-your-app.md: your own tables,
-  router, versions, and pages, and what each costs.
+  router, versions, and pages, and what each costs. The README, each
+  package's README, and AGENTS.md point to it, and AGENTS.md tells coding
+  agents to check what an app already has before adding anything.
 
 ## 0.4.1 - 2026-10-21
 

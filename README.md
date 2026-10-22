@@ -78,6 +78,11 @@ design.
   they were (probability quality) and whether a model that says 90% is
   right 90% of the time (calibration error). The board marks which models
   give probabilities natively and which are prompted.
+- **Fits what you already have.** Had evals before? Keep your own eval
+  tables full of reviewed answers, your own model router, your own
+  settings history, and your own pages. Evalkeeper maps onto your tables
+  and columns, calls your router, and copies only the pages you ask for.
+  See [Bring your own](docs/adding-to-your-app.md#bring-your-own).
 - **Built for real platforms.** Answers time out, long tests continue in a
   fresh request instead of dying at the platform's limit, stuck tests are
   marked failed, and a provider out of credits stops a test instead of
@@ -153,6 +158,14 @@ cases.
 Evalkeeper is a small core with adapters, not a platform. Your app keeps
 its own routing, auth, and pages.
 
+**Already have evals, tables, or an admin page for models?** Don't
+migrate. `prismaStore(prisma, map)` and `prismaSettingsStore(prisma, map)`
+run on your own tables (other names, Decimal costs, enums, missing
+columns), the runner calls your router through callbacks, and
+`add pages --only` copies just the pages you're replacing.
+[Bring your own](docs/adding-to-your-app.md#bring-your-own) covers each
+piece and what it costs. The steps below are for starting fresh.
+
 **1. Install.**
 
 ```bash
@@ -161,7 +174,9 @@ npm install @crowandraven/evalkeeper @crowandraven/evalkeeper-prisma @crowandrav
 
 **2. Add the tables.** Copy the models from
 [`packages/prisma/schema/evalkeeper.prisma`](packages/prisma/schema/evalkeeper.prisma)
-into your schema. They work on PostgreSQL, MySQL, and SQLite.
+into your schema. They work on PostgreSQL, MySQL, and SQLite. Have eval
+tables already? Map onto them instead
+([Bring your own](docs/adding-to-your-app.md#bring-your-own)).
 
 **3. Write a suite** for one AI feature: its input, what a good answer is,
 how to call the feature on a given model, and how to grade the output.
@@ -242,15 +257,18 @@ them for you.
 
 ## Packages
 
-| Package                                              | What it is                                                                                      |
-| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| [`evalkeeper`](packages/core)                        | The core: suite types, stats, comparisons, suggestions, health, grader helpers, and the runner. |
-| [`@crowandraven/evalkeeper-prisma`](packages/prisma) | The tables, a store on your Prisma client, and a judgment cache.                                |
-| [`@crowandraven/evalkeeper-ai-sdk`](packages/ai-sdk) | For the Vercel AI SDK: instruction hashes, call pricing, priced decisions, and a meaning judge. |
-| [`examples/next`](examples/next)                     | A Next.js app with two suites, demo models, and the eval pages.                                 |
+| Package                                              | What it is                                                                                        |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| [`evalkeeper`](packages/core)                        | The core: suite types, stats, comparisons, suggestions, health, grader helpers, and the runner.   |
+| [`@crowandraven/evalkeeper-prisma`](packages/prisma) | The tables, a store on your Prisma client (or mapped onto your own tables), and a judgment cache. |
+| [`@crowandraven/evalkeeper-ai-sdk`](packages/ai-sdk) | For the Vercel AI SDK: instruction hashes, call pricing, priced decisions, and a meaning judge.   |
+| [`examples/next`](examples/next)                     | A Next.js app with two suites, demo models, and the eval pages.                                   |
 
-Bring another database by implementing `EvalStore` (eleven plain reads and
-writes); `memoryStore()` is a complete one to copy.
+Already on Prisma with tables of your own? Pass a map to `prismaStore`
+instead of writing a store. Bring another database by implementing
+`EvalStore` (thirteen plain reads and writes, and two optional ones for
+speed); `memoryStore()` is a complete one to copy. Either way, check it
+with `describeStoreContract`.
 
 ## Concepts
 

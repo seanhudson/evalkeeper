@@ -1,6 +1,6 @@
 {
   "name": "@crowandraven/evalkeeper-ai-sdk",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "Vercel AI SDK helpers for Evalkeeper, the eval harness: instruction hashes, call and decision pricing, and a meaning judge.",
   "license": "MIT",
   "type": "module",
@@ -23,7 +23,7 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@crowandraven/evalkeeper": "0.5.1"
+    "@crowandraven/evalkeeper": "0.6.0"
   },
   "peerDependencies": {
     "ai": ">=7",

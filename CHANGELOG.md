@@ -5,7 +5,13 @@ Notable changes, newest first. The format follows
 follow [semantic versioning](https://semver.org/): until 1.0, a minor
 version may change an interface, and its entry says how to update.
 
-## Unreleased
+## 0.6.0 - 2026-10-21
+
+A suite contract test, so missing field help fails a test, and the
+suggestion no longer proposes a switch when the live model's test only
+had a timeout or two. 0.5.1 wasn't published to npm; its README changes
+ship here. **To update:** copy the suite page
+(`app/evals/[suite]/page.tsx`); everything else is opt-in.
 
 ### Added
 

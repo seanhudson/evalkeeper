@@ -1,6 +1,6 @@
 {
   "name": "@crowandraven/evalkeeper",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "An open-source eval harness for TypeScript apps: test each AI feature against answers people confirm, compare models on accuracy, cost, and speed, and choose the live model on evidence.",
   "license": "MIT",
   "type": "module",

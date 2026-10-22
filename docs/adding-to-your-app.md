@@ -293,6 +293,18 @@ a full example.
   checks a secret (`examples/next/app/api/cron/evals-weekly`, scheduled in
   `examples/next/vercel.json`). Show `weeklySummary(...)` on your hub; it
   flags drift, unfinished checks, retiring models, and thumbs-down.
+- Let suites draft cases from real use (optional). Give a suite
+  `draftFromActivity({ since, existing, limit, known })` that returns up
+  to `limit` inputs your feature saw since `since`, each with a proposed
+  answer or `null`, a note for the reviewer, and a `sourceRef` (the id in
+  your app it came from); skip any `sourceRef` in `known`. Remove names,
+  contact details, account numbers, and anything identifying from each
+  input, and use only inputs people agreed to share. The weekly job calls
+  `runner.draftFromActivity(suite.key)` for each suite (default 5 a week);
+  drafts arrive pending, are never added twice, and the hub links to
+  them. Pass `cases` to `weeklySummary` so it counts them.
+  `examples/next/lib/suites/ticketTriage.ts` drafts from tickets people
+  tried and agreed to keep.
 - Read failures before changing a prompt.
 
 ## Bring your own

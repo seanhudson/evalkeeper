@@ -359,6 +359,34 @@ export const ticketTriage: Suite<Input, Output, Label> = {
     ],
   },
   starter: TRIAGE_STARTERS,
+  // Tickets people tried this week and agreed to keep, with contact
+  // details removed. The live model's answer is proposed, pending review.
+  async draftFromActivity({ since, known, limit }) {
+    const { keptAnswers, stripContacts } = await import("../activity");
+    const rows = await keptAnswers({
+      operation: "ticket_triage",
+      since,
+      known,
+      limit,
+    });
+    return rows.flatMap((r) => {
+      const i = input.safeParse(r.input);
+      if (!i.success) return [];
+      const proposed = label.safeParse(r.output);
+      return [
+        {
+          input: {
+            subject: stripContacts(i.data.subject),
+            body: stripContacts(i.data.body),
+          },
+          label: proposed.success ? proposed.data : null,
+          tags: ["try page"],
+          note: "Tried on the try page and kept with consent. The live model's answer is proposed: confirm it if it's right.",
+          sourceRef: r.id,
+        },
+      ];
+    });
+  },
   title: (i) => i.subject,
   describe: (i) => `${i.subject}\n\n${i.body}`,
   labelHelp:

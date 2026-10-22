@@ -170,8 +170,22 @@ instructions, temperature, output cap, and grading is _drift_. A
 different model, prompt, temperature, output cap, or grader isn't
 compared, since that change has a known reason. The check
 also lists quick sets that didn't finish, live and fallback models
-retiring within 60 days, and features with a high thumbs-down share. It
-only reports; a person decides what to change.
+retiring within 60 days, features with a high thumbs-down share, and
+how many cases each suite drafted from activity. It only reports; a
+person decides what to change.
+
+**Drafts from activity.** An answer key only grows when someone adds
+cases, so it can fall behind what the feature sees. A suite with
+`draftFromActivity` lets the weekly check draft cases from your app's
+real activity (inputs people rated, inputs admins flagged) since last
+week. Each arrives as a draft with a pending answer, or none, so a person
+reviews it before any test grades against it; nothing is confirmed on
+anyone's behalf. Each draft names what it came from (its `sourceRef`), so
+the same thing is never drafted twice, even weeks later or after the case
+is retired. A suite drafts at most 5 a week (you can set another limit),
+so upkeep stays cheap and the review queue stays short. The method is
+your app's code: it strips names, contact details, and anything
+identifying from each input, and uses only inputs people agreed to share.
 
 **Feedback.** People rate the feature's answers in your product, thumbs
 up or down, with a reason after a thumbs down. One rating per person per

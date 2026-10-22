@@ -409,7 +409,8 @@ export default async function SuitePage({
         </div>
       </section>
 
-      <section className="space-y-3">
+      {/* The weekly check links here to review drafts. */}
+      <section id="answer-key" className="scroll-mt-4 space-y-3">
         <AnswerKey
           suite={suite}
           rows={rows}

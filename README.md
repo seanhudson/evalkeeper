@@ -75,6 +75,10 @@ design.
   a weekly flag when a feature's thumbs-down share climbs, and one click to
   turn a rating on a kept input into a draft case (with consent, and
   never confirmed for you).
+- **An answer key that keeps up.** Suites can draft a few cases a week
+  from your app's real activity (inputs people rated or admins flagged),
+  as pending drafts for review, never the same input twice, and the
+  weekly check links to them.
 - **Decision models, graded on their probabilities.** For features that
   answer typed questions (pick a queue, say true or false) with the AI
   SDK's decisions, a suite scores the pick and the probabilities: how close

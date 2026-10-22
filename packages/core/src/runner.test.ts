@@ -481,3 +481,46 @@ describe("retiring models on the board", () => {
     expect(rows).not.toContain("old-unused");
   });
 });
+
+describe("runner.draftFromActivity", () => {
+  it("adds a suite's drafts from activity, pending, and never twice", async () => {
+    const { store, runner } = await setup(["hello"]);
+    // Drafting doesn't call the model: it only adds cases to review.
+    calls = 0;
+    upper.draftFromActivity = async ({ known, limit }) =>
+      [
+        {
+          input: { text: "seen in the app" },
+          label: { want: "SEEN IN THE APP" },
+          tags: [],
+          note: "Flagged by an admin.",
+          sourceRef: "answer-1",
+        },
+      ]
+        .filter((d) => !known.has(d.sourceRef))
+        .slice(0, limit);
+    try {
+      expect(await runner.draftFromActivity("upper")).toMatchObject({
+        drafted: 1,
+      });
+      expect(
+        await runner.draftFromActivity("upper", { limit: 5 }),
+      ).toMatchObject({ drafted: 0 });
+      const drafts = (await store.listCases("upper")).filter(
+        (c) => c.sourceRef === "answer-1",
+      );
+      expect(drafts).toHaveLength(1);
+      expect(drafts[0]?.labels[0]?.status).toBe("PENDING");
+      // Tests leave it out until a person confirms its answer.
+      expect(await runner.casesFor("upper", "ALL")).toHaveLength(1);
+      expect(calls).toBe(0);
+    } finally {
+      delete upper.draftFromActivity;
+    }
+  });
+
+  it("refuses a suite it doesn't know", async () => {
+    const { runner } = await setup([]);
+    await expect(runner.draftFromActivity("nope")).rejects.toThrow();
+  });
+});

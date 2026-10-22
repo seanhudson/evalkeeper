@@ -33,3 +33,4 @@ export * from "./labels.js";
 // Server-only (node:crypto): import from "@crowandraven/evalkeeper/runner".
 // In-memory store for tests and demos: "@crowandraven/evalkeeper/memory".
 export * from "./importCases.js";
+export * from "./activity.js";

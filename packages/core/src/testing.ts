@@ -98,6 +98,34 @@ export function describeStoreContract(
       });
     });
 
+    it("keeps where a case came from and when, retired ones too", async () => {
+      // Drafts from activity and imports skip what they made before by
+      // source and sourceRef, so both must read back as written.
+      const store = await make();
+      const before = Date.now();
+      const c = await store.createCase(
+        newCase("s", {
+          status: "DRAFT",
+          source: "ACTIVITY",
+          sourceRef: "answer-42",
+          note: "Flagged by an admin.",
+          labels: [],
+        }),
+      );
+      await store.setCaseStatus(c.id, "RETIRED");
+      const [listed] = await store.listCases("s", { includeRetired: true });
+      expect(listed).toMatchObject({
+        status: "RETIRED",
+        source: "ACTIVITY",
+        sourceRef: "answer-42",
+        note: "Flagged by an admin.",
+        labels: [],
+      });
+      // Within a second either way: some databases round to the second.
+      expect(+(listed?.createdAt ?? 0)).toBeGreaterThanOrEqual(before - 1000);
+      expect(+(listed?.createdAt ?? 0)).toBeLessThanOrEqual(Date.now() + 1000);
+    });
+
     it("lists a suite's cases oldest first, leaving out retired ones", async () => {
       const store = await make();
       const first = await store.createCase(newCase("s"));

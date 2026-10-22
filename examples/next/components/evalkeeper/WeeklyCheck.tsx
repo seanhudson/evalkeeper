@@ -3,7 +3,7 @@ import { money, type WeeklySummary } from "@crowandraven/evalkeeper";
 import { runWeeklyNow } from "@/lib/evalkeeper/actions";
 import { RefreshWhile } from "./RefreshWhile";
 import { Submit } from "./Submit";
-import { InfoTip } from "./Tip";
+import { InfoTip, Tip } from "./Tip";
 import { Card, Chip, pct } from "./ui";
 import { evalsPath } from "@/lib/evalkeeper/paths";
 
@@ -33,7 +33,8 @@ export function WeeklyCheck({ weekly }: { weekly: WeeklySummary }) {
               : "Not run yet. "}
           Every Monday, each live model answers its suite&apos;s quick set
           again, so a quiet change by its provider shows up here. It also flags
-          models retiring soon and features people rate poorly.
+          models retiring soon and features people rate poorly. Suites that can
+          draft cases from the week&apos;s activity add a few for you to review.
         </p>
 
         {weekly.clear && (
@@ -113,6 +114,37 @@ export function WeeklyCheck({ weekly }: { weekly: WeeklySummary }) {
                     Read the reasons
                   </Link>
                   .
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {weekly.drafted.length > 0 && (
+          <ul className="readable space-y-2 text-sm">
+            {weekly.drafted.map((d) => (
+              <li
+                key={`drafted-${d.suite}`}
+                className="flex flex-wrap items-baseline gap-2"
+              >
+                <Tip term="activityDraft" id={`drafted-${d.suite}`}>
+                  <Chip tone="neutral">Drafted</Chip>
+                </Tip>
+                <span>
+                  {d.label}: {d.count} case{d.count === 1 ? "" : "s"} drafted
+                  from this week&apos;s activity,{" "}
+                  {d.waiting === 0
+                    ? "all reviewed."
+                    : `${d.waiting} waiting for review. `}
+                  {d.waiting > 0 && (
+                    <Link
+                      href={`${evalsPath(d.suite)}#answer-key`}
+                      className="underline"
+                    >
+                      Review them
+                    </Link>
+                  )}
+                  {d.waiting > 0 && "."}
                 </span>
               </li>
             ))}

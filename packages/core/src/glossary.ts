@@ -53,6 +53,8 @@ export const GLOSSARY = {
     "A draft case with no answer yet. Write what a good answer is; until then, tests leave it out.",
   weeklyCheck:
     "Each suite's quick set, answered again on its live model every week. A drop of 15 points or more against last week's check of the same model, instructions, and grading is drift.",
+  activityDraft:
+    "A case drafted from what the feature saw in your app this week. Its answer is pending or missing until a person reviews it, and tests leave it out until then.",
   versions:
     "Each numbered version of this feature's settings (model, fallback, reasoning, output limit, temperature), with who changed it, when, why, and its evidence. Any version can be made live again.",
   changedOutside:

@@ -6,6 +6,7 @@
     "packages/core/src/runner.ts",
     "packages/core/src/memoryStore.ts",
     "packages/core/src/testing.ts",
+    "packages/core/src/suites/index.ts",
     "packages/core/src/cli/main.ts",
     "packages/prisma/src/index.ts",
     "packages/ai-sdk/src/index.ts"

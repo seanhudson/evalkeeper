@@ -1,0 +1,174 @@
+// Tables shaped like an app that had its own eval harness before
+// Evalkeeper: other column names, Prisma enums, Decimal costs, a creator
+// on cases, legacy columns, and its own versions tables with a real user
+// on each change. test/byoStore.test.ts runs the store contracts against
+// them through prismaStore's and prismaSettingsStore's mappings.
+//
+// SQLite has no scalar lists, so tags are Json here; a String[] column on
+// PostgreSQL reads and writes the same arrays.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "./client"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("BYO_DATABASE_URL")
+}
+
+model Person {
+  id      String         @id @default(uuid())
+  handle  String         @unique
+  changes VersionSwitch[]
+}
+
+enum CaseState {
+  DRAFT
+  ACTIVE
+  RETIRED
+}
+
+enum CaseSplit {
+  DEV
+  TEST
+}
+
+enum AnswerState {
+  PENDING
+  CONFIRMED
+  PROVISIONAL
+}
+
+model GoldCase {
+  id          String    @id @default(uuid())
+  suite       String
+  input       Json
+  tags        Json
+  source      String
+  sourceRef   String?
+  status      CaseState @default(DRAFT)
+  split       CaseSplit @default(DEV)
+  smoke       Boolean   @default(false)
+  note        String?
+  createdById String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  answers GoldAnswer[]
+  outputs Attempt[]
+}
+
+model GoldAnswer {
+  id         String      @id @default(uuid())
+  caseId     String
+  raterId    String?
+  raterRole  String
+  kind       String
+  value      Json
+  confidence Int?
+  rationale  String?
+  status     AnswerState @default(CONFIRMED)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  case GoldCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+}
+
+model Trial {
+  id               String    @id @default(uuid())
+  suite            String    @default("legacy")
+  model            String
+  promptVersion    String
+  versionId        String?
+  reasoningEffort  String?
+  /// Added for Evalkeeper (nullable).
+  temperature      Float?
+  /// Added for Evalkeeper (nullable).
+  maxOutputTokens  Int?
+  split            String?
+  repeats          Int       @default(1)
+  datasetVersion   String?
+  graderVersion    String?
+  estimatedCostUsd Decimal?
+  status           String    @default("RUNNING")
+  metrics          Json?
+  results          Json?
+  error            String?
+  startedById      String?
+  startedAt        DateTime  @default(now())
+  finishedAt       DateTime?
+
+  outputs Attempt[]
+}
+
+model Attempt {
+  id          String   @id @default(uuid())
+  trialId     String
+  caseId      String
+  repeat      Int
+  requestHash String
+  output      Json?
+  error       String?
+  scores      Json?
+  costUsd     Decimal  @default(0)
+  ms          Int      @default(0)
+  reused      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  trial Trial    @relation(fields: [trialId], references: [id], onDelete: Cascade)
+  case  GoldCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+}
+
+model JudgeCache {
+  key       String   @id
+  value     Json
+  model     String
+  createdAt DateTime @default(now())
+}
+
+enum SwitchKind {
+  CHANGE
+  ROLLBACK
+  DEPLOY
+  PROMOTE
+}
+
+model RouteVersion {
+  id              String   @id @default(uuid())
+  operation       String
+  number          Int
+  model           String
+  fallbackModel   String?
+  maxOutputTokens Int?
+  reasoningEffort String?
+  promptVersion   String?
+  createdAt       DateTime @default(now())
+
+  live      RouteLive[]
+  changesTo VersionSwitch[] @relation("switchTo")
+
+  @@unique([operation, number])
+}
+
+model RouteLive {
+  operation String       @id
+  versionId String
+  updatedAt DateTime     @updatedAt
+  version   RouteVersion @relation(fields: [versionId], references: [id])
+}
+
+model VersionSwitch {
+  id            String     @id @default(uuid())
+  operation     String
+  kind          SwitchKind
+  fromVersionId String?
+  toVersionId   String
+  reason        String?
+  userId        String?
+  evidence      Json?
+  createdAt     DateTime   @default(now())
+
+  to   RouteVersion @relation("switchTo", fields: [toVersionId], references: [id])
+  user Person?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+}

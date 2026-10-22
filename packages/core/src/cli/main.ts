@@ -20,6 +20,10 @@ Options:
   --alias <name>  Your import alias, e.g. "@" or "~" (default: from tsconfig.json)
   --root <dir>    Where the alias points, e.g. "src" (default: from tsconfig.json)
   --no-cron       Leave out the weekly check's cron route
+  --only <names>  Copy only these, comma-separated: pages (hub, suite, run,
+                  feedback, cron), components and glue by name (AnswerKey,
+                  actions, …), the groups "pages" and "components", or
+                  "index" for a starter lib/evalkeeper/index.ts
   --force         Overwrite files that already exist (never your lib/evalkeeper/index.ts)
   --dry-run       Show what would be written, and write nothing
   --help          Show this
@@ -57,6 +61,8 @@ export function parseArgs(argv: string[]): Partial<AddPagesOptions> & {
     else if (a === "--no-cron") out.cron = false;
     else if (a === "--force") out.force = true;
     else if (a === "--dry-run") out.dryRun = true;
+    else if (a === "--only")
+      out.only = [...(out.only ?? []), ...value().split(",")];
     else if (a.startsWith("--")) throw new Error(`Unknown option ${a}`);
     else out.command.push(a);
   }
@@ -113,6 +119,10 @@ export function run(
     if (skipped && !args.force)
       io.log(
         `\n${skipped} file${skipped === 1 ? "" : "s"} already existed and stayed as they are. --force overwrites them (your lib/evalkeeper/index.ts never).`,
+      );
+    if (result.needs.length)
+      io.log(
+        `\nThese import ${result.needs.join(", ")}, which your app doesn't have: add them to --only, or point the imports at your own.`,
       );
     io.log("\nNext:");
     for (const [i, step] of nextSteps(result).entries())

@@ -23,6 +23,9 @@ import type {
   SettingsStore,
   SettingsVersion,
 } from "@crowandraven/evalkeeper";
+import { Table, isRow, type ColumnMap, type Row } from "./mapping.js";
+
+export type { ColumnMap } from "./mapping.js";
 
 /**
  * An EvalStore on your Prisma client, using the models in
@@ -129,14 +132,27 @@ export type PrismaEvalClient = {
 
 /** `value` when it's one of `allowed`, else `fallback`. */
 function oneOf<T extends string>(
-  value: string,
+  value: unknown,
   allowed: readonly T[],
   fallback: T,
 ): T {
-  return (allowed as readonly string[]).includes(value)
+  return typeof value === "string" &&
+    (allowed as readonly string[]).includes(value)
     ? (value as T)
     : fallback;
 }
+
+// Readers for a column's value. Rows come from the app's tables, which
+// may be shaped differently (nullable where Evalkeeper's aren't), so each
+// value is narrowed rather than trusted.
+const str = (v: unknown): string => (typeof v === "string" ? v : "");
+const strOrNull = (v: unknown): string | null =>
+  typeof v === "string" ? v : null;
+const num = (v: unknown): number => (typeof v === "number" ? v : 0);
+const numOrNull = (v: unknown): number | null =>
+  typeof v === "number" ? v : null;
+const date = (v: unknown): Date => (v instanceof Date ? v : new Date(0));
+const dateOrNull = (v: unknown): Date | null => (v instanceof Date ? v : null);
 
 const LABEL_STATUSES: readonly LabelStatus[] = [
   "PENDING",
@@ -147,73 +163,54 @@ const LABEL_STATUSES: readonly LabelStatus[] = [
 const RUN_STATUSES: readonly RunStatus[] = ["RUNNING", "SUCCEEDED", "FAILED"];
 const SETS: readonly EvalSet[] = ["ALL", "SMOKE", "DEV", "TEST"];
 
-const label = (l: EvalCaseLabelRow): LabelRecord => ({
-  id: l.id,
+const label = (l: Row): LabelRecord => ({
+  id: str(l.id),
   kind: "EXPECTED",
   status: oneOf(l.status, LABEL_STATUSES, "PENDING"),
   value: l.value,
-  raterRole: l.raterRole,
-  raterId: l.raterId,
-  note: l.note,
-  createdAt: l.createdAt,
-  updatedAt: l.updatedAt,
+  raterRole: str(l.raterRole),
+  raterId: strOrNull(l.raterId),
+  note: strOrNull(l.note),
+  createdAt: date(l.createdAt),
+  updatedAt: date(l.updatedAt),
 });
 
-const evalCase = (
-  c: EvalCaseRow & { labels?: EvalCaseLabelRow[] },
-): CaseRecord => ({
-  id: c.id,
-  suite: c.suite,
-  input: c.input,
-  tags: Array.isArray(c.tags)
-    ? c.tags.filter((t): t is string => typeof t === "string")
-    : [],
-  split: oneOf(c.split, ["DEV", "TEST"] as const, "DEV"),
-  status: oneOf(c.status, ["DRAFT", "ACTIVE", "RETIRED"] as const, "DRAFT"),
-  source: c.source,
-  sourceRef: c.sourceRef,
-  note: c.note,
-  createdAt: c.createdAt,
-  updatedAt: c.updatedAt,
-  labels: (c.labels ?? []).map(label),
-});
-
-const run = (r: EvalRunRow): RunRecord => ({
-  id: r.id,
-  suite: r.suite,
-  model: r.model,
-  promptVersion: r.promptVersion,
-  reasoningEffort: r.reasoningEffort,
-  temperature: r.temperature,
-  maxOutputTokens: r.maxOutputTokens,
+const run = (r: Row): RunRecord => ({
+  id: str(r.id),
+  suite: str(r.suite),
+  model: str(r.model),
+  promptVersion: str(r.promptVersion),
+  reasoningEffort: strOrNull(r.reasoningEffort),
+  temperature: numOrNull(r.temperature),
+  maxOutputTokens: numOrNull(r.maxOutputTokens),
   set: oneOf(r.set, SETS, "ALL"),
-  repeats: r.repeats,
-  datasetVersion: r.datasetVersion,
-  graderVersion: r.graderVersion,
+  repeats: num(r.repeats),
+  datasetVersion: strOrNull(r.datasetVersion),
+  graderVersion: str(r.graderVersion),
   status: oneOf(r.status, RUN_STATUSES, "FAILED"),
   // Written only by the runner, in this shape.
   metrics: (r.metrics ?? null) as RunMetrics | null,
-  error: r.error,
-  estimatedCostUsd: r.estimatedCostUsd,
-  startedBy: r.startedBy,
-  startedAt: r.startedAt,
-  finishedAt: r.finishedAt,
+  error: strOrNull(r.error),
+  estimatedCostUsd: numOrNull(r.estimatedCostUsd),
+  startedBy: strOrNull(r.startedBy),
+  startedAt: date(r.startedAt),
+  finishedAt: dateOrNull(r.finishedAt),
 });
 
-const output = (o: EvalOutputRow): OutputRecord => ({
-  id: o.id,
-  runId: o.runId,
-  caseId: o.caseId,
-  repeat: o.repeat,
-  requestHash: o.requestHash,
-  output: o.output,
-  error: o.error,
+const output = (o: Row): OutputRecord => ({
+  id: str(o.id),
+  runId: str(o.runId),
+  caseId: str(o.caseId),
+  repeat: num(o.repeat),
+  requestHash: str(o.requestHash),
+  output: o.output ?? null,
+  error: strOrNull(o.error),
   // Written only by the runner, in this shape.
   scores: (o.scores ?? null) as CheckResult[] | null,
-  costUsd: o.costUsd,
-  ms: o.ms,
-  reused: o.reused,
-  createdAt: o.createdAt,
+  costUsd: num(o.costUsd),
+  ms: num(o.ms),
+  reused: o.reused === true,
+  createdAt: date(o.createdAt),
 });
 
 /**
@@ -223,9 +220,58 @@ const output = (o: EvalOutputRow): OutputRecord => ({
 const json = (v: unknown): object | string | number | boolean | undefined =>
   v === undefined || v === null ? undefined : v;
 
+/** Evalkeeper's eval tables, by the names its schema gives them. */
+export type EvalTable =
+  "evalCase" | "evalCaseLabel" | "evalRun" | "evalOutput" | "evalJudgment";
+
+/**
+ * How Evalkeeper's eval tables map onto an app's own, for an app that had
+ * eval tables before Evalkeeper. Pass it to `prismaStore` and
+ * `prismaJudgmentCache`; leave out anything named the same.
+ *
+ * Types convert on their own: Decimal columns read as numbers, enum
+ * columns as their names, and `tags` may be a `String[]` or a `Json`
+ * column. Columns Evalkeeper doesn't know (a creator, a legacy results
+ * column) are left alone, so they need a default or to be nullable.
+ */
+export type PrismaStoreMap = {
+  /**
+   * Each table's model on the Prisma client, as the client spells it
+   * (`prisma.goldCase` is `"goldCase"`).
+   */
+  models?: Partial<Record<EvalTable, string>>;
+  /**
+   * Column names per table, keyed by Evalkeeper's field name. `null`
+   * says the table has no such column (for nullable fields only): reads
+   * give null, and writing a value fails rather than losing it.
+   */
+  fields?: {
+    /** `labels` is the relation from a case to its answers. */
+    evalCase?: ColumnMap<EvalCaseRow & { labels: unknown }>;
+    evalCaseLabel?: ColumnMap<EvalCaseLabelRow>;
+    evalRun?: ColumnMap<EvalRunRow>;
+    evalOutput?: ColumnMap<EvalOutputRow>;
+    evalJudgment?: ColumnMap<EvalJudgmentRow>;
+  };
+};
+
+const tables = (map: PrismaStoreMap) => {
+  const t = (name: EvalTable) =>
+    new Table(name, map.models?.[name] ?? name, map.fields?.[name]);
+  return {
+    cases: t("evalCase"),
+    labels: t("evalCaseLabel"),
+    runs: t("evalRun"),
+    outputs: t("evalOutput"),
+    judgments: t("evalJudgment"),
+  };
+};
+
 /**
  * An EvalStore on your Prisma client, using the models in
  * `schema/evalkeeper.prisma`.
+ *
+ * @param db - Your Prisma client.
  *
  * @example
  * ```ts
@@ -234,132 +280,225 @@ const json = (v: unknown): object | string | number | boolean | undefined =>
  * const runner = createRunner({ store, suites, models, promptVersion });
  * ```
  */
-export function prismaStore(db: PrismaEvalClient): EvalStore {
+export function prismaStore(db: PrismaEvalClient): EvalStore;
+/**
+ * An EvalStore on your own eval tables, through a mapping (see
+ * `PrismaStoreMap`), for an app that had eval tables before Evalkeeper.
+ *
+ * @param db - Your Prisma client.
+ * @param map - Where your tables differ from Evalkeeper's.
+ *
+ * @example
+ * ```ts
+ * const store = prismaStore(prisma, {
+ *   fields: {
+ *     evalCaseLabel: { note: "rationale" },
+ *     evalRun: { set: "split", startedBy: "startedById" },
+ *   },
+ * });
+ * ```
+ */
+export function prismaStore(db: object, map: PrismaStoreMap): EvalStore;
+export function prismaStore(db: object, map: PrismaStoreMap = {}): EvalStore {
+  const t = tables(map);
+  const cases = t.cases.on(db);
+  const labels = t.labels.on(db);
+  const runs = t.runs.on(db);
+  const outputs = t.outputs.on(db);
+  const labelsOf = t.cases.col("labels") ?? "labels";
+  const evalCase = (c: Row): CaseRecord => {
+    return {
+      id: str(c.id),
+      suite: str(c.suite),
+      input: c.input,
+      tags: Array.isArray(c.tags)
+        ? c.tags.filter((tag): tag is string => typeof tag === "string")
+        : [],
+      split: oneOf(c.split, ["DEV", "TEST"] as const, "DEV"),
+      status: oneOf(c.status, ["DRAFT", "ACTIVE", "RETIRED"] as const, "DRAFT"),
+      source: str(c.source),
+      sourceRef: strOrNull(c.sourceRef),
+      note: strOrNull(c.note),
+      createdAt: date(c.createdAt),
+      updatedAt: date(c.updatedAt),
+      labels: Array.isArray(c.labels) ? t.labels.ins(c.labels).map(label) : [],
+    };
+  };
+  const toRun = (raw: unknown) => run(t.runs.in(raw));
+  const toOutput = (raw: unknown) => output(t.outputs.in(raw));
   return {
     async listCases(suite, opts) {
-      const rows = (await db.evalCase.findMany({
-        where: opts?.includeRetired
-          ? { suite }
-          : { suite, status: { not: "RETIRED" } },
-        include: { labels: true },
-        orderBy: { createdAt: "asc" },
-      })) as (EvalCaseRow & { labels: EvalCaseLabelRow[] })[];
-      return rows.map(evalCase);
+      const rows = await cases.findMany({
+        where: t.cases.out(
+          opts?.includeRetired
+            ? { suite }
+            : { suite, status: { not: "RETIRED" } },
+        ),
+        include: { [labelsOf]: true },
+        orderBy: t.cases.out({ createdAt: "asc" }),
+      });
+      return t.cases.ins(rows).map(evalCase);
     },
-    async createCase({ labels = [], ...data }) {
-      const c = (await db.evalCase.create({
-        data: {
-          ...data,
-          input: json(data.input),
-          labels: {
-            create: labels.map((l) => ({ ...l, value: json(l.value) })),
-          },
-        },
-        include: { labels: true },
-      })) as EvalCaseRow & { labels: EvalCaseLabelRow[] };
-      return evalCase(c);
+    async createCase({ labels: first = [], ...data }) {
+      return evalCase(
+        t.cases.in(
+          await cases.create({
+            data: {
+              ...t.cases.out({ ...data, input: json(data.input) }),
+              [labelsOf]: {
+                create: first.map((l) =>
+                  t.labels.out({ ...l, value: json(l.value) }),
+                ),
+              },
+            },
+            include: { [labelsOf]: true },
+          }),
+        ),
+      );
     },
     async addLabel(caseId, data) {
       return label(
-        await db.evalCaseLabel.create({
-          data: { ...data, caseId, value: json(data.value) },
-        }),
+        t.labels.in(
+          await labels.create({
+            data: t.labels.out({ ...data, caseId, value: json(data.value) }),
+          }),
+        ),
       );
     },
     async setLabelStatus(id, status) {
-      await db.evalCaseLabel.update({ where: { id }, data: { status } });
+      await labels.update({
+        where: t.labels.out({ id }),
+        data: t.labels.out({ status }),
+      });
     },
     async setCaseStatus(id, status) {
-      await db.evalCase.updateMany({ where: { id }, data: { status } });
+      await cases.updateMany({
+        where: t.cases.out({ id }),
+        data: t.cases.out({ status }),
+      });
     },
     async getRun(id) {
-      const r = await db.evalRun.findUnique({ where: { id } });
-      return r ? run(r) : null;
+      const r = await runs.findUnique({ where: t.runs.out({ id }) });
+      return r ? toRun(r) : null;
     },
     async listRuns(suite, opts = {}) {
-      const rows = await db.evalRun.findMany({
-        where: { suite, ...(opts.status ? { status: opts.status } : {}) },
-        orderBy: { startedAt: "desc" },
+      const rows = await runs.findMany({
+        where: t.runs.out({
+          suite,
+          ...(opts.status ? { status: opts.status } : {}),
+        }),
+        orderBy: t.runs.out({ startedAt: "desc" }),
         ...(opts.limit ? { take: opts.limit } : {}),
       });
-      return rows.map(run);
+      return t.runs.ins(rows).map(run);
     },
     async createRun(data) {
-      return run(await db.evalRun.create({ data }));
+      return toRun(await runs.create({ data: t.runs.out(data) }));
     },
     async updateRun(id, patch, onlyIf) {
       const { metrics, ...rest } = patch;
-      await db.evalRun.updateMany({
-        where: { id, ...(onlyIf ? { status: onlyIf.status } : {}) },
-        data: {
+      await runs.updateMany({
+        where: t.runs.out({ id, ...(onlyIf ? { status: onlyIf.status } : {}) }),
+        data: t.runs.out({
           ...rest,
           ...(metrics !== undefined ? { metrics: json(metrics) } : {}),
-        },
+        }),
       });
     },
     async listOutputs(runId) {
-      return (await db.evalOutput.findMany({ where: { runId } })).map(output);
+      return t.outputs
+        .ins(await outputs.findMany({ where: t.outputs.out({ runId }) }))
+        .map(output);
     },
     async listOutputsFor(runIds) {
       if (!runIds.length) return [];
-      return (
-        await db.evalOutput.findMany({ where: { runId: { in: runIds } } })
-      ).map(output);
+      return t.outputs
+        .ins(
+          await outputs.findMany({
+            where: t.outputs.out({ runId: { in: runIds } }),
+          }),
+        )
+        .map(output);
     },
     async findReusableHashes(requestHashes, since) {
       if (!requestHashes.length) return new Set<string>();
-      const rows = await db.evalOutput.findMany({
-        where: {
+      const rows = await outputs.findMany({
+        where: t.outputs.out({
           requestHash: { in: requestHashes },
           createdAt: { gte: since },
           error: null,
           reused: false,
-        },
-        select: { requestHash: true },
-        distinct: ["requestHash"],
+        }),
+        select: t.outputs.out({ requestHash: true }),
+        distinct: t.outputs.names(["requestHash"]),
       });
-      return new Set(rows.map((r) => r.requestHash));
+      return new Set(t.outputs.ins(rows).map((r) => str(r.requestHash)));
     },
     async findReusableOutput(requestHash, since) {
-      const o = await db.evalOutput.findFirst({
-        where: {
+      const o = await outputs.findFirst({
+        where: t.outputs.out({
           requestHash,
           createdAt: { gte: since },
           error: null,
           reused: false,
-        },
-        orderBy: { createdAt: "desc" },
+        }),
+        orderBy: t.outputs.out({ createdAt: "desc" }),
       });
-      return o ? output(o) : null;
+      return o ? toOutput(o) : null;
     },
     async createOutput(data) {
-      return output(
-        await db.evalOutput.create({
-          data: {
+      return toOutput(
+        await outputs.create({
+          data: t.outputs.out({
             ...data,
             output: json(data.output),
             scores: json(data.scores),
-          },
+          }),
         }),
       );
     },
     async setOutputScores(id, scores) {
-      await db.evalOutput.update({ where: { id }, data: { scores } });
+      await outputs.update({
+        where: t.outputs.out({ id }),
+        data: t.outputs.out({ scores }),
+      });
     },
   };
 }
 
-/** A judgment cache on the EvalJudgment table, for `@crowandraven/evalkeeper-ai-sdk`. */
-export function prismaJudgmentCache(db: PrismaEvalClient) {
+/**
+ * A judgment cache on the EvalJudgment table, for
+ * `@crowandraven/evalkeeper-ai-sdk`.
+ *
+ * @param db - Your Prisma client.
+ */
+export function prismaJudgmentCache(db: PrismaEvalClient): PrismaJudgmentCache;
+/**
+ * A judgment cache on your own judgment table, through a mapping.
+ *
+ * @param db - Your Prisma client.
+ * @param map - The mapping you pass `prismaStore`; only `evalJudgment` is
+ *   used.
+ */
+export function prismaJudgmentCache(
+  db: object,
+  map: PrismaStoreMap,
+): PrismaJudgmentCache;
+export function prismaJudgmentCache(
+  db: object,
+  map: PrismaStoreMap = {},
+): PrismaJudgmentCache {
+  const { judgments: t } = tables(map);
+  const judgments = t.on(db);
   return {
-    async get(key: string): Promise<unknown> {
-      const j = await db.evalJudgment.findUnique({ where: { key } });
-      return j?.value ?? null;
+    async get(key) {
+      const j = await judgments.findUnique({ where: t.out({ key }) });
+      return j ? (t.in(j).value ?? null) : null;
     },
-    async set(key: string, value: unknown, model: string): Promise<void> {
+    async set(key, value, model) {
       try {
-        await db.evalJudgment.create({
-          data: { key, value: json(value), model },
+        await judgments.create({
+          data: t.out({ key, value: json(value), model }),
         });
       } catch {
         // Already kept by a concurrent grade: the same answer either way.
@@ -367,6 +506,12 @@ export function prismaJudgmentCache(db: PrismaEvalClient) {
     },
   };
 }
+
+/** Where a judge model's answers are kept, so none is paid for twice. */
+export type PrismaJudgmentCache = {
+  get(key: string): Promise<unknown>;
+  set(key: string, value: unknown, model: string): Promise<void>;
+};
 
 /** An EvalFeedback row. */
 export type EvalFeedbackRow = {
@@ -530,112 +675,221 @@ const KINDS: readonly ChangeKind[] = [
   "DEPLOY",
 ];
 
-const version = (v: EvalSettingsVersionRow): SettingsVersion => ({
-  id: v.id,
-  operation: v.operation,
-  number: v.number,
-  model: v.model,
-  fallbackModel: v.fallbackModel,
+const version = (v: Row): SettingsVersion => ({
+  id: str(v.id),
+  operation: str(v.operation),
+  number: num(v.number),
+  model: str(v.model),
+  fallbackModel: strOrNull(v.fallbackModel),
   // Any name a provider uses; the catalog says which a model takes.
-  reasoningEffort: v.reasoningEffort,
-  maxOutputTokens: v.maxOutputTokens,
-  temperature: v.temperature,
-  promptVersion: v.promptVersion,
-  createdAt: v.createdAt,
+  reasoningEffort: strOrNull(v.reasoningEffort),
+  maxOutputTokens: numOrNull(v.maxOutputTokens),
+  temperature: numOrNull(v.temperature),
+  promptVersion: strOrNull(v.promptVersion),
+  createdAt: date(v.createdAt),
 });
 
-const settingsChange = (c: EvalSettingsChangeRow): SettingsChange => ({
-  id: c.id,
-  operation: c.operation,
+const settingsChange = (c: Row, by: string | null): SettingsChange => ({
+  id: str(c.id),
+  operation: str(c.operation),
   kind: oneOf(c.kind, KINDS, "CHANGE"),
-  fromVersionId: c.fromVersionId,
-  toVersionId: c.toVersionId,
-  reason: c.reason,
-  by: c.by,
+  fromVersionId: strOrNull(c.fromVersionId),
+  toVersionId: str(c.toVersionId),
+  reason: strOrNull(c.reason),
+  by,
   evidence: c.evidence ?? null,
-  createdAt: c.createdAt,
+  createdAt: date(c.createdAt),
 });
+
+/** Evalkeeper's settings tables, by the names its schema gives them. */
+export type SettingsTable =
+  "evalSettingsVersion" | "evalSettingsLive" | "evalSettingsChange";
+
+/**
+ * How Evalkeeper's settings tables map onto an app's own versions tables,
+ * so Evalkeeper's rollback and history pages read the same history as the
+ * app's own model admin page. Leave out anything named the same.
+ */
+export type PrismaSettingsMap = {
+  /** Each table's model on the Prisma client, as the client spells it. */
+  models?: Partial<Record<SettingsTable, string>>;
+  /**
+   * Column names per table, keyed by Evalkeeper's field name. `null`
+   * says the table has no such column (for nullable fields only): reads
+   * give null, and saving a version that sets it fails rather than losing
+   * the setting.
+   */
+  fields?: {
+    evalSettingsVersion?: ColumnMap<EvalSettingsVersionRow>;
+    evalSettingsLive?: ColumnMap<EvalSettingsLiveRow>;
+    evalSettingsChange?: ColumnMap<EvalSettingsChangeRow>;
+  };
+  /**
+   * For a table that keeps who made a change as something other than
+   * the `by` your pages pass (a user id with a foreign key, say). Each is
+   * called only for a value that isn't null.
+   */
+  by?: {
+    /** What to store for `by` (e.g. the user id for a name). */
+    toColumn(by: string): string | null | Promise<string | null>;
+    /** What to show for a stored value (e.g. the name for a user id). */
+    fromColumn(stored: string): string | null | Promise<string | null>;
+  };
+};
+
+/** A Prisma client that runs a function in a transaction, as every one does. */
+export type PrismaTransactionClient = {
+  $transaction<T>(fn: (tx: object) => Promise<T>): Promise<T>;
+};
 
 /**
  * A SettingsStore on the EvalSettings tables. Each switch runs in one
  * transaction, and moves the live pointer only if it still points at the
  * version the switch was decided against, so concurrent saves can't
  * silently overwrite each other.
+ *
+ * @param db - Your Prisma client.
  */
-export function prismaSettingsStore(db: PrismaSettingsClient): SettingsStore {
+export function prismaSettingsStore(db: PrismaSettingsClient): SettingsStore;
+/**
+ * A SettingsStore on your own versions tables, through a mapping (see
+ * `PrismaSettingsMap`), so Evalkeeper's pages and your own read the same
+ * history.
+ *
+ * @param db - Your Prisma client.
+ * @param map - Where your tables differ from Evalkeeper's.
+ *
+ * @example
+ * Your own versions tables, with a user id for who changed what:
+ * ```ts
+ * const settingsStore = prismaSettingsStore(prisma, {
+ *   models: {
+ *     evalSettingsVersion: "operationVersion",
+ *     evalSettingsLive: "operationLive",
+ *     evalSettingsChange: "operationChange",
+ *   },
+ *   fields: {
+ *     evalSettingsVersion: { temperature: null },
+ *     evalSettingsChange: { by: "userId" },
+ *   },
+ *   by: {
+ *     toColumn: (by) => by, // your pages pass the admin's id
+ *     fromColumn: async (id) =>
+ *       (await prisma.user.findUnique({ where: { id } }))?.name ?? null,
+ *   },
+ * });
+ * ```
+ */
+export function prismaSettingsStore(
+  db: PrismaTransactionClient,
+  map: PrismaSettingsMap,
+): SettingsStore;
+export function prismaSettingsStore(
+  db: PrismaTransactionClient,
+  map: PrismaSettingsMap = {},
+): SettingsStore {
+  const t = (name: SettingsTable) =>
+    new Table(name, map.models?.[name] ?? name, map.fields?.[name]);
+  const versions = t("evalSettingsVersion");
+  const lives = t("evalSettingsLive");
+  const changes = t("evalSettingsChange");
+  const byOut = async (by: string | null) =>
+    by === null || !map.by ? by : map.by.toColumn(by);
+  const byIn = async (stored: unknown) => {
+    const s = strOrNull(stored);
+    return s === null || !map.by ? s : map.by.fromColumn(s);
+  };
   return {
     async liveVersion(operation) {
-      const live = await db.evalSettingsLive.findUnique({
-        where: { operation },
-      });
+      const live = await lives
+        .on(db)
+        .findUnique({ where: lives.out({ operation }) });
       if (!live) return null;
-      const v = await db.evalSettingsVersion.findUnique({
-        where: { id: live.versionId },
-      });
-      return v ? version(v) : null;
+      const v = await versions
+        .on(db)
+        .findUnique({ where: versions.out({ id: lives.in(live).versionId }) });
+      return v ? version(versions.in(v)) : null;
     },
     async listVersions(operation) {
-      return (
-        await db.evalSettingsVersion.findMany({
-          where: { operation },
-          orderBy: { number: "desc" },
-        })
-      ).map(version);
+      return versions
+        .ins(
+          await versions.on(db).findMany({
+            where: versions.out({ operation }),
+            orderBy: versions.out({ number: "desc" }),
+          }),
+        )
+        .map(version);
     },
     async listChanges(operation, opts = {}) {
-      return (
-        await db.evalSettingsChange.findMany({
-          where: { operation },
-          orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      const rows = changes.ins(
+        await changes.on(db).findMany({
+          where: changes.out({ operation }),
+          orderBy: [
+            changes.out({ createdAt: "desc" }),
+            changes.out({ id: "desc" }),
+          ],
           ...(opts.limit ? { take: opts.limit } : {}),
-        })
-      ).map(settingsChange);
+        }),
+      );
+      // One lookup per person, not per change.
+      const names = new Map<unknown, Promise<string | null>>();
+      for (const r of rows) if (!names.has(r.by)) names.set(r.by, byIn(r.by));
+      return Promise.all(
+        rows.map(async (r) =>
+          settingsChange(r, (await names.get(r.by)) ?? null),
+        ),
+      );
     },
     async switchTo(operation, sw) {
+      const by = await byOut(sw.by);
       try {
         return await db.$transaction(async (tx) => {
-          let to: EvalSettingsVersionRow | null;
+          let to: Row | null;
           if (sw.create) {
-            const last = await tx.evalSettingsVersion.findFirst({
-              where: { operation },
-              orderBy: { number: "desc" },
+            const last = await versions.on(tx).findFirst({
+              where: versions.out({ operation }),
+              orderBy: versions.out({ number: "desc" }),
             });
-            to = await tx.evalSettingsVersion.create({
-              data: {
-                ...sw.create.settings,
-                operation,
-                number: (last?.number ?? 0) + 1,
-                promptVersion: sw.create.promptVersion,
-              },
-            });
+            to = versions.in(
+              await versions.on(tx).create({
+                data: versions.out({
+                  ...sw.create.settings,
+                  operation,
+                  number: (last ? num(versions.in(last).number) : 0) + 1,
+                  promptVersion: sw.create.promptVersion,
+                }),
+              }),
+            );
           } else {
-            to = await tx.evalSettingsVersion.findFirst({
-              where: { id: sw.versionId, operation },
+            const found = await versions.on(tx).findFirst({
+              where: versions.out({ id: sw.versionId, operation }),
             });
-            if (!to) throw new Error("No such version for this feature");
+            if (!found) throw new Error("No such version for this feature");
+            to = versions.in(found);
           }
           if (sw.expectLive === null) {
             // Fails on the primary key if another switch got in first.
-            await tx.evalSettingsLive.create({
-              data: { operation, versionId: to.id },
+            await lives.on(tx).create({
+              data: lives.out({ operation, versionId: to.id }),
             });
           } else {
-            const moved = await tx.evalSettingsLive.updateMany({
-              where: { operation, versionId: sw.expectLive },
-              data: { versionId: to.id },
+            const moved = await lives.on(tx).updateMany({
+              where: lives.out({ operation, versionId: sw.expectLive }),
+              data: lives.out({ versionId: to.id }),
             });
-            if (moved.count !== 1) throw new SettingsConflict(operation);
+            if (!isRow(moved) || moved.count !== 1)
+              throw new SettingsConflict(operation);
           }
-          await tx.evalSettingsChange.create({
-            data: {
+          await changes.on(tx).create({
+            data: changes.out({
               operation,
               kind: sw.kind,
               fromVersionId: sw.expectLive,
               toVersionId: to.id,
               reason: sw.reason,
-              by: sw.by,
+              by,
               evidence: json(sw.evidence),
-            },
+            }),
           });
           return version(to);
         });

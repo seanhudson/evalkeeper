@@ -16,9 +16,23 @@ import type { EvalStore, NewCase } from "./store.js";
 import type { Suite } from "./types.js";
 
 /**
+ * Options for a store contract, for a store on tables that lack an
+ * optional column.
+ */
+export type StoreContractOptions = {
+  /**
+   * Settings the store has no column for. The contract then checks the
+   * store refuses a value for them (rather than losing it) and reads
+   * them as null.
+   */
+  without?: ("temperature" | "maxOutputTokens")[];
+};
+
+/**
  * The contract every EvalStore must meet, as Vitest tests. Run it against
  * your store to know the runner will work on it. `make` must return an
- * empty store each time it's called.
+ * empty store each time it's called; `opts.without` names run settings
+ * its tables have no column for.
  *
  * @example
  * ```ts
@@ -30,6 +44,7 @@ import type { Suite } from "./types.js";
 export function describeStoreContract(
   name: string,
   make: () => EvalStore | Promise<EvalStore>,
+  opts: StoreContractOptions = {},
 ) {
   const newCase = (suite: string, over: Partial<NewCase> = {}): NewCase => ({
     suite,
@@ -134,27 +149,30 @@ export function describeStoreContract(
       expect(await store.getRun("missing")).toBeNull();
     });
 
-    it("keeps the temperature a run was tested at", async () => {
-      const store = await make();
-      const warm = await store.createRun({ ...newRun("s"), temperature: 0.7 });
-      const none = await store.createRun({ ...newRun("s"), temperature: null });
-      expect((await store.getRun(warm.id))?.temperature).toBe(0.7);
-      expect((await store.getRun(none.id))?.temperature ?? null).toBeNull();
-    });
-
-    it("keeps the output cap a run was tested at", async () => {
-      const store = await make();
-      const capped = await store.createRun({
-        ...newRun("s"),
-        maxOutputTokens: 4000,
+    const runSettings = [
+      ["temperature", "temperature", 0.7],
+      ["maxOutputTokens", "output cap", 4000],
+    ] as const;
+    for (const [field, words, value] of runSettings) {
+      if (opts.without?.includes(field)) {
+        it(`refuses a ${words} it has no column for, and keeps none`, async () => {
+          const store = await make();
+          await expect(
+            store.createRun({ ...newRun("s"), [field]: value }),
+          ).rejects.toThrow(field);
+          const none = await store.createRun({ ...newRun("s"), [field]: null });
+          expect((await store.getRun(none.id))?.[field] ?? null).toBeNull();
+        });
+        continue;
+      }
+      it(`keeps the ${words} a run was tested at`, async () => {
+        const store = await make();
+        const set = await store.createRun({ ...newRun("s"), [field]: value });
+        const none = await store.createRun({ ...newRun("s"), [field]: null });
+        expect((await store.getRun(set.id))?.[field]).toBe(value);
+        expect((await store.getRun(none.id))?.[field] ?? null).toBeNull();
       });
-      const none = await store.createRun({
-        ...newRun("s"),
-        maxOutputTokens: null,
-      });
-      expect((await store.getRun(capped.id))?.maxOutputTokens).toBe(4000);
-      expect((await store.getRun(none.id))?.maxOutputTokens ?? null).toBeNull();
-    });
+    }
 
     it("updates a run only while it has the status it's guarded by", async () => {
       const store = await make();
@@ -381,11 +399,13 @@ export function describeFeedbackStoreContract(
 
 /**
  * The contract every SettingsStore must meet. `make` must return an empty
- * store each time it's called.
+ * store each time it's called; `opts.without` names settings its tables
+ * have no column for (see `StoreContractOptions`).
  */
 export function describeSettingsStoreContract(
   name: string,
   make: () => SettingsStore | Promise<SettingsStore>,
+  opts: { without?: "temperature"[] } = {},
 ) {
   const settings = (model: string): Settings => ({
     model,
@@ -480,20 +500,38 @@ export function describeSettingsStoreContract(
       );
     });
 
-    it("keeps a version's temperature", async () => {
-      const store = await make();
-      const v1 = await store.switchTo("triage", {
-        ...create("a", null),
-        create: {
-          settings: { ...settings("a"), temperature: 0.4 },
-          promptVersion: "p1",
-        },
+    if (opts.without?.includes("temperature")) {
+      it("refuses a temperature it has no column for, and keeps none", async () => {
+        const store = await make();
+        await expect(
+          store.switchTo("triage", {
+            ...create("a", null),
+            create: {
+              settings: { ...settings("a"), temperature: 0.4 },
+              promptVersion: "p1",
+            },
+          }),
+        ).rejects.toThrow("temperature");
+        expect(await store.liveVersion("triage")).toBeNull();
+        const v1 = await store.switchTo("triage", create("a", null));
+        expect(v1.temperature ?? null).toBeNull();
       });
-      expect(v1.temperature).toBe(0.4);
-      expect((await store.liveVersion("triage"))?.temperature).toBe(0.4);
-      const v2 = await store.switchTo("triage", create("b", v1.id));
-      expect(v2.temperature ?? null).toBeNull();
-    });
+    } else {
+      it("keeps a version's temperature", async () => {
+        const store = await make();
+        const v1 = await store.switchTo("triage", {
+          ...create("a", null),
+          create: {
+            settings: { ...settings("a"), temperature: 0.4 },
+            promptVersion: "p1",
+          },
+        });
+        expect(v1.temperature).toBe(0.4);
+        expect((await store.liveVersion("triage"))?.temperature).toBe(0.4);
+        const v2 = await store.switchTo("triage", create("b", v1.id));
+        expect(v2.temperature ?? null).toBeNull();
+      });
+    }
 
     it("keeps each feature's versions and live one apart", async () => {
       const store = await make();

@@ -27,7 +27,9 @@ If your models are chosen in an admin page and stored in your own table,
 return null from `defaults` and record each row once with
 `settings.seed(operation, settings, { by: null, reason })`; it does
 nothing for a feature that already has a version, so the import can run
-again.
+again. If your app keeps versions with a history already, point
+`prismaSettingsStore` at your tables instead (see "Bring your own"
+below).
 
 ## 2. Describe your models
 
@@ -51,8 +53,10 @@ Prisma schema and write a migration from the schema file. Then:
 const store = prismaStore(prisma);
 ```
 
-Not on Prisma? Implement `EvalStore` (see `packages/core/src/store.ts`)
-on your database; `memoryStore.ts` is a complete example.
+Already have eval tables of your own? Keep them, and map Evalkeeper onto
+them (see "Bring your own" below). Not on Prisma? Implement `EvalStore`
+(see `packages/core/src/store.ts`) on your database; `memoryStore.ts` is
+a complete example.
 
 ## 4. Hash each operation's instructions
 
@@ -151,7 +155,8 @@ It reads your `tsconfig.json` import alias (`@/*`, `~/*`, and code under
 
 Existing files stay as they are unless you pass `--force`, which still
 never touches your `lib/evalkeeper/index.ts`. `--dry-run` shows the plan
-and writes nothing.
+and writes nothing. `--only` copies just the pages and components you
+name, for an app that keeps its own (see "Bring your own" below).
 
 Then:
 
@@ -201,3 +206,129 @@ a full example.
   `examples/next/vercel.json`). Show `weeklySummary(...)` on your hub; it
   flags drift, unfinished checks, retiring models, and thumbs-down.
 - Read failures before changing a prompt.
+
+## Bring your own
+
+An app that had evals before Evalkeeper (its own tables full of reviewed
+answers, its own router, versions, or pages) keeps them. Each piece below
+is chosen on its own.
+
+### Your own eval tables
+
+Keep your rows where they are, and give `prismaStore` a map of where your
+tables differ from Evalkeeper's. Leave out anything named the same.
+
+```ts
+import {
+  prismaStore,
+  prismaJudgmentCache,
+} from "@crowandraven/evalkeeper-prisma";
+
+const map = {
+  // models: { evalCase: "goldCase" }, // if your models are named differently
+  fields: {
+    evalCaseLabel: { note: "rationale" },
+    evalRun: { set: "split", startedBy: "startedById" },
+  },
+};
+export const store = prismaStore(prisma, map);
+export const judgmentCache = prismaJudgmentCache(prisma, map);
+```
+
+- **Names.** `models` gives each table's model as your client spells it
+  (`prisma.goldCase` is `"goldCase"`). `fields` gives column names per
+  table, keyed by Evalkeeper's field; on cases, `labels` is the relation
+  to their answers.
+- **Types convert on their own.** Decimal columns (costs) read as
+  numbers, Prisma enums as their names, and `tags` may be a `String[]` or
+  a `Json` column. A run whose set is null reads as ALL, and a missing
+  grader version as empty, so rows your old harness wrote still read.
+- **Columns you lack.** Map a field to `null` when your table has no
+  column for it (nullable fields only): it reads as null, and writing a
+  value fails instead of losing it. Run temperature and output cap are
+  the usual ones; add them as nullable columns if you'll test those
+  settings, or map them to `null` if you won't.
+- **Columns Evalkeeper lacks** (a creator, a quick-set flag, legacy
+  results) are left alone, so they need a default or to be nullable.
+- **Statuses your enum lacks.** Evalkeeper writes its own status names
+  (an answer can be REJECTED). If your enum lacks one, add the value, or
+  that write fails.
+- **Check it.** Run the contract against the mapped store on a copy of
+  your data, with `without` naming any setting you mapped to `null`:
+
+  ```ts
+  describeStoreContract("our tables", () => prismaStore(prisma, map), {
+    without: ["temperature", "maxOutputTokens"],
+  });
+  ```
+
+**Costs:** a map, and nullable columns for what you want to keep that you
+don't have. The request hash that reuses identical answers may differ from
+your old harness's, so the first test of each model after the move pays
+for its answers again, once.
+
+### Your own router
+
+The runner never calls a model or picks one for your app; it asks your
+code. Pass your router's functions as callbacks: `route` (what's live for
+an operation), `candidates` (which models may be tested), `promptVersion`
+(your instructions' hash), and, on a platform with a request limit,
+`continueRun` (step 6). Each suite's `run` calls your own AI function with
+the model it's given and reports its cost through `onCost`.
+
+**Costs:** a few lines of glue. Your failover, usage records, and
+billing stay as they are; mark eval calls so they aren't billed to a user.
+
+### Your own versions
+
+If your app already keeps versions of each feature's settings with a
+history (an admin page that changes models, say), point
+`prismaSettingsStore` at those tables, so Evalkeeper's rollback and
+history read the same record as your page:
+
+```ts
+export const settingsStore = prismaSettingsStore(prisma, {
+  models: {
+    evalSettingsVersion: "operationVersion",
+    evalSettingsLive: "operationLive",
+    evalSettingsChange: "operationChange",
+  },
+  fields: {
+    evalSettingsVersion: { temperature: null }, // no column for it
+    evalSettingsChange: { by: "userId" },
+  },
+  by: {
+    toColumn: (by) => by, // the pages pass the admin's id as `by`
+    fromColumn: async (id) =>
+      (await prisma.user.findUnique({ where: { id } }))?.name ?? null,
+  },
+});
+```
+
+Your tables need a number per version unique per feature, a live pointer
+per feature, and a change log with its kind (CHANGE, PROMOTE, ROLLBACK,
+or DEPLOY; an enum is fine). `by` converts who made a change both ways
+when your table keeps a user id instead of a name. Check it with
+`describeSettingsStoreContract(name, make, { without: ["temperature"] })`.
+
+**Costs:** a map, and the `by` callbacks if you keep user ids. Saving a
+version with a setting you have no column for fails, so leave that
+setting out of your forms.
+
+### Your own pages
+
+Copy only the pages and components you're replacing, and keep your own:
+
+```bash
+npx @crowandraven/evalkeeper add pages --base admin/evals --only suite,run,AnswerKey --dry-run
+```
+
+`--only` takes pages by name (hub, suite, run, feedback, cron),
+components and glue by name (AnswerKey, actions, evalkeeper.css, …), the
+groups `pages` and `components`, and `index` for a starter wiring module
+(left out otherwise). `--dry-run` lists what would be written, skipped,
+or overwritten, and names anything the chosen files import that your app
+doesn't have yet.
+
+**Costs:** restyling what you copy, and keeping the copied files' imports
+pointed at what you have.

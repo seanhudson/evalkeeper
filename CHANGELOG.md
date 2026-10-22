@@ -7,12 +7,36 @@ version may change an interface, and its entry says how to update.
 
 ## Unreleased
 
+For apps that had evals before Evalkeeper: keep your own tables,
+versions, and pages. **To update:** nothing; every change is opt-in, and
+stores without a mapping behave as before.
+
 ### Added
 
 - Each version tag gets its GitHub release, written from its CHANGELOG.md
   section with the install line and the packages on npm
   (`scripts/release-notes.mjs`, the Release workflow). Before, the
   releases page stopped at 0.1.1.
+- `prismaStore(prisma, map)` and `prismaJudgmentCache(prisma, map)` run on
+  an app's own eval tables: other model and column names, Decimal costs
+  read as numbers, Prisma enums, `String[]` or `Json` tags, and `null` for
+  a column the app lacks (reads as null; writing a value fails rather
+  than losing it). **To update:** nothing, unless you want it; see "Bring
+  your own" in docs/adding-to-your-app.md.
+- `prismaSettingsStore(prisma, map)` runs on an app's own versions
+  tables, with `by` callbacks for a table that keeps a user id for who
+  made each change. **To update:** nothing, unless you want it.
+- `describeStoreContract` and `describeSettingsStoreContract` take
+  `{ without: [...] }` for a store with no column for temperature or the
+  output cap: the contract then checks it refuses a value instead of
+  losing it.
+- `add pages --only <names>` copies just the pages (hub, suite, run,
+  feedback, cron), components, and glue you name, or the groups `pages`
+  and `components`. With `--dry-run`, it lists what would be written,
+  skipped, or overwritten, and what the chosen files import that your app
+  doesn't have.
+- "Bring your own" in docs/adding-to-your-app.md: your own tables,
+  router, versions, and pages, and what each costs.
 
 ## 0.4.1 - 2026-10-21
 

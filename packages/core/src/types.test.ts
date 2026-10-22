@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 import {
   asText,
   barStatus,
   checkBar,
   fieldValue,
   formText,
+  inputFromJson,
+  labelFromJson,
   linesOf,
 } from "./types.js";
 
@@ -75,5 +78,56 @@ describe("form text", () => {
     expect(asText(3)).toBe("3");
     expect(asText(true)).toBe("true");
     expect(asText({ a: 1 })).toBe('{"a":1}');
+  });
+});
+
+describe("JSON form readers", () => {
+  const schema = z.object({
+    name: z.string(),
+    facts: z.array(z.object({ text: z.string() })),
+  });
+  const formWith = (field: string, value: string) => {
+    const form = new FormData();
+    form.set(field, value);
+    return form;
+  };
+
+  it("reads and checks the input field", () => {
+    const read = inputFromJson(schema);
+    expect(
+      read(formWith("input", ' {"name":"Ada","facts":[{"text":"x"}]} ')),
+    ).toEqual({ name: "Ada", facts: [{ text: "x" }] });
+  });
+
+  it("says when the field is missing or empty", () => {
+    expect(() => inputFromJson(schema)(new FormData())).toThrow(
+      'Input is empty: fill in the "input" field',
+    );
+    expect(() => labelFromJson(schema)(formWith("label", "  "))).toThrow(
+      'Answer is empty: fill in the "label" field',
+    );
+  });
+
+  it("says when the text isn't JSON", () => {
+    expect(() => inputFromJson(schema)(formWith("input", "{name:"))).toThrow(
+      /^Input isn't valid JSON: /,
+    );
+  });
+
+  it("names the first part that doesn't fit, in plain words", () => {
+    expect(() =>
+      inputFromJson(schema)(
+        formWith("input", '{"name":"Ada","facts":[{"text":"x"},{"text":3}]}'),
+      ),
+    ).toThrow(/^Input doesn't fit at facts, item 2, text: /);
+    // A value of the wrong kind at the top has no path.
+    expect(() => labelFromJson(schema)(formWith("label", "[]"))).toThrow(
+      /^Answer doesn't fit: /,
+    );
+  });
+
+  it("reads another field when told to", () => {
+    const read = labelFromJson(z.object({ ok: z.boolean() }), "answer");
+    expect(read(formWith("answer", '{"ok":true}'))).toEqual({ ok: true });
   });
 });

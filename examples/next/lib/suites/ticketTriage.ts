@@ -241,6 +241,22 @@ export const ticketTriage: Suite<Input, Output, Label> = {
   graderVersion: "1",
   unitNoun: "tickets",
   caseKind: "typed",
+  // Tickets copied from a help desk can carry the agent's internal notes,
+  // written after this ticket was sorted; they'd give away its answer.
+  withoutLeaks(i) {
+    const lines = i.body.split("\n");
+    const leaked = (l: string) => /^\s*internal note:/i.test(l);
+    return {
+      input: {
+        ...i,
+        body: lines
+          .filter((l) => !leaked(l))
+          .join("\n")
+          .trim(),
+      },
+      removed: lines.filter(leaked).map((l) => l.trim()),
+    };
+  },
   input,
   labelValue: label,
   checks: CHECKS,

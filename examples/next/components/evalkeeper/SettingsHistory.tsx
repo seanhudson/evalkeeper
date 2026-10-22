@@ -1,5 +1,6 @@
 import Link from "next/link";
 import {
+  GLOSSARY,
   describeChange,
   type ChangeKind,
   type HistoryEntry,
@@ -33,6 +34,16 @@ const KIND: Record<
     text: "Deployed",
     tone: "fallback",
     help: "The instructions changed in code under the live settings.",
+  },
+  OUTSIDE: {
+    text: "Changed outside",
+    tone: "warn",
+    help: GLOSSARY.changedOutside,
+  },
+  INSTRUCTIONS: {
+    text: "Instructions edited",
+    tone: "fallback",
+    help: GLOSSARY.instructionsEdited,
   },
 };
 
@@ -138,7 +149,11 @@ export function HistoryEntries({
                 {isLive && <Chip tone="live">Live now</Chip>}
               </span>
               <span className="text-xs text-muted">
-                {e.by ?? "System"} · {e.createdAt.toLocaleString()}
+                {e.by ??
+                  (e.kind === "OUTSIDE"
+                    ? "Found by the system"
+                    : "System")}{" "}
+                · {e.createdAt.toLocaleString()}
               </span>
             </div>
             <ul className="readable list-disc pl-5">
@@ -146,7 +161,9 @@ export function HistoryEntries({
                 ? [`Back to v${e.to.number}: ${label(e.to.model)} live`]
                 : e.kind === "DEPLOY"
                   ? ["Same models, new instructions"]
-                  : describeChange(e.from, e.to, label)
+                  : e.kind === "INSTRUCTIONS"
+                    ? ["Same models, instructions edited at runtime"]
+                    : describeChange(e.from, e.to, label)
               ).map((line) => (
                 <li key={line}>{line}</li>
               ))}
@@ -166,6 +183,7 @@ export function HistoryEntries({
                   suite={suite}
                   versionId={e.to.id}
                   number={e.to.number}
+                  kind={e.kind}
                 />
               )}
             </div>

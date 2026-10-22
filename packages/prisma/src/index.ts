@@ -3,7 +3,11 @@
  *
  * @module \@crowandraven/evalkeeper-prisma
  */
-import { SettingsConflict, cleanRating } from "@crowandraven/evalkeeper";
+import {
+  CHANGE_KINDS,
+  SettingsConflict,
+  cleanRating,
+} from "@crowandraven/evalkeeper";
 import type {
   CaseRecord,
   FeedbackRecord,
@@ -668,12 +672,19 @@ export type PrismaSettingsClient = PrismaSettingsTables & {
   $transaction<T>(fn: (tx: PrismaSettingsTables) => Promise<T>): Promise<T>;
 };
 
-const KINDS: readonly ChangeKind[] = [
-  "CHANGE",
-  "PROMOTE",
-  "ROLLBACK",
-  "DEPLOY",
-];
+const KINDS = CHANGE_KINDS;
+
+/**
+ * A change read from a kind column that can't hold every kind: the real
+ * kind and evidence, when `kinds` stored them in the evidence column.
+ */
+function unwrapKind(c: Row): Row {
+  const ev = c.evidence;
+  if (!isRow(ev) || !("evidence" in ev)) return c;
+  const kind = ev.evalkeeperKind;
+  if (typeof kind !== "string" || !KINDS.some((k) => k === kind)) return c;
+  return { ...c, kind, evidence: ev.evidence };
+}
 
 const version = (v: Row): SettingsVersion => ({
   id: str(v.id),
@@ -724,6 +735,15 @@ export type PrismaSettingsMap = {
     evalSettingsLive?: ColumnMap<EvalSettingsLiveRow>;
     evalSettingsChange?: ColumnMap<EvalSettingsChangeRow>;
   };
+  /**
+   * The kinds your change log's kind column can hold, when it's an enum
+   * made before some kinds existed (OUTSIDE and INSTRUCTIONS came later).
+   * A kind not listed is stored as CHANGE, with the real kind and the
+   * evidence kept in the evidence column (as `{ evalkeeperKind, evidence }`),
+   * and read back as itself. Leave it out for a text column or an enum
+   * with every kind.
+   */
+  kinds?: readonly ChangeKind[];
   /**
    * For a table that keeps who made a change as something other than
    * the `by` your pages pass (a user id with a foreign key, say). Each is
@@ -836,7 +856,10 @@ export function prismaSettingsStore(
       for (const r of rows) if (!names.has(r.by)) names.set(r.by, byIn(r.by));
       return Promise.all(
         rows.map(async (r) =>
-          settingsChange(r, (await names.get(r.by)) ?? null),
+          settingsChange(
+            map.kinds ? unwrapKind(r) : r,
+            (await names.get(r.by)) ?? null,
+          ),
         ),
       );
     },
@@ -880,15 +903,18 @@ export function prismaSettingsStore(
             if (!isRow(moved) || moved.count !== 1)
               throw new SettingsConflict(operation);
           }
+          const holds = !map.kinds || map.kinds.includes(sw.kind);
           await changes.on(tx).create({
             data: changes.out({
               operation,
-              kind: sw.kind,
+              kind: holds ? sw.kind : "CHANGE",
               fromVersionId: sw.expectLive,
               toVersionId: to.id,
               reason: sw.reason,
               by,
-              evidence: json(sw.evidence),
+              evidence: holds
+                ? json(sw.evidence)
+                : { evalkeeperKind: sw.kind, evidence: sw.evidence ?? null },
             }),
           });
           return version(to);
@@ -900,6 +926,16 @@ export function prismaSettingsStore(
         // A unique-key clash: another switch numbered or went live first.
         if (e instanceof Error && /Unique constraint|P2002/.test(e.message))
           throw new SettingsConflict(operation);
+        // An enum column made before this kind existed.
+        const col = String(changes.col("kind"));
+        if (
+          e instanceof Error &&
+          e.message.includes(`Invalid value for argument \`${col}\``)
+        )
+          throw new Error(
+            `Your settings change log's ${col} column can't hold ${sw.kind}. Add ${sw.kind} to its enum, or list the kinds it holds in the map's \`kinds\` (see PrismaSettingsMap).`,
+            { cause: e },
+          );
         throw e;
       }
     },

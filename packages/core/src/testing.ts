@@ -8,6 +8,7 @@ import { z } from "zod";
 import type { FeedbackStore, NewRating } from "./feedback.js";
 import { createRunner } from "./runner.js";
 import {
+  CHANGE_KINDS,
   SettingsConflict,
   type Settings,
   type SettingsStore,
@@ -561,6 +562,29 @@ export function describeSettingsStoreContract(
         expect(v2.temperature ?? null).toBeNull();
       });
     }
+
+    it("keeps every kind of change, with its evidence", async () => {
+      const store = await make();
+      let live = (await store.switchTo("triage", create("a", null))).id;
+      for (const kind of CHANGE_KINDS.slice(1))
+        live = (
+          await store.switchTo("triage", {
+            ...create(kind.toLowerCase(), live),
+            kind,
+            evidence: kind === "PROMOTE" ? { runId: "r1" } : undefined,
+          })
+        ).id;
+      const changes = await store.listChanges("triage");
+      expect(changes.map((c) => c.kind)).toEqual([...CHANGE_KINDS].reverse());
+      expect(changes.map((c) => c.evidence)).toEqual([
+        null,
+        null,
+        null,
+        null,
+        { runId: "r1" },
+        null,
+      ]);
+    });
 
     it("keeps each feature's versions and live one apart", async () => {
       const store = await make();

@@ -17,15 +17,18 @@ reviewed and versioned like the rest of your app.
 **Case.** One frozen input, copied rather than referenced, so later
 changes to your app's data don't move the test. Cases are DRAFT, ACTIVE,
 or RETIRED, and split into DEV (what you tune against) and TEST (what you
-check, and never tune against). Tags say what a case tests.
+check, and never tune against). Tags say what a case tests. A case frozen from your app's data
+leaves out anything learned from that same case (its answer would leak);
+a suite's leak check removes it on the way in and says what it removed.
 
 **Answer.** What a good answer to a case looks like, in the suite's
 answer shape. Every answer has a status:
 
 - **PENDING:** proposed (by a model, or imported) and not reviewed. Never
   graded against.
-- **CONFIRMED:** a person said it's right. Tests grade against the newest
-  one.
+- **CONFIRMED:** a person said it's right, on the pages or in the system
+  the answer was imported from (which records who and when). Tests grade
+  against the newest one.
 - **PROVISIONAL:** put to use before review, by the owner's choice. Tests
   use it, and every score says it rests on unreviewed answers.
 
@@ -145,8 +148,12 @@ fallback, reasoning setting, output limit, and temperature, with the
 instructions they ran with) are numbered versions that never change. Each switch is logged
 with who, when, why, and its evidence: a _change_ by a person, a
 _promotion_ from a test (the test is the evidence), a _rollback_ to an
-earlier version, or a _deploy_ that changed the instructions in code
-under the live settings. A feature never changed runs on its default
+earlier version, a _deploy_ that changed the instructions in code
+under the live settings, a change made _outside_ the settings (the app's
+own settings row changed by a script, SQL, or another page, recorded as
+found before the next save), or _instructions edited_ at runtime (an
+admin override or guidance added at call time, dated when noticed). Only
+settings roll back; instructions stay as they are now. A feature never changed runs on its default
 from code; the first change records that default as version 1, so
 there's always something to roll back to. An app that chooses models in
 an admin page, with no defaults in code, records each feature's current

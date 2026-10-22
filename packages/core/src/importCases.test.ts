@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { CaseImportError, importCases, importStarters } from "./importCases.js";
+import {
+  CaseImportError,
+  importCases,
+  importStarters,
+  leakNote,
+  withoutLeaks,
+} from "./importCases.js";
 import { memoryStore } from "./memoryStore.js";
 import type { Suite } from "./types.js";
 
@@ -62,7 +68,7 @@ describe("importCases", () => {
       map,
       split: "DEV",
     });
-    expect(first).toEqual({ added: 2, skipped: 0 });
+    expect(first).toEqual({ added: 2, skipped: 0, removed: [] });
     const cases = await store.listCases("shout");
     expect(cases.map((c) => [c.sourceRef, c.split, c.status])).toEqual([
       ["dev.json#a", "DEV", "DRAFT"],
@@ -85,7 +91,7 @@ describe("importCases", () => {
       map,
       split: "DEV",
     });
-    expect(again).toEqual({ added: 1, skipped: 2 });
+    expect(again).toEqual({ added: 1, skipped: 2, removed: [] });
   });
 
   it("checks every row first, and writes nothing when one is bad", async () => {
@@ -193,16 +199,228 @@ describe("importCases", () => {
   });
 });
 
+describe("importCases with answers people already reviewed", () => {
+  type Reviewed = Row & { reviewer?: string; reviewedAt?: string | Date };
+  const reviewed = {
+    status: "CONFIRMED" as const,
+    confirmedBy: (r: Reviewed) => r.reviewer,
+    at: (r: Reviewed) => r.reviewedAt,
+  };
+
+  it("imports them confirmed, recording who confirmed each and when", async () => {
+    const store = memoryStore();
+    const result = await importCases({
+      store,
+      suite: shout,
+      source: "old-harness",
+      rows: [
+        {
+          id: "a",
+          text: "one",
+          want: "ONE",
+          reviewer: " pat ",
+          reviewedAt: "2026-03-04T10:00:00Z",
+        },
+        {
+          id: "b",
+          text: "two",
+          reviewer: "lee",
+          reviewedAt: new Date("2026-05-06T10:00:00Z"),
+        },
+      ] satisfies Reviewed[],
+      map,
+      answers: reviewed,
+    });
+    expect(result).toEqual({ added: 2, skipped: 0, removed: [] });
+    const [a, b] = await store.listCases("shout");
+    expect(a).toMatchObject({ status: "ACTIVE", tags: [] });
+    expect(a?.labels[0]).toMatchObject({
+      status: "CONFIRMED",
+      raterRole: "REVIEWER",
+      raterId: "pat",
+      value: { want: "ONE" },
+      note: "Imported as reviewed from old-harness: pat confirmed it there on 2026-03-04.",
+    });
+    // No answer: nothing confirmed, still a draft.
+    expect(b).toMatchObject({ status: "DRAFT", labels: [] });
+  });
+
+  it("refuses the import unless every row names a person and a date", async () => {
+    const store = memoryStore();
+    const attempt = importCases({
+      store,
+      suite: shout,
+      source: "old-harness",
+      rows: [
+        {
+          id: "ok",
+          text: "fine",
+          want: "FINE",
+          reviewer: "pat",
+          reviewedAt: "2026-01-02",
+        },
+        {
+          id: "nobody",
+          text: "x",
+          want: "X",
+          reviewer: "  ",
+          reviewedAt: "2026-01-02",
+        },
+        { id: "undated", text: "y", want: "Y", reviewer: "pat" },
+        {
+          id: "garbled",
+          text: "z",
+          want: "Z",
+          reviewer: "pat",
+          reviewedAt: "soon",
+        },
+        {
+          id: "future",
+          text: "w",
+          want: "W",
+          reviewer: "pat",
+          reviewedAt: "2999-01-01",
+        },
+      ] satisfies Reviewed[],
+      map,
+      answers: reviewed,
+    });
+    const error: unknown = await attempt.catch((e: unknown) => e);
+    const problems = error instanceof CaseImportError ? error.problems : [];
+    expect(problems).toEqual([
+      { id: "nobody", problem: "no person who confirmed the answer" },
+      { id: "undated", problem: "no date the answer was confirmed" },
+      { id: "garbled", problem: "no date the answer was confirmed" },
+      { id: "future", problem: "a confirmation date in the future" },
+    ]);
+    // Nothing written, not even the row that was fine.
+    expect(await store.listCases("shout", { includeRetired: true })).toEqual(
+      [],
+    );
+  });
+});
+
+describe("importCases with a leak check", () => {
+  // Removes words the case learned from itself: anything after "|".
+  const leaky: typeof shout = {
+    ...shout,
+    withoutLeaks: (input, { sourceRef }) => {
+      const [kept = "", ...rest] = input.text.split("|");
+      return {
+        input: { text: kept },
+        removed: rest.map((r) => `${r} (${sourceRef ?? "by hand"})`),
+      };
+    },
+  };
+
+  it("strips each input before freezing it, and reports what it removed per case", async () => {
+    const store = memoryStore();
+    const result = await importCases({
+      store,
+      suite: leaky,
+      source: "app.json",
+      rows: [
+        { id: "a", text: "one|liked Acme", want: "ONE" },
+        { id: "b", text: "two", want: "TWO" },
+      ],
+      map: (r) => ({ ...map(r), note: "From the app." }),
+    });
+    expect(result.removed).toEqual([
+      { id: "a", removed: ["liked Acme (app.json#a)"] },
+    ]);
+    const [a, b] = await store.listCases("shout");
+    expect(a?.input).toEqual({ text: "one" });
+    expect(a?.note).toBe(
+      "From the app. Removed before freezing, as learned from this case: liked Acme (app.json#a).",
+    );
+    expect(b?.note).toBe("From the app.");
+    // A rerun skips them and reports nothing new.
+    const again = await importCases({
+      store,
+      suite: leaky,
+      source: "app.json",
+      rows: [{ id: "a", text: "one|liked Acme", want: "ONE" }],
+      map,
+    });
+    expect(again).toEqual({ added: 0, skipped: 1, removed: [] });
+  });
+
+  it("runs on starters too", async () => {
+    const store = memoryStore();
+    const result = await importStarters(store, {
+      ...leaky,
+      starter: [
+        {
+          input: { text: "hi|x" },
+          label: { want: "HI" },
+          tags: [],
+          split: "DEV",
+          note: "",
+        },
+      ],
+    });
+    expect(result.removed).toHaveLength(1);
+    const [c] = await store.listCases("shout");
+    expect(c?.input).toEqual({ text: "hi" });
+  });
+
+  it("refuses rows the leak check breaks or throws on", async () => {
+    const attempt = importCases({
+      store: memoryStore(),
+      suite: leaky,
+      source: "app.json",
+      // Stripping everything leaves an empty text, which doesn't fit.
+      rows: [{ id: "a", text: "|all of it" }],
+      map,
+    });
+    await expect(attempt).rejects.toThrow(
+      /a \(the leak check left an input that doesn't fit/,
+    );
+    await expect(
+      importCases({
+        store: memoryStore(),
+        suite: {
+          ...shout,
+          withoutLeaks: () => {
+            throw new Error("no profile");
+          },
+        },
+        source: "app.json",
+        rows: [{ id: "a", text: "x" }],
+        map,
+      }),
+    ).rejects.toThrow(/a \(no profile\)/);
+  });
+});
+
+describe("withoutLeaks", () => {
+  it("returns the input as it was for a suite without a leak check", () => {
+    expect(withoutLeaks(shout, { text: "x" }, null)).toEqual({
+      input: { text: "x" },
+      removed: [],
+    });
+  });
+
+  it("says nothing when nothing was removed", () => {
+    expect(leakNote([])).toBeNull();
+    expect(leakNote(["a", "b"])).toBe(
+      "Removed before freezing, as learned from this case: a; b.",
+    );
+  });
+});
+
 describe("importStarters", () => {
   it("adds a suite's starters as pending drafts, once", async () => {
     const store = memoryStore();
     expect(await importStarters(store, shout)).toEqual({
       added: 2,
       skipped: 0,
+      removed: [],
     });
     expect(await importStarters(store, shout)).toEqual({
       added: 0,
       skipped: 2,
+      removed: [],
     });
     const cases = await store.listCases("shout");
     expect(cases.map((c) => [c.split, c.tags, c.labels[0]?.status])).toEqual([
@@ -216,6 +434,7 @@ describe("importStarters", () => {
     expect(await importStarters(memoryStore(), noStarters)).toEqual({
       added: 0,
       skipped: 0,
+      removed: [],
     });
   });
 });

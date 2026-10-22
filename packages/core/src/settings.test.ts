@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { memoryStore } from "./memoryStore.js";
 import {
+  CHANGE_KINDS,
   NoSettingsError,
+  SettingsConflict,
   createSettings,
   describeChange,
+  promptVersionOf,
+  splitPromptVersion,
   type Settings,
 } from "./settings.js";
 
@@ -342,5 +346,298 @@ describe("versioned settings without defaults in code", () => {
     });
     expect(other?.number).toBe(1);
     expect((await settings.history("summarize"))[0]?.kind).toBe("PROMOTE");
+  });
+});
+
+/** An app whose call sites read their own settings row. */
+function setupWithRow(defaults: Settings | null = DEFAULT) {
+  const store = memoryStore();
+  let row: Settings | null = null;
+  let reads = 0;
+  const settings = createSettings({
+    store,
+    defaults: () => defaults,
+    promptVersion: () => "p1",
+    readActual: () => {
+      reads++;
+      return row;
+    },
+  });
+  return {
+    store,
+    settings,
+    setRow: (r: Settings | null) => (row = r),
+    reads: () => reads,
+  };
+}
+
+describe("settings changed outside the store", () => {
+  it("changes nothing while the row matches, or there's no row", async () => {
+    const { settings, store, setRow } = setupWithRow();
+    await settings.change(
+      "triage",
+      { ...DEFAULT, model: "big" },
+      { by: "sam", reason: null },
+    );
+    expect((await settings.current("triage")).settings.model).toBe("big");
+    setRow({ ...DEFAULT, model: "big" });
+    expect((await settings.route("triage")).model).toBe("big");
+    expect(store.versions).toHaveLength(2);
+  });
+
+  it("records a mismatch as found, on read, keeping the instructions hash", async () => {
+    const { settings, store, setRow } = setupWithRow();
+    await settings.change(
+      "triage",
+      { ...DEFAULT, model: "big" },
+      { by: "sam", reason: null },
+    );
+    setRow({ ...DEFAULT, model: "huge", maxOutputTokens: 900 });
+    const { settings: now, version } = await settings.current("triage");
+    expect(now).toMatchObject({ model: "huge", maxOutputTokens: 900 });
+    expect(version).toMatchObject({ number: 3, promptVersion: "p1" });
+    const [latest] = await settings.history("triage");
+    expect(latest).toMatchObject({ kind: "OUTSIDE", by: null });
+    expect(latest?.reason).toMatch(/outside/);
+    expect(describeChange(latest?.from ?? null, now)).toEqual([
+      "Live: big → huge",
+      "Output limit: default → 900",
+    ]);
+    // Read again: already recorded.
+    await settings.route("triage");
+    expect(store.versions).toHaveLength(3);
+  });
+
+  it("records the mismatch before a save, so a rollback gets back to it", async () => {
+    const { settings, setRow } = setupWithRow();
+    await settings.change(
+      "triage",
+      { ...DEFAULT, model: "big" },
+      { by: "sam", reason: null },
+    );
+    setRow({ ...DEFAULT, model: "huge" });
+    const v4 = await settings.update(
+      "triage",
+      { fallbackModel: "other" },
+      { by: "sam", reason: "A fallback" },
+    );
+    // The save builds on what was really running.
+    expect(v4).toMatchObject({
+      number: 4,
+      model: "huge",
+      fallbackModel: "other",
+    });
+    const kinds = (await settings.history("triage")).map((h) => h.kind);
+    expect(kinds).toEqual(["CHANGE", "OUTSIDE", "CHANGE", "CHANGE"]);
+    const outside = (await settings.history("triage"))[1];
+    setRow(v4);
+    const back = await settings.rollBack("triage", outside?.to.id ?? "", {
+      by: "sam",
+      reason: "The fallback was worse",
+    });
+    expect(back).toMatchObject({ number: 3, model: "huge" });
+  });
+
+  it("records the mismatch before a rollback and a deploy", async () => {
+    const { settings, store, setRow } = setupWithRow();
+    await settings.change(
+      "triage",
+      { ...DEFAULT, model: "big" },
+      { by: "sam", reason: null },
+    );
+    const v1 = store.versions.find((v) => v.number === 1);
+    setRow({ ...DEFAULT, model: "huge" });
+    await settings.rollBack("triage", v1?.id ?? "", {
+      by: "sam",
+      reason: "Back to the default",
+    });
+    expect(
+      (await settings.history("triage")).map((h) => [h.kind, h.to.number]),
+    ).toEqual([
+      ["ROLLBACK", 1],
+      ["OUTSIDE", 3],
+      ["CHANGE", 2],
+      ["CHANGE", 1],
+    ]);
+    // The row now holds the rollback; then a script changes it again.
+    setRow({ ...DEFAULT, model: "tiny" });
+    const synced = await settings.syncPrompt("triage");
+    expect(synced).toMatchObject({ number: 4, model: "tiny" });
+    expect((await settings.history("triage"))[0]?.kind).toBe("OUTSIDE");
+  });
+
+  it("runs on the row before any version, and records it as version 1 on the first change", async () => {
+    const { settings, setRow } = setupWithRow();
+    setRow({ ...DEFAULT, model: "huge" });
+    expect(await settings.current("triage")).toEqual({
+      settings: { ...DEFAULT, model: "huge", temperature: null },
+      version: null,
+    });
+    await settings.change(
+      "triage",
+      { ...DEFAULT, model: "big" },
+      { by: "sam", reason: null },
+    );
+    const [, first] = await settings.history("triage");
+    expect(first).toMatchObject({ kind: "OUTSIDE", fromVersionId: null });
+    expect(first?.to).toMatchObject({ number: 1, model: "huge" });
+    // A row that matches the default is the default from code.
+    const same = setupWithRow();
+    same.setRow(DEFAULT);
+    await same.settings.change(
+      "triage",
+      { ...DEFAULT, model: "big" },
+      { by: "sam", reason: null },
+    );
+    expect((await same.settings.history("triage"))[1]).toMatchObject({
+      kind: "CHANGE",
+      reason: "The default from code, before the first change",
+    });
+  });
+
+  it("uses the row when there's no default in code", async () => {
+    const { settings, setRow } = setupWithRow(null);
+    setRow(IMPORTED);
+    expect((await settings.route("triage")).model).toBe("big");
+    expect(
+      await settings.change("triage", IMPORTED, { by: "sam", reason: null }),
+    ).toBeNull();
+    await settings.update(
+      "triage",
+      { model: "huge" },
+      { by: "sam", reason: null },
+    );
+    expect(
+      (await settings.history("triage")).map((h) => [h.kind, h.to.model]),
+    ).toEqual([
+      ["CHANGE", "huge"],
+      ["OUTSIDE", "big"],
+    ]);
+  });
+
+  it("lets a record that lost a race stand aside, and passes on other errors", async () => {
+    const { settings, store, setRow } = setupWithRow();
+    await settings.change(
+      "triage",
+      { ...DEFAULT, model: "big" },
+      { by: "sam", reason: null },
+    );
+    setRow({ ...DEFAULT, model: "huge" });
+    const switchTo = store.switchTo.bind(store);
+    let raced = false;
+    store.switchTo = async (op, sw) => {
+      if (!raced) {
+        raced = true;
+        // Another request records the same state first.
+        await switchTo(op, sw);
+        throw new SettingsConflict(op);
+      }
+      return switchTo(op, sw);
+    };
+    expect((await settings.current("triage")).version?.number).toBe(3);
+    expect(store.versions).toHaveLength(3);
+    setRow({ ...DEFAULT, model: "tiny" });
+    store.switchTo = () => Promise.reject(new Error("Database down"));
+    await expect(settings.route("triage")).rejects.toThrow("Database down");
+  });
+
+  it("reads nothing without a version to compare with", async () => {
+    const { settings, reads } = setupWithRow();
+    expect(await settings.syncPrompt("triage")).toBeNull();
+    expect(reads()).toBe(0);
+  });
+});
+
+describe("instructions edited at runtime", () => {
+  function setupWithGuidance() {
+    const store = memoryStore();
+    let code = "c1";
+    let runtime: string | null = null;
+    const settings = createSettings({
+      store,
+      defaults: () => DEFAULT,
+      promptVersion: () => promptVersionOf({ code, runtime }),
+    });
+    return {
+      store,
+      settings,
+      setCode: (c: string) => (code = c),
+      setRuntime: (r: string | null) => (runtime = r),
+    };
+  }
+
+  it("joins and splits the code and runtime parts", () => {
+    expect(promptVersionOf({ code: "c1", runtime: null })).toBe("c1");
+    expect(promptVersionOf({ code: "c1", runtime: "g1" })).toBe("c1+g1");
+    expect(splitPromptVersion("c1")).toEqual({ code: "c1", runtime: null });
+    expect(splitPromptVersion("c1+g1")).toEqual({ code: "c1", runtime: "g1" });
+    expect(splitPromptVersion("c1+")).toEqual({ code: "c1", runtime: null });
+  });
+
+  it("records a runtime edit as INSTRUCTIONS, and a code change as DEPLOY", async () => {
+    const { settings, setCode, setRuntime } = setupWithGuidance();
+    await settings.change(
+      "triage",
+      { ...DEFAULT, model: "big" },
+      { by: "sam", reason: null },
+    );
+    setRuntime("g1");
+    expect(await settings.syncPrompt("triage")).toMatchObject({
+      number: 3,
+      model: "big",
+      promptVersion: "c1+g1",
+    });
+    setRuntime("g2");
+    await settings.syncPrompt("triage");
+    setRuntime(null);
+    await settings.syncPrompt("triage");
+    setCode("c2");
+    await settings.syncPrompt("triage");
+    setRuntime("g3");
+    setCode("c3");
+    await settings.syncPrompt("triage");
+    expect(
+      (await settings.history("triage")).map((h) => [h.kind, h.reason]),
+    ).toEqual([
+      ["DEPLOY", "Instructions changed (c2 → c3+g3)"],
+      ["DEPLOY", "Instructions changed (c1 → c2)"],
+      ["INSTRUCTIONS", "Runtime instructions removed (were g2)"],
+      ["INSTRUCTIONS", "Instructions edited at runtime (g1 → g2)"],
+      ["INSTRUCTIONS", "Runtime instructions added (g1)"],
+      ["CHANGE", null],
+      ["CHANGE", "The default from code, before the first change"],
+    ]);
+  });
+
+  it("records the first hash as a deploy", async () => {
+    const store = memoryStore();
+    const prompt = { now: "" };
+    const settings = createSettings({
+      store,
+      defaults: () => DEFAULT,
+      promptVersion: () => prompt.now,
+    });
+    await settings.change(
+      "triage",
+      { ...DEFAULT, model: "big" },
+      { by: "sam", reason: null },
+    );
+    prompt.now = "c1+g1";
+    await settings.syncPrompt("triage");
+    expect((await settings.history("triage"))[0]).toMatchObject({
+      kind: "DEPLOY",
+      reason: "Instructions recorded (c1+g1)",
+    });
+  });
+
+  it("lists every kind", () => {
+    expect(CHANGE_KINDS).toEqual([
+      "CHANGE",
+      "PROMOTE",
+      "ROLLBACK",
+      "DEPLOY",
+      "OUTSIDE",
+      "INSTRUCTIONS",
+    ]);
   });
 });

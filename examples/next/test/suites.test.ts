@@ -27,6 +27,29 @@ describe("every suite", () => {
   });
 });
 
+describe("ticket triage leak check", () => {
+  it("removes the help desk's internal notes, and says which", () => {
+    const r = ticketTriage.withoutLeaks?.(
+      {
+        subject: "Charged twice",
+        body: "Two charges this month.\nInternal note: refunded, billing.",
+      },
+      { sourceRef: null },
+    );
+    expect(r).toEqual({
+      input: { subject: "Charged twice", body: "Two charges this month." },
+      removed: ["Internal note: refunded, billing."],
+    });
+  });
+  it("leaves a ticket without notes as it was", () => {
+    const input = { subject: "Hi", body: "No notes here." };
+    expect(ticketTriage.withoutLeaks?.(input, { sourceRef: "x#1" })).toEqual({
+      input,
+      removed: [],
+    });
+  });
+});
+
 describe("ticket triage grading", () => {
   const input = { subject: "Board won't load", body: "Blank screen." };
   it("passes the right queue and urgency", async () => {

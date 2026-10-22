@@ -22,7 +22,15 @@ Or let Evalkeeper keep it: `createSettings({ store, defaults })` with
 each feature's settings as versions with a history and rollback, and its
 `settings.route` is the runner's `route`. Your AI calls read
 `settings.route(operation)` too, and call `settings.syncPrompt(operation)`
-where they do, so a deploy that changed the instructions is recorded.
+where they do, so a deploy (DEPLOY) or a runtime edit (INSTRUCTIONS) that
+changed the instructions is recorded, dated when it's noticed.
+If your call sites read a settings row of your own, which a script, SQL,
+or an older admin page can change without a version, pass `readActual`
+to `createSettings`: reading or saving settings compares that row with the
+live version first, and records a mismatch as found (OUTSIDE), so a
+rollback can always get back to it. Your save calls `update` or `rollBack`
+first and writes the row after, or the new settings read as changed
+outside.
 If your models are chosen in an admin page and stored in your own table,
 return null from `defaults` and record each row once with
 `settings.seed(operation, settings, { by: null, reason })`; it does
@@ -69,8 +77,21 @@ export const triageVersion = instructionsHash({
 
 Include everything the model is told besides its settings: the system
 text, prompt templates with placeholders instead of data, and output
-schemas and tool descriptions. Anything else that shapes an answer (an
-admin-edited rule injected at call time) belongs in the hash too.
+schemas and tool descriptions. `promptVersion` must hash everything the
+model receives, including what's added or replaced at runtime: an admin
+override of the prompt, or edited guidance injected at call time.
+Otherwise a test looks current after what it tested changed. Hash the
+runtime part on its own and join the two with `promptVersionOf`, so
+versioned settings can tell a runtime edit (INSTRUCTIONS) from a deploy
+(DEPLOY):
+
+```ts
+promptVersion: async (op) =>
+  promptVersionOf({
+    code: PROMPT_VERSIONS[op],
+    runtime: await guidanceHash(op), // null when there's none
+  }),
+```
 
 ## 5. Write your first suite
 
@@ -114,7 +135,70 @@ Answers arrive pending: a person confirms each on the pages. If the owner
 says "use them so you can test, I'll review later", pass
 `answers: { status: "PROVISIONAL", rater, allowedBy }`. Tests use them,
 every score says it rests on unreviewed answers, and each row is tagged
-`needs-review`. Nothing is imported confirmed.
+`needs-review`.
+
+**Answers people already reviewed.** An app moving from its own harness
+into Evalkeeper's tables (rather than mapping its tables, see "Bring your
+own") may have an answer key people reviewed there. Import those answers
+confirmed, reading who confirmed each one and when from its row:
+
+```ts
+await importCases({
+  store,
+  suite: ticketTriage,
+  source: "old-harness",
+  rows,
+  map,
+  answers: {
+    status: "CONFIRMED",
+    confirmedBy: (r) => r.reviewer,
+    at: (r) => r.reviewedAt,
+  },
+});
+```
+
+The import is refused unless every row names a person and a date (never
+one in the future); neither is ever filled in for you. The person is
+recorded as the answer's rater, and its note says it was imported as
+reviewed, from where, by whom, and on what date. Use this only for answers
+a person confirmed in the old system: answers an agent drafted or scraped
+from somewhere stay pending.
+
+**Leave out what a case learned from itself.** A case frozen from your
+app's data can carry its own answer: facts the app learned from the
+person's reaction to that same item, or a help desk's note written after
+the ticket was sorted. Give the suite a `withoutLeaks` that removes them;
+`importCases`, `importStarters`, and the "Add a case" form run it before
+freezing, `removed` in the import's result lists what came out of each
+case, and the case's note says so, for a person to check. Match on
+something specific to the case (the company's name), not something
+general (a job title), or it removes what other cases rightly share.
+
+```ts
+export const ticketTriage: Suite<Ticket, Triage, Triage> = {
+  // …
+  withoutLeaks(input) {
+    const lines = input.body.split("\n");
+    const leaked = (l: string) => l.startsWith("Internal note:");
+    return {
+      input: { ...input, body: lines.filter((l) => !leaked(l)).join("\n") },
+      removed: lines.filter(leaked),
+    };
+  },
+};
+```
+
+**Cases edited as JSON.** A fixture suite (`caseKind: "fixture"`) edits
+each case as JSON in one field. `inputFromJson(schema)` and
+`labelFromJson(schema)` read the `input` and `label` fields, parse them,
+and check them with the schema, with a plain error when a field is empty,
+isn't JSON, or doesn't fit ("Input doesn't fit at facts, item 2, text:
+…"):
+
+```ts
+inputFromForm: inputFromJson(profileSchema),
+labelFromForm: labelFromJson(fitSchema),
+```
 
 When an agent drafts the answers, two habits catch most mistakes: have it
 list the cases it's unsure of, so a person reviews those first, and check
@@ -283,6 +367,10 @@ don't have. The request hash that reuses identical answers may differ from
 your old harness's, so the first test of each model after the move pays
 for its answers again, once.
 
+If you'd rather move your rows into Evalkeeper's tables, import them with
+`importCases` (step 5), and bring answers people reviewed in as confirmed
+with who and when from each row.
+
 ### Your own router
 
 The runner never calls a model or picks one for your app; it asks your
@@ -323,7 +411,13 @@ export const settingsStore = prismaSettingsStore(prisma, {
 
 Your tables need a number per version unique per feature, a live pointer
 per feature, and a change log with its kind (CHANGE, PROMOTE, ROLLBACK,
-or DEPLOY; an enum is fine). `by` converts who made a change both ways
+DEPLOY, OUTSIDE, or INSTRUCTIONS; an enum is fine). An enum made before
+OUTSIDE and INSTRUCTIONS existed can't hold them: add both to it with a
+migration, or list what it holds in the map's `kinds` (say `kinds:
+["CHANGE", "PROMOTE", "ROLLBACK", "DEPLOY"]`), and a kind it can't hold is
+stored as CHANGE with the real kind in the evidence column, and read back
+as itself. Without either, saving one fails with a message saying so.
+`by` converts who made a change both ways
 when your table keeps a user id instead of a name. Check it with
 `describeSettingsStoreContract(name, make, { without: ["temperature"] })`.
 

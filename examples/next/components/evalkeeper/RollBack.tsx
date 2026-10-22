@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { ChangeKind } from "@crowandraven/evalkeeper";
 import { rollBackSettings } from "@/lib/evalkeeper/actions";
 import { Submit } from "./Submit";
 import { Tip } from "./Tip";
@@ -8,19 +9,24 @@ import { Tip } from "./Tip";
 /**
  * Rolls a feature back to an earlier version. The button stays off until
  * there's a note saying why: the note is kept with the version, for
- * whoever reads the history next.
+ * whoever reads the history next. Only settings go back, so a version made
+ * by an instructions change says the instructions stay as they are now.
  */
 export function RollBack({
   suite,
   versionId,
   number,
+  kind,
 }: {
   suite: string;
   versionId: string;
   number: number;
+  /** How the version was made, for what rolling back to it does. */
+  kind?: ChangeKind;
 }) {
   const [reason, setReason] = useState("");
   const missing = reason.trim() === "";
+  const note = WHAT_GOES_BACK[kind ?? "CHANGE"]?.(number);
   const button = (
     <Submit variant="quiet" disabled={missing}>
       Roll back to v{number}
@@ -54,9 +60,23 @@ export function RollBack({
         >
           {button}
         </Tip>
+      ) : note ? (
+        <Tip text={note} id={`rollback-${versionId}`}>
+          {button}
+        </Tip>
       ) : (
         button
       )}
     </form>
   );
 }
+
+/** What rolling back to a version does, when it's more than its settings. */
+const WHAT_GOES_BACK: Partial<Record<ChangeKind, (n: number) => string>> = {
+  DEPLOY: (n) =>
+    `Makes v${n}'s settings live again. The instructions stay as they are now: a deploy changed them, and only a deploy changes them back.`,
+  INSTRUCTIONS: (n) =>
+    `Makes v${n}'s settings live again. The instructions stay as they are now: they were edited at runtime, so undo that edit where it was made.`,
+  OUTSIDE: (n) =>
+    `Makes v${n}'s settings, found changed outside these settings, live again.`,
+};

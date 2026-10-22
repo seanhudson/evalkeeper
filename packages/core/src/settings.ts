@@ -47,9 +47,73 @@ export type SettingsVersion = Settings & {
  * CHANGE: a person changed a setting. PROMOTE: a model was made live or
  * the fallback from a test, with the test as evidence. ROLLBACK: an
  * earlier version made live again. DEPLOY: the instructions changed in code
- * under the live settings.
+ * under the live settings. OUTSIDE: the app's own settings no longer
+ * matched the live version (changed by a script, SQL, or another page),
+ * recorded as found before the next save (`readActual`). INSTRUCTIONS:
+ * instructions edited at runtime (an admin override or guidance injected
+ * at call time) changed under the live settings, dated when noticed.
  */
-export type ChangeKind = "CHANGE" | "PROMOTE" | "ROLLBACK" | "DEPLOY";
+export type ChangeKind =
+  "CHANGE" | "PROMOTE" | "ROLLBACK" | "DEPLOY" | "OUTSIDE" | "INSTRUCTIONS";
+
+/** Every kind of change, in the order they were added. */
+export const CHANGE_KINDS: readonly ChangeKind[] = [
+  "CHANGE",
+  "PROMOTE",
+  "ROLLBACK",
+  "DEPLOY",
+  "OUTSIDE",
+  "INSTRUCTIONS",
+];
+
+/**
+ * One instructions hash from its two parts: the instructions in code, and
+ * what's edited at runtime (an admin override, guidance injected at call
+ * time). Use it for `promptVersion` (the runner's and `createSettings`'s)
+ * when part of what the model receives isn't in code, so a test is out of
+ * date when either part changes, and `syncPrompt` can tell a deploy
+ * (DEPLOY) from a runtime edit (INSTRUCTIONS). With no runtime part, it's
+ * the code hash unchanged, so existing hashes stay the same.
+ *
+ * @param parts - `code`: the hash of the instructions in code. `runtime`:
+ *   a hash of everything added or replaced at runtime, or null for none.
+ *   Neither may contain `+`, which joins them.
+ *
+ * @example
+ * ```ts
+ * const settings = createSettings({
+ *   store,
+ *   defaults,
+ *   promptVersion: async (op) =>
+ *     promptVersionOf({
+ *       code: PROMPT_VERSIONS[op],
+ *       runtime: await guidanceHash(op), // null when there's none
+ *     }),
+ * });
+ * ```
+ */
+export function promptVersionOf(parts: {
+  code: string;
+  runtime: string | null;
+}): string {
+  return parts.runtime ? `${parts.code}+${parts.runtime}` : parts.code;
+}
+
+/**
+ * An instructions hash split back into the parts `promptVersionOf` joined.
+ * A hash made without it is all code.
+ *
+ * @param version - A version's or a test's instructions hash.
+ */
+export function splitPromptVersion(version: string): {
+  code: string;
+  runtime: string | null;
+} {
+  const at = version.indexOf("+");
+  return at < 0
+    ? { code: version, runtime: null }
+    : { code: version.slice(0, at), runtime: version.slice(at + 1) || null };
+}
 
 /**
  * One switch in a feature's history: its kind, the versions it went from and to, who, why,
@@ -218,6 +282,22 @@ export type HistoryEntry = SettingsChange & {
  *     reason: "Imported from the admin config",
  *   });
  * ```
+ *
+ * When call sites read the app's own settings row (which a script, SQL,
+ * or an older admin page can change without a version), pass
+ * `readActual`, so a change made there is recorded (OUTSIDE) before the
+ * next save, and a rollback can always get back to it:
+ *
+ * ```ts
+ * const settings = createSettings({
+ *   store,
+ *   defaults: () => null,
+ *   readActual: async (op) => {
+ *     const row = await db.aiConfig.findUnique({ where: { operation: op } });
+ *     return row ? settingsFromRow(row) : null;
+ *   },
+ * });
+ * ```
  */
 export function createSettings(opts: {
   store: SettingsStore;
@@ -227,22 +307,76 @@ export function createSettings(opts: {
    * `NoSettingsError` until a version is recorded.
    */
   defaults: (operation: string) => Settings | null;
-  /** The instructions' current hash, so a version records what it ran. */
+  /**
+   * The instructions' current hash, so a version records what it ran. It
+   * must cover everything the model receives: the instructions in code,
+   * and any admin override or guidance added at call time. Join the two
+   * with `promptVersionOf`, so `syncPrompt` can tell a runtime edit from a
+   * deploy.
+   */
   promptVersion?: (operation: string) => string | Promise<string>;
+  /**
+   * The settings the app's call sites actually use, read from wherever
+   * they read them (the app's own settings row), or null when it has none.
+   * When given, reading or saving settings first compares them with the
+   * live version, and records a mismatch as an OUTSIDE version, so the
+   * history holds every state that ran. Your save must update or roll back
+   * here first and write the row after, or the new settings read as
+   * changed outside. Without it, nothing is compared.
+   */
+  readActual?: (
+    operation: string,
+  ) => Settings | null | Promise<Settings | null>;
 }) {
   const { store } = opts;
   const prompt = async (op: string) =>
     opts.promptVersion ? await opts.promptVersion(op) : null;
+  const actual = async (op: string) =>
+    opts.readActual ? await opts.readActual(op) : null;
 
   /**
-   * The live settings: the live version's, else the default from code.
-   * Throws `NoSettingsError` when the feature has neither.
+   * The live version, after recording the app's actual settings as an
+   * OUTSIDE version when they no longer match it (with `readActual`). The
+   * new version keeps the live version's instructions hash: only the
+   * settings were changed outside.
+   */
+  async function reconcile(operation: string): Promise<SettingsVersion | null> {
+    const live = await store.liveVersion(operation);
+    if (!live || !opts.readActual) return live;
+    const found = await actual(operation);
+    if (!found || sameSettings(settingsOf(live), found)) return live;
+    try {
+      return await store.switchTo(operation, {
+        create: {
+          settings: settingsOf(found),
+          promptVersion: live.promptVersion,
+        },
+        kind: "OUTSIDE",
+        reason:
+          "Changed outside these settings (a script, SQL, or another page); recorded as found",
+        by: null,
+        expectLive: live.id,
+      });
+    } catch (e) {
+      // Another request recorded it first.
+      if (e instanceof SettingsConflict) return store.liveVersion(operation);
+      throw e;
+    }
+  }
+
+  /**
+   * The live settings: the live version's, else the app's actual settings
+   * (with `readActual`), else the default from code. With `readActual`, a
+   * mismatch with the live version is recorded first (OUTSIDE). Throws
+   * `NoSettingsError` when the feature has none of them.
    */
   async function current(
     operation: string,
   ): Promise<{ settings: Settings; version: SettingsVersion | null }> {
-    const version = await store.liveVersion(operation);
+    const version = await reconcile(operation);
     if (version) return { settings: settingsOf(version), version };
+    const found = await actual(operation);
+    if (found) return { settings: settingsOf(found), version };
     const fallback = opts.defaults(operation);
     if (!fallback) throw new NoSettingsError(operation);
     return { settings: fallback, version };
@@ -262,10 +396,12 @@ export function createSettings(opts: {
 
   /**
    * Makes new settings live as a new version. The first change to a
-   * feature first records its default as version 1, so there's always
-   * something to roll back to; a feature with no default gets `next` as
-   * version 1. With `evidence`, it's a promotion. Returns null when
-   * nothing changed.
+   * feature first records what it ran on as version 1 (its default, or
+   * the app's actual settings with `readActual`), so there's always
+   * something to roll back to; a feature with neither gets `next` as
+   * version 1. With `evidence`, it's a promotion. With `readActual`, a
+   * mismatch with the live version is recorded first (OUTSIDE). Returns
+   * null when nothing changed.
    */
   async function change(
     operation: string,
@@ -273,9 +409,13 @@ export function createSettings(opts: {
     by: { by: string | null; reason: string | null; evidence?: unknown },
   ): Promise<SettingsVersion | null> {
     const promptVersion = await prompt(operation);
-    let live = await store.liveVersion(operation);
+    let live = await reconcile(operation);
     if (!live) {
-      const initial = opts.defaults(operation);
+      const found = await actual(operation);
+      const fallback = opts.defaults(operation);
+      const initial = found ?? fallback;
+      // Found settings that differ from code were set outside.
+      const outside = !!found && !(fallback && sameSettings(fallback, found));
       if (!initial)
         return store.switchTo(operation, {
           create: { settings: settingsOf(next), promptVersion },
@@ -287,9 +427,11 @@ export function createSettings(opts: {
         });
       if (sameSettings(initial, next)) return null;
       live = await store.switchTo(operation, {
-        create: { settings: initial, promptVersion },
-        kind: "CHANGE",
-        reason: "The default from code, before the first change",
+        create: { settings: settingsOf(initial), promptVersion },
+        kind: outside ? "OUTSIDE" : "CHANGE",
+        reason: outside
+          ? "The settings in use before the first change, set outside these settings"
+          : "The default from code, before the first change",
         by: null,
         expectLive: null,
       });
@@ -318,16 +460,21 @@ export function createSettings(opts: {
     return change(operation, { ...settings, ...patch }, by);
   }
 
-  /** Makes an earlier version live again. */
+  /**
+   * Makes an earlier version live again. Only the settings go back: the
+   * instructions stay as they are now. With `readActual`, a mismatch with
+   * the live version is recorded first (OUTSIDE), so it can be rolled back
+   * to later.
+   */
   async function rollBack(
     operation: string,
     versionId: string,
     by: { by: string | null; reason: string },
   ): Promise<SettingsVersion> {
+    const live = await reconcile(operation);
     const versions = await store.listVersions(operation);
     const to = versions.find((v) => v.id === versionId);
     if (!to) throw new Error("No such version for this feature");
-    const live = await store.liveVersion(operation);
     if (live?.id === to.id) return to;
     return store.switchTo(operation, {
       versionId: to.id,
@@ -339,24 +486,36 @@ export function createSettings(opts: {
   }
 
   /**
-   * Instructions live in code, so a deploy can change them under live
-   * settings. When it has, records a version with the same settings and the
-   * new instructions, so the history says what changed and when. Call it
-   * where the feature's settings are read (or after each deploy).
+   * Instructions can change under live settings: in code by a deploy, or
+   * at runtime by an admin override or edited guidance. When they have,
+   * records a version with the same settings and the new instructions, so
+   * the history says what changed and when: DEPLOY when the code part
+   * changed, INSTRUCTIONS when only the runtime part did (see
+   * `promptVersionOf`), dated when noticed. Call it where the feature's
+   * settings are read (or after each deploy and each runtime edit). With
+   * `readActual`, a mismatch with the live settings is recorded first
+   * (OUTSIDE).
    */
   async function syncPrompt(
     operation: string,
   ): Promise<SettingsVersion | null> {
-    const live = await store.liveVersion(operation);
+    const live = await reconcile(operation);
     const now = await prompt(operation);
     if (!live || !now || now === live.promptVersion) return live;
+    const was = live.promptVersion
+      ? splitPromptVersion(live.promptVersion)
+      : null;
+    const is = splitPromptVersion(now);
+    const runtime = was !== null && was.code === is.code;
     try {
       return await store.switchTo(operation, {
         create: { settings: settingsOf(live), promptVersion: now },
-        kind: "DEPLOY",
-        reason: live.promptVersion
-          ? `Instructions changed (${live.promptVersion} → ${now})`
-          : `Instructions recorded (${now})`,
+        kind: runtime ? "INSTRUCTIONS" : "DEPLOY",
+        reason: !was
+          ? `Instructions recorded (${now})`
+          : runtime
+            ? runtimeReason(was.runtime, is.runtime)
+            : `Instructions changed (${String(live.promptVersion)} → ${now})`,
         by: null,
         expectLive: live.id,
       });
@@ -436,6 +595,13 @@ export function createSettings(opts: {
     seed,
     history,
   };
+}
+
+/** Says how the runtime part of the instructions changed. */
+function runtimeReason(was: string | null, is: string | null): string {
+  if (!is) return `Runtime instructions removed (were ${String(was)})`;
+  if (!was) return `Runtime instructions added (${is})`;
+  return `Instructions edited at runtime (${was} → ${is})`;
 }
 
 /** What createSettings returns. */

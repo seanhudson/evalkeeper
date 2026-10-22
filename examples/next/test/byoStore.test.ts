@@ -76,6 +76,8 @@ const settingsMap: PrismaSettingsMap = {
     evalSettingsVersion: { temperature: null },
     evalSettingsChange: { by: "userId" },
   },
+  // The kind column is an enum made before OUTSIDE and INSTRUCTIONS.
+  kinds: ["CHANGE", "PROMOTE", "ROLLBACK", "DEPLOY"],
   by: {
     toColumn: async (handle) =>
       (
@@ -253,6 +255,77 @@ describe("a mapped store on an app's own tables", () => {
     const pat = await db.person.findUniqueOrThrow({ where: { handle: "pat" } });
     expect(change?.userId).toBe(pat.id);
     expect((await store.listChanges("triage"))[0]?.by).toBe("pat");
+  });
+
+  const first = {
+    create: {
+      settings: {
+        model: "a",
+        fallbackModel: null,
+        reasoningEffort: null,
+        maxOutputTokens: null,
+      },
+      promptVersion: "p1",
+    },
+    kind: "OUTSIDE" as const,
+    reason: "found",
+    by: null,
+    expectLive: null,
+  };
+
+  it("keeps a kind its enum can't hold in the evidence column", async () => {
+    await empty();
+    const store = prismaSettingsStore(db, settingsMap);
+    await store.switchTo("triage", first);
+    const [row] = await db.versionSwitch.findMany();
+    expect(row).toMatchObject({
+      kind: "CHANGE",
+      evidence: { evalkeeperKind: "OUTSIDE", evidence: null },
+    });
+    expect(await store.listChanges("triage")).toMatchObject([
+      { kind: "OUTSIDE", evidence: null },
+    ]);
+  });
+
+  it("reads evidence that only looks wrapped as it is", async () => {
+    await empty();
+    const store = prismaSettingsStore(db, settingsMap);
+    const odd = [
+      { evalkeeperKind: "NOT_A_KIND", evidence: 1 },
+      { evalkeeperKind: 7, evidence: 1 },
+      { evalkeeperKind: "OUTSIDE" },
+      ["OUTSIDE"],
+    ];
+    let live: string | null = null;
+    for (const evidence of odd)
+      live = (
+        await store.switchTo("triage", {
+          ...first,
+          kind: "CHANGE",
+          evidence,
+          expectLive: live,
+        })
+      ).id;
+    const changes = await store.listChanges("triage");
+    expect(changes.map((c) => c.kind)).toEqual([
+      "CHANGE",
+      "CHANGE",
+      "CHANGE",
+      "CHANGE",
+    ]);
+    expect(changes.map((c) => c.evidence)).toEqual([...odd].reverse());
+  });
+
+  it("says what to migrate when the enum can't hold a kind and there's no map", async () => {
+    await empty();
+    const { kinds: _, ...withoutKinds } = settingsMap;
+    const store = prismaSettingsStore(db, withoutKinds);
+    await expect(store.switchTo("triage", first)).rejects.toThrow(
+      "Add OUTSIDE to its enum, or list the kinds it holds",
+    );
+    // Nothing half-written.
+    expect(await store.liveVersion("triage")).toBeNull();
+    expect(await db.routeVersion.count()).toBe(0);
   });
 });
 

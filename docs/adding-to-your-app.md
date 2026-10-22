@@ -22,7 +22,15 @@ Or let Evalkeeper keep it: `createSettings({ store, defaults })` with
 each feature's settings as versions with a history and rollback, and its
 `settings.route` is the runner's `route`. Your AI calls read
 `settings.route(operation)` too, and call `settings.syncPrompt(operation)`
-where they do, so a deploy that changed the instructions is recorded.
+where they do, so a deploy (DEPLOY) or a runtime edit (INSTRUCTIONS) that
+changed the instructions is recorded, dated when it's noticed.
+If your call sites read a settings row of your own, which a script, SQL,
+or an older admin page can change without a version, pass `readActual`
+to `createSettings`: reading or saving settings compares that row with the
+live version first, and records a mismatch as found (OUTSIDE), so a
+rollback can always get back to it. Your save calls `update` or `rollBack`
+first and writes the row after, or the new settings read as changed
+outside.
 If your models are chosen in an admin page and stored in your own table,
 return null from `defaults` and record each row once with
 `settings.seed(operation, settings, { by: null, reason })`; it does
@@ -69,8 +77,21 @@ export const triageVersion = instructionsHash({
 
 Include everything the model is told besides its settings: the system
 text, prompt templates with placeholders instead of data, and output
-schemas and tool descriptions. Anything else that shapes an answer (an
-admin-edited rule injected at call time) belongs in the hash too.
+schemas and tool descriptions. `promptVersion` must hash everything the
+model receives, including what's added or replaced at runtime: an admin
+override of the prompt, or edited guidance injected at call time.
+Otherwise a test looks current after what it tested changed. Hash the
+runtime part on its own and join the two with `promptVersionOf`, so
+versioned settings can tell a runtime edit (INSTRUCTIONS) from a deploy
+(DEPLOY):
+
+```ts
+promptVersion: async (op) =>
+  promptVersionOf({
+    code: PROMPT_VERSIONS[op],
+    runtime: await guidanceHash(op), // null when there's none
+  }),
+```
 
 ## 5. Write your first suite
 
@@ -378,7 +399,13 @@ export const settingsStore = prismaSettingsStore(prisma, {
 
 Your tables need a number per version unique per feature, a live pointer
 per feature, and a change log with its kind (CHANGE, PROMOTE, ROLLBACK,
-or DEPLOY; an enum is fine). `by` converts who made a change both ways
+DEPLOY, OUTSIDE, or INSTRUCTIONS; an enum is fine). An enum made before
+OUTSIDE and INSTRUCTIONS existed can't hold them: add both to it with a
+migration, or list what it holds in the map's `kinds` (say `kinds:
+["CHANGE", "PROMOTE", "ROLLBACK", "DEPLOY"]`), and a kind it can't hold is
+stored as CHANGE with the real kind in the evidence column, and read back
+as itself. Without either, saving one fails with a message saying so.
+`by` converts who made a change both ways
 when your table keeps a user id instead of a name. Check it with
 `describeSettingsStoreContract(name, make, { without: ["temperature"] })`.
 

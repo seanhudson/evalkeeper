@@ -78,6 +78,15 @@ design.
   they were (probability quality) and whether a model that says 90% is
   right 90% of the time (calibration error). The board marks which models
   give probabilities natively and which are prompted.
+- **A crisis risk suite, ready made.** If your app watches chat messages
+  for suicide or self-harm risk, `crisisRiskSuite` from
+  `@crowandraven/evalkeeper/suites` tests the detector on about 90 made-up
+  messages: ones that need a safety reply, such as "everyone would be
+  fine without me," and ones that don't, such as "did suicide sprints at
+  practice." Use it as it is, add your own cases, or read it as a pattern.
+  The cases arrive pending for you to confirm, ideally with someone who
+  has crisis-line experience. It tests detection on these examples; it
+  doesn't certify that an app is safe for people in crisis.
 - **Fits what you already have.** Had evals before? Keep your own eval
   tables full of reviewed answers, your own model router, your own
   settings history, and your own pages. Evalkeeper maps onto your tables
@@ -291,6 +300,27 @@ you're new to evals, start there.
 
 - Stores for Drizzle and plain Postgres.
 - Planned upgrades: Prisma 7 and zod 4.
+- **Judge agreement.** Run the meaning judge over confirmed answers and
+  report how often it agrees, so a judge-graded score shows whether it can
+  be trusted. (Phoenix, LangSmith's Align Evals)
+- **A CI gate.** An `evalkeeper check` command that runs the quick set and
+  exits non-zero on a WORSE comparison, so a prompt change merges only
+  behind a passing check. (Braintrust, Promptfoo, DeepEval)
+- **Drafts from live calls.** Sample a small share of an operation's real
+  calls as PENDING drafts and run the checks that need no answer on them,
+  so the answer key grows from real inputs. (Datadog, Braintrust, Phoenix)
+- **Pairwise review.** Show two runs' answers side by side and record which
+  is better, for open-ended output with no single right answer. (LangSmith)
+- **The commit on each run.** Record the git commit with every run, so a
+  score change traces to the change that caused it. (Braintrust)
+- **Injection variants.** Mark a field untrusted and Evalkeeper plants
+  attack text in copies of existing cases; the confirmed answer shouldn't
+  change, so every suite gets an injection test with no new labeling.
+  Opt-in per suite, reported as its own pass rate. (Promptfoo, Confident AI)
+- **Canary leak checks.** Plant unique markers in the instructions and in
+  other users' data, and fail any answer that contains one, so leaked
+  instructions or data mixed between users show up. Opt-in per suite.
+  (Promptfoo)
 
 ## Docs
 

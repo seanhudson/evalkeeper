@@ -23,6 +23,10 @@
       "types": "./dist/testing.d.ts",
       "default": "./dist/testing.js"
     },
+    "./suites": {
+      "types": "./dist/suites/index.d.ts",
+      "default": "./dist/suites/index.js"
+    },
     "./cli": {
       "types": "./dist/cli/main.d.ts",
       "default": "./dist/cli/main.js"

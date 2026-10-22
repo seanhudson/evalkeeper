@@ -101,6 +101,18 @@ describe("suiteHealth", () => {
     expect(suiteHealth(rows, checks, quality, 60).status).toBe("good");
   });
 
+  it("asks to test live again when its test has failed answers (#34)", () => {
+    const live = row("Luna", "gpt-6-luna", { live: true, right: 22 });
+    live.test!.failedAnswers = 2;
+    live.test!.failureReason = "No answer within 180s";
+    const rows = [live, row("Sonnet", "claude-sonnet-5-5", { right: 24 })];
+    const h = suiteHealth(rows, checks, quality, 60);
+    expect(h.details.join(" ")).toMatch(
+      /Test Luna again: 2 of its answers failed on its last test \(No answer within 180s\)/,
+    );
+    expect(h.details.join(" ")).not.toMatch(/suggested over/);
+  });
+
   it("asks for a second model when only one is tested", () => {
     const rows = [row("Luna", "gpt-6-luna", { live: true })];
     expect(suiteHealth(rows, checks, quality, 60).details.join(" ")).toMatch(

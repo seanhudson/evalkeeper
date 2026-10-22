@@ -108,10 +108,13 @@ export default async function SuitePage({
               Suggested
               <InfoTip term="suggestion" />
             </h2>
-            <form action={useSuggestion}>
-              <input type="hidden" name="suite" value={key} />
-              <Submit>Use these</Submit>
-            </form>
+            {/* Retesting live changes nothing until the fallback would. */}
+            {!(s.retestLive && (!s.fallback || s.fallback.fallback)) && (
+              <form action={useSuggestion}>
+                <input type="hidden" name="suite" value={key} />
+                <Submit>Use these</Submit>
+              </form>
+            )}
           </div>
           <p>
             Live: <strong>{s.live.label}</strong>

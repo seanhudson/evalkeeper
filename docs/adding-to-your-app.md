@@ -360,14 +360,84 @@ export const judgmentCache = prismaJudgmentCache(prisma, map);
 - **Statuses your enum lacks.** Evalkeeper writes its own status names
   (an answer can be REJECTED, and rating blind writes SKIPPED). If your
   enum lacks one, add the value, or that write fails.
-- **Check it.** Run the contract against the mapped store on a copy of
-  your data, with `without` naming any setting you mapped to `null`:
+- **Check it.** Two checks, read-only first:
 
-  ```ts
-  describeStoreContract("our tables", () => prismaStore(prisma, map), {
-    without: ["temperature", "maxOutputTokens"],
-  });
-  ```
+  1. **Does it read what's there?** `prismaReadCheck` reads each suite's
+     cases, answers, tests, and outputs through your map, without writing
+     anything, and lists every value that doesn't parse (an unknown
+     status, a cost that isn't a number, a missing column), with counts.
+     The store itself reads such a value as a default, so this is where
+     you see it. Pass your suites (not just their keys) to also check
+     each input and answer against the suite's own schemas, the way your
+     code reads them. It's safe on a copy of real data:
+
+     ```ts
+     import { prismaReadCheck } from "@crowandraven/evalkeeper-prisma";
+     import { describeMappedReadCheck } from "@crowandraven/evalkeeper/testing";
+
+     describeMappedReadCheck(
+       "our answer key",
+       () => prismaReadCheck(prisma, map, { suites: SUITES }),
+       { suites: SUITES.map((s) => s.key) },
+     );
+     ```
+
+     Or print it once: `readCheckSummary(await prismaReadCheck(...))`
+     gives a line per suite with its counts, and each problem once with
+     how many rows have it.
+
+  2. **Does it write and read back?** The store contract writes and
+     reads back cases, answers, tests, and outputs, with `without` naming
+     any setting you mapped to `null`. It needs an empty store each time,
+     so `make` empties the tables: run it only on a throwaway local
+     database made from your schema file (`prisma db push` to a new
+     local database, since an app's migrations may not build from
+     empty), never on development or production data. Before emptying
+     anything, check the database's name in the URL `make` uses, and
+     tell whoever's watching which database it is and that it will be
+     emptied, before running it:
+
+     ```ts
+     const url = process.env.CONTRACT_DATABASE_URL ?? "";
+     // Stop before emptying anything but the throwaway database.
+     const name = new URL(url).pathname.slice(1);
+     if (name !== "evals_throwaway")
+       throw new Error(`Won't empty ${name}: it isn't the throwaway database.`);
+     const throwaway = new PrismaClient({ datasources: { db: { url } } });
+
+     describeStoreContract(
+       "our tables",
+       async () => {
+         await emptyEvalTables(throwaway); // your deleteMany calls, children first
+         return prismaStore(throwaway, map);
+       },
+       { without: ["temperature", "maxOutputTokens"] },
+     );
+     ```
+
+     To run it on a database that holds other rows (a shared development
+     database), scope it instead: every suite and feature it writes
+     starts with the scope, its tests never look past their own rows, and
+     `deleteScopedRows` deletes only rows whose names start with the
+     scope (compared exactly, whatever the database's pattern matching
+     does). `make` then returns the store as it is, emptying nothing:
+
+     ```ts
+     import { deleteScopedRows } from "@crowandraven/evalkeeper-prisma";
+
+     describeStoreContract("our tables", () => prismaStore(prisma, map), {
+       without: ["temperature", "maxOutputTokens"],
+       scope: "contract-",
+       cleanup: (scope) => deleteScopedRows(prisma, scope, { map }),
+     });
+     ```
+
+     Pick a scope none of your own suites or features start with.
+
+  Not on Vitest? Every contract takes your test functions:
+  `{ test: { describe, it, expect: assertExpect, afterAll: after } }`
+  with `describe`, `it`, and `after` from `node:test` and `assertExpect`
+  from `@crowandraven/evalkeeper/testing`. Vitest stays optional.
 
 **Costs:** a map, and nullable columns for what you want to keep that you
 don't have. The request hash that reuses identical answers may differ from
@@ -426,7 +496,9 @@ stored as CHANGE with the real kind in the evidence column, and read back
 as itself. Without either, saving one fails with a message saying so.
 `by` converts who made a change both ways
 when your table keeps a user id instead of a name. Check it with
-`describeSettingsStoreContract(name, make, { without: ["temperature"] })`.
+`describeSettingsStoreContract(name, make, { without: ["temperature"] })`,
+on a throwaway database or scoped as above (pass `{ map, settingsMap }`
+to `deleteScopedRows`).
 
 **Costs:** a map, and the `by` callbacks if you keep user ids. Saving a
 version with a setting you have no column for fails, so leave that

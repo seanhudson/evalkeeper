@@ -171,6 +171,23 @@ to one is a fix to both.
 review picked up tests from before a fix. _So:_ take numbers from the same
 code the pages use, and say which tests a number comes from.
 
+**Proving a map meant emptying a database.** Moving an app onto a mapped
+store, the natural first check was the store contract, which needs an
+empty store, so it had to run on a second, throwaway database (built from
+the schema file, since the app's migrations started from a restored
+dump), and the person watching was alarmed to read "empty database"
+mid-task. The check that mattered most, whether the store read the
+existing answer key as the app did, didn't exist, and the store quietly
+read an unknown status as a known one. _So:_ a read-only check comes
+first and reports rows as the table holds them; the contracts can run
+scoped, deleting only the rows they wrote; and the guide says to check
+the database's name and say so before emptying anything.
+
+**The contracts only ran under Vitest.** An app on `node:test` copied
+them with a hand-written `expect`. _So:_ every contract takes its test
+functions, `assertExpect` covers the matchers they use, and the testing
+entry loads without Vitest.
+
 ## On screen
 
 **Jargon means nothing to the person deciding.** Early pages said "smoke

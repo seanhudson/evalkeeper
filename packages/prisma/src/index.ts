@@ -30,6 +30,7 @@ import type {
 import { Table, isRow, type ColumnMap, type Row } from "./mapping.js";
 
 export type { ColumnMap } from "./mapping.js";
+export * from "./contracts.js";
 
 /**
  * An EvalStore on your Prisma client, using the models in

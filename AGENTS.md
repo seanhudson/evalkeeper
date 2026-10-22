@@ -92,6 +92,12 @@ Every change comes with the tests that prove it, at the right level:
   Anything that talks to a service is an adapter package.
 - Pages and actions talk to storage through `EvalStore`, never to tables
   directly, so they work with any store.
+- The Prisma stores read and write every column through the map
+  (`packages/prisma/src/mapping.ts`), so apps with their own tables keep
+  working. A new column or table goes through it too, gets a case in the
+  mapped-store test on the app-shaped schema
+  (`examples/next/test/byo`), and an unmapped store still builds the same
+  queries as before.
 - The example's eval pages are the CLI's templates
   (`packages/core/scripts/build-templates.mjs` copies them). They import
   only `@/lib/evalkeeper` (the app's wiring), `@/lib/evalkeeper/*` (the
@@ -131,6 +137,32 @@ Every change comes with the tests that prove it, at the right level:
 Follow [docs/adding-to-your-app.md](docs/adding-to-your-app.md) one step
 at a time, and stop after each step for the person to check it. Read
 [docs/concepts.md](docs/concepts.md) first.
+
+**First, look at what the app already has.** Many apps had evals before
+Evalkeeper: their own eval tables (often holding answers people already
+reviewed), a model router, a settings history or admin page for models,
+or eval pages. If so, follow "Bring your own" in that guide instead of
+the fresh-start steps for those pieces, and tell the person which pieces
+you found and which you'd map, keep, or replace.
+
+- **Map, don't migrate.** Keep existing eval rows in their tables:
+  `prismaStore(prisma, map)` and `prismaSettingsStore(prisma, map)` map
+  model names, column names, Decimal costs, enums, and missing columns.
+  Don't copy Evalkeeper's models into a schema that already has its own,
+  and don't move or re-import reviewed answers.
+- **Prove the map before using it.** Run `describeStoreContract` (and
+  `describeSettingsStoreContract` for versions) against the mapped store
+  on a local copy of the data, with `without` naming any setting mapped
+  to `null`. Never against production.
+- **Keep the app's router.** Wire `route`, `candidates`, `promptVersion`,
+  and `continueRun` to the functions the app already has; don't add a
+  second way to pick a model.
+- **Copy only the pages being replaced.** Run `add pages --only <names>
+--dry-run` first and show the person the plan. Never `--force` over
+  pages the app wrote itself.
+- **Say what changes once.** Request hashes may differ from the old
+  harness's, so the first test of each model after the move pays for its
+  answers again. Tell the person before they run it.
 
 - **Never confirm an answer on the person's behalf.** Cases and answers
   you draft are PENDING. If the person wants drafts used before review,

@@ -5,3 +5,7 @@
 (price a call from its usage), and `createMeaningJudge` (match expected
 items to a model's by meaning, cached so the same question is never paid
 twice).
+
+Every function here takes the model and settings you pass, so it works
+with your app's own router and billing; Evalkeeper never picks a model
+for you.

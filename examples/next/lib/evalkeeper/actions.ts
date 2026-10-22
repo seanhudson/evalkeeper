@@ -2,7 +2,13 @@
 
 import { after } from "next/server";
 import { revalidatePath } from "next/cache";
-import { caseFromFeedback, formText, suggest } from "@crowandraven/evalkeeper";
+import {
+  caseFromFeedback,
+  formText,
+  leakNote,
+  suggest,
+  withoutLeaks,
+} from "@crowandraven/evalkeeper";
 import {
   MODELS,
   SUITES,
@@ -176,14 +182,22 @@ export async function rescore(form: FormData) {
   revalidatePath(evalsPath(suite.key));
 }
 
-/** A person adds a case. They wrote its answer, so it's confirmed. */
+/**
+ * A person adds a case. They wrote its answer, so it's confirmed. The
+ * suite's leak check runs first, and the case's note says what it removed.
+ */
 export async function addCase(form: FormData) {
   await requireAdmin();
   const suite = suiteFrom(form);
   if (!suite.labelFromForm) throw new Error("This suite has no answer form");
+  const { input, removed } = withoutLeaks(
+    suite,
+    suite.inputFromForm(form),
+    null,
+  );
   await store.createCase({
     suite: suite.key,
-    input: suite.inputFromForm(form),
+    input,
     tags: formText(form, "tags")
       .split(",")
       .map((t) => t.trim())
@@ -192,7 +206,7 @@ export async function addCase(form: FormData) {
     status: "ACTIVE",
     source: "OWNER",
     sourceRef: null,
-    note: null,
+    note: leakNote(removed),
     labels: [
       {
         kind: "EXPECTED",

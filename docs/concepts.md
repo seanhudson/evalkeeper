@@ -17,15 +17,18 @@ reviewed and versioned like the rest of your app.
 **Case.** One frozen input, copied rather than referenced, so later
 changes to your app's data don't move the test. Cases are DRAFT, ACTIVE,
 or RETIRED, and split into DEV (what you tune against) and TEST (what you
-check, and never tune against). Tags say what a case tests.
+check, and never tune against). Tags say what a case tests. A case frozen from your app's data
+leaves out anything learned from that same case (its answer would leak);
+a suite's leak check removes it on the way in and says what it removed.
 
 **Answer.** What a good answer to a case looks like, in the suite's
 answer shape. Every answer has a status:
 
 - **PENDING:** proposed (by a model, or imported) and not reviewed. Never
   graded against.
-- **CONFIRMED:** a person said it's right. Tests grade against the newest
-  one.
+- **CONFIRMED:** a person said it's right, on the pages or in the system
+  the answer was imported from (which records who and when). Tests grade
+  against the newest one.
 - **PROVISIONAL:** put to use before review, by the owner's choice. Tests
   use it, and every score says it rests on unreviewed answers.
 

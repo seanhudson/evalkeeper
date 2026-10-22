@@ -43,6 +43,9 @@ design.
 - **Answer keys people own.** A model can draft cases and answers, but
   nothing is graded against an answer until a person confirms it. Answers
   put to use before review are marked provisional, and every score says so.
+  Answers people reviewed in an old harness can come in confirmed, with
+  who and when from each row; a suite's leak check strips what a case
+  learned from itself before it's frozen.
 - **Tests per model.** Every case, on any model, with time and cost per
   answer. Identical requests are reused for a week, so retesting is free.
 - **Checks that say what matters.** Each check is serious (it changes what

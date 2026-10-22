@@ -5,7 +5,7 @@
  * @module evalkeeper/runner
  */
 import { createHash } from "node:crypto";
-import { compareRuns, type RunOutput } from "./compare.js";
+import { compareRuns, disagreements, type RunOutput } from "./compare.js";
 import { isStuck, shouldContinue } from "./legs.js";
 import {
   effortFor,
@@ -816,6 +816,8 @@ export function createRunner(opts: RunnerOptions) {
   /**
    * Two finished tests of a suite compared case by case: `a` the one in
    * place, `b` the challenger. Null if either isn't a finished test.
+   * `disagreements` lists the cases they graded differently, for reading
+   * the two answers side by side.
    */
   async function compare(suiteKey: string, a: string, b: string) {
     const suite = suiteOrThrow(suiteKey);
@@ -838,9 +840,10 @@ export function createRunner(opts: RunnerOptions) {
         ms: x.ms,
         reused: x.reused,
       }));
+    const [oa, ob] = await Promise.all([asOutputs(ra), asOutputs(rb)]);
     const comparison = compareRuns(
-      await asOutputs(ra),
-      await asOutputs(rb),
+      oa,
+      ob,
       suite.checks.map((c) => c.key),
     );
     // Comparable only when measured the same way.
@@ -853,7 +856,14 @@ export function createRunner(opts: RunnerOptions) {
       ra.promptVersion !== rb.promptVersion &&
         `different instructions (${ra.promptVersion} and ${rb.promptVersion})`,
     ].filter((x): x is string => Boolean(x));
-    return { suite, a: ra, b: rb, comparison, caveats };
+    return {
+      suite,
+      a: ra,
+      b: rb,
+      comparison,
+      disagreements: disagreements(oa, ob),
+      caveats,
+    };
   }
 
   /**

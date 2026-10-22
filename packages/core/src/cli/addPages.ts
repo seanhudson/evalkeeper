@@ -36,6 +36,8 @@ export const PAGE_NAMES: Readonly<Record<string, string>> = {
   suite: "app/evals/[suite]/page.tsx",
   run: "app/evals/[suite]/runs/[runId]/page.tsx",
   rate: "app/evals/[suite]/rate/page.tsx",
+  compare: "app/evals/[suite]/compare/page.tsx",
+  "side-by-side": "app/evals/[suite]/side-by-side/page.tsx",
   feedback: "app/evals/feedback/page.tsx",
   cron: "app/api/cron/evals-weekly/route.ts",
 };
@@ -48,7 +50,7 @@ export function templateName(templatePath: string): string {
 
 /**
  * The template files `--only` picks: each name is a page (hub, suite,
- * run, rate, feedback, cron), a component or glue file by its name (AnswerKey,
+ * run, rate, compare, side-by-side, feedback, cron), a component or glue file by its name (AnswerKey,
  * actions, evalkeeper.css), or a group (pages, components), in any case.
  * "index" (the wiring module) is allowed and handled by `planAddPages`.
  * Throws on a name it doesn't know, listing the ones it does.

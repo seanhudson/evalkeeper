@@ -440,10 +440,10 @@ Copy only the pages and components you're replacing, and keep your own:
 npx @crowandraven/evalkeeper add pages --base admin/evals --only suite,run,AnswerKey --dry-run
 ```
 
-`--only` takes pages by name (hub, suite, run, rate, feedback, cron),
-components and glue by name (AnswerKey, actions, evalkeeper.css, …), the
-groups `pages` and `components`, and `index` for a starter wiring module
-(left out otherwise). `--dry-run` lists what would be written, skipped,
+`--only` takes pages by name (hub, suite, run, rate, compare,
+side-by-side, feedback, cron), components and glue by name (AnswerKey,
+actions, evalkeeper.css, …), the groups `pages` and `components`, and
+`index` for a starter wiring module (left out otherwise). `--dry-run` lists what would be written, skipped,
 or overwritten, and names anything the chosen files import that your app
 doesn't have yet.
 

@@ -18,6 +18,7 @@ import {
   pickOnly,
   planAddPages,
   readAlias,
+  templateName,
   withoutJsonComments,
 } from "./addPages.js";
 import { parseArgs, run } from "./main.js";
@@ -227,6 +228,24 @@ describe("evalkeeper add pages", () => {
     expect(r.out).toMatch(/Check lib\/evalkeeper\/index\.ts exports/);
   });
 
+  it("copies the compare and side-by-side pages by name, with what they need", () => {
+    const dir = app(AT);
+    const r = cli(dir, "add", "pages", "--only", "compare,side-by-side");
+    expect(r.code).toBe(0);
+    expect(existsSync(join(dir, "app/evals/[suite]/compare/page.tsx"))).toBe(
+      true,
+    );
+    expect(
+      existsSync(join(dir, "app/evals/[suite]/side-by-side/page.tsx")),
+    ).toBe(true);
+    expect(existsSync(join(dir, "app/evals/[suite]/page.tsx"))).toBe(false);
+    expect(r.out).toMatch(/which your app doesn't have/);
+    expect(r.out).toMatch(/\bDisagreementChip\b/);
+    expect(templateName("app/evals/[suite]/side-by-side/page.tsx")).toBe(
+      "side-by-side",
+    );
+  });
+
   it("finds nothing missing when the app has what the chosen files import", () => {
     const dir = app(AT);
     cli(dir, "add", "pages");
@@ -274,9 +293,11 @@ describe("evalkeeper add pages", () => {
       only: ["pages", "index"],
     });
     expect(plan.files.map((f) => f.path).sort()).toEqual([
+      "app/evals/[suite]/compare/page.tsx",
       "app/evals/[suite]/page.tsx",
       "app/evals/[suite]/rate/page.tsx",
       "app/evals/[suite]/runs/[runId]/page.tsx",
+      "app/evals/[suite]/side-by-side/page.tsx",
       "app/evals/feedback/page.tsx",
       "app/evals/page.tsx",
       "lib/evalkeeper/index.ts",

@@ -80,6 +80,35 @@ describe("schemaKeys", () => {
   it("is null for anything that isn't an object", () => {
     expect(schemaKeys(z.string())).toBeNull();
     expect(schemaKeys(z.array(input))).toBeNull();
+    expect(schemaKeys(z.union([z.string(), z.number()]))).toBeNull();
+  });
+
+  it("reads every key of a union's options, in the order they appear", () => {
+    const typed = z.object({ subject: z.string(), body: z.string() });
+    const pasted = z.object({ pasted: z.string(), body: z.string() });
+    expect(schemaKeys(z.union([typed, pasted]))).toEqual([
+      "subject",
+      "body",
+      "pasted",
+    ]);
+    expect(schemaKeys(z.union([typed, z.string()]).optional())).toEqual([
+      "subject",
+      "body",
+    ]);
+  });
+
+  it("reads a discriminated union's options, wrapped or not", () => {
+    const u = z.discriminatedUnion("kind", [
+      z.object({ kind: z.literal("typed"), subject: z.string() }),
+      z.object({ kind: z.literal("pasted"), text: z.string() }),
+    ]);
+    expect(schemaKeys(u.nullable())).toEqual(["kind", "subject", "text"]);
+  });
+
+  it("gives up on wrappers nested too deep to be a real schema", () => {
+    let s: z.ZodTypeAny = input;
+    for (let i = 0; i < 12; i++) s = z.union([s, z.string()]);
+    expect(schemaKeys(s)).toBeNull();
   });
 });
 
@@ -136,6 +165,59 @@ describe("suiteContractProblems", () => {
     ]);
   });
 
+  it("names a union option's key that has no field", () => {
+    const typed = z.object({ subject: z.string(), body: z.string() });
+    const pasted = z.object({ pasted: z.string() });
+    const s = suite({
+      input: z.union([typed, pasted]) as never,
+      starter: [],
+    });
+    expect(suiteContractProblems([s])).toEqual([
+      'triage: input field "pasted" has no label and help.',
+    ]);
+    const d = suite({
+      input: z.discriminatedUnion("kind", [
+        z.object({ kind: z.literal("typed"), subject: z.string() }),
+        z.object({ kind: z.literal("pasted"), body: z.string() }),
+      ]) as never,
+      starter: [],
+    });
+    expect(suiteContractProblems([d])).toEqual([
+      'triage: input field "kind" has no label and help.',
+    ]);
+  });
+
+  it("names help left for a field the schema no longer has", () => {
+    const problems = suiteContractProblems([
+      suite({
+        fields: {
+          input: [
+            ...good.fields!.input,
+            {
+              name: "concernFirst",
+              label: "Concern first",
+              help: "Whether the concern comes before the request.",
+              kind: "text",
+            },
+          ],
+          label: [
+            ...good.fields!.label,
+            {
+              name: "team",
+              label: "Team",
+              help: "The team that owns the queue.",
+              kind: "text",
+            },
+          ],
+        },
+      }),
+    ]);
+    expect(problems).toEqual([
+      'triage: input field "concernFirst" has help but the input has no such field.',
+      'triage: label field "team" has help but the answer has no such field.',
+    ]);
+  });
+
   it("skips answers that aren't objects", () => {
     const s = suite({
       labelValue: z.string() as never,
@@ -143,5 +225,11 @@ describe("suiteContractProblems", () => {
       starter: [],
     });
     expect(suiteContractProblems([s])).toEqual([]);
+    // Help for an answer whose keys aren't known isn't left behind.
+    expect(
+      suiteContractProblems([
+        suite({ labelValue: z.string() as never, starter: [] }),
+      ]),
+    ).toEqual([]);
   });
 });

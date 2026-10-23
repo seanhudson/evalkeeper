@@ -11,6 +11,7 @@ import {
 import type {
   CaseRecord,
   FeedbackRecord,
+  NewRating,
   FeedbackStatus,
   FeedbackStore,
   CheckResult,
@@ -27,7 +28,13 @@ import type {
   SettingsStore,
   SettingsVersion,
 } from "@crowandraven/evalkeeper";
-import { Table, isRow, type ColumnMap, type Row } from "./mapping.js";
+import {
+  Table,
+  isRow,
+  type ColumnMap,
+  type RawDelegate,
+  type Row,
+} from "./mapping.js";
 
 export type { ColumnMap } from "./mapping.js";
 export * from "./contracts.js";
@@ -564,81 +571,287 @@ const FEEDBACK_STATUSES: readonly FeedbackStatus[] = [
   "DISMISSED",
 ];
 
-const feedback = (f: EvalFeedbackRow): FeedbackRecord => ({
-  id: f.id,
-  operation: f.operation,
-  targetId: f.targetId,
-  raterId: f.raterId,
-  rating: f.rating === "DOWN" ? "DOWN" : "UP",
-  reason: f.reason,
-  excerpt: f.excerpt,
-  input: f.input ?? null,
-  output: f.output ?? null,
-  status: oneOf(f.status, FEEDBACK_STATUSES, "OPEN"),
-  caseId: f.caseId,
-  createdAt: f.createdAt,
-  updatedAt: f.updatedAt,
-});
+/** What the rating column holds for a thumbs up and a thumbs down. */
+export type RatingValues = { UP: string; DOWN: string };
 
-/** A FeedbackStore on the EvalFeedback table. */
-export function prismaFeedbackStore(db: PrismaFeedbackClient): FeedbackStore {
-  return {
-    async rate(r) {
-      const c = cleanRating(r);
-      const key = {
-        raterId_operation_targetId: {
-          raterId: c.raterId,
-          operation: c.operation,
-          targetId: c.targetId,
-        },
-      };
-      const prior = await db.evalFeedback.findUnique({ where: key });
-      const data = {
-        rating: c.rating,
+const RATINGS: RatingValues = { UP: "UP", DOWN: "DOWN" };
+
+/**
+ * Column names for the feedback table, keyed by Evalkeeper's field. Like
+ * `ColumnMap`, and `status` may be `null` too: a table without it reads
+ * every rating as OPEN.
+ */
+export type FeedbackColumnMap = ColumnMap<
+  Omit<EvalFeedbackRow, "status"> & { status: string | null }
+>;
+
+/**
+ * How Evalkeeper's feedback table maps onto an app's own thumbs table, for
+ * an app that recorded thumbs up and down before Evalkeeper. Pass it to
+ * `prismaFeedbackStore` (and `deleteScopedRows`); leave out anything
+ * named the same.
+ *
+ * A table without `input` (most thumbs tables never kept inputs) still
+ * gives the weekly summary's thumbs-down alerts and the hub's counts,
+ * which need only the rating, feature, and time; its ratings can't become
+ * cases, and `whyNotACase` says so.
+ */
+export type PrismaFeedbackMap = {
+  /**
+   * The table's model on the Prisma client, as the client spells it
+   * (`prisma.aiFeedback` is `"aiFeedback"`).
+   */
+  models?: { evalFeedback?: string };
+  /**
+   * Column names, keyed by Evalkeeper's field (`raterId: "userId"`).
+   * `null` says the table has no such column (`reason`, `excerpt`,
+   * `input`, `output`, `status`, or `caseId`): reads give null (a status,
+   * OPEN), and writing a value fails rather than losing it.
+   */
+  fields?: { evalFeedback?: FeedbackColumnMap };
+  /**
+   * What your rating column holds for each, when it isn't UP and DOWN (an
+   * enum with other names, say `{ UP: "up", DOWN: "down" }`). A value
+   * that's neither reads as a thumbs up.
+   */
+  ratings?: RatingValues;
+};
+
+/** The feedback table, through a map. */
+function feedbackTable(map: PrismaFeedbackMap = {}): Table {
+  return new Table(
+    "evalFeedback",
+    map.models?.evalFeedback ?? "evalFeedback",
+    map.fields?.evalFeedback,
+  );
+}
+
+/** A model's delegate with the two methods only the feedback store calls. */
+type FeedbackDelegate = RawDelegate & {
+  upsert(args: object): PromiseLike<unknown>;
+  deleteMany(args: object): PromiseLike<unknown>;
+};
+
+function feedbackDelegate(t: Table, db: object): FeedbackDelegate {
+  const d = t.on(db);
+  if (
+    typeof Reflect.get(d, "upsert") !== "function" ||
+    typeof Reflect.get(d, "deleteMany") !== "function"
+  )
+    throw new Error(
+      `Your Prisma client's "${t.model}" model has no upsert or deleteMany, so it can't hold ratings.`,
+    );
+  // Trust boundary: a Prisma delegate, checked for both methods.
+  return d as FeedbackDelegate;
+}
+
+/** Fields a rating writes that a table may have no column for. */
+const RATING_TEXT = ["reason", "excerpt", "input", "output"] as const;
+
+/**
+ * A FeedbackStore on the EvalFeedback table.
+ *
+ * @param db - Your Prisma client.
+ */
+export function prismaFeedbackStore(db: PrismaFeedbackClient): FeedbackStore;
+/**
+ * A FeedbackStore on your own thumbs table, through a map (see
+ * `PrismaFeedbackMap`), so the weekly summary's alerts and the hub's
+ * counts read the ratings your app already keeps.
+ *
+ * @param db - Your Prisma client.
+ * @param map - Where your table differs from Evalkeeper's.
+ *
+ * @example
+ * An `aiFeedback` table with a `userId` column, a rating enum of UP and
+ * DOWN, a reason, an excerpt, and times, that never kept inputs:
+ * ```ts
+ * const feedbackStore = prismaFeedbackStore(prisma, {
+ *   models: { evalFeedback: "aiFeedback" },
+ *   fields: {
+ *     evalFeedback: {
+ *       raterId: "userId",
+ *       input: null,
+ *       output: null,
+ *       status: null,
+ *       caseId: null,
+ *     },
+ *   },
+ * });
+ * ```
+ */
+export function prismaFeedbackStore(
+  db: object,
+  map: PrismaFeedbackMap,
+): FeedbackStore;
+export function prismaFeedbackStore(
+  db: object,
+  map?: PrismaFeedbackMap,
+): FeedbackStore {
+  const t = feedbackTable(map);
+  const d = feedbackDelegate(t, db);
+  const ratings = map?.ratings ?? RATINGS;
+  const keepsInputs = t.col("input") !== null;
+  const hasStatus = t.col("status") !== null;
+  const toRecord = (f: Row): FeedbackRecord => {
+    return {
+      id: str(f.id),
+      operation: str(f.operation),
+      targetId: str(f.targetId),
+      raterId: str(f.raterId),
+      rating: f.rating === ratings.DOWN ? "DOWN" : "UP",
+      reason: strOrNull(f.reason),
+      excerpt: strOrNull(f.excerpt),
+      input: f.input ?? null,
+      output: f.output ?? null,
+      status: oneOf(f.status, FEEDBACK_STATUSES, "OPEN"),
+      caseId: strOrNull(f.caseId),
+      createdAt: date(f.createdAt),
+      updatedAt: date(f.updatedAt),
+      ...(keepsInputs ? {} : { keepsInputs: false }),
+    };
+  };
+  const record = (raw: unknown) => toRecord(t.in(raw));
+  /**
+   * Refuses what the table can't keep, before writing anything. Said
+   * here rather than by the map, so the error never repeats a person's
+   * words or input.
+   */
+  const refuse = (c: Required<NewRating>) => {
+    for (const field of RATING_TEXT)
+      if (c[field] !== null && t.col(field) === null)
+        throw new Error(
+          `Your feedback table has no column for a rating's ${field} (the map sets ${field} to null), so it can't keep one. Leave ${field} out of the rating, or add a nullable column and map ${field} to it.`,
+        );
+  };
+
+  if (!map)
+    return {
+      async rate(r) {
+        const c = cleanRating(r);
+        const key = {
+          raterId_operation_targetId: {
+            raterId: c.raterId,
+            operation: c.operation,
+            targetId: c.targetId,
+          },
+        };
+        const prior = await d.findUnique({ where: key });
+        const data = {
+          rating: c.rating,
+          reason: c.reason,
+          excerpt: c.excerpt,
+          input: json(c.input),
+          output: json(c.output),
+          // A changed rating needs a fresh look.
+          ...(isRow(prior) && prior.rating !== c.rating
+            ? { status: "OPEN", caseId: null }
+            : {}),
+        };
+        return record(
+          await d.upsert({
+            where: key,
+            create: {
+              ...data,
+              operation: c.operation,
+              targetId: c.targetId,
+              raterId: c.raterId,
+            },
+            update: data,
+          }),
+        );
+      },
+      async clearRating(raterId, operation, targetId) {
+        await d.deleteMany({ where: { raterId, operation, targetId } });
+      },
+      async listFeedback(opts = {}) {
+        const rows = await d.findMany({
+          where: {
+            ...(opts.operation ? { operation: opts.operation } : {}),
+            ...(opts.rating ? { rating: opts.rating } : {}),
+            ...(opts.status ? { status: opts.status } : {}),
+            ...(opts.since ? { updatedAt: { gte: opts.since } } : {}),
+          },
+          orderBy: { updatedAt: "desc" },
+          ...(opts.limit ? { take: opts.limit } : {}),
+        });
+        return t.ins(rows).map(toRecord);
+      },
+      async setFeedbackStatus(id, status, caseId = null) {
+        await d.updateMany({ where: { id }, data: { status, caseId } });
+      },
+    };
+
+  // An app's own table may have no unique key on (rater, feature,
+  // answer), or one Prisma names differently, so a rating is found first
+  // and then updated or created, rather than upserted.
+  const write = async (c: Required<NewRating>) => {
+    const who = t.out({
+      raterId: c.raterId,
+      operation: c.operation,
+      targetId: c.targetId,
+    });
+    const rating = ratings[c.rating];
+    const data = (prior: Row | null) =>
+      t.out({
+        rating,
         reason: c.reason,
         excerpt: c.excerpt,
         input: json(c.input),
         output: json(c.output),
         // A changed rating needs a fresh look.
-        ...(prior && prior.rating !== c.rating
-          ? { status: "OPEN", caseId: null }
+        ...(prior && prior.rating !== rating
+          ? { ...(hasStatus ? { status: "OPEN" } : {}), caseId: null }
           : {}),
-      };
-      return feedback(
-        await db.evalFeedback.upsert({
-          where: key,
-          create: {
-            ...data,
-            operation: c.operation,
-            targetId: c.targetId,
-            raterId: c.raterId,
-          },
-          update: data,
-        }),
-      );
+      });
+    const update = (prior: Row) =>
+      d.update({ where: t.out({ id: prior.id }), data: data(prior) });
+    const found = await d.findFirst({ where: who });
+    if (found) return update(t.in(found));
+    try {
+      return await d.create({ data: { ...data(null), ...who } });
+    } catch (e) {
+      // Another request by the same person got in first (a double click):
+      // update the rating it made.
+      const again = await d.findFirst({ where: who });
+      if (again) return update(t.in(again));
+      throw e;
+    }
+  };
+
+  return {
+    async rate(r) {
+      const c = cleanRating(r);
+      refuse(c);
+      return record(await write(c));
     },
     async clearRating(raterId, operation, targetId) {
-      await db.evalFeedback.deleteMany({
-        where: { raterId, operation, targetId },
-      });
+      await d.deleteMany({ where: t.out({ raterId, operation, targetId }) });
     },
     async listFeedback(opts = {}) {
-      const rows = await db.evalFeedback.findMany({
-        where: {
+      // Without a status column every rating is open, and none is
+      // anything else.
+      if (opts.status && opts.status !== "OPEN" && !hasStatus) return [];
+      const rows = await d.findMany({
+        where: t.out({
           ...(opts.operation ? { operation: opts.operation } : {}),
-          ...(opts.rating ? { rating: opts.rating } : {}),
-          ...(opts.status ? { status: opts.status } : {}),
+          ...(opts.rating ? { rating: ratings[opts.rating] } : {}),
+          ...(opts.status && hasStatus ? { status: opts.status } : {}),
           ...(opts.since ? { updatedAt: { gte: opts.since } } : {}),
-        },
-        orderBy: { updatedAt: "desc" },
+        }),
+        orderBy: t.out({ updatedAt: "desc" }),
         ...(opts.limit ? { take: opts.limit } : {}),
       });
-      return rows.map(feedback);
+      return t.ins(rows).map(toRecord);
     },
     async setFeedbackStatus(id, status, caseId = null) {
-      await db.evalFeedback.updateMany({
-        where: { id },
-        data: { status, caseId },
+      if (!hasStatus)
+        throw new Error(
+          `Your feedback table has no status column (the map sets status to null), so a rating can't be marked ${status}. Add a text column (default "OPEN") and map status to it.`,
+        );
+      await d.updateMany({
+        where: t.out({ id }),
+        data: t.out({ status, caseId }),
       });
     },
   };

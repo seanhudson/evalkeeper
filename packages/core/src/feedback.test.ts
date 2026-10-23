@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import {
+  NO_INPUTS_KEPT,
   caseFromFeedback,
   cleanRating,
   thumbsSummary,
@@ -108,6 +109,14 @@ describe("caseFromFeedback", () => {
     );
     expect(whyNotACase(fb(), any)).toBeNull();
     expect(caseFromFeedback(fb({ input: null }), any)).toBeNull();
+  });
+
+  it("refuses in plain words when the store keeps no inputs", () => {
+    const f = fb({ input: null, keepsInputs: false });
+    expect(whyNotACase(f, any)).toBe(NO_INPUTS_KEPT);
+    expect(whyNotACase(f, undefined)).toBe(NO_INPUTS_KEPT);
+    expect(caseFromFeedback(f, any)).toBeNull();
+    expect(whyNotACase(fb({ keepsInputs: true }), any)).toBeNull();
   });
 });
 

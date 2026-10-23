@@ -4,9 +4,9 @@ Prisma storage for [Evalkeeper](https://github.com/seanhudson/evalkeeper), the e
 PostgreSQL, MySQL, or SQLite), a store on your Prisma client
 (`prismaStore(prisma)`), and a judgment cache (`prismaJudgmentCache`).
 
-Already have eval or versions tables of your own? Keep your rows where
-they are: `prismaStore(prisma, map)` and `prismaSettingsStore(prisma, map)`
-map onto them, with other model and column names, Decimal costs, Prisma
+Already have eval, versions, or thumbs tables of your own? Keep your rows
+where they are: `prismaStore(prisma, map)`, `prismaSettingsStore(prisma,
+map)`, and `prismaFeedbackStore(prisma, map)` map onto them, with other model and column names, Decimal costs, Prisma
 enums, `String[]` or `Json` tags, and `null` for columns you lack. Check a
 mapped store read-only with `prismaReadCheck`, which lists every value in
 your rows that doesn't parse, then with `describeStoreContract`, scoped

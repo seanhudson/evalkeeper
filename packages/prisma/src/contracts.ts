@@ -10,7 +10,11 @@ import {
   type ReadCheckReport,
   type ReadRow,
 } from "@crowandraven/evalkeeper";
-import type { PrismaSettingsMap, PrismaStoreMap } from "./index.js";
+import type {
+  PrismaFeedbackMap,
+  PrismaSettingsMap,
+  PrismaStoreMap,
+} from "./index.js";
 import { Table, isRow, type Row } from "./mapping.js";
 
 /** A model's delete, as any Prisma client has it. */
@@ -52,6 +56,8 @@ export type ScopedRowsMaps = {
   map?: PrismaStoreMap;
   /** The map you pass `prismaSettingsStore`, if any. */
   settingsMap?: PrismaSettingsMap;
+  /** The map you pass `prismaFeedbackStore`, if any. */
+  feedbackMap?: PrismaFeedbackMap;
 };
 
 /**
@@ -143,7 +149,12 @@ export async function deleteScopedRows(
   if (r) deleted.tests = await remove(runs, r.d, "id", r.ids);
   if (c) deleted.cases = await remove(cases, c.d, "id", c.ids);
 
-  const fb = new Table("evalFeedback", "evalFeedback");
+  const fm = maps.feedbackMap ?? {};
+  const fb = new Table(
+    "evalFeedback",
+    fm.models?.evalFeedback ?? "evalFeedback",
+    fm.fields?.evalFeedback,
+  );
   const f = await scoped(fb, "operation");
   if (f) deleted.feedback = await remove(fb, f.d, "id", f.ids);
 

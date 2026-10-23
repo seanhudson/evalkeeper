@@ -146,8 +146,9 @@ the fresh-start steps for those pieces, and tell the person which pieces
 you found and which you'd map, keep, or replace.
 
 - **Map, don't migrate.** Keep existing eval rows in their tables:
-  `prismaStore(prisma, map)` and `prismaSettingsStore(prisma, map)` map
-  model names, column names, Decimal costs, enums, and missing columns.
+  `prismaStore(prisma, map)`, `prismaSettingsStore(prisma, map)`, and
+  `prismaFeedbackStore(prisma, map)` map model names, column names,
+  Decimal costs, enums, and missing columns.
   Don't copy Evalkeeper's models into a schema that already has its own,
   and don't move or re-import reviewed answers.
 - **Prove the map before using it.** First the read-only check:

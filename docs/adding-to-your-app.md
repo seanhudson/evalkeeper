@@ -265,7 +265,9 @@ Then:
 ## 8. Add thumbs to your AI answers (optional)
 
 Add the `EvalFeedback` model from the schema and create
-`prismaFeedbackStore(prisma)`. Put a thumbs up and down on each AI answer
+`prismaFeedbackStore(prisma)`. If your app already records thumbs in its
+own table, map it instead ("Your own thumbs table" under "Bring your
+own"). Put a thumbs up and down on each AI answer
 (`examples/next/components/evalkeeper/Thumbs.tsx`), with a server action
 that looks the answer up by its id, never trusting what the browser sends,
 and calls `feedbackStore.rate(...)` with the person's id.
@@ -317,7 +319,7 @@ a full example.
 ## Bring your own
 
 An app that had evals before Evalkeeper (its own tables full of reviewed
-answers, its own router, versions, or pages) keeps them. Each piece below
+answers, its own router, versions, thumbs, or pages) keeps them. Each piece below
 is chosen on its own.
 
 ### Your own eval tables
@@ -503,6 +505,61 @@ to `deleteScopedRows`).
 **Costs:** a map, and the `by` callbacks if you keep user ids. Saving a
 version with a setting you have no column for fails, so leave that
 setting out of your forms.
+
+### Your own thumbs table
+
+If your app already records thumbs up and down, point
+`prismaFeedbackStore` at that table, so the weekly summary's alerts and
+the hub's counts read the ratings you already have. A typical table is
+`{ id, userId, operation, targetId, rating (an enum UP/DOWN), reason,
+excerpt, createdAt, updatedAt }`, with no inputs:
+
+```ts
+export const feedbackStore = prismaFeedbackStore(prisma, {
+  models: { evalFeedback: "aiFeedback" },
+  fields: {
+    evalFeedback: {
+      raterId: "userId",
+      // Columns the table doesn't have.
+      input: null,
+      output: null,
+      status: null,
+      caseId: null,
+    },
+  },
+  // ratings: { UP: "up", DOWN: "down" }, // if your values differ
+});
+```
+
+What a thumbs table needs depends on what you want from it:
+
+- **Alerts and counts** (the weekly summary's thumbs-down alerts, the
+  hub's counts) need only the rating, the feature (`operation`), and the
+  time (`updatedAt`), plus who rated which answer (`raterId` and
+  `targetId`), so each person has one rating per answer.
+- **Turning ratings into cases** needs the input behind each answer,
+  kept only with the person's consent, with names and contact details
+  removed. Without an `input` column, each rating reads with
+  `keepsInputs: false`, and the feedback page says "This app doesn't keep
+  inputs with ratings, so a rating can't become a case."
+- **Marking ratings looked at** (dismissed, or made into a case) needs a
+  `status` column (text, default "OPEN") and a nullable `caseId`. Without
+  `status`, every rating reads as OPEN, and marking one fails with a
+  message saying what to add.
+
+Map a column to `null` only when the table lacks it: it reads as null,
+and writing a value fails instead of losing it, so leave that field out
+of your rating action (`reason` and `excerpt` can be `null` too). An app
+table without a unique key on (`raterId`, `operation`, `targetId`) still
+keeps one rating per person per answer: a mapped store finds the rating
+before writing it. Check it with `describeFeedbackStoreContract(name,
+make, { without: ["input", "output", "status", "caseId"] })`, on a
+throwaway database or scoped as above (pass `{ feedbackMap }` to
+`deleteScopedRows`).
+
+**Costs:** a map. Ratings without inputs can't become cases; add a
+nullable `Json` column for inputs (and ask for consent) when you want
+them to.
 
 ### Your own pages
 

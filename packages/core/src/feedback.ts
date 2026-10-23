@@ -40,6 +40,12 @@ export type FeedbackRecord = {
   caseId: string | null;
   createdAt: Date;
   updatedAt: Date;
+  /**
+   * False when the store has no column for inputs (an app's own thumbs
+   * table that never kept them), so no rating from it can become a case.
+   * Stores that keep inputs leave it out.
+   */
+  keepsInputs?: boolean;
 };
 
 /** A rating to save; `cleanRating` trims and bounds it. */
@@ -105,14 +111,24 @@ export function cleanRating(r: NewRating): Required<NewRating> {
   };
 }
 
+/** Why no rating can become a case when the store keeps no inputs. */
+export const NO_INPUTS_KEPT =
+  "This app doesn't keep inputs with ratings, so a rating can't become a case.";
+
 /**
  * Why a rating can't become a case for this suite, or null when it can. A
- * case needs the input that produced the answer, in the suite's shape.
+ * case needs the input that produced the answer, in the suite's shape, so
+ * a rating from a store that keeps no inputs (`keepsInputs: false`) never
+ * can.
+ *
+ * @param f - The rating.
+ * @param suite - The suite that tests its feature, if any.
  */
 export function whyNotACase(
   f: FeedbackRecord,
   suite: AnySuite | undefined,
 ): string | null {
+  if (f.keepsInputs === false) return NO_INPUTS_KEPT;
   if (!suite) return "No suite tests this feature yet.";
   if (f.input === null || f.input === undefined)
     return "The input behind this answer wasn't kept, so there's nothing to test.";
@@ -125,7 +141,9 @@ export function whyNotACase(
  * A draft case from a rating, for a person to finish. A thumbs down has no
  * answer yet: the person writes what a good one is. A thumbs up proposes
  * the model's own answer, pending until a person confirms it. Never
- * confirmed on anyone's behalf. Null when it can't become a case.
+ * confirmed on anyone's behalf. Null when it can't become a case
+ * (`whyNotACase` says why in plain words, including when the store keeps
+ * no inputs at all).
  *
  * @example
  * ```ts

@@ -1,4 +1,9 @@
 import { describe, expect, it } from "vitest";
+import {
+  cleanRating,
+  type FeedbackRecord,
+  type FeedbackStore,
+} from "./feedback.js";
 import { memoryStore } from "./memoryStore.js";
 import { checkStoreReads } from "./readCheck.js";
 import {
@@ -8,11 +13,67 @@ import {
   describeSettingsStoreContract,
   describeStoreContract,
   type ContractTest,
+  type FeedbackColumn,
 } from "./testing.js";
 
 describeStoreContract("memoryStore", () => memoryStore());
 describeFeedbackStoreContract("memoryStore", () => memoryStore());
 describeSettingsStoreContract("memoryStore", () => memoryStore());
+
+/**
+ * A feedback store on a thumbs table without some columns, as a mapped
+ * Prisma store would be: it refuses a value for a missing column and
+ * reads it as null (a status, OPEN). For the contract's `without`.
+ */
+function lacking(without: FeedbackColumn[]): FeedbackStore {
+  const inner = memoryStore();
+  const lacks = (c: FeedbackColumn) => without.includes(c);
+  const refuse = (c: FeedbackColumn, v: unknown) => {
+    if (lacks(c) && v !== null && v !== undefined)
+      throw new Error(`No ${c} column`);
+  };
+  const read = (f: FeedbackRecord): FeedbackRecord => ({
+    ...f,
+    reason: lacks("reason") ? null : f.reason,
+    excerpt: lacks("excerpt") ? null : f.excerpt,
+    input: lacks("input") ? null : f.input,
+    output: lacks("output") ? null : f.output,
+    status: lacks("status") ? "OPEN" : f.status,
+    caseId: lacks("caseId") ? null : f.caseId,
+    ...(lacks("input") ? { keepsInputs: false } : {}),
+  });
+  return {
+    async rate(r) {
+      const c = cleanRating(r);
+      for (const k of ["reason", "excerpt", "input", "output"] as const)
+        refuse(k, c[k]);
+      return read(await inner.rate(r));
+    },
+    clearRating: (...a) => inner.clearRating(...a),
+    async listFeedback(opts = {}) {
+      if (lacks("status") && opts.status && opts.status !== "OPEN") return [];
+      const { status, ...rest } = opts;
+      const all = await inner.listFeedback(lacks("status") ? rest : opts);
+      return all.map(read).filter((f) => !status || f.status === status);
+    },
+    async setFeedbackStatus(id, status, caseId = null) {
+      refuse("status", status);
+      refuse("caseId", caseId);
+      await inner.setFeedbackStatus(id, status, caseId);
+    },
+  };
+}
+
+describeFeedbackStoreContract(
+  "a thumbs table with only a rating, feature, and time",
+  () => lacking(["reason", "excerpt", "input", "output", "status", "caseId"]),
+  { without: ["reason", "excerpt", "input", "output", "status", "caseId"] },
+);
+describeFeedbackStoreContract(
+  "a thumbs table with statuses but no case ids or inputs",
+  () => lacking(["input", "caseId"]),
+  { without: ["input", "caseId"] },
+);
 
 // The scoped contracts on one store that holds other rows, as a shared
 // development database would: they pass without an empty store, and

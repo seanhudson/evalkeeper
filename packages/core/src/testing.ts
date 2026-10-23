@@ -8,7 +8,12 @@
 import { z } from "zod";
 import type { ContractExpect } from "./assertExpect.js";
 import { BLIND_RATER, blindRating, nextToRate, skipMark } from "./blind.js";
-import type { FeedbackStore, NewRating } from "./feedback.js";
+import {
+  NO_INPUTS_KEPT,
+  whyNotACase,
+  type FeedbackStore,
+  type NewRating,
+} from "./feedback.js";
 import { confirmedLabel } from "./labels.js";
 import { createRunner } from "./runner.js";
 import {
@@ -560,21 +565,72 @@ export function describeStoreContract(
   });
 }
 
+/** The columns a thumbs table may lack, for `FeedbackStoreContractOptions`. */
+export type FeedbackColumn =
+  "reason" | "excerpt" | "input" | "output" | "status" | "caseId";
+
+/**
+ * Options for the feedback store contract, for a store on an app's own
+ * thumbs table that lacks some of Evalkeeper's columns.
+ */
+export type FeedbackStoreContractOptions = ScopedContractOptions & {
+  /**
+   * Columns the store's table doesn't have (mapped to `null`). The
+   * contract then checks the store refuses a value for each (rather than
+   * losing it) and reads it as null; with no `input`, that no rating can
+   * become a case; and with no `status`, that every rating reads as OPEN.
+   */
+  without?: FeedbackColumn[];
+};
+
 /**
  * The contract every FeedbackStore must meet. `make` must return an empty
  * store each time it's called, unless `opts.scope` is set (see
  * `describeStoreContract`): then every feature the contract rates starts
  * with the scope, and its lists ask for those features only.
+ * `opts.without` names columns the store's table doesn't have (an app's
+ * own thumbs table without inputs or statuses, say).
+ *
+ * @param name - What the tests are called, e.g. "our thumbs table".
+ * @param make - Returns the store to test (an empty one, unless scoped).
+ * @param opts - A scope and cleanup, missing columns, and test functions.
+ *
+ * @example
+ * ```ts
+ * describeFeedbackStoreContract(
+ *   "our thumbs table",
+ *   () => prismaFeedbackStore(prisma, feedbackMap),
+ *   {
+ *     without: ["input", "output", "status", "caseId"],
+ *     scope: "contract-",
+ *     cleanup: (scope) => deleteScopedRows(prisma, scope, { feedbackMap }),
+ *   },
+ * );
+ * ```
  */
 export function describeFeedbackStoreContract(
   name: string,
   make: () => FeedbackStore | Promise<FeedbackStore>,
-  opts: ScopedContractOptions = {},
+  opts: FeedbackStoreContractOptions = {},
 ) {
   const t = testFunctions(opts.test);
   const { describe, it, expect } = t;
   const names = scopeNames(opts.scope);
   const scoped = opts.scope !== undefined;
+  const lacks = (c: FeedbackColumn) => opts.without?.includes(c) ?? false;
+  const kept = {
+    reason: "Wrong queue",
+    excerpt: "billing",
+    input: { subject: "Refund", body: "Please refund me." },
+    output: { category: "bug" },
+  };
+  /** What a store keeps of `kept`: null for each column it lacks. */
+  const keeps = {
+    reason: lacks("reason") ? null : kept.reason,
+    excerpt: lacks("excerpt") ? null : kept.excerpt,
+    input: lacks("input") ? null : kept.input,
+    output: lacks("output") ? null : kept.output,
+  };
   const rating = (
     operation: string,
     over: Partial<NewRating> = {},
@@ -583,29 +639,36 @@ export function describeFeedbackStoreContract(
     targetId: "answer-1",
     raterId: "person-1",
     rating: "DOWN",
-    reason: "Wrong queue",
-    excerpt: "billing",
-    input: { subject: "Refund", body: "Please refund me." },
-    output: { category: "bug" },
+    ...keeps,
     ...over,
   });
 
   describe(`FeedbackStore contract: ${name}`, () => {
     registerCleanup(t, opts);
 
-    it("keeps a rating with its reason, input, and output, open", async () => {
+    it("keeps a rating with its reason, excerpt, input, and output, open", async () => {
       const store = await make();
       const op = names()("triage");
       const f = await store.rate(rating(op));
       expect(f).toMatchObject({
         operation: op,
+        targetId: "answer-1",
+        raterId: "person-1",
         rating: "DOWN",
-        reason: "Wrong queue",
-        excerpt: "billing",
-        input: { subject: "Refund", body: "Please refund me." },
-        output: { category: "bug" },
+        ...keeps,
         status: "OPEN",
         caseId: null,
+      });
+      const listed = await store.listFeedback({ operation: op });
+      expect(listed).toHaveLength(1);
+      expect(listed[0]).toMatchObject({
+        id: f.id,
+        operation: op,
+        targetId: "answer-1",
+        raterId: "person-1",
+        rating: "DOWN",
+        ...keeps,
+        status: "OPEN",
       });
     });
 
@@ -613,9 +676,11 @@ export function describeFeedbackStoreContract(
       const store = await make();
       const op = names()("triage");
       const first = await store.rate(rating(op));
-      await store.setFeedbackStatus(first.id, "DISMISSED");
+      if (!lacks("status"))
+        await store.setFeedbackStatus(first.id, "DISMISSED");
       const changed = await store.rate(rating(op, { rating: "UP" }));
       expect(changed.id).toBe(first.id);
+      expect(changed.rating).toBe("UP");
       expect(changed.status).toBe("OPEN");
       expect(changed.reason).toBeNull();
       await store.rate(rating(op, { raterId: "person-2" }));
@@ -646,17 +711,78 @@ export function describeFeedbackStoreContract(
       expect(
         (await store.listFeedback({ operation: op })).map((f) => f.id),
       ).toEqual([b.id, a.id]);
-      expect(await store.listFeedback({ ...mine, rating: "UP" })).toHaveLength(
-        1,
-      );
-      await store.setFeedbackStatus(a.id, "CASED", "case-1");
-      const cased = await store.listFeedback({ ...mine, status: "CASED" });
-      expect(cased.map((f) => [f.id, f.caseId])).toEqual([[a.id, "case-1"]]);
+      expect(
+        (await store.listFeedback({ ...mine, rating: "UP" })).map((f) => f.id),
+      ).toEqual([b.id]);
+      expect(
+        (await store.listFeedback({ ...mine, rating: "DOWN" })).length,
+      ).toBe(scoped ? 1 : 2);
+      if (lacks("status")) {
+        // Every rating reads as open, and none can be anything else.
+        expect(
+          await store.listFeedback({ ...mine, status: "OPEN" }),
+        ).toHaveLength(scoped ? 2 : 3);
+        expect(
+          await store.listFeedback({ ...mine, status: "CASED" }),
+        ).toHaveLength(0);
+      } else {
+        const caseId = lacks("caseId") ? null : "case-1";
+        await store.setFeedbackStatus(a.id, "CASED", caseId);
+        const cased = await store.listFeedback({ ...mine, status: "CASED" });
+        expect(cased.map((f) => [f.id, f.caseId])).toEqual([[a.id, caseId]]);
+      }
       expect(
         await store.listFeedback({ since: new Date(Date.now() + 60_000) }),
       ).toHaveLength(0);
       expect(await store.listFeedback({ limit: 1 })).toHaveLength(1);
     });
+
+    for (const column of ["reason", "excerpt", "input", "output"] as const) {
+      if (!lacks(column)) continue;
+      it(`refuses a rating's ${column} it has no column for, and keeps none`, async () => {
+        const store = await make();
+        const op = names()("triage");
+        await expect(
+          store.rate(rating(op, { [column]: kept[column] })),
+        ).rejects.toThrow(column);
+        expect(await store.listFeedback({ operation: op })).toHaveLength(0);
+      });
+    }
+
+    if (lacks("input"))
+      it("says in plain words that no rating can become a case", async () => {
+        const store = await make();
+        const op = names()("triage");
+        const f = await store.rate(rating(op));
+        expect(f.keepsInputs).toBe(false);
+        expect(whyNotACase(f, undefined)).toBe(NO_INPUTS_KEPT);
+        const [read] = await store.listFeedback({ operation: op });
+        expect(read && whyNotACase(read, undefined)).toBe(NO_INPUTS_KEPT);
+      });
+
+    if (lacks("status"))
+      it("refuses a status it has no column for, and leaves the rating open", async () => {
+        const store = await make();
+        const op = names()("triage");
+        const f = await store.rate(rating(op));
+        await expect(
+          store.setFeedbackStatus(f.id, "DISMISSED"),
+        ).rejects.toThrow("status");
+        const [read] = await store.listFeedback({ operation: op });
+        expect(read?.status).toBe("OPEN");
+      });
+
+    if (lacks("caseId") && !lacks("status"))
+      it("refuses a case id it has no column for, and changes nothing", async () => {
+        const store = await make();
+        const op = names()("triage");
+        const f = await store.rate(rating(op));
+        await expect(
+          store.setFeedbackStatus(f.id, "CASED", "case-1"),
+        ).rejects.toThrow("caseId");
+        const [read] = await store.listFeedback({ operation: op });
+        expect(read).toMatchObject({ status: "OPEN", caseId: null });
+      });
   });
 }
 

@@ -105,6 +105,11 @@ Every change comes with the tests that prove it, at the right level:
   `evalsPath`; every page and action calls `requireAdmin()` first. A page
   that imports anything else breaks the copied app, and
   `examples/next/test/cli.test.ts` (which typechecks a copy) fails.
+- Something an app customizes on the copied pages goes through the
+  wiring module, not edits to the copies: an answer editor is an entry in
+  its `answerEditors`. A new export the pages read goes in the starter
+  wiring (`packages/core/starter/index.ts`), the example's, and the CLI's
+  "exports what the pages use" step, together.
 - Relative imports in the packages end in `.js`, so the built packages
   load in plain Node, not only through a bundler.
 - A change to what a suite's grading means bumps its `graderVersion`.

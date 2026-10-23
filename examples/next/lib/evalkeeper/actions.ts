@@ -3,6 +3,7 @@
 import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import {
+  answerFromForm,
   blindRating,
   caseFromFeedback,
   formText,
@@ -192,7 +193,6 @@ export async function rescore(form: FormData) {
 export async function addCase(form: FormData) {
   await requireAdmin();
   const suite = suiteFrom(form);
-  if (!suite.labelFromForm) throw new Error("This suite has no answer form");
   const { input, removed } = withoutLeaks(
     suite,
     suite.inputFromForm(form),
@@ -214,7 +214,7 @@ export async function addCase(form: FormData) {
       {
         kind: "EXPECTED",
         status: "CONFIRMED",
-        value: suite.labelFromForm(form),
+        value: answerFromForm(suite, form),
         raterRole: "OWNER",
         raterId: null,
         note: null,
@@ -231,14 +231,13 @@ export async function addCase(form: FormData) {
 export async function editAnswer(form: FormData) {
   await requireAdmin();
   const suite = suiteFrom(form);
-  if (!suite.labelFromForm) throw new Error("This suite has no answer form");
   const caseId = formText(form, "case");
   const known = (await store.listCases(suite.key)).some((c) => c.id === caseId);
   if (!known) throw new Error("Unknown case");
   await store.addLabel(caseId, {
     kind: "EXPECTED",
     status: "CONFIRMED",
-    value: suite.labelFromForm(form),
+    value: answerFromForm(suite, form),
     raterRole: "OWNER",
     raterId: null,
     note: null,
@@ -256,7 +255,7 @@ export async function editAnswer(form: FormData) {
  */
 async function caseToRate(form: FormData, raterId: string) {
   const suite = suiteFrom(form);
-  if (suite.caseKind !== "imported" || !suite.labelFromForm)
+  if (suite.caseKind !== "imported")
     throw new Error("This suite isn't rated blind");
   const caseId = formText(form, "case");
   const c = (await store.listCases(suite.key)).find((x) => x.id === caseId);
@@ -273,12 +272,11 @@ async function caseToRate(form: FormData, raterId: string) {
 export async function rateBlind(form: FormData) {
   const admin = await requireAdmin();
   const { suite, c } = await caseToRate(form, admin.id);
-  if (!suite.labelFromForm) throw new Error("This suite has no answer form");
   await store.addLabel(
     c.id,
     blindRating({
       raterId: admin.id,
-      value: suite.labelFromForm(form),
+      value: answerFromForm(suite, form),
       reason: formText(form, "reason"),
     }),
   );

@@ -18,6 +18,7 @@ import { IconSubmit, Spinner, Submit } from "@/components/evalkeeper/Submit";
 import { RotateCw } from "lucide-react";
 import { BackLink, Card, Chip, Score, pct } from "@/components/evalkeeper/ui";
 import {
+  answerEditors,
   MODELS,
   requireAdmin,
   runner,
@@ -442,16 +443,17 @@ export default async function SuitePage({
           }
           tools={
             <>
-              {suite.caseKind === "imported" && suite.labelFromForm && (
-                <Tip control term="rateBlind" side="bottom" align="end">
-                  <Link
-                    href={evalsPath(key, "rate")}
-                    className="inline-flex items-center rounded-md border border-accent/40 bg-card px-3 py-1.5 text-sm text-accent hover:bg-accent/10"
-                  >
-                    Rate blind
-                  </Link>
-                </Tip>
-              )}
+              {suite.caseKind === "imported" &&
+                (suite.labelFromForm || answerEditors[key]) && (
+                  <Tip control term="rateBlind" side="bottom" align="end">
+                    <Link
+                      href={evalsPath(key, "rate")}
+                      className="inline-flex items-center rounded-md border border-accent/40 bg-card px-3 py-1.5 text-sm text-accent hover:bg-accent/10"
+                    >
+                      Rate blind
+                    </Link>
+                  </Tip>
+                )}
               <form action={rescore}>
                 <input type="hidden" name="suite" value={key} />
                 <Tip control term="rescore" side="bottom" align="end">

@@ -200,6 +200,31 @@ inputFromForm: inputFromJson(profileSchema),
 labelFromForm: labelFromJson(fitSchema),
 ```
 
+**Structured fields.** A field whose value is a list of objects or a
+nested shape takes `kind: "json"`: the pages show it as indented JSON in
+a monospace box. `inputFromFields(schema, fields.input)` and
+`labelFromFields(schema, fields.label)` read every field by its kind
+(text as it is, `lines` as a list, `json` parsed) and check the whole
+with the schema, so one reader covers a form that mixes them.
+
+**Your own answer editor.** For answers plain fields edit poorly (facts
+with a category each, a verdict with its reasons), write a client
+component that takes `AnswerEditorProps` and keeps the whole answer, as
+JSON, in a hidden input named `name`. Register it in your wiring module,
+keyed by suite:
+
+```ts
+export const answerEditors: Partial<
+  Record<string, ComponentType<AnswerEditorProps>>
+> = { fact_parse: FactsEditor };
+```
+
+The copied answer key, "Add a case", and blind rating use it in place of
+the suite's answer fields, and the actions check what it submits against
+the suite's `labelValue` (`answerFromForm`). It lives in your own files,
+so copying the pages again never overwrites it. The example app's
+`ActionItemsEditor` is one.
+
 **Cases from your app's own data.** When the cases are items your app
 already handled (and the answers are what someone did with them), set
 the suite's `caseKind: "imported"` and have people rate them blind: the

@@ -9,8 +9,8 @@ import {
 } from "@crowandraven/evalkeeper";
 import { addCase, editAnswer, retireCase } from "@/lib/evalkeeper/actions";
 import { Check, ChevronRight, CircleAlert, X } from "lucide-react";
-import { store } from "@/lib/evalkeeper";
-import { FieldValues, Fields } from "./Fields";
+import { answerEditors, store } from "@/lib/evalkeeper";
+import { AnswerInput, FieldValues, Fields } from "./Fields";
 import { AddCaseHeader } from "./AddCase";
 import { CaseMenu } from "./CaseMenu";
 import { ConfirmAnswer } from "./ConfirmAnswer";
@@ -82,14 +82,18 @@ export async function AnswerKey({
         tools={tools}
         form={
           fields &&
-          suite.labelFromForm && (
+          (suite.labelFromForm || answerEditors[suite.key]) && (
             <form action={addCase} className="space-y-4">
               <input type="hidden" name="suite" value={suite.key} />
               <Fields fields={fields.input} prefix="new-" />
               <p className="readable text-sm text-muted">
                 What a good answer is. You're writing it, so it's confirmed.
               </p>
-              <Fields fields={fields.label} prefix="new-" />
+              <AnswerInput
+                fields={fields.label}
+                editor={answerEditors[suite.key]}
+                prefix="new-"
+              />
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1">
                   <label
@@ -324,7 +328,7 @@ function CaseItem({
           retire={retireCase}
           startEditing={!answer}
           editLabel={
-            suite.fields && suite.labelFromForm
+            suite.fields && (suite.labelFromForm || answerEditors[suite.key])
               ? answer
                 ? "Edit answer"
                 : "Write the answer"
@@ -339,8 +343,10 @@ function CaseItem({
               >
                 <input type="hidden" name="suite" value={suite.key} />
                 <input type="hidden" name="case" value={c.id} />
-                <Fields
+                <AnswerInput
                   fields={suite.fields.label}
+                  editor={answerEditors[suite.key]}
+                  input={c.input}
                   values={answer?.value}
                   prefix={`${c.id}-`}
                 />

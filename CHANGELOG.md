@@ -5,6 +5,30 @@ Notable changes, newest first. The format follows
 follow [semantic versioning](https://semver.org/): until 1.0, a minor
 version may change an interface, and its entry says how to update.
 
+## Unreleased
+
+Structured answers: a JSON field kind, and an app's own answer editors
+that survive copying the pages again.
+
+### Added
+
+- A `"json"` field kind for structured values (a list of objects, a
+  nested shape): an indented JSON box in a monospace font on the forms,
+  and indented JSON where answers are read. `valuesFromFields`,
+  `inputFromFields(schema, fields)`, and `labelFromFields(schema, fields)`
+  read every field by its kind and check the whole with the schema,
+  naming the first part that doesn't fit (#62).
+- Answer editors: an app's own editor for a suite's answer, registered
+  as `answerEditors` in the wiring module, keyed by suite. The answer
+  key, "Add a case", and blind rating use it in place of the suite's
+  answer fields; it submits the answer as JSON (`ANSWER_JSON_FIELD`), and
+  the actions check it against `labelValue` (`answerFromForm`). It lives
+  in the app's own files, so copying the pages again keeps it. The
+  example app edits action items with one (#63). **To update:** export
+  `answerEditors` from your wiring module (`{}` if you have none), and
+  copy `Fields.tsx`, `AnswerKey.tsx`, the suite and rate pages, and
+  `lib/evalkeeper/actions.ts` again.
+
 ## 0.9.0 - 2026-10-28
 
 Testing against prompt injection, with attacks of its own and from

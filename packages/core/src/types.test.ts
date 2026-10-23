@@ -1,14 +1,21 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import {
+  ANSWER_JSON_FIELD,
+  answerFromForm,
   asText,
   barStatus,
   checkBar,
   fieldValue,
   formText,
   inputFromJson,
+  inputFromFields,
+  labelFromFields,
   labelFromJson,
   linesOf,
+  valuesFromFields,
+  type AnySuite,
+  type FormField,
 } from "./types.js";
 
 describe("check bars", () => {
@@ -129,5 +136,103 @@ describe("JSON form readers", () => {
   it("reads another field when told to", () => {
     const read = labelFromJson(z.object({ ok: z.boolean() }), "answer");
     expect(read(formWith("answer", '{"ok":true}'))).toEqual({ ok: true });
+  });
+});
+
+describe("JSON fields and answer editors (#62, #63)", () => {
+  const facts: FormField = {
+    name: "facts",
+    label: "Facts",
+    help: "Each fact with its category.",
+    kind: "json",
+  };
+  const note: FormField = {
+    name: "note",
+    label: "Note",
+    help: "Anything to add.",
+    kind: "text",
+  };
+  const tags: FormField = {
+    name: "tags",
+    label: "Tags",
+    help: "One tag per line.",
+    kind: "lines",
+  };
+  const answer = z.object({
+    facts: z.array(z.object({ text: z.string(), category: z.string() })),
+    note: z.string(),
+  });
+  const form = (entries: Record<string, string>) => {
+    const f = new FormData();
+    for (const [k, v] of Object.entries(entries)) f.set(k, v);
+    return f;
+  };
+
+  it("shows a json field's value as indented JSON, and nothing for none", () => {
+    expect(fieldValue(facts, { facts: [{ text: "a" }] })).toBe(
+      '[\n  {\n    "text": "a"\n  }\n]',
+    );
+    expect(fieldValue(facts, { facts: null })).toBe("");
+  });
+
+  it("reads each field by its kind", () => {
+    expect(
+      valuesFromFields(
+        [facts, note, tags],
+        form({ facts: '[{"text":"a"}]', note: " hi ", tags: "x\n\ny" }),
+      ),
+    ).toEqual({ facts: [{ text: "a" }], note: "hi", tags: ["x", "y"] });
+    expect(valuesFromFields([facts], form({}))).toEqual({ facts: null });
+  });
+
+  it("names the field whose JSON doesn't parse", () => {
+    expect(() => valuesFromFields([facts], form({ facts: "[{" }))).toThrow(
+      /^Facts isn't valid JSON/,
+    );
+  });
+
+  it("checks fields against the schema, naming the first misfit", () => {
+    const read = labelFromFields(answer, [facts, note]);
+    expect(
+      read(form({ facts: '[{"text":"a","category":"role"}]', note: "n" })),
+    ).toEqual({ facts: [{ text: "a", category: "role" }], note: "n" });
+    expect(() => read(form({ facts: '[{"text":"a"}]', note: "n" }))).toThrow(
+      "Answer doesn't fit at facts, item 1, category: Required",
+    );
+    expect(() =>
+      inputFromFields(z.object({ note: z.string().min(2) }), [note])(
+        form({ note: "x" }),
+      ),
+    ).toThrow(/^Input doesn't fit at note/);
+  });
+
+  it("takes an editor's JSON over the suite's own form reader", () => {
+    const suite = {
+      labelValue: answer,
+      labelFromForm: () => ({ facts: [], note: "from fields" }),
+    } as unknown as AnySuite;
+    expect(
+      answerFromForm(
+        suite,
+        form({
+          [ANSWER_JSON_FIELD]: '{"facts":[],"note":"from editor"}',
+          note: "ignored",
+        }),
+      ),
+    ).toEqual({ facts: [], note: "from editor" });
+    expect(answerFromForm(suite, form({}))).toEqual({
+      facts: [],
+      note: "from fields",
+    });
+    expect(() =>
+      answerFromForm(suite, form({ [ANSWER_JSON_FIELD]: '{"facts":1}' })),
+    ).toThrow(/^Answer doesn't fit at facts/);
+  });
+
+  it("says so when a suite has no way to take an answer", () => {
+    const suite = { labelValue: answer } as unknown as AnySuite;
+    expect(() => answerFromForm(suite, form({}))).toThrow(
+      "This suite has no answer form",
+    );
   });
 });

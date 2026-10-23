@@ -1,4 +1,10 @@
-import { asText, fieldValue, type FormField } from "@crowandraven/evalkeeper";
+import {
+  ANSWER_JSON_FIELD,
+  asText,
+  fieldValue,
+  type AnswerEditorProps,
+  type FormField,
+} from "@crowandraven/evalkeeper";
 import { InfoTip } from "./Tip";
 
 /**
@@ -54,8 +60,9 @@ export function Fields({
                 name={f.name}
                 defaultValue={value}
                 required={f.required}
-                rows={f.kind === "lines" ? 4 : 5}
-                className={box}
+                rows={f.kind === "lines" ? 4 : f.kind === "json" ? 8 : 5}
+                spellCheck={f.kind !== "json"}
+                className={`${box} ${f.kind === "json" ? "font-mono text-xs" : ""}`}
               />
             )}
             <p className="readable text-xs text-muted">{f.help}</p>
@@ -87,8 +94,12 @@ export function FieldValues({
               {f.label}
               <InfoTip text={f.help} id={`${prefix}${f.name}-read`} />
             </dt>
-            <dd className="readable whitespace-pre-wrap">
-              {Array.isArray(v) ? (
+            <dd className="readable break-words whitespace-pre-wrap">
+              {f.kind === "json" && v !== undefined && v !== null ? (
+                <pre className="text-xs whitespace-pre-wrap">
+                  {JSON.stringify(v, null, 2)}
+                </pre>
+              ) : Array.isArray(v) ? (
                 v.length ? (
                   <ul className="list-disc pl-5">
                     {v.map((x, i) => (
@@ -107,4 +118,37 @@ export function FieldValues({
       })}
     </dl>
   );
+}
+
+/**
+ * A suite's answer, for writing or editing it: the app's own answer editor
+ * when it registered one for this suite (`answerEditors` in the wiring
+ * module), otherwise the suite's answer fields.
+ */
+export function AnswerInput({
+  fields,
+  editor: Editor,
+  input = null,
+  values,
+  prefix = "",
+}: {
+  fields: FormField[];
+  /** The app's editor for this suite, if any. */
+  editor?: React.ComponentType<AnswerEditorProps> | undefined;
+  /** The case's input; null on "Add a case". */
+  input?: unknown;
+  values?: unknown;
+  prefix?: string;
+}) {
+  if (Editor)
+    return (
+      <Editor
+        name={ANSWER_JSON_FIELD}
+        idPrefix={prefix}
+        input={input}
+        value={values ?? null}
+        fields={fields}
+      />
+    );
+  return <Fields fields={fields} values={values} prefix={prefix} />;
 }

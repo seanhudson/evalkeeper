@@ -2,11 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { rateQueue } from "@crowandraven/evalkeeper";
-import { FieldValues, Fields } from "@/components/evalkeeper/Fields";
+import { AnswerInput, FieldValues } from "@/components/evalkeeper/Fields";
 import { Submit } from "@/components/evalkeeper/Submit";
 import { InfoTip, Tip } from "@/components/evalkeeper/Tip";
 import { BackLink, Card } from "@/components/evalkeeper/ui";
-import { requireAdmin, SUITE_BY_KEY, store } from "@/lib/evalkeeper";
+import {
+  answerEditors,
+  requireAdmin,
+  SUITE_BY_KEY,
+  store,
+} from "@/lib/evalkeeper";
 import { rateBlind, skipCase } from "@/lib/evalkeeper/actions";
 import { evalsPath } from "@/lib/evalkeeper/paths";
 
@@ -40,7 +45,7 @@ export default async function RateBlindPage({
     !suite ||
     suite.caseKind !== "imported" ||
     !fields ||
-    !suite.labelFromForm
+    !(suite.labelFromForm || answerEditors[key])
   )
     notFound();
   const queue = rateQueue(await store.listCases(key), admin.id);
@@ -90,7 +95,12 @@ export default async function RateBlindPage({
           <form key={next.id} action={rateBlind} className="space-y-4">
             <input type="hidden" name="suite" value={key} />
             <input type="hidden" name="case" value={next.id} />
-            <Fields fields={fields.label} prefix="rate-" />
+            <AnswerInput
+              fields={fields.label}
+              editor={answerEditors[key]}
+              input={next.input}
+              prefix="rate-"
+            />
             <div className="space-y-1">
               <label
                 htmlFor="rate-reason"

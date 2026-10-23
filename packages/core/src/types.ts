@@ -284,13 +284,15 @@ export type ActivityDraft<Input, Label> = {
 /**
  * One field of a suite's add/edit form. `name` is the form key (and the
  * input or answer property it fills). "lines": one item per line, read as
- * a list.
+ * a list. "json": a structured value (a list of objects, a nested shape)
+ * edited as JSON in a monospace box, checked against the suite's schema
+ * when saved.
  */
 export type FormField = {
   name: string;
   label: string;
   help: string;
-  kind: "text" | "textarea" | "select" | "lines";
+  kind: "text" | "textarea" | "select" | "lines" | "json";
   /** For "select". */
   options?: readonly string[];
   required?: boolean;
@@ -316,6 +318,8 @@ export function fieldValue(field: FormField, value: unknown): string {
     value && typeof value === "object"
       ? (value as Record<string, unknown>)[field.name]
       : undefined;
+  if (field.kind === "json")
+    return v === undefined || v === null ? "" : JSON.stringify(v, null, 2);
   if (Array.isArray(v)) return v.map(asText).join("\n");
   return asText(v);
 }
@@ -355,6 +359,32 @@ function issuePath(path: readonly (string | number)[]): string {
     .join(", ");
 }
 
+/** Text as JSON, with a plain error naming what it was. */
+function parseJson(text: string, what: string): unknown {
+  try {
+    return JSON.parse(text) as unknown;
+  } catch (e) {
+    throw new Error(
+      `${what} isn't valid JSON: ${e instanceof Error ? e.message : String(e)}`,
+      { cause: e },
+    );
+  }
+}
+
+/** A value checked with a schema, with a plain error naming the first misfit. */
+function fit<T>(value: unknown, schema: z.ZodType<T>, what: string): T {
+  const parsed = schema.safeParse(value);
+  if (parsed.success) return parsed.data;
+  const issue = parsed.error.issues[0];
+  const where = issue ? issuePath(issue.path) : "";
+  const message = issue?.message ?? "invalid";
+  throw new Error(
+    where
+      ? `${what} doesn't fit at ${where}: ${message}`
+      : `${what} doesn't fit: ${message}`,
+  );
+}
+
 /**
  * Reads one form field as JSON and checks it with a schema; throws a
  * plain error when the field is empty, isn't JSON, or doesn't fit (naming
@@ -368,25 +398,7 @@ function readJson<T>(
 ): T {
   const text = formText(form, field);
   if (!text) throw new Error(`${what} is empty: fill in the "${field}" field`);
-  let value: unknown;
-  try {
-    value = JSON.parse(text);
-  } catch (e) {
-    throw new Error(
-      `${what} isn't valid JSON: ${e instanceof Error ? e.message : String(e)}`,
-      { cause: e },
-    );
-  }
-  const parsed = schema.safeParse(value);
-  if (parsed.success) return parsed.data;
-  const issue = parsed.error.issues[0];
-  const where = issue ? issuePath(issue.path) : "";
-  const message = issue?.message ?? "invalid";
-  throw new Error(
-    where
-      ? `${what} doesn't fit at ${where}: ${message}`
-      : `${what} doesn't fit: ${message}`,
-  );
+  return fit(parseJson(text, what), schema, what);
 }
 
 /**
@@ -431,4 +443,102 @@ export function labelFromJson<T>(
   field = "label",
 ): (form: FormData) => T {
   return (form) => readJson(form, field, "Answer", schema);
+}
+
+/**
+ * A form's values for a suite's fields, each read by its kind: text as it
+ * is, "lines" as a list, "json" parsed (with a plain error naming the
+ * field when it isn't valid JSON; empty reads as null). Pure.
+ *
+ * @param fields - The suite's input or answer fields.
+ * @param form - The submitted form.
+ */
+export function valuesFromFields(
+  fields: readonly FormField[],
+  form: FormData,
+): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const f of fields) {
+    if (f.kind === "lines") out[f.name] = linesOf(form, f.name);
+    else if (f.kind === "json") {
+      const text = formText(form, f.name);
+      out[f.name] = text ? parseJson(text, f.label) : null;
+    } else out[f.name] = formText(form, f.name);
+  }
+  return out;
+}
+
+/**
+ * A suite's `inputFromForm` from its fields, any kinds: reads each field
+ * by kind (`valuesFromFields`) and checks the whole with the schema,
+ * throwing a plain error that names the first part that doesn't fit.
+ *
+ * @param schema - The suite's input schema.
+ * @param fields - The suite's input fields (`fields.input`).
+ * @returns A form reader to use as the suite's `inputFromForm`.
+ */
+export function inputFromFields<T>(
+  schema: z.ZodType<T>,
+  fields: readonly FormField[],
+): (form: FormData) => T {
+  return (form) => fit(valuesFromFields(fields, form), schema, "Input");
+}
+
+/**
+ * A suite's `labelFromForm` from its answer fields, like `inputFromFields`.
+ *
+ * @param schema - The suite's answer schema (`labelValue`).
+ * @param fields - The suite's answer fields (`fields.label`).
+ * @returns A form reader to use as the suite's `labelFromForm`.
+ */
+export function labelFromFields<T>(
+  schema: z.ZodType<T>,
+  fields: readonly FormField[],
+): (form: FormData) => T {
+  return (form) => fit(valuesFromFields(fields, form), schema, "Answer");
+}
+
+/**
+ * The form field an answer editor submits its answer under, as JSON
+ * (see `AnswerEditorProps`).
+ */
+export const ANSWER_JSON_FIELD = "answerJson";
+
+/**
+ * What an app's own answer editor gets, for answers plain fields can't
+ * edit well (a list of facts with a category each, a verdict with
+ * reasons). The editor is a client component that renders its own
+ * controls and keeps the whole answer, as JSON, in a form field named
+ * `name` (a hidden input). Register it in your wiring module's
+ * `answerEditors`, keyed by suite; the copied answer key, "Add a case",
+ * and blind rating use it in place of the suite's answer fields, and the
+ * actions check what it submits against the suite's `labelValue`.
+ */
+export type AnswerEditorProps = {
+  /** The form field to submit the answer under, as JSON. */
+  name: string;
+  /** Prefix for element ids, unique on the page. */
+  idPrefix: string;
+  /** The case's input, when there is one yet (null on "Add a case"). */
+  input: unknown;
+  /** The current answer, or null for a new one. */
+  value: unknown;
+  /** The suite's answer fields, for their labels and help. */
+  fields: readonly FormField[];
+};
+
+/**
+ * The answer a form submits for a suite: from an answer editor (JSON in
+ * `ANSWER_JSON_FIELD`, checked against the suite's `labelValue`) when the
+ * form has one, otherwise the suite's own `labelFromForm`. Throws a plain
+ * error when the suite has neither, or the answer doesn't fit.
+ *
+ * @param suite - The suite the answer is for.
+ * @param form - The submitted form.
+ */
+export function answerFromForm(suite: AnySuite, form: FormData): unknown {
+  if (formText(form, ANSWER_JSON_FIELD))
+    return readJson(form, ANSWER_JSON_FIELD, "Answer", suite.labelValue);
+  if (suite.labelFromForm) return suite.labelFromForm(form);
+  throw new Error("This suite has no answer form");
 }

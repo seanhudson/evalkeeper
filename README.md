@@ -182,8 +182,8 @@ Evalkeeper is a small core with adapters, not a platform. Your app keeps
 its own routing, auth, and pages.
 
 **Already have evals, tables, or an admin page for models?** Don't
-migrate. `prismaStore(prisma, map)` and `prismaSettingsStore(prisma, map)`
-run on your own tables (other names, Decimal costs, enums, missing
+migrate. `prismaStore(prisma, map)`, `prismaSettingsStore(prisma, map)`,
+and `prismaFeedbackStore(prisma, map)` run on your own tables (other names, Decimal costs, enums, missing
 columns), the runner calls your router through callbacks, and
 `add pages --only` copies just the pages you're replacing.
 [Bring your own](docs/adding-to-your-app.md#bring-your-own) covers each

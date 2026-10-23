@@ -2,7 +2,9 @@
 // Evalkeeper: other column names, Prisma enums, Decimal costs, a creator
 // on cases, legacy columns, and its own versions tables with a real user
 // on each change. test/byoStore.test.ts runs the store contracts against
-// them through prismaStore's and prismaSettingsStore's mappings.
+// them through prismaStore's and prismaSettingsStore's mappings. Two
+// thumbs tables (AiFeedback and Vote) are mapped through
+// prismaFeedbackStore's.
 //
 // SQLite has no scalar lists, so tags are Json here; a String[] column on
 // PostgreSQL reads and writes the same arrays.
@@ -18,9 +20,10 @@ datasource db {
 }
 
 model Person {
-  id      String         @id @default(uuid())
-  handle  String         @unique
-  changes VersionSwitch[]
+  id       String          @id @default(uuid())
+  handle   String          @unique
+  changes  VersionSwitch[]
+  feedback AiFeedback[]
 }
 
 enum CaseState {
@@ -173,4 +176,39 @@ model VersionSwitch {
 
   to   RouteVersion @relation("switchTo", fields: [toVersionId], references: [id])
   user Person?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+enum FeedbackRating {
+  UP
+  DOWN
+}
+
+/// An app's own thumbs table, kept before Evalkeeper: a rating per user
+/// per answer, with no inputs, statuses, or case ids.
+model AiFeedback {
+  id        String         @id @default(uuid())
+  userId    String
+  operation String
+  targetId  String
+  rating    FeedbackRating
+  reason    String?
+  excerpt   String?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  user Person @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, operation, targetId])
+}
+
+/// The least a thumbs table can be for the weekly alerts: who, which
+/// feature and answer, up or down as text, and when. No unique key.
+model Vote {
+  id        String   @id @default(uuid())
+  voterId   String
+  feature   String
+  answerId  String
+  vote      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

@@ -1,23 +1,30 @@
 import {
   deleteScopedRows,
+  prismaFeedbackStore,
   prismaJudgmentCache,
   prismaReadCheck,
   prismaSettingsStore,
   prismaStore,
+  type PrismaFeedbackMap,
   type PrismaSettingsMap,
   type PrismaStoreMap,
 } from "@crowandraven/evalkeeper-prisma";
 import { checkStoreReads, type AnySuite } from "@crowandraven/evalkeeper";
 import {
+  describeFeedbackStoreContract,
   describeMappedReadCheck,
   describeSettingsStoreContract,
   describeStoreContract,
 } from "@crowandraven/evalkeeper/testing";
 import {
   BLIND_RATER,
+  NO_INPUTS_KEPT,
   blindRating,
+  caseFromFeedback,
   nextToRate,
   skipMark,
+  thumbsSummary,
+  whyNotACase,
 } from "@crowandraven/evalkeeper";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -44,8 +51,58 @@ async function empty() {
   await db.versionSwitch.deleteMany();
   await db.routeLive.deleteMany();
   await db.routeVersion.deleteMany();
+  await db.aiFeedback.deleteMany();
+  await db.vote.deleteMany();
   await db.person.deleteMany();
 }
+
+// The people the feedback contract rates as: the thumbs table's user id
+// is a foreign key, so they must exist.
+async function raters() {
+  for (const id of ["person-1", "person-2"])
+    await db.person.upsert({
+      where: { id },
+      create: { id, handle: `rater ${id}` },
+      update: {},
+    });
+}
+
+// The app's thumbs table: its own model and user id column, an enum for
+// the rating, and no inputs, outputs, statuses, or case ids.
+const feedbackMap = {
+  models: { evalFeedback: "aiFeedback" },
+  fields: {
+    evalFeedback: {
+      raterId: "userId",
+      input: null,
+      output: null,
+      status: null,
+      caseId: null,
+    },
+  },
+} satisfies PrismaFeedbackMap;
+const lacksInputs = ["input", "output", "status", "caseId"] as const;
+
+// The least a thumbs table can be: who, which feature and answer, the
+// rating as lowercase text, and when.
+const voteMap = {
+  models: { evalFeedback: "vote" },
+  fields: {
+    evalFeedback: {
+      raterId: "voterId",
+      operation: "feature",
+      targetId: "answerId",
+      rating: "vote",
+      reason: null,
+      excerpt: null,
+      input: null,
+      output: null,
+      status: null,
+      caseId: null,
+    },
+  },
+  ratings: { UP: "up", DOWN: "down" },
+} satisfies PrismaFeedbackMap;
 
 const map = {
   models: {
@@ -128,6 +185,131 @@ describeSettingsStoreContract(
   },
   { without: ["temperature"] },
 );
+
+describeFeedbackStoreContract(
+  "prismaFeedbackStore mapped onto an app's own thumbs table",
+  async () => {
+    await empty();
+    await raters();
+    return prismaFeedbackStore(db, feedbackMap);
+  },
+  { without: [...lacksInputs] },
+);
+
+describeFeedbackStoreContract(
+  "prismaFeedbackStore mapped onto a table with only a rating, feature, and time",
+  async () => {
+    await empty();
+    return prismaFeedbackStore(db, voteMap);
+  },
+  { without: ["reason", "excerpt", ...lacksInputs] },
+);
+
+describe("a mapped feedback store on an app's own thumbs table", () => {
+  const down = {
+    operation: "triage",
+    targetId: "answer-1",
+    raterId: "person-1",
+    rating: "DOWN" as const,
+    reason: "Wrong queue",
+    excerpt: "billing",
+  };
+
+  it("keeps ratings in the app's columns and enum", async () => {
+    await empty();
+    await raters();
+    const store = prismaFeedbackStore(db, feedbackMap);
+    const f = await store.rate(down);
+    const row = await db.aiFeedback.findUniqueOrThrow({ where: { id: f.id } });
+    expect(row).toMatchObject({
+      userId: "person-1",
+      operation: "triage",
+      rating: "DOWN",
+      reason: "Wrong queue",
+    });
+    expect(f).toMatchObject({ raterId: "person-1", keepsInputs: false });
+  });
+
+  it("gives the weekly alerts what they need, and refuses cases in plain words", async () => {
+    await empty();
+    await raters();
+    const store = prismaFeedbackStore(db, feedbackMap);
+    for (const [i, raterId] of ["person-1", "person-2"].entries())
+      for (const n of [1, 2, 3])
+        await store.rate({ ...down, raterId, targetId: `answer-${i}-${n}` });
+    await store.rate({ ...down, targetId: "answer-up", rating: "UP" });
+    const all = await store.listFeedback({ since: new Date(0) });
+    expect(thumbsSummary(all, new Date(0))).toMatchObject([
+      { operation: "triage", up: 1, down: 6, alert: true, open: 6 },
+    ]);
+    const [f] = all;
+    // Trust boundary: whyNotACase reads no further for a store without inputs.
+    const suite = { input: z.object({}) } as unknown as AnySuite;
+    expect(f && whyNotACase(f, suite)).toBe(NO_INPUTS_KEPT);
+    expect(f && caseFromFeedback(f, suite)).toBeNull();
+  });
+
+  it("keeps one rating when the same person rates twice at once", async () => {
+    await empty();
+    await raters();
+    const store = prismaFeedbackStore(db, feedbackMap);
+    const [a, b] = await Promise.all([
+      store.rate(down),
+      store.rate({ ...down, rating: "UP" }),
+    ]);
+    expect(a.id).toBe(b.id);
+    expect(await db.aiFeedback.count()).toBe(1);
+  });
+
+  it("maps the rating's values both ways, and reads others as a thumbs up", async () => {
+    await empty();
+    const store = prismaFeedbackStore(db, voteMap);
+    const f = await store.rate({ ...down, reason: null, excerpt: null });
+    expect(f.rating).toBe("DOWN");
+    expect(
+      await db.vote.findUniqueOrThrow({ where: { id: f.id } }),
+    ).toMatchObject({
+      voterId: "person-1",
+      feature: "triage",
+      answerId: "answer-1",
+      vote: "down",
+    });
+    await db.vote.create({
+      data: { voterId: "p", feature: "triage", answerId: "x", vote: "meh" },
+    });
+    expect(
+      (await store.listFeedback({ rating: "DOWN" })).map((r) => r.id),
+    ).toEqual([f.id]);
+    const all = await store.listFeedback();
+    const odd = all.find((r) => r.targetId === "x");
+    expect(odd?.rating).toBe("UP");
+  });
+
+  it("says what to change when a rating's status can't be kept", async () => {
+    await empty();
+    await raters();
+    const store = prismaFeedbackStore(db, feedbackMap);
+    const f = await store.rate(down);
+    await expect(store.setFeedbackStatus(f.id, "DISMISSED")).rejects.toThrow(
+      'Add a text column (default "OPEN") and map status to it',
+    );
+  });
+
+  it("never repeats a person's input in the error", async () => {
+    await empty();
+    await raters();
+    const store = prismaFeedbackStore(db, feedbackMap);
+    const rated = store.rate({ ...down, input: { text: "Call Pat Lee" } });
+    await expect(rated).rejects.toThrow("no column for a rating's input");
+    await expect(rated).rejects.not.toThrow("Pat Lee");
+  });
+
+  it("says which model is missing from the client", () => {
+    expect(() =>
+      prismaFeedbackStore(db, { models: { evalFeedback: "noSuchModel" } }),
+    ).toThrow(/noSuchModel/);
+  });
+});
 
 describe("a mapped store on an app's own tables", () => {
   const newCase = {
@@ -377,7 +559,8 @@ describe("a mapped store on an app's own tables", () => {
 // emptying anything, and cleanup deletes only the rows the scope names.
 describe("scoped contracts on an app's own tables with other rows", () => {
   const scope = "contract-";
-  const cleanup = (s: string) => deleteScopedRows(db, s, { map, settingsMap });
+  const cleanup = (s: string) =>
+    deleteScopedRows(db, s, { map, settingsMap, feedbackMap });
   const snapshot = async () => ({
     cases: await db.goldCase.findMany({ orderBy: { id: "asc" } }),
     answers: await db.goldAnswer.findMany({ orderBy: { id: "asc" } }),
@@ -386,13 +569,23 @@ describe("scoped contracts on an app's own tables with other rows", () => {
     versions: await db.routeVersion.findMany({ orderBy: { id: "asc" } }),
     live: await db.routeLive.findMany({ orderBy: { operation: "asc" } }),
     switches: await db.versionSwitch.findMany({ orderBy: { id: "asc" } }),
+    feedback: await db.aiFeedback.findMany({ orderBy: { id: "asc" } }),
   });
   let before: Awaited<ReturnType<typeof snapshot>>;
 
   beforeAll(async () => {
     await empty();
+    await raters();
     // Rows the app wrote itself, before Evalkeeper.
     for (const suite of ["s", "Contract-kept"]) {
+      await db.aiFeedback.create({
+        data: {
+          userId: "person-1",
+          operation: suite,
+          targetId: "answer-1",
+          rating: "DOWN",
+        },
+      });
       const c = await db.goldCase.create({
         data: {
           suite,
@@ -436,6 +629,11 @@ describe("scoped contracts on an app's own tables with other rows", () => {
     "mapped prismaSettingsStore, scoped",
     () => prismaSettingsStore(db, settingsMap),
     { scope, cleanup, without: ["temperature"] },
+  );
+  describeFeedbackStoreContract(
+    "mapped prismaFeedbackStore, scoped",
+    () => prismaFeedbackStore(db, feedbackMap),
+    { scope, cleanup, without: [...lacksInputs] },
   );
 
   it("left the app's rows as they were, and took its own away", async () => {

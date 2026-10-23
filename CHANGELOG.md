@@ -5,6 +5,38 @@ Notable changes, newest first. The format follows
 follow [semantic versioning](https://semver.org/): until 1.0, a minor
 version may change an interface, and its entry says how to update.
 
+## Unreleased
+
+### Added
+
+- `prismaFeedbackStore(prisma, map)` runs on an app's own thumbs table,
+  in the style of `prismaStore`'s map: the model and column names
+  (`raterId: "userId"`), the rating column's values (`ratings: { UP:
+"up", DOWN: "down" }`), and `null` for columns the table lacks
+  (`reason`, `excerpt`, `input`, `output`, `status`, or `caseId`). Reads
+  give null (a status, OPEN), and writing a value fails rather than
+  losing it. The weekly summary's thumbs-down alerts and the hub's counts
+  need only the rating, feature, and time. `deleteScopedRows` takes
+  `feedbackMap` (#64).
+- A store with no column for inputs marks each rating `keepsInputs:
+false`, and `whyNotACase` (so `caseFromFeedback` too) refuses it in
+  plain words: "This app doesn't keep inputs with ratings, so a rating
+  can't become a case." (`NO_INPUTS_KEPT`) (#64).
+- `describeFeedbackStoreContract` takes `without` for the columns a
+  thumbs table lacks, as the other contracts do, and checks a listed
+  rating reads the same as the one saved (#64).
+
+### Changed
+
+- The suite contract reads union inputs and answers (`z.union` and
+  `z.discriminatedUnion`): every key in any option needs a field, so one
+  `fields` list covers them all. It also names help left for a field the
+  schema no longer has, as in `triage: input field "concernFirst" has
+help but the input has no such field.` **To update:** if
+  `describeSuiteContract` now fails, add a label and help for each union
+  key it names, and remove (or rename) the help it says is left over
+  (#65).
+
 ## 0.7.0 - 2026-10-22
 
 A ready-made crisis risk suite; answer keys that grow from real activity

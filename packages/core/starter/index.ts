@@ -3,10 +3,12 @@
 import "server-only";
 import {
   createSettings,
+  type AnswerEditorProps,
   type AnySuite,
   type ModelCatalog,
   type Settings,
 } from "@crowandraven/evalkeeper";
+import type { ComponentType } from "react";
 import { createRunner, type Route } from "@crowandraven/evalkeeper/runner";
 import {
   prismaFeedbackStore,
@@ -38,6 +40,15 @@ export const SUITES: AnySuite[] = [];
 export const SUITE_BY_KEY: Record<string, AnySuite> = Object.fromEntries(
   SUITES.map((s) => [s.key, s]),
 );
+
+/**
+ * Your own editors for answers plain fields can't edit well, keyed by
+ * suite (see `AnswerEditorProps`). The answer key, "Add a case", and blind
+ * rating use them in place of the suite's answer fields. Empty is fine.
+ */
+export const answerEditors: Partial<
+  Record<string, ComponentType<AnswerEditorProps>>
+> = {};
 
 /**
  * TODO: each feature's instructions hash (instructionsHash from

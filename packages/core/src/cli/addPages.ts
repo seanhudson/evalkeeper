@@ -201,6 +201,17 @@ export function cleanBase(base: string): string {
   return b;
 }
 
+/**
+ * The pages' URL from their folder: route groups ("(app)") are folders
+ * Next.js leaves out of the URL, so "(app)/admin/evals" is "/admin/evals".
+ */
+export function urlOfBase(base: string): string {
+  return `/${base
+    .split("/")
+    .filter((seg) => !/^\(.*\)$/.test(seg))
+    .join("/")}`;
+}
+
 function listFiles(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
     e.isDirectory() ? listFiles(join(dir, e.name)) : [join(dir, e.name)],
@@ -219,7 +230,7 @@ export function fitFile(
   if (templatePath === "lib/evalkeeper/paths.ts")
     out = out.replace(
       /export const EVALS_BASE = "[^"]*";/,
-      `export const EVALS_BASE = "/${o.base}";`,
+      `export const EVALS_BASE = "${urlOfBase(o.base)}";`,
     );
   return out;
 }
@@ -305,8 +316,10 @@ export function planAddPages(o: AddPagesOptions): {
     );
 
   // What the chosen files import that the app won't have.
+  // Imports name files without their extension; a file this run copies
+  // counts as there.
   const has = (t: string) =>
-    sources.includes(t) ||
+    [t, `${t}.ts`, `${t}.tsx`].some((p) => sources.includes(p)) ||
     (t === wiring && files.some((f) => f.path === join(root, wiring))) ||
     [t, `${t}.ts`, `${t}.tsx`].some((p) =>
       existsSync(join(rootDir, destinationOf(p, base))),
@@ -353,6 +366,6 @@ export function nextSteps(r: {
     !wiring || wiring.action === "skip"
       ? `Check ${wiring?.path ?? join(r.root, "lib/evalkeeper/index.ts")} exports what the pages use: MODELS, availableModels, modelsFor, SUITES, SUITE_BY_KEY, store, feedbackStore, settings, routeFor, runner, and requireAdmin.`
       : `Fill in ${wiring.path}: your Prisma client, models, suites, and requireAdmin (until then, nobody can open the pages).`,
-    `Open /${r.base} in your app.`,
+    `Open ${urlOfBase(r.base)} in your app.`,
   ];
 }

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowRight, Check, Minus, X } from "lucide-react";
@@ -10,12 +11,28 @@ import {
 } from "@crowandraven/evalkeeper";
 import { DisagreementChip } from "@/components/evalkeeper/DisagreementChip";
 import { FieldValues } from "@/components/evalkeeper/Fields";
+import { ReadableOutput } from "@/components/evalkeeper/ReadableOutput";
 import { InfoTip, Tip } from "@/components/evalkeeper/Tip";
 import { BackLink, Card, pct } from "@/components/evalkeeper/ui";
-import { MODELS, requireAdmin, runner, store } from "@/lib/evalkeeper";
+import {
+  MODELS,
+  requireAdmin,
+  runner,
+  store,
+  SUITE_BY_KEY,
+} from "@/lib/evalkeeper";
 import { evalsPath } from "@/lib/evalkeeper/paths";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ suite: string }>;
+}): Promise<Metadata> {
+  const { suite } = await params;
+  return { title: `Side by side: ${SUITE_BY_KEY[suite]?.label ?? "Evals"}` };
+}
 
 /** A search parameter as one string, or null when it's missing or repeated. */
 const one = (v: string | string[] | undefined) =>
@@ -118,23 +135,28 @@ export default async function SideBySidePage({
       </div>
 
       <Card className="grid gap-5 text-sm md:grid-cols-2">
-        <section className="space-y-2">
+        <section className="min-w-0 space-y-2">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">
             Input
           </h2>
-          {suite.fields ? (
+          {/* A suite's own readable input (describe) reads best. */}
+          {suite.describe ? (
+            <pre className="readable text-xs whitespace-pre-wrap">
+              {suite.describe(input)}
+            </pre>
+          ) : suite.fields ? (
             <FieldValues
               fields={suite.fields.input}
               values={c.input}
               prefix="in-"
             />
           ) : (
-            <pre className="readable whitespace-pre-wrap text-xs">
-              {suite.describe?.(input) ?? JSON.stringify(c.input, null, 2)}
+            <pre className="readable text-xs whitespace-pre-wrap">
+              {JSON.stringify(c.input, null, 2)}
             </pre>
           )}
         </section>
-        <section className="space-y-2">
+        <section className="min-w-0 space-y-2">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">
             Expected answer
             <InfoTip term="expectedAnswer" />
@@ -157,7 +179,7 @@ export default async function SideBySidePage({
 
       <div className="grid gap-4 md:grid-cols-2">
         <Side
-          role="inPlace"
+          side="inPlace"
           run={result.a}
           outputs={byRepeat(outA)}
           suite={suite}
@@ -165,7 +187,7 @@ export default async function SideBySidePage({
           runHref={evalsPath(key, "runs", a)}
         />
         <Side
-          role="challenger"
+          side="challenger"
           run={result.b}
           outputs={byRepeat(outB)}
           suite={suite}
@@ -207,14 +229,14 @@ function StepLink({ href, dir }: { href?: string; dir: "previous" | "next" }) {
 
 /** One test's answers to the case, with what each check found. */
 function Side({
-  role,
+  side,
   run,
   outputs,
   suite,
   score,
   runHref,
 }: {
-  role: "inPlace" | "challenger";
+  side: "inPlace" | "challenger";
   run: RunRecord;
   outputs: OutputRecord[];
   suite: AnySuite;
@@ -227,8 +249,8 @@ function Side({
     <Card className="space-y-4 text-sm">
       <div className="space-y-1">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-          {role === "inPlace" ? "In place" : "Challenger"}
-          <InfoTip term={role} id={`${role}-side`} />
+          {side === "inPlace" ? "In place" : "Challenger"}
+          <InfoTip term={side} id={`${side}-side`} />
         </p>
         <h2 className="text-lg font-semibold">
           <Link href={runHref} className="hover:underline">
@@ -236,7 +258,7 @@ function Side({
           </Link>
         </h2>
         {score !== null && (
-          <Tip term="caseScore" id={`${role}-score`}>
+          <Tip term="caseScore" id={`${side}-score`}>
             <span className="text-muted">Scored {pct(score)} on this case</span>
           </Tip>
         )}
@@ -257,12 +279,10 @@ function Side({
               <FieldValues
                 fields={suite.fields.label}
                 values={suite.labelFromOutput(o.output)}
-                prefix={`${role}-${o.repeat}-`}
+                prefix={`${side}-${o.repeat}-`}
               />
             ) : (
-              <pre className="readable whitespace-pre-wrap text-xs">
-                {JSON.stringify(o.output, null, 2)}
-              </pre>
+              <ReadableOutput value={o.output} />
             )}
             {checks.length > 0 && (
               <ul className="space-y-1">

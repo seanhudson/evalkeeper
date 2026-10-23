@@ -37,6 +37,27 @@ help but the input has no such field.` **To update:** if
   key it names, and remove (or rename) the help it says is left over
   (#65).
 
+### Fixed
+
+- `add pages --base` with a Next.js route group (`"(app)/admin/evals"`)
+  put the group into every link (`EVALS_BASE`) and the "Open" step;
+  route groups aren't part of the URL, so the links went nowhere. The
+  folders keep the group and the links leave it out (`urlOfBase`). With
+  `--only`, it also warned that files the same run was copying were
+  missing (#66). **To update:** check `EVALS_BASE` in
+  `lib/evalkeeper/paths.ts` if your pages sit in a route group.
+- The run page shows each answer: by the suite's answer fields when it
+  has `labelFromOutput`, otherwise readably (`ReadableOutput`: text as
+  paragraphs, lists as bullets, small objects as one line, never raw
+  JSON), with what each matching check paired up and a link to the case
+  on the answer key. Side by side shows answers the same way, prefers a
+  suite's `describe` for the input, and wraps long values instead of
+  running into the next column; a prop named `role` that tripped
+  accessibility lint is `side`. Every eval page has a title ("Compare:
+  Ticket triage") (#67). **To update:** copy the run, side-by-side,
+  compare, rate, suite, hub, and feedback pages, `Fields.tsx`,
+  `AnswerKey.tsx`, and the new `ReadableOutput.tsx` again.
+
 ## 0.7.0 - 2026-10-22
 
 A ready-made crisis risk suite; answer keys that grow from real activity

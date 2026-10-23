@@ -17,6 +17,7 @@ import {
   importsOf,
   pickOnly,
   planAddPages,
+  urlOfBase,
   readAlias,
   templateName,
   withoutJsonComments,
@@ -129,6 +130,18 @@ describe("fitting files to the app", () => {
         base: "admin/evals",
       }),
     ).toBe('export const EVALS_BASE = "/admin/evals";');
+  });
+
+  it("leaves route groups out of the pages' URL (#66)", () => {
+    const text = 'export const EVALS_BASE = "/evals";';
+    expect(
+      fitFile("lib/evalkeeper/paths.ts", text, {
+        alias: "@",
+        base: "(app)/admin/evals",
+      }),
+    ).toBe('export const EVALS_BASE = "/admin/evals";');
+    expect(urlOfBase("(app)/(admin)/evals")).toBe("/evals");
+    expect(urlOfBase("evals")).toBe("/evals");
   });
 
   it("cleans the base path and rejects odd ones", () => {
@@ -244,6 +257,32 @@ describe("evalkeeper add pages", () => {
     expect(templateName("app/evals/[suite]/side-by-side/page.tsx")).toBe(
       "side-by-side",
     );
+  });
+
+  it("puts a route-group base in the folders, not the links (#66)", () => {
+    const dir = app(AT);
+    const r = cli(dir, "add", "pages", "--base", "(app)/admin/evals");
+    expect(r.code).toBe(0);
+    expect(existsSync(join(dir, "app/(app)/admin/evals/page.tsx"))).toBe(true);
+    expect(readFileSync(join(dir, "lib/evalkeeper/paths.ts"), "utf8")).toMatch(
+      'export const EVALS_BASE = "/admin/evals";',
+    );
+    expect(r.out).toMatch(/Open \/admin\/evals in your app/);
+  });
+
+  it("doesn't call files missing that the same run copies (#66)", () => {
+    const dir = app(AT);
+    const r = cli(
+      dir,
+      "add",
+      "pages",
+      "--only",
+      "compare,DisagreementChip,Submit,Tip,ui,paths,Fields",
+      "--dry-run",
+    );
+    expect(r.code).toBe(0);
+    // Only the wiring module is missing: this app has none yet.
+    expect(r.out).toMatch(/These import index, which your app doesn't have/);
   });
 
   it("finds nothing missing when the app has what the chosen files import", () => {

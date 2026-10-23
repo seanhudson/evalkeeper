@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
@@ -37,6 +38,15 @@ import { InfoTip, Tip } from "@/components/evalkeeper/Tip";
 import { EVALS_BASE, evalsPath } from "@/lib/evalkeeper/paths";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ suite: string }>;
+}): Promise<Metadata> {
+  const { suite } = await params;
+  return { title: `Evals: ${SUITE_BY_KEY[suite]?.label ?? "Evals"}` };
+}
 
 /** A share as a whole percent, or a dash when there's nothing to show. */
 const asPct = (x: number | null) => (x === null ? "—" : pct(x));

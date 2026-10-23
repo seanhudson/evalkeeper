@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { rateQueue } from "@crowandraven/evalkeeper";
@@ -10,6 +11,15 @@ import { rateBlind, skipCase } from "@/lib/evalkeeper/actions";
 import { evalsPath } from "@/lib/evalkeeper/paths";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ suite: string }>;
+}): Promise<Metadata> {
+  const { suite } = await params;
+  return { title: `Rate blind: ${SUITE_BY_KEY[suite]?.label ?? "Evals"}` };
+}
 
 /**
  * Rating an imported suite's cases blind: one case at a time, the oldest

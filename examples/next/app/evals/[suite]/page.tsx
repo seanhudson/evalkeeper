@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
@@ -37,6 +38,15 @@ import { InfoTip, Tip } from "@/components/evalkeeper/Tip";
 import { EVALS_BASE, evalsPath } from "@/lib/evalkeeper/paths";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ suite: string }>;
+}): Promise<Metadata> {
+  const { suite } = await params;
+  return { title: `Evals: ${SUITE_BY_KEY[suite]?.label ?? "Evals"}` };
+}
 
 /** A share as a whole percent, or a dash when there's nothing to show. */
 const asPct = (x: number | null) => (x === null ? "—" : pct(x));
@@ -101,30 +111,35 @@ export default async function SuitePage({
         </p>
       </div>
 
-      {s && !s.same && (
+      {/* Shown when nothing would change too, so a higher score that
+          isn't enough to switch for comes with its reason. */}
+      {s && (
         <Card className="space-y-3">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <h2 className="font-semibold">
-              Suggested
+              {s.same ? "No change suggested" : "Suggested"}
               <InfoTip term="suggestion" />
             </h2>
             {/* Retesting live changes nothing until the fallback would. */}
-            {!(s.retestLive && (!s.fallback || s.fallback.fallback)) && (
-              <form action={useSuggestion}>
-                <input type="hidden" name="suite" value={key} />
-                <Submit>Use these</Submit>
-              </form>
-            )}
+            {!s.same &&
+              !(s.retestLive && (!s.fallback || s.fallback.fallback)) && (
+                <form action={useSuggestion}>
+                  <input type="hidden" name="suite" value={key} />
+                  <Submit>Use these</Submit>
+                </form>
+              )}
           </div>
-          <p>
-            Live: <strong>{s.live.label}</strong>
-            {s.fallback && (
-              <>
-                {" "}
-                · Fallback: <strong>{s.fallback.label}</strong>
-              </>
-            )}
-          </p>
+          {!s.same && (
+            <p>
+              Live: <strong>{s.live.label}</strong>
+              {s.fallback && (
+                <>
+                  {" "}
+                  · Fallback: <strong>{s.fallback.label}</strong>
+                </>
+              )}
+            </p>
+          )}
           <ul className="readable list-disc space-y-1 pl-5 text-sm text-muted">
             {s.reasons.map((r) => (
               <li key={r}>{r}</li>

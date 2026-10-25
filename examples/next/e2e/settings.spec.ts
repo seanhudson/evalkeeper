@@ -31,6 +31,12 @@ test("use the suggestion, see it in the history, and roll it back", async ({
     promoted.getByText("Live: Demo Legacy → Demo Careful"),
   ).toBeVisible();
   await expect(promoted.getByText("Live now")).toBeVisible();
+
+  // Nothing left to change: the card stays, with its reasons, but no button.
+  await expect(
+    page.getByRole("heading", { name: "No change suggested" }),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Use these" })).toHaveCount(0);
   await expect(
     promoted.getByRole("link", { name: "The test behind it" }),
   ).toBeVisible();

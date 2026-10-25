@@ -112,6 +112,31 @@ describe("decisionCheck", () => {
     );
   });
 
+  it("says what was given, right or wrong, with the bar", () => {
+    expect(
+      decisionCheck("u", { type: "boolean", probability: 0.34 }, false, {
+        threshold: 0.4,
+      }).given,
+    ).toBe("34% true, bar 40%");
+    expect(
+      decisionCheck("u", { type: "boolean", probability: 0.8 }, false).given,
+    ).toBe("80% true, bar 50%");
+    expect(
+      decisionCheck(
+        "q",
+        { type: "choice", choice: "bug", probabilities: { bug: 0.9 } },
+        "bug",
+      ).given,
+    ).toBe("bug (90%)");
+    expect(
+      decisionCheck("q", { type: "choice", choice: "bug" }, "bug").given,
+    ).toBe("bug");
+    expect(decisionCheck("q", { type: "score", score: 2 }, 2).given).toBe(
+      "level 2.0",
+    );
+    expect(decisionCheck("q", undefined, true).given).toBeUndefined();
+  });
+
   it("doesn't apply without a right answer, and fails a missing answer", () => {
     expect(
       decisionCheck("q", { type: "boolean", probability: 1 }, undefined).pass,

@@ -64,8 +64,10 @@ export const GLOSSARY = {
     "Each numbered version of this feature's settings (model, fallback, reasoning, output limit, temperature), with who changed it, when, why, and its evidence. Any version can be made live again.",
   changedOutside:
     "The app's own settings no longer matched the live version: a script, SQL, or another page changed them. Recorded as found, before the next save, so you can roll back to it.",
+  newInstructions:
+    "The instructions changed in code and were recorded under the same models. No model was switched.",
   instructionsEdited:
-    "Instructions edited at runtime (an admin override or added guidance) changed under the live settings. Dated when noticed, which can be after the edit.",
+    "Instructions edited at runtime (an admin override or added guidance) were recorded under the same models. No model was switched. Dated when noticed, which can be after the edit.",
   suites:
     "One suite per AI feature: its cases, the answers people confirmed, and the checks that grade any model against them. Open one to compare models and choose the live one.",
   answerKey:

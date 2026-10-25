@@ -162,10 +162,20 @@ export function decisionCheck(
         : answer.type === "choice"
           ? say(answer.choice)
           : `level ${answer.score.toFixed(1)}`;
+  const pct = (p: number) => `${Math.round(p * 100)}%`;
+  const sure =
+    answer.type === "choice" &&
+    answer.probabilities?.[answer.choice] !== undefined
+      ? ` (${pct(answer.probabilities[answer.choice] ?? 0)})`
+      : "";
   return {
     key,
     pass: s.correct,
     ...(s.correct ? {} : { note: `Expected ${say(expected)}, got ${given}` }),
+    given:
+      answer.type === "boolean"
+        ? `${given}, bar ${pct(opts.threshold ?? 0.5)}`
+        : `${given}${sure}`,
     measures,
   };
 }

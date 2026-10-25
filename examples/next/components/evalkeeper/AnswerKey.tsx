@@ -189,7 +189,8 @@ function CaseItem({
 
   return (
     <details
-      className="group rounded-md border border-line bg-card"
+      id={`case-${c.id}`}
+      className="group scroll-mt-4 rounded-md border border-line bg-card"
       // Where ConfirmAnswer moves on to after confirming the case above.
       data-pending={answer?.status === "PENDING" ? "true" : undefined}
     >

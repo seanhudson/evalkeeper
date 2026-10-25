@@ -1,11 +1,29 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { allPassed, money, summarize } from "@crowandraven/evalkeeper";
+import type { Metadata } from "next";
+import { FieldValues } from "@/components/evalkeeper/Fields";
+import { ReadableOutput } from "@/components/evalkeeper/ReadableOutput";
 import { BackLink, Card, pct } from "@/components/evalkeeper/ui";
-import { MODELS, requireAdmin, runner, store } from "@/lib/evalkeeper";
+import {
+  MODELS,
+  requireAdmin,
+  runner,
+  store,
+  SUITE_BY_KEY,
+} from "@/lib/evalkeeper";
 import { evalsPath } from "@/lib/evalkeeper/paths";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ suite: string }>;
+}): Promise<Metadata> {
+  const { suite } = await params;
+  return { title: `Test: ${SUITE_BY_KEY[suite]?.label ?? "Evals"}` };
+}
 
 /** One test: every answer, with what each check found. */
 export default async function RunPage({
@@ -30,7 +48,13 @@ export default async function RunPage({
   const summary = metrics ? summarize(metrics, suite.checks) : null;
   const label = (k: string) =>
     suite.checks.find((c) => c.key === k)?.label ?? k;
-  type Check = { key: string; pass: boolean | null; note?: string };
+  type Check = {
+    key: string;
+    pass: boolean | null;
+    note?: string;
+    given?: string;
+    matches?: { expected: string; actual: string; why: string }[];
+  };
 
   return (
     <div className="space-y-6">
@@ -91,13 +115,58 @@ export default async function RunPage({
                 </span>
               </div>
               {o.error && <p className="text-bad">{o.error}</p>}
+              {!o.error && o.output !== null && (
+                <div className="mt-2">
+                  {suite.fields && suite.labelFromOutput ? (
+                    <FieldValues
+                      fields={suite.fields.label}
+                      values={suite.labelFromOutput(o.output)}
+                      prefix={`${o.id}-`}
+                    />
+                  ) : (
+                    <ReadableOutput value={o.output} />
+                  )}
+                </div>
+              )}
+              {suite.decisions &&
+                checks?.some((c) => c.given !== undefined) && (
+                  <ul className="mt-2 space-y-0.5 text-xs">
+                    {checks
+                      .filter((c) => c.given !== undefined)
+                      .map((c) => (
+                        <li key={c.key}>
+                          <span className="text-muted">{label(c.key)}:</span>{" "}
+                          {c.given}{" "}
+                          <span className={c.pass ? "text-good" : "text-warn"}>
+                            {c.pass ? "right" : "wrong"}
+                          </span>
+                        </li>
+                      ))}
+                  </ul>
+                )}
               {checks
                 ?.filter((c) => c.pass === false)
                 .map((c) => (
-                  <p key={c.key} className="readable text-muted">
+                  <p key={c.key} className="readable mt-2 text-muted">
                     {label(c.key)}: {c.note ?? "failed"}
                   </p>
                 ))}
+              {checks
+                ?.flatMap((c) => c.matches ?? [])
+                .slice(0, 20)
+                .map((m, i) => (
+                  <p key={i} className="readable mt-1 text-xs text-muted">
+                    Matched “{m.expected}” with “{m.actual}”: {m.why}
+                  </p>
+                ))}
+              {cases.has(o.caseId) && (
+                <Link
+                  href={`${evalsPath(key)}#case-${o.caseId}`}
+                  className="mt-2 inline-block text-xs text-accent hover:underline"
+                >
+                  Find the case in the answer key
+                </Link>
+              )}
             </div>
           );
         })}

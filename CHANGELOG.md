@@ -51,6 +51,42 @@ help but the input has no such field.` **To update:** if
   key it names, and remove (or rename) the help it says is left over
   (#65).
 
+### Fixed
+
+- `add pages --base` with a Next.js route group (`"(app)/admin/evals"`)
+  put the group into every link (`EVALS_BASE`) and the "Open" step;
+  route groups aren't part of the URL, so the links went nowhere. The
+  folders keep the group and the links leave it out (`urlOfBase`). With
+  `--only`, it also warned that files the same run was copying were
+  missing (#66). **To update:** check `EVALS_BASE` in
+  `lib/evalkeeper/paths.ts` if your pages sit in a route group.
+- The run page shows each answer: by the suite's answer fields when it
+  has `labelFromOutput`, otherwise readably (`ReadableOutput`: text as
+  paragraphs, lists as bullets, small objects as one line, never raw
+  JSON), with what each matching check paired up and a link to the case
+  on the answer key. Side by side shows answers the same way, prefers a
+  suite's `describe` for the input, and wraps long values instead of
+  running into the next column; a prop named `role` that tripped
+  accessibility lint is `side`. Every eval page has a title ("Compare:
+  Ticket triage") (#67). **To update:** copy the run, side-by-side,
+  compare, rate, suite, hub, and feedback pages, `Fields.tsx`,
+  `AnswerKey.tsx`, and the new `ReadableOutput.tsx` again.
+- For decision suites, the run page shows each answer's probabilities
+  beside the bar they were read at ("34% true, bar 40%", "bug (90%)"),
+  right or wrong, from the new `given` on `decisionCheck`'s result.
+  Tests before this one show them after a regrade (#67).
+- The suite page keeps its suggestion card when nothing would change,
+  titled "No change suggested", so reasons such as "no other model is
+  safely better" or "can't be told from noise" show. The "Use these"
+  button and the Live and Fallback line show only when something would
+  change. **To update:** copy the suite page again.
+- Versions recorded when instructions changed in code read "New
+  instructions" (was "Deployed") and say "Models unchanged: … live, …
+  fallback", then "The instructions in code changed". Runtime edits say
+  the models are unchanged the same way. "Deployed" read as the app
+  switching models by itself. **To update:** copy
+  `SettingsHistory.tsx` again.
+
 ### Security
 
 - CI's audit allows GHSA-mrhx-c7xc-m3w5 for now (`scripts/audit.mjs`).

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import {
   attention,
@@ -28,6 +29,8 @@ import { HistoryEntries } from "@/components/evalkeeper/SettingsHistory";
 import { ChevronDown } from "lucide-react";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = { title: "Evals" };
 
 /** The evals hub: where each suite stands, and what needs attention. */
 export default async function EvalsHub() {

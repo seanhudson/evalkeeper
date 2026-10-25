@@ -13,6 +13,12 @@ export type CheckResult = {
   pass: boolean | null;
   /** Why it failed (or a detail worth showing), in plain words. */
   note?: string | undefined;
+  /**
+   * What a decision check's answer gave, right or wrong ("34% true, bar
+   * 40%", "bug (90%)"), so a run page can show the probability beside the
+   * bar it was read at.
+   */
+  given?: string | undefined;
   /** For matching checks: which expected item matched which output, and why. */
   matches?: { expected: string; actual: string; why: string }[] | undefined;
   /** "meaning": a judge model matched them; "words": shared words did. */

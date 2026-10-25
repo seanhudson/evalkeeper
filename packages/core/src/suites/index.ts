@@ -7,3 +7,5 @@
  */
 export * from "./crisisRisk.js";
 export * from "./crisisRiskCases.js";
+export * from "./hopelessness.js";
+export * from "./hopelessnessCases.js";

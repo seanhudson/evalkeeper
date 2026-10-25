@@ -101,6 +101,16 @@ design.
   The cases arrive pending for you to confirm, ideally with someone who
   has crisis-line experience. It tests detection on these examples; it
   doesn't certify that an app is safe for people in crisis.
+- **A hopelessness suite, ready made.** If your app listens for
+  hopelessness in chat, `hopelessnessSuite` tests whether the latest
+  message, and separately the earlier ones, voice hopelessness about the
+  person's own life, on about 75 made-up messages: "every day is the same
+  grey nothing" counts, "nothing helps with this cough" doesn't, a joke
+  covering real hopelessness still counts, and so does "yeah, same" after
+  hopeless messages. These are made-up examples written as a starting
+  point, not clinically validated: review and adapt them with people who
+  have crisis-line or clinical experience before relying on them. See
+  [Listening for hopelessness](#listening-for-hopelessness).
 - **Fits what you already have.** Had evals before? Keep your own eval
   tables full of reviewed answers, your own model router, your own
   settings history, and your own pages. Evalkeeper maps onto your tables
@@ -298,6 +308,37 @@ with `describeStoreContract`, under Vitest or `node:test`.
 [Concepts](docs/concepts.md) explains suites, cases, answers, checks,
 tests, the board, and the rules behind suggestions, in plain words. If
 you're new to evals, start there.
+
+## Listening for hopelessness
+
+What made hopelessness detection work in the app the hopelessness suite
+came from. Advice, not code: the suite tests whatever detector you
+build.
+
+- **Judge the latest message on its own, then ask about agreement
+  separately.** Read the latest message without the earlier ones, so a
+  plain "ok" or "thanks" after a heavy message doesn't count. Then ask a
+  second question: does this reply agree that the earlier messages still
+  hold? "Yeah, same" and "still" say the hopelessness again.
+- **Ask about their life as a whole versus one particular thing, even
+  one of their own.** Asking whether a message was about the person or
+  something outside them read "nothing helps with this cough" and "I
+  can't keep going at this pace, need to ease off my training" as about
+  them, since
+  the cough and the training are theirs. "Their life as a whole" sets
+  those aside and keeps "I'm hopeless, I ruin everything."
+- **Never let tone cancel a detection.** "I'm so hopeless lol, nothing
+  ever works out for me" is hopelessness said lightly. Read the tone if
+  it helps the reply, but never let a joke turn a detection off.
+- **Keep a floor of fixed phrases.** A short list ("nothing helps",
+  "what's the point") stays in force whenever the model is off, fails,
+  or times out, so detection never drops to nothing. A model's read may
+  set a phrase aside only when it answered.
+
+What the app does once it counts a message (a gentler reply, a crisis
+line when it happens twice) is your app's rule, written with people who
+have crisis-line or clinical experience. The suite only checks what was
+counted.
 
 ## Principles
 

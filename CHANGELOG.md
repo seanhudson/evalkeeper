@@ -37,6 +37,15 @@ help but the input has no such field.` **To update:** if
   key it names, and remove (or rename) the help it says is left over
   (#65).
 
+### Security
+
+- CI's audit allows GHSA-mrhx-c7xc-m3w5 for now (`scripts/audit.mjs`).
+  It's a high advisory for zod below 4.6.6 (memory exhaustion when
+  validating oversized constrained collections) that affects every zod 3
+  version and is fixed only in zod 4, a planned upgrade. Every other high
+  or critical advisory still fails CI. This exception comes out with the
+  zod 4 upgrade.
+
 ## 0.7.0 - 2026-10-22
 
 A ready-made crisis risk suite; answer keys that grow from real activity

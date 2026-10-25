@@ -27,8 +27,8 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: npm
       - run: npm ci
-      - name: Audit (fails on high or critical)
-        run: npm audit --audit-level=high
+      - name: Audit (fails on high or critical, except allowed ones)
+        run: node scripts/audit.mjs
       - name: Scrub, format, build, typecheck, lint, and test
         run: npm run check
 

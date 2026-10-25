@@ -57,6 +57,21 @@ help but the input has no such field.` **To update:** if
   Ticket triage") (#67). **To update:** copy the run, side-by-side,
   compare, rate, suite, hub, and feedback pages, `Fields.tsx`,
   `AnswerKey.tsx`, and the new `ReadableOutput.tsx` again.
+- For decision suites, the run page shows each answer's probabilities
+  beside the bar they were read at ("34% true, bar 40%", "bug (90%)"),
+  right or wrong, from the new `given` on `decisionCheck`'s result.
+  Tests before this one show them after a regrade (#67).
+- The suite page keeps its suggestion card when nothing would change,
+  titled "No change suggested", so reasons such as "no other model is
+  safely better" or "can't be told from noise" show. The "Use these"
+  button and the Live and Fallback line show only when something would
+  change. **To update:** copy the suite page again.
+- Versions recorded when instructions changed in code read "New
+  instructions" (was "Deployed") and say "Models unchanged: … live, …
+  fallback", then "The instructions in code changed". Runtime edits say
+  the models are unchanged the same way. "Deployed" read as the app
+  switching models by itself. **To update:** copy
+  `SettingsHistory.tsx` again.
 
 ## 0.7.0 - 2026-10-22
 

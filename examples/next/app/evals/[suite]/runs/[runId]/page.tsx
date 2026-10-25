@@ -52,6 +52,7 @@ export default async function RunPage({
     key: string;
     pass: boolean | null;
     note?: string;
+    given?: string;
     matches?: { expected: string; actual: string; why: string }[];
   };
 
@@ -127,6 +128,22 @@ export default async function RunPage({
                   )}
                 </div>
               )}
+              {suite.decisions &&
+                checks?.some((c) => c.given !== undefined) && (
+                  <ul className="mt-2 space-y-0.5 text-xs">
+                    {checks
+                      .filter((c) => c.given !== undefined)
+                      .map((c) => (
+                        <li key={c.key}>
+                          <span className="text-muted">{label(c.key)}:</span>{" "}
+                          {c.given}{" "}
+                          <span className={c.pass ? "text-good" : "text-warn"}>
+                            {c.pass ? "right" : "wrong"}
+                          </span>
+                        </li>
+                      ))}
+                  </ul>
+                )}
               {checks
                 ?.filter((c) => c.pass === false)
                 .map((c) => (

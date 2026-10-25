@@ -69,8 +69,9 @@ test("labels and explains changes made outside the store", async ({ page }) => {
     name: "Version 3: Instructions edited",
   });
   await expect(
-    edited.getByText("Same models, instructions edited at runtime"),
+    edited.getByText("The instructions were edited at runtime"),
   ).toBeVisible();
+  await expect(edited.getByText(/^Models unchanged: .+ live/)).toBeVisible();
   await expect(
     edited.getByText("Runtime instructions removed (were guidance-1)"),
   ).toBeVisible();

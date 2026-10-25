@@ -111,30 +111,35 @@ export default async function SuitePage({
         </p>
       </div>
 
-      {s && !s.same && (
+      {/* Shown when nothing would change too, so a higher score that
+          isn't enough to switch for comes with its reason. */}
+      {s && (
         <Card className="space-y-3">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <h2 className="font-semibold">
-              Suggested
+              {s.same ? "No change suggested" : "Suggested"}
               <InfoTip term="suggestion" />
             </h2>
             {/* Retesting live changes nothing until the fallback would. */}
-            {!(s.retestLive && (!s.fallback || s.fallback.fallback)) && (
-              <form action={useSuggestion}>
-                <input type="hidden" name="suite" value={key} />
-                <Submit>Use these</Submit>
-              </form>
-            )}
+            {!s.same &&
+              !(s.retestLive && (!s.fallback || s.fallback.fallback)) && (
+                <form action={useSuggestion}>
+                  <input type="hidden" name="suite" value={key} />
+                  <Submit>Use these</Submit>
+                </form>
+              )}
           </div>
-          <p>
-            Live: <strong>{s.live.label}</strong>
-            {s.fallback && (
-              <>
-                {" "}
-                · Fallback: <strong>{s.fallback.label}</strong>
-              </>
-            )}
-          </p>
+          {!s.same && (
+            <p>
+              Live: <strong>{s.live.label}</strong>
+              {s.fallback && (
+                <>
+                  {" "}
+                  · Fallback: <strong>{s.fallback.label}</strong>
+                </>
+              )}
+            </p>
+          )}
           <ul className="readable list-disc space-y-1 pl-5 text-sm text-muted">
             {s.reasons.map((r) => (
               <li key={r}>{r}</li>

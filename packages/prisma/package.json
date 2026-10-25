@@ -1,6 +1,6 @@
 {
   "name": "@crowandraven/evalkeeper-prisma",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "Prisma storage for Evalkeeper, the eval harness: its tables and a store on your Prisma client.",
   "license": "MIT",
   "type": "module",
@@ -23,7 +23,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@crowandraven/evalkeeper": "0.7.0"
+    "@crowandraven/evalkeeper": "0.8.0"
   },
   "peerDependencies": {
     "@prisma/client": "^5.0.0 || ^6.0.0"

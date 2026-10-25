@@ -5,7 +5,20 @@ Notable changes, newest first. The format follows
 follow [semantic versioning](https://semver.org/): until 1.0, a minor
 version may change an interface, and its entry says how to update.
 
-## Unreleased
+## 0.8.0 - 2026-10-25
+
+A ready-made hopelessness suite; a warning when a case's words appear in
+a feature's instructions; the feedback store on an app's own thumbs
+table; suite contracts that read unions; `add pages` inside a Next.js
+route group; and a run page that shows every answer, with decision
+probabilities beside their bars. **To update:** most of it is opt-in.
+The one interface change is the suite contract: if
+`describeSuiteContract` now fails, add a label and help for each union
+key it names, and remove the help it says is left over. Copy the pages
+again for the page fixes (`npx @crowandraven/evalkeeper add pages --only
+run,side-by-side,compare,rate,suite,hub,feedback,Fields,AnswerKey,ReadableOutput,SettingsHistory
+--dry-run` first), check `EVALS_BASE` if your pages sit in a route group,
+and pass `instructionTexts` to `createRunner` for the warning.
 
 ### Added
 

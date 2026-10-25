@@ -20,7 +20,8 @@ npm run check
 - **pre-push:** builds, typechecks, and runs the unit tests.
 
 CI runs everything again on Node 20 and 22, plus the browser tests,
-`npm audit`, and CodeQL. Please don't skip the hooks with `--no-verify`.
+`npm audit` (through `scripts/audit.mjs`, which lists the few advisories
+allowed for now and why), and CodeQL. Please don't skip the hooks with `--no-verify`.
 
 ## Tests
 

@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 import { MockLanguageModelV3 } from "ai/test";
 import { z } from "zod";
 import { cleanPairs, createMeaningJudge, type JudgmentCache } from "./judge.js";
-import { instructionsHash, promptHash, slot } from "./hash.js";
+import {
+  instructionParts,
+  instructionsHash,
+  promptHash,
+  slot,
+} from "./hash.js";
 import { costOf } from "./usage.js";
 
 const MODELS = {
@@ -162,6 +167,26 @@ describe("instructionsHash", () => {
         },
       });
     expect(tool("Search the docs")).not.toBe(tool("Search the web"));
+  });
+});
+
+describe("instructionParts", () => {
+  it("lists what the hash covers, in order, tools sorted by name", () => {
+    const parts = {
+      texts: ["Help"],
+      schemas: [z.object({ q: z.string().describe("The question") })],
+      tools: {
+        zap: { inputSchema: z.object({}) },
+        ask: { description: "Ask a person", inputSchema: z.object({}) },
+      },
+    };
+    const texts = instructionParts(parts);
+    expect(texts).toHaveLength(4);
+    expect(texts[0]).toBe("Help");
+    expect(texts[1]).toContain("The question");
+    expect(texts[2]).toMatch(/^ask: Ask a person /);
+    expect(texts[3]).toMatch(/^zap: {2}/);
+    expect(instructionsHash(parts)).toBe(promptHash(...texts));
   });
 });
 

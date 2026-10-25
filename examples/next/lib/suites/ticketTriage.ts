@@ -2,6 +2,7 @@ import { generateText, Output } from "ai";
 import { z } from "zod";
 import {
   costOf,
+  instructionParts,
   instructionsHash,
   slot,
 } from "@crowandraven/evalkeeper-ai-sdk";
@@ -42,11 +43,17 @@ const schema = z.object({
   urgency: z.enum(URGENCIES).describe("How soon someone should answer"),
 });
 
-/** The instructions' hash: editing them marks older tests out of date. */
-export const triageVersion = instructionsHash({
+/** Everything the model is told, with placeholders for each ticket. */
+const instructions = {
   texts: [SYSTEM, prompt({ subject: slot("subject"), body: slot("body") })],
   schemas: [schema],
-});
+};
+
+/** The instructions' hash: editing them marks older tests out of date. */
+export const triageVersion = instructionsHash(instructions);
+
+/** The instructions as text, so the suite page can warn about copied cases. */
+export const triageTexts = instructionParts(instructions);
 
 const CHECKS: CheckDef[] = [
   {

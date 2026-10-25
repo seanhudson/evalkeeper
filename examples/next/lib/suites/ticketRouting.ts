@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   decideAndPrice,
+  instructionParts,
   instructionsHash,
 } from "@crowandraven/evalkeeper-ai-sdk";
 import {
@@ -58,10 +59,11 @@ const QUESTIONS = {
   },
 } as const;
 
+const instructions = { texts: [JSON.stringify(QUESTIONS)] };
 /** The questions' hash: editing them marks older tests out of date. */
-export const routingVersion = instructionsHash({
-  texts: [JSON.stringify(QUESTIONS)],
-});
+export const routingVersion = instructionsHash(instructions);
+/** The questions as text, so the suite page can warn about copied cases. */
+export const routingTexts = instructionParts(instructions);
 
 const CHECKS: CheckDef[] = [
   {

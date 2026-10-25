@@ -446,3 +446,45 @@ describe("runner helpers", () => {
     expect(datasetVersion([c])).not.toBe(v1);
   });
 });
+
+describe("runner.casesInInstructions", () => {
+  async function withGroups(instructionTexts?: (op: string) => string[]) {
+    const store = memoryStore();
+    const group = "numbers people double every morning";
+    await store.createCase(kase(1, { input: { n: 1, group } }));
+    await store.createCase(
+      kase(2, { input: { n: 2, group }, status: "DRAFT" }),
+    );
+    await store.createCase(
+      kase(3, { input: { n: 3, group }, status: "RETIRED" }),
+    );
+    await store.createCase(kase(4, { input: { n: 4, group: "other" } }));
+    // A stored input the suite no longer reads.
+    await store.createCase(kase(5, { input: { group } }));
+    const runner = createRunner({
+      store,
+      suites: [double],
+      models: MODELS,
+      promptVersion: () => "v1",
+      ...(instructionTexts ? { instructionTexts } : {}),
+    });
+    return runner;
+  }
+
+  it("lists cases in use or in draft whose text is in the instructions", async () => {
+    const seen: string[] = [];
+    const runner = await withGroups((op) => {
+      seen.push(op);
+      return ["Example: Numbers people double every morning, like 4."];
+    });
+    const found = await runner.casesInInstructions("double");
+    expect(seen).toEqual(["double"]);
+    expect(found.map((f) => f.title).sort()).toEqual(["1", "2", "A case"]);
+    expect(found[0]?.found).toBe("numbers people double every morning");
+  });
+
+  it("finds nothing without instruction texts", async () => {
+    const runner = await withGroups();
+    expect(await runner.casesInInstructions("double")).toEqual([]);
+  });
+});

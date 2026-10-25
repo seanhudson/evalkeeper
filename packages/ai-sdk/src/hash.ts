@@ -32,14 +32,36 @@ export const slot = (name: string) => `{${name}}`;
  * });
  * ```
  */
-export function instructionsHash(parts: {
+export function instructionsHash(parts: InstructionParts): string {
+  return promptHash(...instructionParts(parts));
+}
+
+/** What an operation tells its model: the parts `instructionsHash` takes. */
+export type InstructionParts = {
   texts: string[];
   schemas?: z.ZodTypeAny[];
   tools?: Record<string, { description?: string; inputSchema: z.ZodTypeAny }>;
-}): string {
+};
+
+/**
+ * The texts `instructionsHash` hashes, in order: the texts, each schema as
+ * JSON (field names and descriptions), and each tool's name, description,
+ * and input schema. Pass them to the runner's `instructionTexts`, so the
+ * suite page warns when a case was copied into the instructions.
+ *
+ * @param parts - The same parts you pass to `instructionsHash`.
+ * @returns Every text the model is told, besides per-call data.
+ * @example
+ * ```ts
+ * const TRIAGE = { texts: [SYSTEM], schemas: [outputSchema] };
+ * export const triageVersion = instructionsHash(TRIAGE);
+ * export const triageTexts = instructionParts(TRIAGE);
+ * ```
+ */
+export function instructionParts(parts: InstructionParts): string[] {
   const shape = (schema: z.ZodTypeAny) =>
     JSON.stringify(zodSchema(schema).jsonSchema);
-  return promptHash(
+  return [
     ...parts.texts,
     ...(parts.schemas ?? []).map(shape),
     ...Object.entries(parts.tools ?? {})
@@ -48,5 +70,5 @@ export function instructionsHash(parts: {
         ([name, t]) =>
           `${name}: ${t.description ?? ""} ${shape(t.inputSchema)}`,
       ),
-  );
+  ];
 }

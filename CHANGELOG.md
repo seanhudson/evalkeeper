@@ -25,6 +25,17 @@ false`, and `whyNotACase` (so `caseFromFeedback` too) refuses it in
 - `describeFeedbackStoreContract` takes `without` for the columns a
   thumbs table lacks, as the other contracts do, and checks a listed
   rating reads the same as the one saved (#64).
+- A warning when a case's words appear in a feature's instructions: a
+  case copied in as an example gets graded on an answer the model was
+  handed, so its score rises without the model getting better. Pass
+  `instructionTexts` to `createRunner` (`instructionParts` in
+  `@crowandraven/evalkeeper-ai-sdk` gives the texts from the parts you
+  hash), and the suite page lists each such case with the matching words
+  under "Cases in the instructions". It matches a whole case text or a
+  run of at least 20 characters, ignoring case and punctuation
+  (`casesInInstructions`). A warning only, never a failure (#71). **To
+  update:** copy the suite page again and add `instructionTexts` to your
+  runner; without it, nothing changes.
 - A ready-made hopelessness suite: `hopelessnessSuite` from
   `@crowandraven/evalkeeper/suites`, beside the crisis risk suite. The
   app passes its own detector; the suite asks whether the latest chat

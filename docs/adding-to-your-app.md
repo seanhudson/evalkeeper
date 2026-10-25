@@ -220,6 +220,9 @@ export const runner = createRunner({
   suites: [ticketTriage],
   models: MODELS,
   promptVersion: (op) => PROMPT_VERSIONS[op],
+  // What the model is told, as text (instructionParts on the parts you
+  // hash), so the suite page warns when a case was copied into it:
+  instructionTexts: (op) => INSTRUCTION_TEXTS[op] ?? [],
   route: routeFor,
   candidates: (op) => ({ models: modelsFor(op) }),
   // On a platform with a request limit (Vercel: 300s), hand off long tests:

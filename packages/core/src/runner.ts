@@ -28,6 +28,10 @@ import type {
 } from "./store.js";
 import { withTimeout } from "./timeout.js";
 import {
+  casesInInstructions,
+  type CaseInInstructions,
+} from "./inInstructions.js";
+import {
   draftFromActivity as draftCases,
   type ActivityDraftResult,
 } from "./activity.js";
@@ -72,6 +76,13 @@ export type RunnerOptions = {
    * marks older tests out of date.
    */
   promptVersion: (operation: string) => string | Promise<string>;
+  /**
+   * Everything the operation's model is told, as text: system text, prompt
+   * templates, schema and tool descriptions (`instructionParts` in
+   * `@crowandraven/evalkeeper-ai-sdk`, from the parts you hash). Lets
+   * `casesInInstructions` warn when a case was copied into them.
+   */
+  instructionTexts?: (operation: string) => string[] | Promise<string[]>;
   /**
    * The live reasoning setting for an operation; null: the model's own.
    * Defaults to the route's, when `route` is given.
@@ -867,6 +878,35 @@ export function createRunner(opts: RunnerOptions) {
   }
 
   /**
+   * The suite's cases in use or in draft whose text appears in its
+   * operation's instructions (see `casesInInstructions`), for a warning on
+   * the suite page. Empty without `instructionTexts`.
+   */
+  async function casesInInstructionsFor(
+    suiteKey: string,
+  ): Promise<CaseInInstructions[]> {
+    const suite = suiteOrThrow(suiteKey);
+    if (!opts.instructionTexts) return [];
+    const [texts, cases] = await Promise.all([
+      opts.instructionTexts(suite.operation),
+      store.listCases(suite.key),
+    ]);
+    return casesInInstructions(
+      cases
+        .filter((c) => c.status !== "RETIRED")
+        .map((c) => {
+          const parsed = suite.input.safeParse(c.input);
+          return {
+            id: c.id,
+            title: parsed.success ? suite.title(parsed.data) : "A case",
+            input: c.input,
+          };
+        }),
+      texts,
+    );
+  }
+
+  /**
    * The model board for one suite: every model the operation can use, with
    * its latest test on every case in use, and how it compares with the
    * live model. Needs `route` and `candidates`.
@@ -1107,6 +1147,7 @@ export function createRunner(opts: RunnerOptions) {
     rescoreRecent,
     stopStuckRuns,
     compare,
+    casesInInstructions: casesInInstructionsFor,
   };
 }
 

@@ -59,7 +59,7 @@ export default async function SuitePage({
   if (!operation) notFound();
   // The board and the settings load together: on a remote database each
   // waits on round trips, so one after the other doubles the wait.
-  const [b, [history, liveSettings]] = await Promise.all([
+  const [b, [history, liveSettings], inInstructions] = await Promise.all([
     runner.board(key),
     // Records a deploy if the instructions changed under the live
     // settings, before reading them.
@@ -68,6 +68,7 @@ export default async function SuitePage({
       .then(() =>
         Promise.all([settings.history(operation), settings.current(operation)]),
       ),
+    runner.casesInInstructions(key),
   ]);
   const { suite, rows } = b;
   const s = suggest(rows, suite.checks, suite.priority, MODELS);
@@ -128,6 +129,27 @@ export default async function SuitePage({
           <ul className="readable list-disc space-y-1 pl-5 text-sm text-muted">
             {s.reasons.map((r) => (
               <li key={r}>{r}</li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
+      {inInstructions.length > 0 && (
+        <Card className="space-y-2">
+          <h2 className="font-semibold text-warn">
+            Cases in the instructions
+            <InfoTip term="inInstructions" />
+          </h2>
+          <p className="readable text-sm text-muted">
+            These cases&apos; words appear in what the model is told, so a test
+            grades it on answers it was handed. Take the example out of the
+            instructions, or rewrite or retire the case.
+          </p>
+          <ul className="readable list-disc space-y-1 pl-5 text-sm">
+            {inInstructions.map((c) => (
+              <li key={c.caseId}>
+                {c.title}: “{c.found}”
+              </li>
             ))}
           </ul>
         </Card>

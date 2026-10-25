@@ -45,6 +45,13 @@ export const SUITE_BY_KEY: Record<string, AnySuite> = Object.fromEntries(
  */
 const PROMPT_VERSIONS: Record<string, string> = {};
 
+/**
+ * TODO: each feature's instructions as text (instructionParts from
+ * @crowandraven/evalkeeper-ai-sdk, on the parts you hash), so the suite
+ * page warns when a case was copied into them.
+ */
+const INSTRUCTION_TEXTS: Record<string, string[]> = {};
+
 /** TODO: each feature's settings in code, used until someone changes them. */
 const DEFAULTS: Record<string, Settings> = {};
 
@@ -69,6 +76,7 @@ export const runner = createRunner({
   suites: SUITES,
   models: MODELS,
   promptVersion: (operation) => PROMPT_VERSIONS[operation] ?? "unregistered",
+  instructionTexts: (operation) => INSTRUCTION_TEXTS[operation] ?? [],
   route: routeFor,
   candidates: (operation) => ({ models: modelsFor(operation) }),
 });

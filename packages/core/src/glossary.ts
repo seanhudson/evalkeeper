@@ -64,6 +64,8 @@ export const GLOSSARY = {
     "Each numbered version of this feature's settings (model, fallback, reasoning, output limit, temperature), with who changed it, when, why, and its evidence. Any version can be made live again.",
   changedOutside:
     "The app's own settings no longer matched the live version: a script, SQL, or another page changed them. Recorded as found, before the next save, so you can roll back to it.",
+  inInstructions:
+    "A case whose words appear in the instructions the model is told. A test then grades it on an answer it was handed, so the score rises without the model getting better.",
   instructionsEdited:
     "Instructions edited at runtime (an admin override or added guidance) changed under the live settings. Dated when noticed, which can be after the edit.",
   suites:

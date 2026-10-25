@@ -2,6 +2,7 @@ import { generateText, Output } from "ai";
 import { z } from "zod";
 import {
   costOf,
+  instructionParts,
   instructionsHash,
   slot,
   type Pairing,
@@ -35,10 +36,10 @@ const schema = z.object({
     z.string().describe("One action item, owner first when named"),
   ),
 });
-export const actionItemsVersion = instructionsHash({
-  texts: [SYSTEM, slot("notes")],
-  schemas: [schema],
-});
+const instructions = { texts: [SYSTEM, slot("notes")], schemas: [schema] };
+export const actionItemsVersion = instructionsHash(instructions);
+/** The instructions as text, so the suite page can warn about copied cases. */
+export const actionItemsTexts = instructionParts(instructions);
 
 const CHECKS: CheckDef[] = [
   {

@@ -12,7 +12,12 @@ import { prisma } from "../db";
 import { MODELS, availableModels } from "../models";
 import { useMatcher } from "../suites/actionItems";
 import { demoCost } from "../demo";
-import { DECISION_OPERATIONS, PROMPT_VERSIONS, SUITES } from "../suites";
+import {
+  DECISION_OPERATIONS,
+  INSTRUCTION_TEXTS,
+  PROMPT_VERSIONS,
+  SUITES,
+} from "../suites";
 
 /**
  * Evalkeeper wired to this app: the Prisma store, the suites, the model
@@ -88,6 +93,7 @@ export const runner = createRunner({
   suites: SUITES,
   models: MODELS,
   promptVersion: (operation) => PROMPT_VERSIONS[operation] ?? "unregistered",
+  instructionTexts: (operation) => INSTRUCTION_TEXTS[operation] ?? [],
   route: routeFor,
   candidates: (operation) => ({ models: modelsFor(operation) }),
   estimateCallCost,

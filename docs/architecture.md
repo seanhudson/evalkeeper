@@ -68,6 +68,8 @@ flowchart LR
 | A database or ORM                        | A new adapter package implementing `EvalStore`                   | `describeStoreContract`                                                      |
 | An AI library                            | A new adapter package                                            | Unit tests with a mock model                                                 |
 | A suite                                  | Your app (`examples/next/lib/suites` for examples)               | Grader tests on fixed outputs                                                |
+| A ready-made suite                       | `packages/core/src/suites`, exported from `./suites`             | Grader tests on fixed outputs, `suiteContractProblems`                       |
+| Cases found in the instructions          | `inInstructions.ts`, `runner.casesInInstructions`                | `inInstructions.test.ts`, runner tests, browser tests                        |
 | Blind rating (the queue, ratings, skips) | `blind.ts`; skips are SKIPPED answers in every `EvalStore`       | `blind.test.ts`, `describeStoreContract`, browser tests                      |
 | Feedback (ratings, cases from them)      | `feedback.ts`, a `FeedbackStore` in every adapter                | `feedback.test.ts`, `describeFeedbackStoreContract`                          |
 | The weekly check                         | `weekly.ts`, `runner.startDriftCheck` / `runDriftCheck`          | `weekly.test.ts`, runner tests, browser tests                                |

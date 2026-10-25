@@ -49,6 +49,14 @@ reports") as numbers.
 keyword misses from 8 to 5 and raised embellishments from 4 to 7. _So:_
 compare serious mistakes before keeping a prompt change.
 
+**A case nearly became an example in the instructions.** While tuning a
+hopelessness question, cases from the app's own suite ("the Broncos are
+hopeless", "this printer is hopeless") were about to go into the model's
+instructions as examples. The score would have risen on those cases
+without the model getting any better, with nothing on the page to say
+why. _So:_ the runner takes each feature's instructions as text, and the
+suite page warns about any case whose words appear in them.
+
 **When no model clears the bar after the grader is right, stop tuning.**
 _So:_ say so, and leave the decision to a person rather than tuning the
 grader toward a pass.
@@ -221,9 +229,24 @@ the old ones. Matching the old hashes would have tied Evalkeeper to one
 app's format. _So:_ the cost is paid once per model, and the person hears
 about it before running the first test.
 
+**Route groups aren't part of the URL.** An app whose admin pages sit in
+a Next.js route group copied the pages with `--base "(app)/admin/evals"`,
+and every link pointed at `/(app)/admin/evals`, a path that doesn't
+exist. The same run also warned that files it had just copied were
+missing. _So:_ the folders keep the group, the links leave it out, and
+files the run writes count as present.
+
 ## Releasing
 
 **npm shows a package's README as of its last publish.** A release went
 out before the README updates merged, so the package page showed the old
 docs until a docs-only release followed. _So:_ merge docs before
 publishing, and follow the release checklist in CONTRIBUTING.md.
+
+**An advisory with no fix to take turned every pull request red.** A
+high advisory for zod below 4.6.6 arrived while every Evalkeeper app was
+on zod 3, and only zod 4, a planned major, fixes it. `npm audit` failed
+CI on unrelated work, and the choice was to merge red or rush the
+upgrade. _So:_ the audit runs through `scripts/audit.mjs`, which still
+fails on every other high or critical advisory, allows a named one with
+its reason, and says when it's no longer reported so it comes out.

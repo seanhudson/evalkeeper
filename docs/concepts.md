@@ -12,7 +12,13 @@ new to evals, read this top to bottom; it's short.
 **Suite.** The test for one operation: the shape of its input and of a
 good answer, the checks, how to call the operation on a given model
 (`run`), and how to grade one answer (`grade`). A suite is code, so it's
-reviewed and versioned like the rest of your app.
+reviewed and versioned like the rest of your app. Two come ready made in
+`@crowandraven/evalkeeper/suites`, for apps that watch chat messages:
+`crisisRiskSuite` (suicide or self-harm risk) and `hopelessnessSuite`.
+Your app passes its own detector as `run`. Their cases are made-up
+examples written as a starting point, not clinically validated: review
+and adapt them with people who have crisis-line or clinical experience
+before relying on them.
 
 **Case.** One frozen input, copied rather than referenced, so later
 changes to your app's data don't move the test. Cases are DRAFT, ACTIVE,
@@ -20,6 +26,11 @@ or RETIRED, and split into DEV (what you tune against) and TEST (what you
 check, and never tune against). Tags say what a case tests. A case frozen from your app's data
 leaves out anything learned from that same case (its answer would leak);
 a suite's leak check removes it on the way in and says what it removed.
+The other way round matters too: a case copied into the instructions as
+an example gets graded on an answer the model was handed. When the app
+passes its instructions' text (`instructionTexts`), the suite page lists
+any case whose words appear in them, under "Cases in the instructions".
+It's a warning, not a failure.
 
 **Answer.** What a good answer to a case looks like, in the suite's
 answer shape. Every answer has a status:
@@ -149,7 +160,9 @@ one:
    (no clear difference) with no more serious mistakes qualifies at half
    the cost or time.
 4. Otherwise live stays, and the best other model is named as one to
-   watch.
+   watch. The page still shows the card, titled "No change suggested",
+   with the reasons ("no other model is safely better", or a higher
+   score that can't be told from noise).
 5. The fallback is the most accurate model from another provider. It
    needn't beat live: it only runs when live's provider is down.
 
@@ -164,8 +177,8 @@ fallback, reasoning setting, output limit, and temperature, with the
 instructions they ran with) are numbered versions that never change. Each switch is logged
 with who, when, why, and its evidence: a _change_ by a person, a
 _promotion_ from a test (the test is the evidence), a _rollback_ to an
-earlier version, a _deploy_ that changed the instructions in code
-under the live settings, a change made _outside_ the settings (the app's
+earlier version, _new instructions_ (the instructions changed in code
+and were recorded under the same models; no model was switched), a change made _outside_ the settings (the app's
 own settings row changed by a script, SQL, or another page, recorded as
 found before the next save), or _instructions edited_ at runtime (an
 admin override or guidance added at call time, dated when noticed). Only

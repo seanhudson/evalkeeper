@@ -102,7 +102,9 @@ test it: a low score is often the grader's fault. Give every field of the
 input and answer a plain label and help (`fields`), and every check a
 description; `describeSuiteContract("our suites", SUITES)` from
 `@crowandraven/evalkeeper/testing` fails until they're there, and checks
-your starter cases fit their schemas.
+your starter cases fit their schemas. A union input or answer
+(`z.union`, `z.discriminatedUnion`) needs one field for every key in any
+of its options.
 
 Start with 10 to 20 real cases, with personal details removed. Confirm
 each answer yourself. Grow toward 50.

@@ -12,3 +12,12 @@ pages, tables, or a model router of your own? Copy only what you're
 replacing with `--only <names>` (and `--dry-run` to see the plan), and see
 "Bring your own" in
 [Adding Evalkeeper to your app](https://github.com/seanhudson/evalkeeper/blob/main/docs/adding-to-your-app.md#bring-your-own).
+A `--base` inside a Next.js route group (`"(app)/admin/evals"`) keeps the
+group in the folders and leaves it out of the links.
+
+Ready-made suites live in `@crowandraven/evalkeeper/suites`: a crisis risk
+suite (`crisisRiskSuite`) and a hopelessness suite (`hopelessnessSuite`)
+for apps that watch chat messages. Your app passes its own detector. Their
+cases are made-up examples written as a starting point, not clinically
+validated: review and adapt them with people who have crisis-line or
+clinical experience before relying on them.

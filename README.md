@@ -111,6 +111,12 @@ design.
   point, not clinically validated: review and adapt them with people who
   have crisis-line or clinical experience before relying on them. See
   [Listening for hopelessness](#listening-for-hopelessness).
+- **A warning when a case leaks into the instructions.** Give the runner
+  each feature's instructions as text (`instructionParts` from the AI SDK
+  adapter, on the same parts you hash), and the suite page lists any case
+  whose words appear in them. A case copied in as an example gets graded
+  on an answer the model was handed, so its score rises without the model
+  getting better.
 - **Fits what you already have.** Had evals before? Keep your own eval
   tables full of reviewed answers, your own model router, your own
   settings history, and your own pages. Evalkeeper maps onto your tables

@@ -123,6 +123,11 @@ Every change comes with the tests that prove it, at the right level:
   SDK 7 did.
 - No new runtime dependency in the core without a reason in the pull
   request.
+- CI's audit (`scripts/audit.mjs`) fails on any high or critical
+  advisory. One that can't be fixed yet (only a planned major fixes it)
+  goes in its `ALLOWED` list with why and when it comes out, plus a
+  CHANGELOG line, and comes out with that upgrade. Never allow one to
+  make a pull request pass.
 
 ### Security and privacy
 
@@ -193,7 +198,19 @@ you found and which you'd map, keep, or replace.
 - **Hash every instruction a model gets** (`instructionsHash`): system
   text, prompt templates, output schemas, and tool descriptions, plus
   anything added or replaced at runtime (an admin override, edited
-  guidance), joined with `promptVersionOf`.
+  guidance), joined with `promptVersionOf`. Pass the same parts' text
+  (`instructionParts`) as the runner's `instructionTexts`, so the suite
+  page warns about a case copied into them.
+- **Never copy a case into the instructions as an example.** A test then
+  grades the model on an answer it was handed, and the score rises
+  without the model getting better. Write a new example instead, and
+  read the "Cases in the instructions" warning before trusting a score.
+- **Ready-made suites are a starting point.** `crisisRiskSuite` and
+  `hopelessnessSuite` (`@crowandraven/evalkeeper/suites`) test the app's
+  own detector on made-up cases that aren't clinically validated. Say so
+  when adding one, and have the person review and adapt the cases with
+  people who have crisis-line or clinical experience before relying on
+  them.
 - **Pass `readActual` when call sites read the app's own settings row,**
   so changes made outside Evalkeeper are recorded before the next save.
 - **Thumbs keep inputs only with consent.** When adding ratings, keep the

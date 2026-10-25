@@ -66,8 +66,10 @@ export const GLOSSARY = {
     "The app's own settings no longer matched the live version: a script, SQL, or another page changed them. Recorded as found, before the next save, so you can roll back to it.",
   inInstructions:
     "A case whose words appear in the instructions the model is told. A test then grades it on an answer it was handed, so the score rises without the model getting better.",
+  newInstructions:
+    "The instructions changed in code and were recorded under the same models. No model was switched.",
   instructionsEdited:
-    "Instructions edited at runtime (an admin override or added guidance) changed under the live settings. Dated when noticed, which can be after the edit.",
+    "Instructions edited at runtime (an admin override or added guidance) were recorded under the same models. No model was switched. Dated when noticed, which can be after the edit.",
   suites:
     "One suite per AI feature: its cases, the answers people confirmed, and the checks that grade any model against them. Open one to compare models and choose the live one.",
   answerKey:

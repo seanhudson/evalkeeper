@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
@@ -23,6 +24,15 @@ import {
 import { evalsPath } from "@/lib/evalkeeper/paths";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ suite: string }>;
+}): Promise<Metadata> {
+  const { suite } = await params;
+  return { title: `Compare: ${SUITE_BY_KEY[suite]?.label ?? "Evals"}` };
+}
 
 /** A search parameter as one string, or null when it's missing or repeated. */
 const one = (v: string | string[] | undefined) =>

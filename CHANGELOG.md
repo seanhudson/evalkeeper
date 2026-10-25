@@ -36,6 +36,20 @@ false`, and `whyNotACase` (so `caseFromFeedback` too) refuses it in
   (`casesInInstructions`). A warning only, never a failure (#71). **To
   update:** copy the suite page again and add `instructionTexts` to your
   runner; without it, nothing changes.
+- A ready-made hopelessness suite: `hopelessnessSuite` from
+  `@crowandraven/evalkeeper/suites`, beside the crisis risk suite. The
+  app passes its own detector; the suite asks whether the latest chat
+  message, and separately the earlier ones, voice hopelessness about the
+  person's own life, on 76 made-up messages in nine groups (self, one
+  thing, a joke covering hopelessness, light-hearted, a bad day, a plain
+  reply after hopeless messages, an agreeing reply, agreeing after a bad
+  day, and ordinary). A miss is serious, a false alarm minor, and the
+  detector's own probabilities (hopeless, about their life, said lightly,
+  agrees with earlier) are graded at the app's thresholds when it gives
+  them. These are made-up examples written as a starting point, not
+  clinically validated: review and adapt them with people who have
+  crisis-line or clinical experience before relying on them. The README's
+  "Listening for hopelessness" has advice on building the detector.
 
 ### Changed
 
@@ -47,6 +61,51 @@ help but the input has no such field.` **To update:** if
   `describeSuiteContract` now fails, add a label and help for each union
   key it names, and remove (or rename) the help it says is left over
   (#65).
+
+### Fixed
+
+- `add pages --base` with a Next.js route group (`"(app)/admin/evals"`)
+  put the group into every link (`EVALS_BASE`) and the "Open" step;
+  route groups aren't part of the URL, so the links went nowhere. The
+  folders keep the group and the links leave it out (`urlOfBase`). With
+  `--only`, it also warned that files the same run was copying were
+  missing (#66). **To update:** check `EVALS_BASE` in
+  `lib/evalkeeper/paths.ts` if your pages sit in a route group.
+- The run page shows each answer: by the suite's answer fields when it
+  has `labelFromOutput`, otherwise readably (`ReadableOutput`: text as
+  paragraphs, lists as bullets, small objects as one line, never raw
+  JSON), with what each matching check paired up and a link to the case
+  on the answer key. Side by side shows answers the same way, prefers a
+  suite's `describe` for the input, and wraps long values instead of
+  running into the next column; a prop named `role` that tripped
+  accessibility lint is `side`. Every eval page has a title ("Compare:
+  Ticket triage") (#67). **To update:** copy the run, side-by-side,
+  compare, rate, suite, hub, and feedback pages, `Fields.tsx`,
+  `AnswerKey.tsx`, and the new `ReadableOutput.tsx` again.
+- For decision suites, the run page shows each answer's probabilities
+  beside the bar they were read at ("34% true, bar 40%", "bug (90%)"),
+  right or wrong, from the new `given` on `decisionCheck`'s result.
+  Tests before this one show them after a regrade (#67).
+- The suite page keeps its suggestion card when nothing would change,
+  titled "No change suggested", so reasons such as "no other model is
+  safely better" or "can't be told from noise" show. The "Use these"
+  button and the Live and Fallback line show only when something would
+  change. **To update:** copy the suite page again.
+- Versions recorded when instructions changed in code read "New
+  instructions" (was "Deployed") and say "Models unchanged: … live, …
+  fallback", then "The instructions in code changed". Runtime edits say
+  the models are unchanged the same way. "Deployed" read as the app
+  switching models by itself. **To update:** copy
+  `SettingsHistory.tsx` again.
+
+### Security
+
+- CI's audit allows GHSA-mrhx-c7xc-m3w5 for now (`scripts/audit.mjs`).
+  It's a high advisory for zod below 4.6.6 (memory exhaustion when
+  validating oversized constrained collections) that affects every zod 3
+  version and is fixed only in zod 4, a planned upgrade. Every other high
+  or critical advisory still fails CI. This exception comes out with the
+  zod 4 upgrade.
 
 ## 0.7.0 - 2026-10-22
 

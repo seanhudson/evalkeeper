@@ -31,9 +31,9 @@ const KIND: Record<
     help: "An earlier version made live again.",
   },
   DEPLOY: {
-    text: "Deployed",
+    text: "New instructions",
     tone: "fallback",
-    help: "The instructions changed in code under the live settings.",
+    help: GLOSSARY.newInstructions,
   },
   OUTSIDE: {
     text: "Changed outside",
@@ -134,6 +134,9 @@ export function HistoryEntries({
         const ev = (e.evidence ?? {}) as Evidence;
         const testId = ev.runId ?? ev.live ?? null;
         const isLive = e.to.id === liveId;
+        // Said outright: "same models" read as the app switching models.
+        const unchanged = (v: typeof e.to) =>
+          `Models unchanged: ${label(v.model)} live${v.fallbackModel ? `, ${label(v.fallbackModel)} fallback` : ""}`;
         return (
           <article
             key={e.id}
@@ -160,9 +163,12 @@ export function HistoryEntries({
               {(e.kind === "ROLLBACK"
                 ? [`Back to v${e.to.number}: ${label(e.to.model)} live`]
                 : e.kind === "DEPLOY"
-                  ? ["Same models, new instructions"]
+                  ? [unchanged(e.to), "The instructions in code changed"]
                   : e.kind === "INSTRUCTIONS"
-                    ? ["Same models, instructions edited at runtime"]
+                    ? [
+                        unchanged(e.to),
+                        "The instructions were edited at runtime",
+                      ]
                     : describeChange(e.from, e.to, label)
               ).map((line) => (
                 <li key={line}>{line}</li>

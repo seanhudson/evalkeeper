@@ -575,7 +575,9 @@ npx @crowandraven/evalkeeper add pages --base admin/evals --only suite,run,Answe
 `--only` takes pages by name (hub, suite, run, rate, compare,
 side-by-side, feedback, cron), components and glue by name (AnswerKey,
 actions, evalkeeper.css, …), the groups `pages` and `components`, and
-`index` for a starter wiring module (left out otherwise). `--dry-run` lists what would be written, skipped,
+`index` for a starter wiring module (left out otherwise). A `--base`
+inside a route group (`"(app)/admin/evals"`) puts the pages in that
+folder and their links at `/admin/evals`. `--dry-run` lists what would be written, skipped,
 or overwritten, and names anything the chosen files import that your app
 doesn't have yet.
 

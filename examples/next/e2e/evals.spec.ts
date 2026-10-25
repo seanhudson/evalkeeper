@@ -67,6 +67,12 @@ test("a test's page shows each answer and why it was wrong", async ({
   await expect(
     page.getByText(/Right category: Expected/).first(),
   ).toBeVisible();
+  // The answer itself, by the suite's own field labels (#67).
+  await expect(page.locator("dt").getByText("Urgency").first()).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Find the case in the answer key" }).first(),
+  ).toBeVisible();
+  await expect(page).toHaveTitle("Test: Ticket triage");
 });
 
 test("making a model live moves the Live chip", async ({ page }) => {

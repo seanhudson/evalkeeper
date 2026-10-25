@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import {
   asText,
   thumbsSummary,
@@ -16,6 +17,8 @@ import { dismissFeedback, makeCase } from "@/lib/evalkeeper/actions";
 import { EVALS_BASE } from "@/lib/evalkeeper/paths";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = { title: "Feedback: Evals" };
 
 /**
  * What people thought of the AI's answers: thumbs per feature this week,

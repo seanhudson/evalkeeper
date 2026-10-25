@@ -25,6 +25,20 @@ false`, and `whyNotACase` (so `caseFromFeedback` too) refuses it in
 - `describeFeedbackStoreContract` takes `without` for the columns a
   thumbs table lacks, as the other contracts do, and checks a listed
   rating reads the same as the one saved (#64).
+- A ready-made hopelessness suite: `hopelessnessSuite` from
+  `@crowandraven/evalkeeper/suites`, beside the crisis risk suite. The
+  app passes its own detector; the suite asks whether the latest chat
+  message, and separately the earlier ones, voice hopelessness about the
+  person's own life, on 76 made-up messages in nine groups (self, one
+  thing, a joke covering hopelessness, light-hearted, a bad day, a plain
+  reply after hopeless messages, an agreeing reply, agreeing after a bad
+  day, and ordinary). A miss is serious, a false alarm minor, and the
+  detector's own probabilities (hopeless, about their life, said lightly,
+  agrees with earlier) are graded at the app's thresholds when it gives
+  them. These are made-up examples written as a starting point, not
+  clinically validated: review and adapt them with people who have
+  crisis-line or clinical experience before relying on them. The README's
+  "Listening for hopelessness" has advice on building the detector.
 
 ### Changed
 
@@ -72,6 +86,15 @@ help but the input has no such field.` **To update:** if
   the models are unchanged the same way. "Deployed" read as the app
   switching models by itself. **To update:** copy
   `SettingsHistory.tsx` again.
+
+### Security
+
+- CI's audit allows GHSA-mrhx-c7xc-m3w5 for now (`scripts/audit.mjs`).
+  It's a high advisory for zod below 4.6.6 (memory exhaustion when
+  validating oversized constrained collections) that affects every zod 3
+  version and is fixed only in zod 4, a planned upgrade. Every other high
+  or critical advisory still fails CI. This exception comes out with the
+  zod 4 upgrade.
 
 ## 0.7.0 - 2026-10-22
 

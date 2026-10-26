@@ -30,7 +30,7 @@
     "zod": "^3.25.0"
   },
   "devDependencies": {
-    "ai": "^7.0.146",
+    "ai": "^7.0.150",
     "zod": "^3.25.76"
   },
   "author": "Sean Hudson",

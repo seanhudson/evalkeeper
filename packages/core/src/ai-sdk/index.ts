@@ -2,7 +2,7 @@
  * Evalkeeper for the Vercel AI SDK: instruction hashes, call pricing, and a
  * cached meaning judge.
  *
- * @module \@crowandraven/evalkeeper/ai-sdk
+ * @module evalkeeper/ai-sdk
  */
 /**
  * Evalkeeper for the Vercel AI SDK: hash an operation's instructions (so

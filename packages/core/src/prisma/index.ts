@@ -1,7 +1,7 @@
 /**
  * Evalkeeper's tables for Prisma, and stores on your Prisma client.
  *
- * @module \@crowandraven/evalkeeper/prisma
+ * @module evalkeeper/prisma
  */
 import { CHANGE_KINDS, SettingsConflict, cleanRating } from "../index.js";
 import type {

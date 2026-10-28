@@ -22,5 +22,6 @@
     "invalidLink": true,
     "notDocumented": true
   },
-  "treatWarningsAsErrors": true
+  "treatWarningsAsErrors": true,
+  "packagesRequiringDocumentation": ["evalkeeper-monorepo"]
 }

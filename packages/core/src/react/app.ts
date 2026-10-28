@@ -29,6 +29,14 @@ export type EvalActions = {
   editAnswer: FormAction;
   retireCase: FormAction;
   runWeeklyNow: () => Promise<void>;
+  /** Blind rating; only for an app with the rate page. */
+  rateBlind?: FormAction;
+  /** Skipping a case in blind rating; only with the rate page. */
+  skipCase?: FormAction;
+  /** Turning a rating into a draft case; only with the feedback page. */
+  makeCase?: FormAction;
+  /** Setting a rating aside; only with the feedback page. */
+  dismissFeedback?: FormAction;
 };
 
 /**

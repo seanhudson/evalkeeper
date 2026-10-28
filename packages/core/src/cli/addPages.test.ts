@@ -285,7 +285,14 @@ describe("evalkeeper add pages", () => {
 
   it("doesn't call files missing that the same run copies (#66)", () => {
     const dir = app(AT);
-    const r = cli(dir, "add", "pages", "--only", "compare,paths", "--dry-run");
+    const r = cli(
+      dir,
+      "add",
+      "pages",
+      "--only",
+      "compare,paths,evals,actions,weekly",
+      "--dry-run",
+    );
     expect(r.code).toBe(0);
     // Only the wiring module is missing: this app has none yet.
     expect(r.out).toMatch(/These import index, which your app doesn't have/);

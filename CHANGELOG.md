@@ -42,7 +42,12 @@ version may change an interface, and its entry says how to update.
   answer editors, actions, and base path), instead of importing your
   app's modules. The copied pages are short arrangements of them: the
   suite page loads with `loadSuitePage(evals, key)` and the hub with
-  `loadHub(evals)`. `RefreshWhile` is a piece your app passes (the copied
+  `loadHub(evals)`. A test's page, compare, side by side, blind
+  rating, and feedback are views (`RunView`, `CompareView`,
+  `SideBySideView`, `RateView`, and `FeedbackView`) that return null for
+  something that doesn't exist, so the copied page answers "not found".
+  `EvalActions` gains `rateBlind`, `skipCase`, `makeCase`, and
+  `dismissFeedback`, each optional. `RefreshWhile` is a piece your app passes (the copied
   one uses Next.js's router). **To update:** copy the pages and glue
   again (`npx @crowandraven/evalkeeper add pages --dry-run` first), which
   adds `lib/evalkeeper/evals.ts`; delete your copies of the components

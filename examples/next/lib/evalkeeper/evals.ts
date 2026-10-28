@@ -40,6 +40,10 @@ export const evals = defineEvals({
     editAnswer: actions.editAnswer,
     retireCase: actions.retireCase,
     runWeeklyNow: actions.runWeeklyNow,
+    rateBlind: actions.rateBlind,
+    skipCase: actions.skipCase,
+    makeCase: actions.makeCase,
+    dismissFeedback: actions.dismissFeedback,
   },
   basePath: EVALS_BASE,
 });

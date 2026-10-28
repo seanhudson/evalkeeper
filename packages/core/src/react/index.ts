@@ -22,3 +22,8 @@ export * from "./CaseMenu.js";
 export * from "./ConfirmAnswer.js";
 export * from "./RollBack.js";
 export * from "./Thumbs.js";
+export * from "./RunView.js";
+export * from "./CompareView.js";
+export * from "./SideBySideView.js";
+export * from "./RateView.js";
+export * from "./FeedbackView.js";

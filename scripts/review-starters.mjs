@@ -69,9 +69,12 @@ export function fromTsv(text) {
   };
   const key = at("case");
   const mark = at("confirm");
+  // The answer the reviewer saw, so signing refuses one changed since.
+  const answer = names.indexOf("answer");
   return lines.map((l) => {
     const cells = l.split("\t");
-    return { case: (cells[key] ?? "").trim(), confirm: cells[mark] ?? "" };
+    const row = { case: (cells[key] ?? "").trim(), confirm: cells[mark] ?? "" };
+    return answer < 0 ? row : { ...row, answer: cells[answer] ?? "" };
   });
 }
 
@@ -143,12 +146,19 @@ async function main([command, key, ...rest]) {
       fromTsv(readFileSync(file, "utf8")),
       reviewer,
     );
+    // Reviews come from the build; refuse one older than the source file.
+    const path = join(root, entry.file);
+    const source = readFileSync(path, "utf8");
+    const inSource = (source.match(/\bcase: "/g) ?? []).length;
+    if (inSource !== existing.length)
+      throw new Error(
+        `${entry.file} has ${inSource} reviews but the build has ${existing.length}; run npm run build first.`,
+      );
     const merged = core.mergeReviews(existing, next, reviewer);
     const problems = core.reviewProblems({ ...suite, reviews: merged });
     if (problems.length) throw new Error(problems.join("\n"));
-    const path = join(root, entry.file);
     const prettier = await import("prettier");
-    const text = withReviews(readFileSync(path, "utf8"), entry.reviews, merged);
+    const text = withReviews(source, entry.reviews, merged);
     const options = (await prettier.resolveConfig(path)) ?? {};
     writeFileSync(
       path,

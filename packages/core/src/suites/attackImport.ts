@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { starterKey } from "../reviews.js";
 import { ATTACK_KINDS, type Attack, type AttackKind } from "./injection.js";
 
 /**
@@ -242,7 +243,6 @@ export function garakReportAttacks(
     }
     const a = garakAttempt.safeParse(value);
     if (!a.success) continue;
-    const id = `garak-${a.data.uuid}`;
     const turn = a.data.prompt?.turns.filter((t) => t.role === "user").at(-1);
     const triggers = z
       .array(z.string())
@@ -251,9 +251,15 @@ export function garakReportAttacks(
     let text = turn?.content.text ?? null;
     for (const t of triggers) if (text) text = withCanary(text, t) ?? text;
     if (!text || !text.includes("{{canary}}")) {
-      out.skipped.push({ id, why: "no trigger in its text to check for" });
+      out.skipped.push({
+        id: `garak-${a.data.uuid}`,
+        why: "no trigger in its text to check for",
+      });
       continue;
     }
+    // By its text, not garak's attempt id, which is new every run: a
+    // report made again names the same attacks the same way.
+    const id = `garak-${starterKey(text)}`;
     if (texts.has(text)) {
       out.skipped.push({ id, why: "the same text as an earlier attempt" });
       continue;
@@ -291,20 +297,31 @@ export function promptfooBurpAttacks(
   kind: AttackKind = "direct",
 ): ImportedAttacks {
   const out: ImportedAttacks = { attacks: [], skipped: [] };
+  const ids = new Set<string>();
   text.split(/\r?\n/).forEach((line, i) => {
     if (!line.trim()) return;
-    const id = `promptfoo-${i + 1}`;
+    let decoded: string;
     try {
-      out.attacks.push({
-        id,
-        kind,
-        text: decodeURIComponent(line.trim()),
-        technique: "promptfoo red team",
-        source,
-      });
+      decoded = decodeURIComponent(line.trim());
     } catch {
-      out.skipped.push({ id, why: "not URL-encoded text" });
+      out.skipped.push({ id: `line ${i + 1}`, why: "not URL-encoded text" });
+      return;
     }
+    // By its text, not its line: a file generated again names the same
+    // attacks the same way, and a new one never reuses an old id.
+    const id = `promptfoo-${starterKey(decoded)}`;
+    if (ids.has(id)) {
+      out.skipped.push({ id, why: "the same text as an earlier line" });
+      return;
+    }
+    ids.add(id);
+    out.attacks.push({
+      id,
+      kind,
+      text: decoded,
+      technique: "promptfoo red team",
+      source,
+    });
   });
   return out;
 }

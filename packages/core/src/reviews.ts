@@ -125,8 +125,21 @@ function problemsOf(
     out.push(`${name} doesn't say what qualifies the reviewer.`);
   const day = dayOf(r.at);
   if (!day) out.push(`${name} has no date as YYYY-MM-DD.`);
-  else if (day > now) out.push(`${name} is dated in the future.`);
+  // A day starts up to 14 hours before UTC's somewhere (UTC+14), so a
+  // review dated today counts wherever today is.
+  else if (+day > +now + 14 * 3_600_000)
+    out.push(`${name} is dated in the future.`);
   return out;
+}
+
+/** Each starter's key and its input as stable text. */
+function starterInputs(suite: AnySuite): Map<string, string> {
+  return new Map(
+    (suite.starter ?? []).map((s) => [
+      starterKey(s.input),
+      stableJson(s.input),
+    ]),
+  );
 }
 
 /** Each starter's key and its answer as stable text. */
@@ -196,6 +209,11 @@ export type ReviewResult = {
    * listed for a person to look at.
    */
   disagree: { caseId: string; review: ShippedReview }[];
+  /**
+   * Cases whose stored input isn't the one reviewed (the suite's leak
+   * check changed it when it was added), so their reviews were left out.
+   */
+  notSeen: { caseId: string; review: ShippedReview }[];
 };
 
 /** The newest answer someone in the app put to use, if any. */
@@ -212,10 +230,14 @@ function appAnswer(c: CaseRecord) {
 /**
  * Adds a suite's shipped reviews to its starter cases already in the
  * store, as confirmed answers. Safe to run again: a review already added
- * is skipped. A case whose own confirmed or provisional answer came from
- * someone in the app keeps it: the review is never added over it, and a
- * different answer is reported in `disagree`. Reviews that don't count
- * (see `reviewProblems`) are left out. `importStarters` runs it.
+ * is skipped, and one re-signed with a new answer (after the case's
+ * answer changed) is added as the newer confirmation. A case whose own
+ * confirmed or provisional answer came from someone in the app keeps it:
+ * the review is never added over it, and a different answer is reported
+ * in `disagree`. A case whose stored input isn't the one reviewed (a leak
+ * check changed it) gets no review and is reported in `notSeen`. Reviews
+ * that don't count (see `reviewProblems`) are left out. `importStarters`
+ * runs it.
  *
  * @param store - Where the suite's cases are.
  * @param suite - The suite whose `reviews` to add.
@@ -228,10 +250,11 @@ export async function addShippedReviews(
   source: string,
   now: Date = new Date(),
 ): Promise<ReviewResult> {
-  const result: ReviewResult = { reviewed: 0, disagree: [] };
+  const result: ReviewResult = { reviewed: 0, disagree: [], notSeen: [] };
   const reviews = suite.reviews ?? [];
   if (!reviews.length) return result;
   const answers = starterAnswers(suite);
+  const inputs = starterInputs(suite);
   const counting = reviews.filter(
     (r) => problemsOf(suite, r, answers, now).length === 0,
   );
@@ -244,18 +267,26 @@ export async function addShippedReviews(
   for (const r of counting) {
     const c = byRef.get(`${source}#${r.case}`);
     if (!c) continue;
+    if (stableJson(c.input) !== inputs.get(r.case)) {
+      result.notSeen.push({ caseId: c.id, review: r });
+      continue;
+    }
     const label = reviewedLabel(suite, r);
-    const id = `${c.id}|${label.raterRole}|${label.raterId ?? ""}`;
+    const value = stableJson(label.value);
+    const id = `${c.id}|${label.raterRole}|${label.raterId ?? ""}|${value}`;
     if (
       added.has(id) ||
       c.labels.some(
-        (l) => l.raterRole === label.raterRole && l.raterId === label.raterId,
+        (l) =>
+          l.raterRole === label.raterRole &&
+          l.raterId === label.raterId &&
+          stableJson(l.value) === value,
       )
     )
       continue;
     const theirs = appAnswer(c);
     if (theirs) {
-      if (stableJson(theirs.value) !== stableJson(label.value))
+      if (stableJson(theirs.value) !== value)
         result.disagree.push({ caseId: c.id, review: r });
       continue;
     }
@@ -314,11 +345,14 @@ const CONFIRMS = new Set(["y", "yes", "ok", "confirm", "confirmed"]);
  * Turns a marked review sheet into shipped reviews: one for each row the
  * reviewer confirmed ("yes", "y", "ok"), of the case's answer as it is
  * now. Rows left blank are left out. A row naming a case the suite
- * doesn't have, or marked anything else, stops it: a case whose answer
- * should change is edited in the suite first, then reviewed again.
+ * doesn't have, marked anything else, or showing an answer other than the
+ * case's answer now (it changed after the sheet was made) stops it: a
+ * case whose answer should change is edited in the suite first, then
+ * reviewed again on a new sheet.
  *
  * @param suite - The suite the sheet was made from.
- * @param rows - Each row's case and the reviewer's mark.
+ * @param rows - Each row's case, the reviewer's mark, and the answer the
+ *   sheet showed them (from `reviewSheet`), when the sheet kept it.
  * @param reviewer - Who reviewed it, what qualifies them, and when.
  * @returns The reviews, in the suite's order.
  * @throws When a row names an unknown case or has an unknown mark, or
@@ -326,7 +360,7 @@ const CONFIRMS = new Set(["y", "yes", "ok", "confirm", "confirmed"]);
  */
 export function reviewsFromSheet(
   suite: AnySuite,
-  rows: readonly { case: string; confirm: string }[],
+  rows: readonly { case: string; confirm: string; answer?: string }[],
   reviewer: Reviewer,
 ): ShippedReview[] {
   const problems: string[] = [];
@@ -342,6 +376,14 @@ export function reviewsFromSheet(
     const mark = r.confirm.trim().toLowerCase();
     if (!starters.has(r.case))
       problems.push(`case ${r.case} isn't one of ${suite.key}'s starters`);
+    else if (
+      CONFIRMS.has(mark) &&
+      r.answer !== undefined &&
+      r.answer.trim() !== stableJson(starters.get(r.case))
+    )
+      problems.push(
+        `case ${r.case}'s answer changed after the sheet was made; make a new sheet`,
+      );
     else if (CONFIRMS.has(mark)) confirmed.add(r.case);
     else if (mark)
       problems.push(

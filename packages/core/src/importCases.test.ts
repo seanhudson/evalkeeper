@@ -418,6 +418,7 @@ describe("importStarters", () => {
       removed: [],
       reviewed: 0,
       disagree: [],
+      notSeen: [],
     });
     expect(await importStarters(store, shout)).toEqual({
       added: 0,
@@ -425,6 +426,7 @@ describe("importStarters", () => {
       removed: [],
       reviewed: 0,
       disagree: [],
+      notSeen: [],
     });
     const cases = await store.listCases("shout");
     expect(cases.map((c) => [c.split, c.tags, c.labels[0]?.status])).toEqual([
@@ -441,6 +443,7 @@ describe("importStarters", () => {
       removed: [],
       reviewed: 0,
       disagree: [],
+      notSeen: [],
     });
   });
 });

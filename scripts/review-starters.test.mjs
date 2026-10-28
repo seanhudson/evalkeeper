@@ -27,6 +27,12 @@ test("reads marks back by column name, whatever the order", () => {
     { case: "a1b2c3d4", confirm: "yes" },
     { case: "e5f6a7b8", confirm: "" },
   ]);
+  const withAnswer = fromTsv(
+    'case\tconfirm\tanswer\nx1\tyes\t{"group":"must"}\n',
+  );
+  assert.deepEqual(withAnswer, [
+    { case: "x1", confirm: "yes", answer: '{"group":"must"}' },
+  ]);
   assert.throws(() => fromTsv("case\tanswer\nx\ty\n"), /no "confirm" column/);
 });
 

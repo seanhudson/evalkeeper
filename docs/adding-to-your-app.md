@@ -354,8 +354,9 @@ List it after its base suite in your suites, and where your app finds a
 feature's suite by operation, skip it with `isInjectionSuite`. Make its
 cases with `await injectionCases(store, triageInjection)`: up to 3 of the
 base suite's confirmed cases per attack (`perAttack`), each carrying that
-answer. Run it again when you confirm more cases or add attacks; it only
-adds. Compare the injection suite's score with the base suite's on the
+answer. Run it again after you confirm or change base answers, retire
+cases, or add attacks: attack cases take their base case's new answer,
+follow it into retirement, and new attacks get cases. Compare the injection suite's score with the base suite's on the
 same model to see what the attacks cost. Both suites run the same
 feature, so choosing a model on either page sets that feature's live
 model: a model that resists attacks is a fair reason to choose it.

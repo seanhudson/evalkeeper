@@ -254,7 +254,7 @@ export function crisisRiskSuite(
       label: { group: c.group },
       tags: [c.group, ...(c.earlier?.length ? ["earlier"] : [])],
       split: splitOf(i),
-      note: "Made up. Confirm the group before relying on it.",
+      note: "Made up.",
     })),
     title: (i) =>
       i.earlier.length ? `${i.message} (after ${i.earlier.length})` : i.message,

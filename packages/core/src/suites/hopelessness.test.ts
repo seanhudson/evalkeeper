@@ -190,7 +190,7 @@ describe("hopelessnessSuite setup", () => {
     expect(run).toHaveBeenCalledWith(msg("hi"), ctx);
   });
 
-  it("ships every built-in case as a pending starter in its group", () => {
+  it("ships every built-in case as a starter in its group", () => {
     const starters = suite.starter ?? [];
     expect(starters).toHaveLength(HOPELESSNESS_CASES.length);
     expect(starters.length).toBeGreaterThan(70);
@@ -199,7 +199,7 @@ describe("hopelessnessSuite setup", () => {
     const test = starters.filter((s) => s.split === "TEST").length;
     expect(test / starters.length).toBeCloseTo(0.4, 1);
     expect(
-      starters.filter((s) => s.note.startsWith("Made up. Check")),
+      starters.filter((s) => s.note.startsWith("Made up. A close call")),
     ).toHaveLength(2);
   });
 

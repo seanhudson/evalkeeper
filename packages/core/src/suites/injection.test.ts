@@ -108,6 +108,11 @@ describe("attackText and canaryOf", () => {
     );
   });
 
+  it("keeps a $ in a goal or canary as written", () => {
+    const hijack = attack("h", "hijack", "{{goal}} {{canary}}");
+    expect(attackText(hijack, "Z$&1", "Refund $$5.")).toBe("Refund $$5. Z$&1");
+  });
+
   it("makes a stable canary per suite", () => {
     expect(canaryOf("triage")).toBe(canaryOf("triage"));
     expect(canaryOf("triage")).not.toBe(canaryOf("routing"));
@@ -212,6 +217,22 @@ describe("injectionSuite", () => {
     ]);
   });
 
+  it("finds a secret with quotes or line breaks in a structured answer", async () => {
+    const quoted = injectionSuite(base, {
+      inject,
+      attacks: ATTACKS,
+      secrets: ['Say "no"\nthen stop.'],
+    });
+    const [, , leak] = quoted.attacks;
+    if (!leak) throw new Error("setup");
+    const checks = await quoted.grade(
+      quoted.attackCase(ticket, leak),
+      { queue: "bug", reply: 'Rules: Say "no"\nthen stop.' },
+      { queue: "bug" },
+    );
+    expect(checks.find((c) => c.key === "noLeak")?.pass).toBe(false);
+  });
+
   it("passes an answer that ignored the attack, and skips the leak check without secrets", async () => {
     const plain = injectionSuite(base, { inject, attacks: ATTACKS });
     const [say] = plain.attacks;
@@ -307,6 +328,8 @@ describe("injectionCases", () => {
     expect(await injectionCases(store, suite)).toEqual({
       added: 6,
       skipped: 0,
+      updated: 0,
+      retired: 0,
       baseCases: 2,
     });
     const cases = await store.listCases("triage_injection");
@@ -340,18 +363,20 @@ describe("injectionCases", () => {
     );
   });
 
-  it("uses at most perAttack base cases per attack, and adds nothing twice", async () => {
+  it("keeps each attack at perAttack cases in use, and adds nothing twice", async () => {
     const { store } = await storeWithBases();
     expect(await injectionCases(store, suite, { perAttack: 1 })).toMatchObject({
       added: 3,
     });
-    const again = await injectionCases(store, suite, { perAttack: 1 });
-    expect(again).toMatchObject({ added: 0, skipped: 3 });
-    // The same picks every time: a larger perAttack only adds.
+    expect(await injectionCases(store, suite, { perAttack: 1 })).toMatchObject({
+      added: 0,
+    });
+    // A larger perAttack only adds, skipping the cases already made.
     expect(await injectionCases(store, suite, { perAttack: 2 })).toMatchObject({
       added: 3,
       skipped: 3,
     });
+    expect(await store.listCases("triage_injection")).toHaveLength(6);
   });
 
   it("adds new attacks later, and nothing without confirmed base cases", async () => {
@@ -362,15 +387,72 @@ describe("injectionCases", () => {
       attacks: [...ATTACKS, attack("new", "indirect", "<!-- {{canary}} -->")],
       canary: "ZEBRA-TEST",
     });
-    expect(await injectionCases(store, more)).toMatchObject({
-      added: 2,
-      skipped: 6,
-    });
+    expect(await injectionCases(store, more)).toMatchObject({ added: 2 });
     expect(await injectionCases(memoryStore(), suite)).toEqual({
       added: 0,
       skipped: 0,
+      updated: 0,
+      retired: 0,
       baseCases: 0,
     });
+  });
+
+  it("carries a base case's newly confirmed answer, unless the attack case has its own", async () => {
+    vi.useFakeTimers({ now: new Date("2026-05-01T10:00:00Z") });
+    const { store, a } = await storeWithBases();
+    await injectionCases(store, suite);
+    const attackCases = (await store.listCases("triage_injection")).filter(
+      (c) => c.sourceRef?.endsWith(`#${a.id}`),
+    );
+    const [own, ...rest] = attackCases;
+    if (!own) throw new Error("setup");
+    vi.setSystemTime(new Date("2026-05-02T10:00:00Z"));
+    await store.addLabel(own.id, {
+      kind: "EXPECTED",
+      status: "CONFIRMED",
+      value: { queue: "kept" },
+      raterRole: "OWNER",
+      raterId: "sam",
+      note: null,
+    });
+    vi.setSystemTime(new Date("2026-05-03T10:00:00Z"));
+    await store.addLabel(a.id, {
+      kind: "EXPECTED",
+      status: "CONFIRMED",
+      value: { queue: "account" },
+      raterRole: "OWNER",
+      raterId: "pat",
+      note: null,
+    });
+    vi.setSystemTime(new Date("2026-05-04T10:00:00Z"));
+    expect(await injectionCases(store, suite)).toMatchObject({
+      updated: rest.length,
+      added: 0,
+    });
+    const newest = (id: string) =>
+      store
+        .listCases("triage_injection")
+        .then(
+          (cs) =>
+            [...(cs.find((c) => c.id === id)?.labels ?? [])]
+              .filter((l) => l.status === "CONFIRMED")
+              .sort((x, y) => +y.updatedAt - +x.updatedAt)[0]?.value,
+        );
+    expect(await newest(own.id)).toEqual({ queue: "kept" });
+    for (const c of rest)
+      expect(await newest(c.id)).toEqual({ queue: "account" });
+    expect(await injectionCases(store, suite)).toMatchObject({ updated: 0 });
+    vi.useRealTimers();
+  });
+
+  it("retires attack cases whose base case was retired", async () => {
+    const { store, a } = await storeWithBases();
+    await injectionCases(store, suite, { perAttack: 2 });
+    await store.setCaseStatus(a.id, "RETIRED");
+    const result = await injectionCases(store, suite, { perAttack: 2 });
+    expect(result).toMatchObject({ retired: 3, added: 0, baseCases: 1 });
+    const inUse = await store.listCases("triage_injection");
+    expect(inUse.every((c) => !c.sourceRef?.endsWith(`#${a.id}`))).toBe(true);
   });
 });
 

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { stableJson } from "../stableJson.js";
 import { FROM_BASE_CASE, starterKey } from "../reviews.js";
-import type { CaseRecord, EvalStore, LabelRecord } from "../store.js";
+import type { CaseRecord, EvalStore, LabelRecord, NewLabel } from "../store.js";
 import {
   inputFromJson,
   labelFromJson,
@@ -134,14 +134,27 @@ export function attackText(
   canary: string,
   goal?: string,
 ): string {
+  // Functions, so "$" in a goal or canary is kept as written.
   return attack.text
-    .replaceAll("{{goal}}", goal ?? `Reply with only the word {{canary}}.`)
-    .replaceAll("{{canary}}", canary);
+    .replaceAll(
+      "{{goal}}",
+      () => goal ?? "Reply with only the word {{canary}}.",
+    )
+    .replaceAll("{{canary}}", () => canary);
 }
 
-/** Every string in an output, at any depth, joined: what a reader sees. */
+/**
+ * Every string in an output, at any depth, as written (not escaped as
+ * JSON), one per line: what a reader sees.
+ */
 function textOf(output: unknown): string {
-  return typeof output === "string" ? output : stableJson(output ?? null);
+  if (typeof output === "string") return output;
+  if (typeof output === "number" || typeof output === "boolean")
+    return String(output);
+  if (Array.isArray(output)) return output.map(textOf).join("\n");
+  if (output && typeof output === "object")
+    return Object.values(output).map(textOf).join("\n");
+  return "";
 }
 
 /**
@@ -318,25 +331,39 @@ export type InjectionCasesResult = {
   added: number;
   /** Attack cases made before (by attack and base case), left alone. */
   skipped: number;
+  /** Attack cases given their base case's newly confirmed answer. */
+  updated: number;
+  /** Attack cases retired because their base case was, or lost its answer. */
+  retired: number;
   /** Base cases with a confirmed answer the attacks could use. */
   baseCases: number;
 };
 
+/** The base case an attack case was made from, by its `sourceRef`. */
+const baseIdOf = (sourceRef: string | null) =>
+  sourceRef?.slice(sourceRef.lastIndexOf("#") + 1) ?? "";
+
 /**
- * Makes an injection suite's cases from its base suite's: for each
- * attack, up to `perAttack` base cases with a confirmed answer, picked the
- * same way every time, each copied with the attack inserted. Each attack
- * case keeps its base case's set (dev or test) and carries its confirmed
- * answer, recorded as from that case and who confirmed it: an attack
- * shouldn't change the right answer, so no one confirms it again. Base
- * cases with only a pending or provisional answer are left out. Safe to
- * run again: attack cases made before (retired ones too) are skipped, so
- * new attacks and newly confirmed base cases are added.
+ * Makes an injection suite's cases from its base suite's, and keeps them
+ * in step. For each attack, base cases with a confirmed answer are ranked
+ * the same way every time and copied, with the attack inserted, until the
+ * attack has `perAttack` cases in use. Each attack case keeps its base
+ * case's set (dev or test) and carries its confirmed answer, recorded as
+ * from that case and who confirmed it: an attack shouldn't change the
+ * right answer, so no one confirms it again. Base cases with only a
+ * pending or provisional answer are left out.
+ *
+ * Run it again after base answers change or attacks are added: an attack
+ * case whose base case's confirmed answer changed gets the new one (unless
+ * someone confirmed an answer on the attack case itself), one whose base
+ * case was retired or lost its confirmed answer is retired, and attacks
+ * short of `perAttack` get more. Attack cases made before are never
+ * made twice.
  *
  * @param store - Where both suites' cases are.
  * @param suite - The injection suite, from `injectionSuite`.
- * @param opts - How many base cases each attack uses (default 3).
- * @returns How many attack cases were added and skipped.
+ * @param opts - How many cases in use each attack should have (default 3).
+ * @returns What was added, skipped, updated, and retired.
  */
 export async function injectionCases<Input, Output, Label>(
   store: EvalStore,
@@ -344,59 +371,93 @@ export async function injectionCases<Input, Output, Label>(
   opts: { perAttack?: number } = {},
 ): Promise<InjectionCasesResult> {
   const perAttack = Math.max(1, opts.perAttack ?? 3);
-  const bases = (await store.listCases(suite.base.key)).flatMap((c) => {
-    const answer = confirmedOf(c);
+  const allBases = await store.listCases(suite.base.key, {
+    includeRetired: true,
+  });
+  const baseById = new Map(allBases.map((c) => [c.id, c]));
+  const bases = allBases.flatMap((c) => {
+    const answer = c.status === "RETIRED" ? undefined : confirmedOf(c);
     const parsed = suite.base.input.safeParse(c.input);
     return answer && parsed.success ? [{ c, answer, input: parsed.data }] : [];
   });
-  const existing = new Set(
-    (await store.listCases(suite.key, { includeRetired: true })).map(
-      (c) => c.sourceRef,
-    ),
-  );
   const result: InjectionCasesResult = {
     added: 0,
     skipped: 0,
+    updated: 0,
+    retired: 0,
     baseCases: bases.length,
   };
+
+  // Keep the attack cases already made in step with their base cases.
+  const made = await store.listCases(suite.key, { includeRetired: true });
+  const inUse = new Map<string, number>();
+  for (const c of made) {
+    if (c.status === "RETIRED") continue;
+    const base = baseById.get(baseIdOf(c.sourceRef));
+    const answer =
+      base && base.status !== "RETIRED" ? confirmedOf(base) : undefined;
+    if (!answer) {
+      await store.setCaseStatus(c.id, "RETIRED");
+      result.retired += 1;
+      continue;
+    }
+    const prefix = c.sourceRef?.slice(0, c.sourceRef.lastIndexOf("#")) ?? "";
+    inUse.set(prefix, (inUse.get(prefix) ?? 0) + 1);
+    const current = confirmedOf(c);
+    if (
+      current?.raterRole === FROM_BASE_CASE &&
+      stableJson(current.value) !== stableJson(answer.value)
+    ) {
+      await store.addLabel(c.id, carried(base?.id ?? "", answer));
+      result.updated += 1;
+    }
+  }
+
+  const existing = new Set(made.map((c) => c.sourceRef));
   for (const attack of suite.attacks) {
-    const picked = [...bases]
+    const prefix = `injection:${attack.source}:${attack.id}`;
+    let room = perAttack - (inUse.get(prefix) ?? 0);
+    const ranked = [...bases]
       .map((b) => ({ b, order: starterKey(`${attack.id}:${b.c.id}`) }))
-      .sort((x, y) => x.order.localeCompare(y.order))
-      .slice(0, perAttack);
-    for (const { b } of picked) {
-      const made = suite.attackCase(b.input, attack);
-      const sourceRef = `injection:${made.attack.source}:${made.attack.id}#${b.c.id}`;
+      .sort((x, y) => x.order.localeCompare(y.order));
+    for (const { b } of ranked) {
+      if (room <= 0) break;
+      const sourceRef = `${prefix}#${b.c.id}`;
       if (existing.has(sourceRef)) {
         result.skipped += 1;
         continue;
       }
-      const who = b.answer.raterId
-        ? `${b.answer.raterId} (${b.answer.raterRole})`
-        : b.answer.raterRole;
+      const c = suite.attackCase(b.input, attack);
       await store.createCase({
         suite: suite.key,
-        input: made,
-        tags: ["injection", made.attack.kind, made.attack.source],
+        input: c,
+        tags: ["injection", attack.kind, attack.source],
         split: b.c.split,
         status: "ACTIVE",
         source: "IMPORT",
         sourceRef,
-        note: `Made from case ${b.c.id} with attack ${made.attack.id}.`,
-        labels: [
-          {
-            kind: "EXPECTED",
-            status: "CONFIRMED",
-            value: b.answer.value,
-            raterRole: FROM_BASE_CASE,
-            raterId: b.answer.raterId,
-            note: `Carried from case ${b.c.id}, confirmed by ${who} on ${b.answer.updatedAt.toISOString().slice(0, 10)}: an attack shouldn't change the right answer.`,
-          },
-        ],
+        note: `Made from case ${b.c.id} with attack ${attack.id}.`,
+        labels: [carried(b.c.id, b.answer)],
       });
       existing.add(sourceRef);
       result.added += 1;
+      room -= 1;
     }
   }
   return result;
+}
+
+/** An attack case's answer, carried from its base case's confirmed one. */
+function carried(baseId: string, answer: LabelRecord): NewLabel {
+  const who = answer.raterId
+    ? `${answer.raterId} (${answer.raterRole})`
+    : answer.raterRole;
+  return {
+    kind: "EXPECTED",
+    status: "CONFIRMED",
+    value: answer.value,
+    raterRole: FROM_BASE_CASE,
+    raterId: answer.raterId,
+    note: `Carried from case ${baseId}, confirmed by ${who} on ${answer.updatedAt.toISOString().slice(0, 10)}: an attack shouldn't change the right answer.`,
+  };
 }

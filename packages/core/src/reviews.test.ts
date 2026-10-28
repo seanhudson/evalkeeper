@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { importStarters } from "./importCases.js";
 import { memoryStore } from "./memoryStore.js";
@@ -147,6 +147,13 @@ describe("reviewProblems", () => {
     ]);
   });
 
+  it("counts a review dated today anywhere, even before UTC's today", () => {
+    // NOW is noon UTC on June 1: June 2 has begun at UTC+12 and beyond.
+    expect(
+      reviewProblems(withReviews([{ ...author, at: "2026-06-02" }]), NOW),
+    ).toEqual([]);
+  });
+
   it("refuses impossible and future dates", () => {
     expect(
       reviewProblems(withReviews([{ ...author, at: "2026-02-30" }]), NOW),
@@ -253,6 +260,47 @@ describe("importStarters with shipped reviews", () => {
       expect(c.labels.some(isShippedReview)).toBe(false);
   });
 
+  it("adds a review re-signed after the case's answer changed", async () => {
+    vi.useFakeTimers({ now: new Date("2026-05-01T10:00:00Z") });
+    const store = memoryStore();
+    await importStarters(store, withReviews([author]));
+    vi.setSystemTime(new Date("2026-05-02T10:00:00Z"));
+    const changed = {
+      ...base,
+      starter: (base.starter ?? []).map((s) =>
+        s.input.text === "hello" ? { ...s, label: { want: "HELLO!" } } : s,
+      ),
+    };
+    const resigned = { ...author, label: { want: "HELLO!" }, at: "2026-05-02" };
+    const result = await importStarters(store, {
+      ...changed,
+      reviews: [resigned],
+    });
+    expect(result.reviewed).toBe(1);
+    const [hello] = (await store.listCases("shout")).filter(
+      (c) => c.sourceRef === `starter:shout#${HELLO}`,
+    );
+    const confirmed = [...(hello?.labels ?? [])]
+      .filter((l) => l.status === "CONFIRMED")
+      .sort((a, b) => +b.updatedAt - +a.updatedAt);
+    expect(confirmed[0]?.value).toEqual({ want: "HELLO!" });
+    vi.useRealTimers();
+  });
+
+  it("leaves a case whose stored input isn't the one reviewed", async () => {
+    const store = memoryStore();
+    const trimmed = {
+      ...withReviews([author]),
+      withoutLeaks: (i: { text: string }) =>
+        i.text === "hello"
+          ? { input: { text: "hell" }, removed: ["o"] }
+          : { input: i, removed: [] },
+    };
+    const result = await importStarters(store, trimmed);
+    expect(result.reviewed).toBe(0);
+    expect(result.notSeen.map((n) => n.review)).toEqual([author]);
+  });
+
   it("leaves out reviews that don't count", async () => {
     const store = memoryStore();
     const result = await importStarters(
@@ -282,11 +330,11 @@ describe("importStarters with shipped reviews", () => {
         "starter:shout",
         NOW,
       ),
-    ).toEqual({ reviewed: 0, disagree: [] });
+    ).toEqual({ reviewed: 0, disagree: [], notSeen: [] });
     await store.setCaseStatus(hello.id, "DRAFT");
     expect(
       await addShippedReviews(store, withReviews([author]), "elsewhere", NOW),
-    ).toEqual({ reviewed: 0, disagree: [] });
+    ).toEqual({ reviewed: 0, disagree: [], notSeen: [] });
   });
 });
 
@@ -357,6 +405,24 @@ describe("review sheets", () => {
     ).toThrow(
       /no reviewer.*no credential.*no date.*00000000 isn't one of shout's starters.*marked "change to HI"/,
     );
+  });
+
+  it("refuses a confirmed row whose answer changed after the sheet was made", () => {
+    const sheet = reviewSheet(base);
+    expect(
+      reviewsFromSheet(
+        base,
+        sheet.map((r) => ({ ...r, confirm: "yes" })),
+        reviewer,
+      ),
+    ).toHaveLength(2);
+    expect(() =>
+      reviewsFromSheet(
+        base,
+        [{ case: HELLO, confirm: "yes", answer: '{"want":"HI"}' }],
+        reviewer,
+      ),
+    ).toThrow(/case .*'s answer changed after the sheet was made/);
   });
 
   it("replaces one reviewer's reviews and keeps everyone else's", () => {

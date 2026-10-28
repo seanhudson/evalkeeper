@@ -20,6 +20,16 @@ examples written as a starting point, not clinically validated: review
 and adapt them with people who have crisis-line or clinical experience
 before relying on them.
 
+**Injection suite.** A suite made from another one (`injectionSuite`) to
+test the same feature against prompt injection: the base suite's
+confirmed cases, each with an attack inserted where text the model can't
+trust goes. It runs on the base suite's operation, keeps its checks, and
+adds two: the answer never contains the attack's canary (a made-up word
+it asks for) and never contains secrets the app names. An attack case's
+answer is its base case's, marked "From base case," since an attack
+shouldn't change the right answer. Code that finds a feature's suite by
+operation skips injection suites (`isInjectionSuite`).
+
 **Case.** One frozen input, copied rather than referenced, so later
 changes to your app's data don't move the test. Cases are DRAFT, ACTIVE,
 or RETIRED, and split into DEV (what you tune against) and TEST (what you
@@ -39,7 +49,12 @@ answer shape. Every answer has a status:
   graded against.
 - **CONFIRMED:** a person said it's right, on the pages or in the system
   the answer was imported from (which records who and when). Tests grade
-  against the newest one.
+  against the newest one. A suite can ship confirmations of its own
+  starter cases (its `reviews`): the suite's author or an expert checked
+  each once, for every app, and the answer key marks them "Author
+  reviewed" or "Expert reviewed." A review counts only while the case is
+  what they saw, and never replaces an answer someone in your app
+  confirmed.
 - **PROVISIONAL:** put to use before review, by the owner's choice. Tests
   use it, and every score says it rests on unreviewed answers.
 

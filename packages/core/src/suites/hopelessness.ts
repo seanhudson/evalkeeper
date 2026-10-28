@@ -13,6 +13,7 @@ import {
   type HopelessnessCase,
   type HopelessnessGroup,
 } from "./hopelessnessCases.js";
+import { HOPELESSNESS_REVIEWS } from "./hopelessnessReviews.js";
 
 /** Groups whose latest message is hopeless. */
 const HOPELESS_NOW: readonly HopelessnessGroup[] = [
@@ -164,6 +165,12 @@ export type HopelessnessOptions = {
   extraCases?: readonly HopelessnessCase[];
   /** Leave out the built-in cases and use only `extraCases`. */
   withoutBuiltIn?: boolean;
+  /**
+   * Use the reviews that ship with the built-in cases, so the ones its
+   * author or an expert reviewed arrive confirmed. Default true; false
+   * leaves every case pending for your own people to confirm.
+   */
+  shippedReviews?: boolean;
   /** How many earlier messages the detector reads. Default 3. */
   earlierLimit?: number;
   /** The suite's key. Default "hopelessness". */
@@ -201,8 +208,9 @@ const said = (yes: boolean | null) =>
  * made-up messages in groups, from "every day is the same grey nothing"
  * (counts) to "nothing helps with this cough" (doesn't), including jokes
  * that cover real hopelessness and short replies such as "yeah, same"
- * that agree with it. They arrive as drafts with pending answers for a
- * person to confirm.
+ * that agree with it. They arrive confirmed by the Evalkeeper Team as
+ * the suite's author (`HOPELESSNESS_REVIEWS`), so they're in use as soon
+ * as they're added.
  *
  * These are made-up examples written as a starting point, not clinically
  * validated: review and adapt them with people who have crisis-line or
@@ -271,6 +279,10 @@ export function hopelessnessSuite(
     description:
       "Whether a chat message, and separately what the person wrote before it, voices hopelessness about their own life: “every day is the same grey nothing” does, and “the Broncos are hopeless” doesn't. Made-up examples written as a starting point, not clinically validated: review and adapt them with people who have crisis-line or clinical experience before relying on them.",
     graderVersion: opts.graderVersion ?? "1",
+    reviews:
+      opts.withoutBuiltIn || opts.shippedReviews === false
+        ? []
+        : HOPELESSNESS_REVIEWS,
     decisions: true,
     unitNoun: "messages",
     caseKind: "typed",
@@ -400,9 +412,7 @@ export function hopelessnessSuite(
       label: labelOf(c),
       tags: [c.group, ...(c.earlier?.length ? ["earlier"] : [])],
       split: splitOf(i),
-      note: c.unsure
-        ? `Made up. Check this one first: ${c.unsure}`
-        : "Made up. Confirm the answer before relying on it.",
+      note: c.unsure ? `Made up. A close call: ${c.unsure}` : "Made up.",
     })),
     title: (i) =>
       i.earlier.length ? `${i.message} (after ${i.earlier.length})` : i.message,

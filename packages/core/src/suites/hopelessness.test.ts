@@ -1,4 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
+import { importStarters } from "../importCases.js";
+import { memoryStore } from "../memoryStore.js";
+import { reviewProblems, starterKey } from "../reviews.js";
 import { suiteContractProblems } from "../suiteContract.js";
 import type { AnySuite, CheckResult } from "../types.js";
 import {
@@ -7,6 +10,7 @@ import {
   hopelessnessSuite,
   type HopelessnessLabel,
   type HopelessnessOutput,
+  HOPELESSNESS_REVIEWS,
 } from "./index.js";
 
 const run = (): Promise<HopelessnessOutput> =>
@@ -186,7 +190,7 @@ describe("hopelessnessSuite setup", () => {
     expect(run).toHaveBeenCalledWith(msg("hi"), ctx);
   });
 
-  it("ships every built-in case as a pending starter in its group", () => {
+  it("ships every built-in case as a starter in its group", () => {
     const starters = suite.starter ?? [];
     expect(starters).toHaveLength(HOPELESSNESS_CASES.length);
     expect(starters.length).toBeGreaterThan(70);
@@ -195,7 +199,7 @@ describe("hopelessnessSuite setup", () => {
     const test = starters.filter((s) => s.split === "TEST").length;
     expect(test / starters.length).toBeCloseTo(0.4, 1);
     expect(
-      starters.filter((s) => s.note.startsWith("Made up. Check")),
+      starters.filter((s) => s.note.startsWith("Made up. A close call")),
     ).toHaveLength(2);
   });
 
@@ -252,6 +256,12 @@ describe("hopelessnessSuite setup", () => {
     expect(only.starter).toHaveLength(1);
     expect(only.key).toBe("hopeless_jobs");
     expect(only.graderVersion).toBe("2");
+    expect(only.reviews).toEqual([]);
+    expect(suite.reviews).toBe(HOPELESSNESS_REVIEWS);
+    expect(
+      hopelessnessSuite({ operation: "op", run, shippedReviews: false })
+        .reviews,
+    ).toEqual([]);
     expect(suite.key).toBe("hopelessness");
     expect(suite.graderVersion).toBe("1");
   });
@@ -306,5 +316,25 @@ describe("hopelessnessSuite setup", () => {
   it("titles a case with its context", () => {
     expect(suite.title(msg("hi"))).toBe("hi");
     expect(suite.title(msg("hi", ["a", "b"]))).toBe("hi (after 2)");
+  });
+});
+
+describe("shipped reviews", () => {
+  it("reviews every built-in case, so none arrives pending", () => {
+    expect(reviewProblems(suite)).toEqual([]);
+    const reviewed = new Set(HOPELESSNESS_REVIEWS.map((r) => r.case));
+    for (const s of suite.starter ?? [])
+      expect(reviewed.has(starterKey(s.input)), JSON.stringify(s.input)).toBe(
+        true,
+      );
+    expect(HOPELESSNESS_REVIEWS).toHaveLength(HOPELESSNESS_CASES.length);
+  });
+
+  it("adds every built-in case confirmed and in use", async () => {
+    const store = memoryStore();
+    const result = await importStarters(store, suite);
+    expect(result.reviewed).toBe(HOPELESSNESS_CASES.length);
+    const cases = await store.listCases(suite.key);
+    expect(cases.every((c) => c.status === "ACTIVE")).toBe(true);
   });
 });

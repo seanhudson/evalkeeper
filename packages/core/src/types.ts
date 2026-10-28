@@ -1,5 +1,6 @@
 import type { z } from "zod";
 import type { ReasoningEffort } from "./models.js";
+import type { ShippedReview } from "./reviews.js";
 
 /**
  * An eval suite: how to run one AI operation on a frozen case and how to
@@ -172,6 +173,15 @@ export type Suite<Input, Output, Label> = {
     note: string;
   }[];
   /**
+   * Reviews of `starter` cases that ship with the suite: its author or an
+   * expert confirmed a case's answer once, for every app, so
+   * `importStarters` adds it confirmed instead of pending. Each names who,
+   * what qualifies them, and when, and counts only while the case's input
+   * and answer are what they saw; the suite contract fails on one that
+   * doesn't.
+   */
+  reviews?: readonly ShippedReview[];
+  /**
    * Drafts new cases aimed at what the answer key is missing, for a person
    * to review (they arrive with PENDING answers).
    */
@@ -323,6 +333,20 @@ export function linesOf(form: FormData, name: string): string[] {
  * `unknown`; a suite's own code keeps its precise types.
  */
 export type AnySuite = Suite<unknown, unknown, unknown>;
+
+/**
+ * Whether a suite is an injection suite (`injectionSuite` from
+ * `@crowandraven/evalkeeper/suites`): it runs on its base suite's
+ * operation, so code that finds a feature's suite by operation should
+ * skip it and find the base suite.
+ *
+ * @param suite - Any registered suite.
+ */
+export function isInjectionSuite(
+  suite: AnySuite,
+): suite is AnySuite & { base: AnySuite } {
+  return "base" in suite && "attackCase" in suite;
+}
 
 /** Where a zod issue sits, in plain words: "facts, item 2, name". */
 function issuePath(path: readonly (string | number)[]): string {

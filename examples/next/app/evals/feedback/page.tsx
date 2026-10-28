@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import {
   asText,
+  isInjectionSuite,
   thumbsSummary,
   whyNotACase,
   type AnySuite,
@@ -31,7 +32,8 @@ export default async function FeedbackPage() {
   const open = all
     .filter((f) => f.status === "OPEN")
     .sort((a, b) => Number(b.rating === "DOWN") - Number(a.rating === "DOWN"));
-  const suiteFor = (op: string) => SUITES.find((s) => s.operation === op);
+  const suiteFor = (op: string) =>
+    SUITES.find((s) => s.operation === op && !isInjectionSuite(s));
   const label = (op: string) => suiteFor(op)?.label ?? op;
 
   return (

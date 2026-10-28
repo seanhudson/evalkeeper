@@ -61,6 +61,14 @@ suite page warns about any case whose words appear in them.
 _So:_ say so, and leave the decision to a person rather than tuning the
 grader toward a pass.
 
+**Most of another tool's attacks are graded by its judge.** Of
+CyberSecEval's 251 prompt injection cases, 164 are checked by asking a
+judge model about the answer ("Is the response in Spanish?"); only 87
+name a word to look for. Guessing a check for the rest would grade them
+on something the tool never asked. _So:_ the readers turn a checked word
+into the suite's canary, leave the rest out, and list each one skipped
+with its question, so nothing is graded on a check nobody wrote.
+
 ## Answers
 
 **History isn't a verdict.** Answers taken from what someone did
@@ -73,6 +81,16 @@ the input only: seeing what the app decided anchors the rating.
 in minutes and flagged their own doubtful ones. _So:_ drafts arrive
 pending, the doubtful ones are reviewed first, and drafts put to use
 before review are provisional, never confirmed on anyone's behalf.
+
+**Every app confirmed the same cases again.** The crisis risk and
+hopelessness suites ship made-up cases written to work in any app, and
+each arrived pending, so every app's people had to confirm the same
+answers before a single test counted. Confirming them on the apps' behalf
+would break the rule above. _So:_ a suite can ship reviews: a named
+person, the suite's author or an expert, confirms a case once for every
+app, with what qualifies them and when. A review counts only for the
+exact input and answer they saw, never replaces an app's own answer, and
+the pages say whose review it was.
 
 **Cases confirmed early stayed drafts,** so tests ran on 2 cases instead
 of 25. _So:_ a case is in use when it isn't retired and has a confirmed

@@ -1,4 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
+import { importStarters } from "../importCases.js";
+import { memoryStore } from "../memoryStore.js";
+import { reviewProblems, starterKey } from "../reviews.js";
 import { suiteContractProblems } from "../suiteContract.js";
 import type { AnySuite, CheckResult } from "../types.js";
 import {
@@ -6,6 +9,7 @@ import {
   CRISIS_GROUPS,
   crisisRiskSuite,
   type CrisisRiskOutput,
+  CRISIS_REVIEWS,
 } from "./index.js";
 
 const run = (): Promise<CrisisRiskOutput> =>
@@ -170,6 +174,11 @@ describe("crisisRiskSuite setup", () => {
     expect(only.starter).toHaveLength(1);
     expect(only.key).toBe("crisis_jobs");
     expect(only.graderVersion).toBe("2");
+    expect(only.reviews).toEqual([]);
+    expect(suite.reviews).toBe(CRISIS_REVIEWS);
+    expect(
+      crisisRiskSuite({ operation: "op", run, shippedReviews: false }).reviews,
+    ).toEqual([]);
     expect(suite.key).toBe("crisis_risk");
     expect(suite.graderVersion).toBe("1");
   });
@@ -203,5 +212,25 @@ describe("crisisRiskSuite setup", () => {
   it("titles a case with its context", () => {
     expect(suite.title(msg("hi"))).toBe("hi");
     expect(suite.title(msg("hi", ["a", "b"]))).toBe("hi (after 2)");
+  });
+});
+
+describe("shipped reviews", () => {
+  it("reviews every built-in case, so none arrives pending", () => {
+    expect(reviewProblems(suite)).toEqual([]);
+    const reviewed = new Set(CRISIS_REVIEWS.map((r) => r.case));
+    for (const s of suite.starter ?? [])
+      expect(reviewed.has(starterKey(s.input)), JSON.stringify(s.input)).toBe(
+        true,
+      );
+    expect(CRISIS_REVIEWS).toHaveLength(CRISIS_CASES.length);
+  });
+
+  it("adds every built-in case confirmed and in use", async () => {
+    const store = memoryStore();
+    const result = await importStarters(store, suite);
+    expect(result.reviewed).toBe(CRISIS_CASES.length);
+    const cases = await store.listCases(suite.key);
+    expect(cases.every((c) => c.status === "ACTIVE")).toBe(true);
   });
 });

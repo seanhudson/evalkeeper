@@ -6,6 +6,9 @@ import {
   type AnySuite,
   type BoardRow,
   type CheckResult,
+  EXPERT_REVIEWED,
+  FROM_BASE_CASE,
+  isShippedReview,
 } from "@crowandraven/evalkeeper";
 import { addCase, editAnswer, retireCase } from "@/lib/evalkeeper/actions";
 import { Check, ChevronRight, CircleAlert, X } from "lucide-react";
@@ -173,6 +176,18 @@ function CaseItem({
     c.labels.find((l) => l.status === "CONFIRMED") ??
     c.labels.find((l) => l.status === "PROVISIONAL") ??
     c.labels.find((l) => l.status === "PENDING");
+  // A confirmation from outside the app: shipped with the suite, or
+  // carried from the case an attack case was made from.
+  const shipped =
+    answer?.status !== "CONFIRMED"
+      ? null
+      : answer.raterRole === FROM_BASE_CASE
+        ? { text: "From base case", term: "fromBaseCase" as const }
+        : !isShippedReview(answer)
+          ? null
+          : answer.raterRole === EXPERT_REVIEWED
+            ? { text: "Expert reviewed", term: "expertReviewed" as const }
+            : { text: "Author reviewed", term: "authorReviewed" as const };
   const status = (answer && STATUS[answer.status]) ?? {
     text: "No answer",
     tone: "warn" as const,
@@ -206,6 +221,11 @@ function CaseItem({
           <Tip term={status.term} id={`status-${c.id}`}>
             <Chip tone={status.tone}>{status.text}</Chip>
           </Tip>
+          {shipped && (
+            <Tip term={shipped.term} id={`reviewed-${c.id}`}>
+              <Chip tone="neutral">{shipped.text}</Chip>
+            </Tip>
+          )}
           <Tip term={c.split === "TEST" ? "test" : "dev"} id={`split-${c.id}`}>
             <Chip tone="neutral">{c.split === "TEST" ? "Test" : "Dev"}</Chip>
           </Tip>
@@ -258,6 +278,9 @@ function CaseItem({
               <pre className="whitespace-pre-wrap text-xs">
                 {JSON.stringify(answer?.value ?? null, null, 2)}
               </pre>
+            )}
+            {shipped && answer?.note && (
+              <p className="readable text-xs text-muted">{answer.note}</p>
             )}
             {(tags.length > 0 || c.note) && (
               <p className="readable text-xs text-muted">

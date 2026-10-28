@@ -6,7 +6,11 @@ import {
   prismaSettingsStore,
   prismaStore,
 } from "@crowandraven/evalkeeper-prisma";
-import { createSettings, type Settings } from "@crowandraven/evalkeeper";
+import {
+  createSettings,
+  isInjectionSuite,
+  type Settings,
+} from "@crowandraven/evalkeeper";
 import { createRunner, type Route } from "@crowandraven/evalkeeper/runner";
 import { prisma } from "../db";
 import { MODELS, availableModels } from "../models";
@@ -110,7 +114,9 @@ async function estimateCallCost(
 ): Promise<number | null> {
   const demo = demoCost(model);
   if (demo !== null) return demo;
-  const suite = SUITES.find((s) => s.operation === operation);
+  const suite = SUITES.find(
+    (s) => s.operation === operation && !isInjectionSuite(s),
+  );
   if (!suite) return null;
   const last = (await store.listRuns(suite.key, { status: "SUCCEEDED" })).find(
     (r) => r.model === model,

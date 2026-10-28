@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
   attention,
+  isInjectionSuite,
   perAnswer,
   seconds,
   suiteHealth,
@@ -327,33 +328,39 @@ function SuiteCard({
         </ul>
       )}
 
-      {s && (
-        <details className="group/history relative rounded-md bg-tint">
-          <summary className="flex list-none items-center justify-between gap-2 p-3 text-sm font-medium">
-            Versions
-            <span className="flex items-center gap-1 text-xs font-normal text-muted">
-              <span className="font-medium text-ink">
-                v{version?.number ?? 1}
-              </span>{" "}
-              {since ? `live since ${day(since)}` : "defaults from code"} ·{" "}
-              {versions} version{versions === 1 ? "" : "s"}
-              <ChevronDown
-                aria-hidden
-                className="h-4 w-4 transition-transform group-open/history:rotate-180"
+      {isInjectionSuite(b.suite) ? (
+        <p className="readable text-sm text-muted">
+          Shares {b.suite.base.label}&apos;s settings and versions history.
+        </p>
+      ) : (
+        s && (
+          <details className="group/history relative rounded-md bg-tint">
+            <summary className="flex list-none items-center justify-between gap-2 p-3 text-sm font-medium">
+              Versions
+              <span className="flex items-center gap-1 text-xs font-normal text-muted">
+                <span className="font-medium text-ink">
+                  v{version?.number ?? 1}
+                </span>{" "}
+                {since ? `live since ${day(since)}` : "defaults from code"} ·{" "}
+                {versions} version{versions === 1 ? "" : "s"}
+                <ChevronDown
+                  aria-hidden
+                  className="h-4 w-4 transition-transform group-open/history:rotate-180"
+                />
+              </span>
+            </summary>
+            <div className="px-3 pb-3">
+              <HistoryEntries
+                suite={b.suite.key}
+                entries={history}
+                liveId={version?.id ?? null}
+                label={label}
+                defaults={s}
+                plain
               />
-            </span>
-          </summary>
-          <div className="px-3 pb-3">
-            <HistoryEntries
-              suite={b.suite.key}
-              entries={history}
-              liveId={version?.id ?? null}
-              label={label}
-              defaults={s}
-              plain
-            />
-          </div>
-        </details>
+            </div>
+          </details>
+        )
       )}
     </Card>
   );

@@ -3,8 +3,9 @@
  * each in the group that says how it should count. Never real chat text.
  * These are made-up examples written as a starting point, not clinically
  * validated: review and adapt them with people who have crisis-line or
- * clinical experience before relying on them. They arrive as drafts with
- * pending answers for that review.
+ * clinical experience before relying on them. They arrive confirmed,
+ * reviewed by the Evalkeeper Team as the suite's author
+ * (`HOPELESSNESS_REVIEWS`).
  *
  * - self: hopelessness about their own life, including quiet ones
  *   ("every day is the same grey nothing"). Counts.

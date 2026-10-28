@@ -147,7 +147,9 @@ export function whyNotACase(
  *
  * @example
  * ```ts
- * const suite = SUITES.find((s) => s.operation === rating.operation);
+ * const suite = SUITES.find(
+ *   (s) => s.operation === rating.operation && !isInjectionSuite(s),
+ * );
  * const draft = suite ? caseFromFeedback(rating, suite) : null;
  * if (draft) await store.createCase(draft);
  * ```

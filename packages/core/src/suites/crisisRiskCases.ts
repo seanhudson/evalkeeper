@@ -1,5 +1,3 @@
-import type { ShippedReview } from "../reviews.js";
-
 /**
  * Made-up chat messages for the crisis risk suite (./crisisRisk.ts), each
  * in the group that says what reply it needs. Never real chat text. They
@@ -206,14 +204,3 @@ export const CRISIS_CASES: readonly CrisisCase[] = [
   ...inGroup("injury", injury),
   ...inGroup("ordinary", ordinary),
 ];
-
-/**
- * Reviews of the built-in cases that ship with the suite, so they arrive
- * confirmed instead of pending: "AUTHOR" when the suite's author checked a
- * case's group, "EXPERT" when someone with crisis line or clinical
- * experience did. Empty until someone reviews them. Make one per case
- * reviewed, with `starterKey` of the case's input and the group they
- * confirmed; editing a case's message or group makes its review stale,
- * and the suite contract fails until it's redone or removed.
- */
-export const CRISIS_REVIEWS: readonly ShippedReview[] = [];

@@ -263,3 +263,118 @@ export async function addShippedReviews(
   }
   return result;
 }
+
+/** One row of a review sheet: a starter case for a reviewer to mark. */
+export type ReviewSheetRow = {
+  /** The case: `starterKey` of its input. */
+  case: string;
+  /** The case's title, as the pages show it. */
+  title: string;
+  /** The whole input, so the reviewer sees what the model sees. */
+  input: string;
+  /** The answer to confirm, as stable JSON. */
+  answer: string;
+};
+
+/**
+ * A suite's starter cases as rows for a reviewer to mark, in the order
+ * the suite lists them. `reviewsFromSheet` turns the rows they confirm
+ * into shipped reviews.
+ *
+ * @param suite - The suite whose `starter` cases to list.
+ */
+export function reviewSheet(suite: AnySuite): ReviewSheetRow[] {
+  return (suite.starter ?? []).map((s) => {
+    const input = suite.input.parse(s.input);
+    return {
+      case: starterKey(s.input),
+      title: suite.title(input),
+      input: suite.describe?.(input) ?? stableJson(s.input),
+      answer: stableJson(s.label),
+    };
+  });
+}
+
+/** Who reviewed a sheet, for every review it makes. */
+export type Reviewer = Pick<
+  ShippedReview,
+  "level" | "by" | "credential" | "at"
+>;
+
+/** Marks that confirm a row of a review sheet. */
+const CONFIRMS = new Set(["y", "yes", "ok", "confirm", "confirmed"]);
+
+/**
+ * Turns a marked review sheet into shipped reviews: one for each row the
+ * reviewer confirmed ("yes", "y", "ok"), of the case's answer as it is
+ * now. Rows left blank are left out. A row naming a case the suite
+ * doesn't have, or marked anything else, stops it: a case whose answer
+ * should change is edited in the suite first, then reviewed again.
+ *
+ * @param suite - The suite the sheet was made from.
+ * @param rows - Each row's case and the reviewer's mark.
+ * @param reviewer - Who reviewed it, what qualifies them, and when.
+ * @returns The reviews, in the suite's order.
+ * @throws When a row names an unknown case or has an unknown mark, or
+ *   the reviewer is missing who, what qualifies them, or a date.
+ */
+export function reviewsFromSheet(
+  suite: AnySuite,
+  rows: readonly { case: string; confirm: string }[],
+  reviewer: Reviewer,
+): ShippedReview[] {
+  const problems: string[] = [];
+  if (!reviewer.by.trim()) problems.push("no reviewer (--by)");
+  if (!reviewer.credential.trim())
+    problems.push("no credential (--credential)");
+  if (!dayOf(reviewer.at)) problems.push("no date as YYYY-MM-DD (--at)");
+  const starters = new Map(
+    (suite.starter ?? []).map((s) => [starterKey(s.input), s.label]),
+  );
+  const confirmed = new Set<string>();
+  for (const r of rows) {
+    const mark = r.confirm.trim().toLowerCase();
+    if (!starters.has(r.case))
+      problems.push(`case ${r.case} isn't one of ${suite.key}'s starters`);
+    else if (CONFIRMS.has(mark)) confirmed.add(r.case);
+    else if (mark)
+      problems.push(
+        `case ${r.case} is marked "${r.confirm.trim()}"; mark "yes" or leave it blank`,
+      );
+  }
+  if (problems.length)
+    throw new Error(`The sheet can't be signed: ${problems.join("; ")}.`);
+  return [...starters].flatMap(([key, label]) =>
+    confirmed.has(key)
+      ? [
+          {
+            case: key,
+            label,
+            level: reviewer.level,
+            by: reviewer.by.trim(),
+            credential: reviewer.credential.trim(),
+            at: reviewer.at,
+          },
+        ]
+      : [],
+  );
+}
+
+/**
+ * A suite's reviews with one reviewer's replaced by a new set: everyone
+ * else's stay as they were, and theirs (same name and level) are swapped
+ * for `next`, so signing a sheet again never duplicates a review.
+ *
+ * @param existing - The reviews the suite ships now.
+ * @param next - The reviews from the newly signed sheet.
+ * @param reviewer - Whose reviews `next` replaces.
+ */
+export function mergeReviews(
+  existing: readonly ShippedReview[],
+  next: readonly ShippedReview[],
+  reviewer: Pick<Reviewer, "level" | "by">,
+): ShippedReview[] {
+  const theirs = (r: ShippedReview) =>
+    r.level === reviewer.level && r.by.trim() === reviewer.by.trim();
+  return [...existing.filter((r) => !theirs(r)), ...next];
+}

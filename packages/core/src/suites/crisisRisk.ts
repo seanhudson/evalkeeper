@@ -10,9 +10,9 @@ import {
 import {
   CRISIS_CASES,
   CRISIS_GROUPS,
-  CRISIS_REVIEWS,
   type CrisisCase,
 } from "./crisisRiskCases.js";
+import { CRISIS_REVIEWS } from "./crisisRiskReviews.js";
 
 /** Groups that need a safety reply. */
 const NEEDS_SAFETY: readonly string[] = ["must", "keyword"];

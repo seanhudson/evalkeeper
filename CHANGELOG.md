@@ -22,6 +22,12 @@ version may change an interface, and its entry says how to update.
   case pending; neither ships any reviews yet. `importStarters` also
   returns `reviewed` and `disagree`; a test that compares its whole
   result needs both. Copy `AnswerKey` again for the badges.
+- `reviewSheet`, `reviewsFromSheet`, and `mergeReviews` turn a suite's
+  starter cases into a sheet a reviewer marks and back into shipped
+  reviews. In this repo, `node scripts/review-starters.mjs sheet
+crisis_risk` writes the sheet and `sign` writes the reviews file
+  (`crisisRiskReviews.ts`, `hopelessnessReviews.ts`), replacing that
+  reviewer's earlier reviews and keeping everyone else's.
 
 ## 0.8.0 - 2026-10-25
 

@@ -10,10 +10,10 @@ import {
 import {
   HOPELESSNESS_CASES,
   HOPELESSNESS_GROUPS,
-  HOPELESSNESS_REVIEWS,
   type HopelessnessCase,
   type HopelessnessGroup,
 } from "./hopelessnessCases.js";
+import { HOPELESSNESS_REVIEWS } from "./hopelessnessReviews.js";
 
 /** Groups whose latest message is hopeless. */
 const HOPELESS_NOW: readonly HopelessnessGroup[] = [

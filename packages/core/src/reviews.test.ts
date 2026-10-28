@@ -7,7 +7,10 @@ import {
   EXPERT_REVIEWED,
   addShippedReviews,
   isShippedReview,
+  mergeReviews,
   reviewProblems,
+  reviewSheet,
+  reviewsFromSheet,
   starterKey,
   type ShippedReview,
 } from "./reviews.js";
@@ -284,5 +287,84 @@ describe("importStarters with shipped reviews", () => {
     expect(
       await addShippedReviews(store, withReviews([author]), "elsewhere", NOW),
     ).toEqual({ reviewed: 0, disagree: [] });
+  });
+});
+
+describe("review sheets", () => {
+  const reviewer = {
+    level: "AUTHOR" as const,
+    by: " Pat Example ",
+    credential: "suite author",
+    at: "2026-05-01",
+  };
+
+  it("lists each starter with its key, title, and answer", () => {
+    expect(reviewSheet(base)).toEqual([
+      {
+        case: HELLO,
+        title: "hello",
+        input: '{"text":"hello"}',
+        answer: '{"want":"HELLO"}',
+      },
+      {
+        case: BYE,
+        title: "bye",
+        input: '{"text":"bye"}',
+        answer: '{"want":"BYE"}',
+      },
+    ]);
+    const { starter: _starter, ...none } = base;
+    expect(reviewSheet(none)).toEqual([]);
+    const described = {
+      ...base,
+      describe: (i: { text: string }) => `Say ${i.text}`,
+    };
+    expect(reviewSheet(described)[0]?.input).toBe("Say hello");
+  });
+
+  it("signs the rows a reviewer confirmed, in the suite's order", () => {
+    const reviews = reviewsFromSheet(
+      base,
+      [
+        { case: BYE, confirm: " Yes " },
+        { case: HELLO, confirm: "" },
+      ],
+      reviewer,
+    );
+    expect(reviews).toEqual([
+      {
+        case: BYE,
+        label: { want: "BYE" },
+        level: "AUTHOR",
+        by: "Pat Example",
+        credential: "suite author",
+        at: "2026-05-01",
+      },
+    ]);
+    expect(reviewProblems(withReviews(reviews), NOW)).toEqual([]);
+  });
+
+  it("refuses unknown cases, unknown marks, and a missing reviewer", () => {
+    expect(() =>
+      reviewsFromSheet(
+        base,
+        [
+          { case: "00000000", confirm: "yes" },
+          { case: HELLO, confirm: "change to HI" },
+        ],
+        { ...reviewer, by: "", credential: " ", at: "soon" },
+      ),
+    ).toThrow(
+      /no reviewer.*no credential.*no date.*00000000 isn't one of shout's starters.*marked "change to HI"/,
+    );
+  });
+
+  it("replaces one reviewer's reviews and keeps everyone else's", () => {
+    const old = { ...author, case: BYE, label: { want: "BYE" } };
+    const merged = mergeReviews([old, expert], [author], {
+      level: "AUTHOR",
+      by: "Pat Example",
+    });
+    expect(merged).toEqual([expert, author]);
   });
 });

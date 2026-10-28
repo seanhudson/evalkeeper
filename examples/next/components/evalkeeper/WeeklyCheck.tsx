@@ -2,9 +2,14 @@ import Link from "next/link";
 import { money, type WeeklySummary } from "@crowandraven/evalkeeper";
 import { runWeeklyNow } from "@/lib/evalkeeper/actions";
 import { RefreshWhile } from "./RefreshWhile";
-import { Submit } from "./Submit";
-import { InfoTip, Tip } from "./Tip";
-import { Card, Chip, pct } from "./ui";
+import {
+  Card,
+  Chip,
+  InfoTip,
+  Submit,
+  Tip,
+  pct,
+} from "@crowandraven/evalkeeper/react";
 import { evalsPath } from "@/lib/evalkeeper/paths";
 
 /**

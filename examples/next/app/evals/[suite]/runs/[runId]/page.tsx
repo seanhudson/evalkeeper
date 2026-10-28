@@ -4,7 +4,7 @@ import { allPassed, money, summarize } from "@crowandraven/evalkeeper";
 import type { Metadata } from "next";
 import { FieldValues } from "@/components/evalkeeper/Fields";
 import { ReadableOutput } from "@/components/evalkeeper/ReadableOutput";
-import { BackLink, Card, pct } from "@/components/evalkeeper/ui";
+import { BackLink, Card, pct } from "@crowandraven/evalkeeper/react";
 import {
   MODELS,
   requireAdmin,

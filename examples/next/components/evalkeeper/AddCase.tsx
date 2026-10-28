@@ -1,10 +1,8 @@
 "use client";
 
-import { Button } from "./Controls";
+import { Button, Card, QUIET_BUTTON } from "@crowandraven/evalkeeper/react";
 import { useState } from "react";
 import { Plus } from "lucide-react";
-import { QUIET_BUTTON } from "./Submit";
-import { Card } from "./ui";
 
 /**
  * A section's header row with an "Add a case" button at the top right,

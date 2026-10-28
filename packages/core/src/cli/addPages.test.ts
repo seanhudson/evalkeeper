@@ -215,8 +215,8 @@ describe("evalkeeper add pages", () => {
   it("writes the app's components file once, and never over the app's own", () => {
     const dir = app(AT);
     cli(dir, "add", "pages");
-    const file = join(dir, "lib/evalkeeper/appComponents.ts");
-    expect(readFileSync(file, "utf8")).toMatch(/export const components/);
+    const file = join(dir, "lib/evalkeeper/appComponents.tsx");
+    expect(readFileSync(file, "utf8")).toMatch(/export function AppComponents/);
     writeFileSync(file, "// my components");
     cli(dir, "add", "pages", "--force");
     expect(readFileSync(file, "utf8")).toBe("// my components");
@@ -243,11 +243,13 @@ describe("evalkeeper add pages", () => {
       true,
     );
     expect(existsSync(join(dir, "app/evals/page.tsx"))).toBe(false);
-    expect(existsSync(join(dir, "components/evalkeeper/Tip.tsx"))).toBe(false);
+    expect(existsSync(join(dir, "components/evalkeeper/Fields.tsx"))).toBe(
+      false,
+    );
     // The wiring module is the app's; --only leaves it out unless named.
     expect(existsSync(join(dir, "lib/evalkeeper/index.ts"))).toBe(false);
     expect(r.out).toMatch(/which your app doesn't have/);
-    expect(r.out).toMatch(/\bui\b/);
+    expect(r.out).toMatch(/\bSuiteSections\b/);
     expect(r.out).toMatch(/Check lib\/evalkeeper\/index\.ts exports/);
   });
 
@@ -287,7 +289,7 @@ describe("evalkeeper add pages", () => {
       "add",
       "pages",
       "--only",
-      "compare,DisagreementChip,Submit,Tip,ui,paths,Fields,Controls,appComponents,swap",
+      "compare,DisagreementChip,paths,Fields,appComponents",
       "--dry-run",
     );
     expect(r.code).toBe(0);
@@ -315,11 +317,11 @@ describe("evalkeeper add pages", () => {
       "--only",
       "hub",
       "--only",
-      "Tip",
+      "Fields",
       "--dry-run",
     );
     expect(dry.out).toMatch(/skip\s+app\/evals\/page\.tsx \(exists\)/);
-    expect(dry.out).toMatch(/write\s+components\/evalkeeper\/Tip\.tsx/);
+    expect(dry.out).toMatch(/write\s+components\/evalkeeper\/Fields\.tsx/);
     const forced = cli(
       dir,
       "add",
@@ -330,7 +332,9 @@ describe("evalkeeper add pages", () => {
       "--dry-run",
     );
     expect(forced.out).toMatch(/overwrite\s+app\/evals\/page\.tsx/);
-    expect(existsSync(join(dir, "components/evalkeeper/Tip.tsx"))).toBe(false);
+    expect(existsSync(join(dir, "components/evalkeeper/Fields.tsx"))).toBe(
+      false,
+    );
   });
 
   it("takes groups and the wiring by name, and refuses names it doesn't know", () => {

@@ -8,9 +8,15 @@ import {
   type FeedbackRecord,
 } from "@crowandraven/evalkeeper";
 import { FieldValues } from "@/components/evalkeeper/Fields";
-import { Submit } from "@/components/evalkeeper/Submit";
-import { InfoTip, Tip } from "@/components/evalkeeper/Tip";
-import { BackLink, Card, Chip, pct } from "@/components/evalkeeper/ui";
+import {
+  BackLink,
+  Card,
+  Chip,
+  InfoTip,
+  Submit,
+  Tip,
+  pct,
+} from "@crowandraven/evalkeeper/react";
 import { ThumbsDown, ThumbsUp } from "lucide-react";
 import { feedbackStore, requireAdmin, SUITES } from "@/lib/evalkeeper";
 import { daysAgo } from "@/lib/evalkeeper/time";

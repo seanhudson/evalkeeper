@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, TextInput } from "./Controls";
+import { Button, TextInput } from "@crowandraven/evalkeeper/react";
 import { useState, useTransition } from "react";
 import { ThumbsDown, ThumbsUp } from "lucide-react";
 import { formText } from "@crowandraven/evalkeeper";

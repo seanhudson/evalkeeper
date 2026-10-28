@@ -9,7 +9,8 @@
     "packages/core/src/suites/index.ts",
     "packages/core/src/cli/main.ts",
     "packages/core/src/prisma/index.ts",
-    "packages/core/src/ai-sdk/index.ts"
+    "packages/core/src/ai-sdk/index.ts",
+    "packages/core/src/react/index.ts"
   ],
   "tsconfig": "tsconfig.typedoc.json",
   "out": "docs/api",

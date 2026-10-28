@@ -1,9 +1,7 @@
 import { cookies } from "next/headers";
 import { Fields } from "@/components/evalkeeper/Fields";
-import { Submit } from "@/components/evalkeeper/Submit";
+import { Card, InfoTip, Submit } from "@crowandraven/evalkeeper/react";
 import { Thumbs } from "@/components/evalkeeper/Thumbs";
-import { InfoTip } from "@/components/evalkeeper/Tip";
-import { Card } from "@/components/evalkeeper/ui";
 import { prisma } from "@/lib/db";
 import { feedbackStore } from "@/lib/evalkeeper";
 import { ticketTriage } from "@/lib/suites/ticketTriage";

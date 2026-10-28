@@ -1,6 +1,5 @@
 import type { DisagreementKind } from "@crowandraven/evalkeeper";
-import { Tip } from "./Tip";
-import { Chip } from "./ui";
+import { Chip, Tip } from "@crowandraven/evalkeeper/react";
 
 /** How each kind of disagreement shows: its chip and its glossary entry. */
 const KIND = {

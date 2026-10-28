@@ -21,3 +21,4 @@ pieces fit, start with the guides in the repository:
 | `@crowandraven/evalkeeper/cli`     | The `evalkeeper` command                                             |
 | `@crowandraven/evalkeeper/prisma`  | The Prisma tables and stores                                         |
 | `@crowandraven/evalkeeper/ai-sdk`  | Instruction hashes, pricing, and the meaning judge                   |
+| `@crowandraven/evalkeeper/react`   | The screens' pieces, drawn with your app's own components            |

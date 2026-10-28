@@ -1,7 +1,7 @@
 "use client";
 
 import { confirmAnswer } from "@/lib/evalkeeper/actions";
-import { Submit } from "./Submit";
+import { Submit } from "@crowandraven/evalkeeper/react";
 
 /**
  * Confirms a case's pending answer and moves straight on: this case closes

@@ -4,6 +4,8 @@ import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import {
   answerFromForm,
+  attackMistakes,
+  attacksFrom,
   blindRating,
   caseFromFeedback,
   formText,
@@ -34,6 +36,21 @@ import { runWeeklyCheck, startWeeklyCheck } from "./weekly";
 
 const suiteFrom = (form: FormData) =>
   runner.suiteOrThrow(formText(form, "suite"));
+
+/**
+ * The suite whose page chooses models: never an injection suite, whose
+ * results show on its base suite's page and count in its suggestion.
+ */
+function choosingSuite(form: FormData) {
+  const suite = suiteFrom(form);
+  if (isInjectionSuite(suite))
+    throw new Error(`Choose models on ${suite.base.label}`);
+  return suite;
+}
+
+/** A suite's injection suites, as its suggestion reads them. */
+const attacksOn = async (suiteKey: string) =>
+  attacksFrom(await runner.attackBoards(suiteKey));
 
 export async function testModel(form: FormData) {
   await requireAdmin();
@@ -104,15 +121,16 @@ const VS: Record<string, string> = {
 
 export async function makeLive(form: FormData) {
   const admin = await requireAdmin();
-  const suite = suiteFrom(form);
+  const suite = choosingSuite(form);
   const model = formText(form, "model");
   const { row, evidence } = await evidenceFor(suite.key, model);
+  const attacked = attackMistakes(row.key, await attacksOn(suite.key));
   await settings.update(
     suite.operation,
     { model },
     {
       by: admin.name,
-      reason: `Made ${row.label} live: ${evidence.score.right}/${evidence.score.total}, ${VS[row.vsLive ?? ""] ?? "no comparison"}`,
+      reason: `Made ${row.label} live: ${evidence.score.right}/${evidence.score.total}, ${VS[row.vsLive ?? ""] ?? "no comparison"}${attacked === null ? "" : `; ${attacked} serious ${attacked === 1 ? "mistake" : "mistakes"} under attack`}`,
       evidence,
     },
   );
@@ -121,7 +139,7 @@ export async function makeLive(form: FormData) {
 
 export async function makeFallback(form: FormData) {
   const admin = await requireAdmin();
-  const suite = suiteFrom(form);
+  const suite = choosingSuite(form);
   const model = formText(form, "model");
   const { reason, evidence } = await fallbackEvidence(suite.key, model);
   await settings.update(
@@ -135,9 +153,14 @@ export async function makeFallback(form: FormData) {
 /** Applies the suggestion: its live and fallback models, in one change. */
 export async function useSuggestion(form: FormData) {
   const admin = await requireAdmin();
-  const suite = suiteFrom(form);
-  const board = await runner.board(suite.key);
-  const s = suggest(board.rows, suite.checks, suite.priority, MODELS);
+  const suite = choosingSuite(form);
+  const [board, attacks] = await Promise.all([
+    runner.board(suite.key),
+    attacksOn(suite.key),
+  ]);
+  const s = suggest(board.rows, suite.checks, suite.priority, MODELS, {
+    attacks,
+  });
   if (!s || s.same) return;
   await settings.update(
     suite.operation,
@@ -161,7 +184,7 @@ export async function useSuggestion(form: FormData) {
 /** Makes an earlier version live again; a reason is required. */
 export async function rollBackSettings(form: FormData) {
   const admin = await requireAdmin();
-  const suite = suiteFrom(form);
+  const suite = choosingSuite(form);
   const reason = formText(form, "reason");
   if (!reason) throw new Error("Say why you're rolling back");
   await settings.rollBack(suite.operation, formText(form, "version"), {

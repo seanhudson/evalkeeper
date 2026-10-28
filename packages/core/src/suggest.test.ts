@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { suggest as suggestWith, type SuggestRow } from "./suggest.js";
+import {
+  attackMistakes,
+  attacksFrom,
+  suggest as suggestWith,
+  type SuggestRow,
+} from "./suggest.js";
 import type { ModelCatalog } from "./models.js";
 import type { CheckDef } from "./types.js";
 
@@ -415,5 +420,176 @@ describe("a live model whose test has failed answers (#34)", () => {
     )!;
     expect(s.retestLive).toBe(false);
     expect(s.live.key).toBe("Sonnet");
+  });
+});
+
+describe("weighing attacks", () => {
+  const attackChecks: CheckDef[] = [
+    ...checks,
+    {
+      key: "noCanary",
+      label: "Didn't follow the attack",
+      description: "",
+      kind: "code",
+      severity: "serious",
+    },
+  ];
+  /** A model's row on the injection suite, with `followed` attacks followed. */
+  const attacked = (key: string, model: string, followed: number) => {
+    const r = row(key, model, { rule: 0 });
+    if (!r.test) throw new Error("row has a test");
+    r.test.byCheck.noCanary = {
+      passed: 25 - followed,
+      n: 25,
+      rate: null,
+      low: null,
+      high: null,
+    };
+    return r;
+  };
+  const attacks = (...rows: SuggestRow[]) =>
+    attacksFrom([
+      {
+        suite: { label: "Triage: injection", checks: attackChecks },
+        rows,
+      },
+    ]);
+  const withAttacks = (
+    rows: SuggestRow[],
+    attackRows: SuggestRow[],
+    priority?: Parameters<typeof suggestWith>[2],
+  ) =>
+    suggestWith(rows, checks, priority, MODELS, {
+      attacks: attacks(...attackRows),
+    });
+
+  it("adds up serious mistakes under attack, null without a current test", () => {
+    const a = attacks(attacked("Luna", "gpt-6-luna", 3));
+    expect(attackMistakes("Luna", a)).toBe(3);
+    expect(attackMistakes("Sol", a)).toBeNull();
+    expect(attackMistakes("Luna", [])).toBeNull();
+    const stale = attacked("Sol", "gpt-6.1-sol", 0);
+    if (stale.test) stale.test.stale = true;
+    expect(attackMistakes("Sol", attacks(stale))).toBeNull();
+    const failed = attacked("Sol", "gpt-6.1-sol", 0);
+    if (failed.test) failed.test.failedAnswers = 2;
+    expect(attackMistakes("Sol", attacks(failed))).toBeNull();
+  });
+
+  it("won't switch to a model that makes more serious mistakes under attack", () => {
+    const rows = [
+      row("Luna", "gpt-6-luna", { rule: 2, right: 22, live: true }),
+      // Clearly cheaper, which would be a reason to switch...
+      row("Haiku", "claude-haiku-5-5", { rule: 2, right: 22, cost: 0.001 }),
+    ];
+    const s = withAttacks(
+      rows,
+      [
+        attacked("Luna", "gpt-6-luna", 1),
+        attacked("Haiku", "claude-haiku-5-5", 4),
+      ],
+      { favor: "cost" },
+    );
+    expect(s?.live.key).toBe("Luna");
+    expect(s?.reasons).toContain(
+      "Haiku would otherwise qualify, but it makes more serious mistakes under attack (4 against 1).",
+    );
+    // ...and without the attacks, it switches.
+    expect(suggest(rows, checks, { favor: "cost" })?.live.key).toBe("Haiku");
+  });
+
+  it("won't switch to a model not tested against the attacks", () => {
+    const rows = [
+      row("Luna", "gpt-6-luna", { rule: 2, right: 22, live: true }),
+      row("Haiku", "claude-haiku-5-5", { rule: 2, right: 22, cost: 0.001 }),
+    ];
+    const s = withAttacks(rows, [attacked("Luna", "gpt-6-luna", 1)], {
+      favor: "cost",
+    });
+    expect(s?.live.key).toBe("Luna");
+    expect(s?.reasons).toContain(
+      "Haiku would otherwise qualify, but it has no up-to-date test against the attacks. Test it on Triage: injection.",
+    );
+  });
+
+  it("switches for at least two fewer serious mistakes under attack", () => {
+    const rows = [
+      row("Luna", "gpt-6-luna", { rule: 1, right: 23, live: true }),
+      row("Sol", "gpt-6.1-sol", { rule: 1, right: 23 }),
+    ];
+    const s = withAttacks(rows, [
+      attacked("Luna", "gpt-6-luna", 3),
+      attacked("Sol", "gpt-6.1-sol", 1),
+    ]);
+    expect(s?.live.key).toBe("Sol");
+    expect(s?.reasons[0]).toBe(
+      "Sol makes fewer serious mistakes under attack than Luna (1 against 3), and scores at least as well (92% against 92%).",
+    );
+    // One fewer isn't enough on its own.
+    const close = withAttacks(rows, [
+      attacked("Luna", "gpt-6-luna", 2),
+      attacked("Sol", "gpt-6.1-sol", 1),
+    ]);
+    expect(close?.live.key).toBe("Luna");
+  });
+
+  it("says how a switch does under attack", () => {
+    const rows = [
+      row("Luna", "gpt-6-luna", { rule: 3, right: 20, live: true }),
+      row("Sol", "gpt-6.1-sol", { rule: 0, right: 25 }),
+    ];
+    const s = withAttacks(rows, [
+      attacked("Luna", "gpt-6-luna", 2),
+      attacked("Sol", "gpt-6.1-sol", 1),
+    ]);
+    expect(s?.live.key).toBe("Sol");
+    expect(s?.reasons).toContain(
+      "Under attack, Sol makes 1 serious mistake, against 2 for Luna.",
+    );
+    // Live with no test against the attacks: a tested model can still win.
+    const untested = withAttacks(rows, [attacked("Sol", "gpt-6.1-sol", 1)]);
+    expect(untested?.live.key).toBe("Sol");
+    expect(untested?.reasons).toContain(
+      "Under attack, Sol makes 1 serious mistake. Luna has no up-to-date test against the attacks to compare with.",
+    );
+  });
+
+  it("with no live test, prefers models tested against the attacks", () => {
+    const rows = [
+      row("Sol", "gpt-6.1-sol", { right: 25 }),
+      row("Haiku", "claude-haiku-5-5", { right: 23 }),
+    ];
+    const s = withAttacks(rows, [attacked("Haiku", "claude-haiku-5-5", 0)]);
+    expect(s?.live.key).toBe("Haiku");
+    // None tested: the best one, with a note to test it.
+    const none = withAttacks(rows, []);
+    expect(none?.live.key).toBe("Sol");
+    expect(none?.reasons).toContain(
+      "No model has an up-to-date test against the attacks: test Sol on them before relying on it.",
+    );
+  });
+
+  it("says how the fallback does under attack", () => {
+    const rows = [
+      row("Sonnet", "claude-sonnet-5-5", { live: true }),
+      row("Sol", "gpt-6.1-sol", { right: 24 }),
+      row("Luna", "gpt-6-luna", { right: 24 }),
+    ];
+    // Same score: fewer mistakes under attack breaks the tie.
+    const s = withAttacks(rows, [
+      attacked("Sonnet", "claude-sonnet-5-5", 0),
+      attacked("Sol", "gpt-6.1-sol", 3),
+      attacked("Luna", "gpt-6-luna", 1),
+    ]);
+    expect(s?.fallback?.key).toBe("Luna");
+    expect(s?.reasons).toContain(
+      "Fallback: Luna is the most accurate from another provider (96%, 0 serious mistakes; 1 serious mistake under attack).",
+    );
+    const untested = withAttacks(rows, [
+      attacked("Sonnet", "claude-sonnet-5-5", 0),
+    ]);
+    expect(untested?.reasons.at(-1)).toMatch(
+      /; not tested against the attacks\)\.$/,
+    );
   });
 });

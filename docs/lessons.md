@@ -145,6 +145,15 @@ fallback, and each kind is tested and scored on its own.
 explain. _So:_ add a rule only when a real case needs one, and give every
 suggestion its one reason.
 
+**One feature, one place to choose its model.** An app added injection
+suites for two features and saw each as its own card on the hub, each
+page with its own suggestion and "Make live." Both pages changed the same
+feature's live model, and the injection page's suggestion weighed only
+attacks, so it could pick a model less accurate on the feature itself.
+_So:_ an injection suite's results show on its base suite's page as
+serious mistakes under attack, the suggestion there weighs both, and the
+injection page only tests and shows results.
+
 ## Settings
 
 **The live settings stayed a row, not a pointer.** The app's call sites

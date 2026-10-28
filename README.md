@@ -120,8 +120,11 @@ design.
   case's confirmed answer, so the base checks show whether the answer
   held, and two more show whether the model said a made-up canary word
   the attack asked for or leaked text you name. It ships with 20 attacks
-  and reads more from CyberSecEval, garak, and promptfoo. Passing means
-  the model resisted these attacks, not that your app is safe.
+  and reads more from CyberSecEval, garak, and promptfoo. Its results
+  show on the feature's own page, as each model's serious mistakes under
+  attack, and the suggestion never picks a model with more than live's.
+  Passing means the model resisted these attacks, not that your app is
+  safe.
 - **Answers reviewed once, for every app.** A ready-made suite can ship
   reviews of its own cases, so they arrive confirmed: "Author reviewed"
   when the suite's author checked them, "Expert reviewed" when someone
@@ -389,10 +392,6 @@ counted.
   is better, for open-ended output with no single right answer. (LangSmith)
 - **The commit on each run.** Record the git commit with every run, so a
   score change traces to the change that caused it. (Braintrust)
-- **Injection variants.** Mark a field untrusted and Evalkeeper plants
-  attack text in copies of existing cases; the confirmed answer shouldn't
-  change, so every suite gets an injection test with no new labeling.
-  Opt-in per suite, reported as its own pass rate. (Promptfoo, Confident AI)
 - **Canary leak checks.** Plant unique markers in the instructions and in
   other users' data, and fail any answer that contains one, so leaked
   instructions or data mixed between users show up. Opt-in per suite.

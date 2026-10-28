@@ -3,7 +3,14 @@ import { z } from "zod";
 import { memoryStore } from "../memoryStore.js";
 import { FROM_BASE_CASE } from "../reviews.js";
 import { suiteContractProblems } from "../suiteContract.js";
-import { isInjectionSuite, type Suite } from "../types.js";
+import { createRunner } from "../runner.js";
+import { attackMistakes, attacksFrom } from "../suggest.js";
+import {
+  injectionSuitesOf,
+  isInjectionSuite,
+  type AnySuite,
+  type Suite,
+} from "../types.js";
 import {
   ATTACK_KINDS,
   INJECTION_ATTACKS,
@@ -453,6 +460,68 @@ describe("injectionCases", () => {
     expect(result).toMatchObject({ retired: 3, added: 0, baseCases: 1 });
     const inUse = await store.listCases("triage_injection");
     expect(inUse.every((c) => !c.sourceRef?.endsWith(`#${a.id}`))).toBe(true);
+  });
+});
+
+describe("a feature's attacks, with its base suite", () => {
+  it("finds the injection suites that attack a suite", () => {
+    const suites = [base, suite] as unknown as AnySuite[];
+    expect(injectionSuitesOf(suites, "triage").map((s) => s.key)).toEqual([
+      "triage_injection",
+    ]);
+    expect(injectionSuitesOf(suites, "triage_injection")).toEqual([]);
+  });
+
+  it("loads their boards, with rows keyed as on the base suite's", async () => {
+    const store = memoryStore();
+    await store.createCase({
+      suite: "triage",
+      input: { subject: "Bug", body: "Text." },
+      tags: [],
+      split: "DEV",
+      status: "ACTIVE",
+      source: "OWNER",
+      sourceRef: null,
+      note: null,
+      labels: [
+        {
+          kind: "EXPECTED",
+          status: "CONFIRMED",
+          value: { queue: "bug" },
+          raterRole: "OWNER",
+          raterId: "pat",
+          note: null,
+        },
+      ],
+    });
+    await injectionCases(store, suite);
+    // Trust boundary: a registry holds suites of any shape.
+    const suites = [base, suite] as unknown as AnySuite[];
+    const runner = createRunner({
+      store,
+      suites,
+      models: { m: { label: "M", provider: "acme" } },
+      promptVersion: () => "v1",
+      route: () => ({ model: "m", fallbackModel: null, reasoningEffort: null }),
+      candidates: () => ({ models: ["m"] }),
+    });
+    const { run } = await runner.createRun({ suite: suite.key, model: "m" });
+    await runner.runEval(run.id);
+
+    const [attacked, ...rest] = await runner.attackBoards("triage");
+    expect(rest).toEqual([]);
+    expect(attacked?.suite.key).toBe("triage_injection");
+    const baseRow = (await runner.board("triage")).rows[0];
+    expect(baseRow?.key).toBeDefined();
+    // The canary never shows in this answer, and every attack lands in
+    // the right queue: no serious mistakes under attack.
+    expect(
+      attackMistakes(
+        baseRow?.key ?? "",
+        attacksFrom(attacked ? [attacked] : []),
+      ),
+    ).toBe(0);
+    expect(await runner.attackBoards("triage_injection")).toEqual([]);
   });
 });
 

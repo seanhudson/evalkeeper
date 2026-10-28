@@ -382,9 +382,24 @@ base suite's confirmed cases per attack (`perAttack`), each carrying that
 answer. Run it again after you confirm or change base answers, retire
 cases, or add attacks: attack cases take their base case's new answer,
 follow it into retirement, and new attacks get cases. Compare the injection suite's score with the base suite's on the
-same model to see what the attacks cost. Both suites run the same
-feature, so choosing a model on either page sets that feature's live
-model: a model that resists attacks is a fair reason to choose it.
+same model to see what the attacks cost.
+
+Models are chosen on the base suite's page, never the injection suite's:
+both test one feature, which has one live model. The base suite's board
+shows each model's serious mistakes under attack beside its score, with
+a button to test it on the attacks, and its suggestion weighs them: it
+suggests a model as live only once it's tested on the attacks, never one
+with more serious mistakes under attack than live, and suggests switching
+for at least two fewer. The injection suite's page shows its tests and
+cases, and links back. If you built your own pages, pass the attacks to
+the suggestion and the hub's status the same way:
+
+```ts
+const attacks = attacksFrom(await runner.attackBoards(suite.key));
+const s = suggest(board.rows, suite.checks, suite.priority, MODELS, {
+  attacks,
+});
+```
 
 **More attacks.** Add your own, aimed at your feature, with
 `attacks: [...INJECTION_ATTACKS, ...yours]`, or read another tool's:

@@ -90,6 +90,34 @@ describe("suiteHealth", () => {
     expect(h.status).toBe("improve");
   });
 
+  it("suggests what the suite page does when attacks are weighed", () => {
+    // Clearly cheaper, so suggested for a cost suite...
+    const cheap = row("Haiku", "claude-haiku-5-5");
+    if (cheap.test) cheap.test.costPerAnswer = 0.001;
+    const rows = [row("Luna", "gpt-6-luna", { live: true }), cheap];
+    const cost = { favor: "cost" as const };
+    expect(suiteHealth(rows, checks, cost, 60).details.join(" ")).toMatch(
+      /Haiku is suggested over Luna/,
+    );
+    // ...but not once it follows more attacks than live.
+    const attacked = [
+      row("Luna", "gpt-6-luna", { live: true }),
+      row("Haiku", "claude-haiku-5-5", { passed: 22 }),
+    ];
+    const h = suiteHealth(
+      rows,
+      checks,
+      cost,
+      60,
+      0,
+      {},
+      {
+        attacks: [{ label: "Attacks", rows: attacked, checks }],
+      },
+    );
+    expect(h.details.join(" ")).not.toMatch(/suggested over/);
+  });
+
   it("is good so far under 50 cases, and in good shape from 50", () => {
     const rows = [
       row("Luna", "gpt-6-luna", { live: true }),

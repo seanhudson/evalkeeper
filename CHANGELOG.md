@@ -5,6 +5,22 @@ Notable changes, newest first. The format follows
 follow [semantic versioning](https://semver.org/): until 1.0, a minor
 version may change an interface, and its entry says how to update.
 
+## Unreleased
+
+### Changed
+
+- The suite page and the hub are arrangements of sections: each page
+  loads its data once (`loadSuitePage`, `loadHub`) and lists sections
+  that hold the logic (`SuiteHeader`, `SuggestionCard`, `ModelTable`,
+  `Versions`, `ChecksSection`, `AnswerKeySection`, and the rest in
+  `SuiteSections.tsx`; `HubIntro`, `HubStats`, and `SuiteList` in
+  `HubSections.tsx`). The pages look and work as before. A page of your
+  own can load the same data and arrange the sections its own way, the
+  first step of the add-on plan (docs/plan-add-on.md). **To update:**
+  copy the suite and hub pages and the two section files again (`npx
+@crowandraven/evalkeeper add pages --only suite,hub,SuiteSections,HubSections --dry-run`
+  first).
+
 ## 0.10.0 - 2026-10-28
 
 Injection suites' results count where a feature's model is chosen, and

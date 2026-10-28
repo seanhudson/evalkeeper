@@ -111,6 +111,20 @@ design.
   point, not clinically validated: review and adapt them with people who
   have crisis-line or clinical experience before relying on them. See
   [Listening for hopelessness](#listening-for-hopelessness).
+- **Tests against prompt injection.** `injectionSuite` from
+  `@crowandraven/evalkeeper/suites` takes a suite you already have and
+  plants attacks where untrusted text goes: "ignore your instructions,"
+  hidden notes in a document, requests for the instructions, and harmless
+  text that only looks like an attack. Each attack case keeps its base
+  case's confirmed answer, so the base checks show whether the answer
+  held, and two more show whether the model said a made-up canary word
+  the attack asked for or leaked text you name. It ships with 20 attacks
+  and reads more from CyberSecEval, garak, and promptfoo. Passing means
+  the model resisted these attacks, not that your app is safe.
+- **Answers reviewed once, for every app.** A ready-made suite can ship
+  reviews of its own cases, so they arrive confirmed: "Author reviewed"
+  when the suite's author checked them, "Expert reviewed" when someone
+  with experience in what it judges did.
 - **A warning when a case leaks into the instructions.** Give the runner
   each feature's instructions as text (`instructionParts` from the AI SDK
   adapter, on the same parts you hash), and the suite page lists any case

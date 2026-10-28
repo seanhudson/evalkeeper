@@ -20,6 +20,16 @@ examples written as a starting point, not clinically validated: review
 and adapt them with people who have crisis-line or clinical experience
 before relying on them.
 
+**Injection suite.** A suite made from another one (`injectionSuite`) to
+test the same feature against prompt injection: the base suite's
+confirmed cases, each with an attack inserted where text the model can't
+trust goes. It runs on the base suite's operation, keeps its checks, and
+adds two: the answer never contains the attack's canary (a made-up word
+it asks for) and never contains secrets the app names. An attack case's
+answer is its base case's, marked "From base case," since an attack
+shouldn't change the right answer. Code that finds a feature's suite by
+operation skips injection suites (`isInjectionSuite`).
+
 **Case.** One frozen input, copied rather than referenced, so later
 changes to your app's data don't move the test. Cases are DRAFT, ACTIVE,
 or RETIRED, and split into DEV (what you tune against) and TEST (what you

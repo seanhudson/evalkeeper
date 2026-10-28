@@ -60,23 +60,25 @@ flowchart LR
 
 ## Where changes go
 
-| Change                                   | Where                                                            | Tested by                                                                    |
-| ---------------------------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| A rule for suggestions, health, or stats | `packages/core/src`                                              | Unit test next to it                                                         |
-| A new word on the pages                  | `packages/core/src/glossary.ts`                                  | `glossary.test.ts` (length, form)                                            |
-| A storage method                         | `store.ts`, `memoryStore.ts`, every adapter                      | `describeStoreContract`                                                      |
-| A database or ORM                        | A new adapter package implementing `EvalStore`                   | `describeStoreContract`                                                      |
-| An AI library                            | A new adapter package                                            | Unit tests with a mock model                                                 |
-| A suite                                  | Your app (`examples/next/lib/suites` for examples)               | Grader tests on fixed outputs                                                |
-| A ready-made suite                       | `packages/core/src/suites`, exported from `./suites`             | Grader tests on fixed outputs, `suiteContractProblems`                       |
-| Cases found in the instructions          | `inInstructions.ts`, `runner.casesInInstructions`                | `inInstructions.test.ts`, runner tests, browser tests                        |
-| Blind rating (the queue, ratings, skips) | `blind.ts`; skips are SKIPPED answers in every `EvalStore`       | `blind.test.ts`, `describeStoreContract`, browser tests                      |
-| Feedback (ratings, cases from them)      | `feedback.ts`, a `FeedbackStore` in every adapter                | `feedback.test.ts`, `describeFeedbackStoreContract`                          |
-| The weekly check                         | `weekly.ts`, `runner.startDriftCheck` / `runDriftCheck`          | `weekly.test.ts`, runner tests, browser tests                                |
-| Drafting cases from activity             | `activity.ts`, `runner.draftFromActivity`                        | `activity.test.ts`, runner tests, browser tests                              |
-| Versioned settings and rollback          | `settings.ts`, a `SettingsStore` in every adapter                | `settings.test.ts`, `describeSettingsStoreContract`, browser tests           |
-| The copy-in CLI                          | `packages/core/src/cli`, templates from `examples/next`          | `cli/addPages.test.ts`, `examples/next/test/cli.test.ts` (typechecks a copy) |
-| A page or component                      | `examples/next/app/evals`, `examples/next/components/evalkeeper` | End-to-end tests                                                             |
+| Change                                   | Where                                                                           | Tested by                                                                    |
+| ---------------------------------------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| A rule for suggestions, health, or stats | `packages/core/src`                                                             | Unit test next to it                                                         |
+| A new word on the pages                  | `packages/core/src/glossary.ts`                                                 | `glossary.test.ts` (length, form)                                            |
+| A storage method                         | `store.ts`, `memoryStore.ts`, every adapter                                     | `describeStoreContract`                                                      |
+| A database or ORM                        | A new adapter package implementing `EvalStore`                                  | `describeStoreContract`                                                      |
+| An AI library                            | A new adapter package                                                           | Unit tests with a mock model                                                 |
+| A suite                                  | Your app (`examples/next/lib/suites` for examples)                              | Grader tests on fixed outputs                                                |
+| A ready-made suite                       | `packages/core/src/suites`, exported from `./suites`                            | Grader tests on fixed outputs, `suiteContractProblems`                       |
+| Shipped reviews of starter cases         | `reviews.ts`; a suite's `*Reviews.ts`, written by `scripts/review-starters.mjs` | `reviews.test.ts`, `suiteContractProblems`, browser tests                    |
+| Injection testing, attacks, their import | `suites/injection.ts`, `injectionAttacks.ts`, `attackImport.ts`                 | `injection.test.ts`, `attackImport.test.ts`, browser tests                   |
+| Cases found in the instructions          | `inInstructions.ts`, `runner.casesInInstructions`                               | `inInstructions.test.ts`, runner tests, browser tests                        |
+| Blind rating (the queue, ratings, skips) | `blind.ts`; skips are SKIPPED answers in every `EvalStore`                      | `blind.test.ts`, `describeStoreContract`, browser tests                      |
+| Feedback (ratings, cases from them)      | `feedback.ts`, a `FeedbackStore` in every adapter                               | `feedback.test.ts`, `describeFeedbackStoreContract`                          |
+| The weekly check                         | `weekly.ts`, `runner.startDriftCheck` / `runDriftCheck`                         | `weekly.test.ts`, runner tests, browser tests                                |
+| Drafting cases from activity             | `activity.ts`, `runner.draftFromActivity`                                       | `activity.test.ts`, runner tests, browser tests                              |
+| Versioned settings and rollback          | `settings.ts`, a `SettingsStore` in every adapter                               | `settings.test.ts`, `describeSettingsStoreContract`, browser tests           |
+| The copy-in CLI                          | `packages/core/src/cli`, templates from `examples/next`                         | `cli/addPages.test.ts`, `examples/next/test/cli.test.ts` (typechecks a copy) |
+| A page or component                      | `examples/next/app/evals`, `examples/next/components/evalkeeper`                | End-to-end tests                                                             |
 
 ## Versions
 

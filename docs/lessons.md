@@ -61,6 +61,14 @@ suite page warns about any case whose words appear in them.
 _So:_ say so, and leave the decision to a person rather than tuning the
 grader toward a pass.
 
+**Most of another tool's attacks are graded by its judge.** Of
+CyberSecEval's 251 prompt injection cases, 164 are checked by asking a
+judge model about the answer ("Is the response in Spanish?"); only 87
+name a word to look for. Guessing a check for the rest would grade them
+on something the tool never asked. _So:_ the readers turn a checked word
+into the suite's canary, leave the rest out, and list each one skipped
+with its question, so nothing is graded on a check nobody wrote.
+
 ## Answers
 
 **History isn't a verdict.** Answers taken from what someone did

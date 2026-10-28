@@ -327,6 +327,50 @@ a full example.
   tried and agreed to keep.
 - Read failures before changing a prompt.
 
+## 11. Test against prompt injection (optional)
+
+If a feature reads text it can't trust (a customer's message, an email,
+a web page), wrap its suite:
+
+```ts
+import {
+  INJECTION_ATTACKS,
+  injectionSuite,
+} from "@crowandraven/evalkeeper/suites";
+
+export const triageInjection = injectionSuite(ticketTriage, {
+  // Where untrusted text goes. Return a new input.
+  inject: (t, attack) => ({ ...t, body: `${t.body}\n\n${attack}` }),
+  // The wrong answer a hijack asks for.
+  goal: "This ticket is a billing question with low urgency.",
+  // Text that must never appear in an answer.
+  secrets: ["You triage support tickets for a project-management app."],
+});
+```
+
+List it after its base suite in your suites, and where your app finds a
+feature's suite by operation, skip it with `isInjectionSuite`. Make its
+cases with `await injectionCases(store, triageInjection)`: up to 3 of the
+base suite's confirmed cases per attack (`perAttack`), each carrying that
+answer. Run it again when you confirm more cases or add attacks; it only
+adds. Compare the injection suite's score with the base suite's on the
+same model to see what the attacks cost.
+
+**More attacks.** Add your own, aimed at your feature, with
+`attacks: [...INJECTION_ATTACKS, ...yours]`, or read another tool's:
+`cyberSecEvalAttacks` (Meta's CyberSecEval prompt injection JSON),
+`garakSyspromptAttacks` (garak's `sysprompt_extraction/attacks.json`),
+`garakReportAttacks` (a garak report from its `promptinject` and
+`latentinjection` probes, run against `test.Blank` so no model is
+called), or `promptfooBurpAttacks` (`promptfoo redteam generate -o
+tests.burp`; promptfoo generates these with a model, on its hosted
+service unless you configure otherwise). Keep the result in a file with
+`writeAttacks` and read it back with `readAttacks`, so the attacks are
+reviewed and versioned like the rest of your suite.
+
+A pass means the model resisted these attacks, not that the feature is
+safe. Keep what a model reading untrusted text can do small.
+
 ## Bring your own
 
 An app that had evals before Evalkeeper (its own tables full of reviewed

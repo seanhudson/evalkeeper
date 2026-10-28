@@ -1,5 +1,6 @@
 "use client";
 
+import { TextInput } from "./Controls";
 import { useState } from "react";
 import type { ChangeKind } from "@crowandraven/evalkeeper";
 import { rollBackSettings } from "@/lib/evalkeeper/actions";
@@ -42,7 +43,7 @@ export function RollBack({
       <label htmlFor={`why-${versionId}`} className="sr-only">
         Why roll back to v{number}?
       </label>
-      <input
+      <TextInput
         id={`why-${versionId}`}
         name="reason"
         required

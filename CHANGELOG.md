@@ -7,6 +7,20 @@ version may change an interface, and its entry says how to update.
 
 ## Unreleased
 
+### Added
+
+- The pages draw with your app's own components. Name any of `Card`,
+  `Chip`, `BackLink`, `Score`, `Submit`, `IconSubmit`, `Spinner`, `Tip`,
+  `InfoTip`, `Button`, `TextInput`, `TextArea`, and `Select` in
+  `lib/evalkeeper/appComponents.ts` (types in
+  `components/evalkeeper/swap.ts`), and every page uses yours, with the
+  same props; the rest stay Evalkeeper's. `add pages` writes the file
+  once and never overwrites it, even with `--force`. The guide's "Look
+  like your app" has how. **To update:** copy the components and the
+  pages again (`npx @crowandraven/evalkeeper add pages --only
+components,pages,appComponents --dry-run` first); with nothing named,
+  the pages look as before.
+
 ### Changed
 
 - The suite page and the hub are arrangements of sections: each page

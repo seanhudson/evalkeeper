@@ -18,6 +18,7 @@ const FILES = [
   "lib/evalkeeper/cronAuth.ts",
   "lib/evalkeeper/time.ts",
   "lib/evalkeeper/paths.ts",
+  "lib/evalkeeper/appComponents.ts",
   "app/api/cron/evals-weekly/route.ts",
 ];
 

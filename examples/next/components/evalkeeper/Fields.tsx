@@ -1,3 +1,4 @@
+import { Select, TextArea, TextInput } from "./Controls";
 import {
   ANSWER_JSON_FIELD,
   asText,
@@ -34,7 +35,7 @@ export function Fields({
               {f.label}
             </label>
             {f.kind === "select" ? (
-              <select
+              <Select
                 id={id}
                 name={f.name}
                 defaultValue={value || f.options?.[0]}
@@ -45,9 +46,9 @@ export function Fields({
                     {o.replace(/_/g, " ")}
                   </option>
                 ))}
-              </select>
+              </Select>
             ) : f.kind === "text" ? (
-              <input
+              <TextInput
                 id={id}
                 name={f.name}
                 defaultValue={value}
@@ -55,7 +56,7 @@ export function Fields({
                 className={box}
               />
             ) : (
-              <textarea
+              <TextArea
                 id={id}
                 name={f.name}
                 defaultValue={value}

@@ -25,10 +25,19 @@ export const TEMPLATE_FILES = {
     "lib/evalkeeper/cronAuth.ts",
     "lib/evalkeeper/time.ts",
     "lib/evalkeeper/paths.ts",
+    "lib/evalkeeper/appComponents.ts",
   ],
   /** The weekly check's cron route; skipped with --no-cron. */
   cron: ["app/api/cron/evals-weekly/route.ts"],
 } as const;
+
+/**
+ * Files the app makes its own once copied: written when missing, never
+ * overwritten, even with --force.
+ */
+export const APP_OWNED: ReadonlySet<string> = new Set([
+  "lib/evalkeeper/appComponents.ts",
+]);
 
 /** The pages, by the names `--only` takes. */
 export const PAGE_NAMES: Readonly<Record<string, string>> = {
@@ -302,6 +311,7 @@ export function planAddPages(o: AddPagesOptions): {
         alias,
         base,
       }),
+      APP_OWNED.has(t),
     ),
   );
   // The wiring module is the app's own: written once, never overwritten.

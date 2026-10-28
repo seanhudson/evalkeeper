@@ -284,10 +284,11 @@ It reads your `tsconfig.json` import alias (`@/*`, `~/*`, and code under
 - their glue (`lib/evalkeeper/actions.ts`, `weekly.ts`, `cronAuth.ts`,
   `time.ts`, and `paths.ts` with your base path)
 - the weekly check's cron route (`--no-cron` to leave it out)
-- a starter `lib/evalkeeper/index.ts`, only if you don't have one
+- a starter `lib/evalkeeper/index.ts` and `lib/evalkeeper/appComponents.ts`,
+  only if you don't have them
 
 Existing files stay as they are unless you pass `--force`, which still
-never touches your `lib/evalkeeper/index.ts`. `--dry-run` shows the plan
+never touches your `lib/evalkeeper/index.ts` or `appComponents.ts`. `--dry-run` shows the plan
 and writes nothing. `--only` copies just the pages and components you
 name, for an app that keeps its own (see "Bring your own" below).
 
@@ -298,7 +299,44 @@ Then:
 2. Fill in `lib/evalkeeper/index.ts`: your Prisma client, models, suites,
    and `requireAdmin`. Every page and action calls `requireAdmin` first,
    and the starter's refuses everyone until you write yours.
-3. Restyle the pages as you like; they're yours now.
+3. Make them look like your app with your own components, below,
+   rather than by editing the copied files: copies you edit stop
+   upgrading.
+
+### Look like your app
+
+The pages are drawn from a few pieces: `Card`, `Chip`, `BackLink`,
+`Score`, `Submit`, `IconSubmit`, `Spinner`, `Tip`, `InfoTip`, and the
+plain controls `Button`, `TextInput`, `TextArea`, and `Select`. Name
+your app's own in `lib/evalkeeper/appComponents.ts`, and the pages use
+them; leave one out to keep Evalkeeper's:
+
+```ts
+import type { EvalComponents } from "@/components/evalkeeper/swap";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+
+export const components: Partial<EvalComponents> = { Button, Card };
+```
+
+Each gets the props Evalkeeper's own would (the types are in
+`components/evalkeeper/swap.ts`), Evalkeeper's `className` included,
+which yours can use or ignore. Controls must still render the native
+element, or pass `name` and the value to one, so forms submit. Pieces
+that use state or a form's status (`Submit`, `IconSubmit`, and usually
+the controls) must be client components.
+
+### Arrange your own page
+
+Each page is a short arrangement of sections that hold all the logic.
+The suite page loads its data once with `loadSuitePage(key)` and lists
+`SuiteHeader`, `ChosenOnBase`, `SuggestionCard`, `CasesInInstructions`,
+`ModelTable`, `Versions`, `ChecksSection`, and `AnswerKeySection` from
+`components/evalkeeper/SuiteSections.tsx`; the hub loads with
+`loadHub()` and lists `HubIntro`, `HubStats`, `WeeklyCheck`, and
+`SuiteList` from `HubSections.tsx`. For another layout, or a section of
+your own beside them, write your page from the same pieces, as the
+copied pages do, and the sections keep upgrading.
 
 ## 8. Add thumbs to your AI answers (optional)
 

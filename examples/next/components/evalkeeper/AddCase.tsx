@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "./Controls";
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { QUIET_BUTTON } from "./Submit";
@@ -26,7 +27,7 @@ export function AddCaseHeader({
         {heading}
         <div className="flex items-center gap-2">
           {form && (
-            <button
+            <Button
               type="button"
               aria-expanded={open}
               onClick={() => {
@@ -36,7 +37,7 @@ export function AddCaseHeader({
             >
               <Plus aria-hidden className="h-4 w-4" />
               Add a case
-            </button>
+            </Button>
           )}
           {tools}
         </div>
@@ -45,7 +46,7 @@ export function AddCaseHeader({
         <Card className="space-y-4">
           <div className="flex items-center justify-between gap-2">
             <h3 className="font-medium">New case</h3>
-            <button
+            <Button
               type="button"
               onClick={() => {
                 setOpen(false);
@@ -53,7 +54,7 @@ export function AddCaseHeader({
               className="text-sm text-muted hover:text-ink"
             >
               Cancel
-            </button>
+            </Button>
           </div>
           {form}
         </Card>

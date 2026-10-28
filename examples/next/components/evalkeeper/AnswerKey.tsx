@@ -1,3 +1,4 @@
+import { Select, TextInput } from "./Controls";
 import {
   allPassed,
   type CaseRecord,
@@ -106,7 +107,7 @@ export async function AnswerKey({
                     Tags
                     <InfoTip term="tags" id="new-tags" />
                   </label>
-                  <input
+                  <TextInput
                     id="new-tags"
                     name="tags"
                     placeholder="e.g. billing, money now"
@@ -128,7 +129,7 @@ export async function AnswerKey({
                       id="new-split"
                     />
                   </label>
-                  <select
+                  <Select
                     id="new-split"
                     name="split"
                     defaultValue="DEV"
@@ -138,7 +139,7 @@ export async function AnswerKey({
                     <option value="TEST">
                       TEST: check only, never tune against
                     </option>
-                  </select>
+                  </Select>
                 </div>
               </div>
               <div className="flex gap-2">

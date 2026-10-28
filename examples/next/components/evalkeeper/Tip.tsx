@@ -1,5 +1,6 @@
 import { Info } from "lucide-react";
 import { GLOSSARY, type GlossaryTerm } from "@crowandraven/evalkeeper";
+import { components } from "@/lib/evalkeeper/appComponents";
 
 /**
  * Tooltips that explain how things work. They open on hover and on
@@ -54,8 +55,16 @@ function Bubble({
   );
 }
 
+/** What an (i) explains: a glossary term or your own text. */
+export type InfoTipProps = Props;
+
 /** A small (i) button that explains the label before it. */
-export function InfoTip(props: Props) {
+export function InfoTip(props: InfoTipProps) {
+  const C = components.InfoTip ?? DefaultInfoTip;
+  return <C {...props} />;
+}
+
+function DefaultInfoTip(props: InfoTipProps) {
   const text = body(props);
   const id = `tip-${props.id ?? props.term ?? "info"}`;
   return (
@@ -73,17 +82,23 @@ export function InfoTip(props: Props) {
   );
 }
 
+/** What a tooltip explains, and the thing it wraps. */
+export type TipProps = Props & {
+  children: React.ReactNode;
+  /**
+   * The child is a control that takes focus itself (a button), so the
+   * wrapper isn't a second tab stop.
+   */
+  control?: boolean;
+};
+
 /** Explains whatever it wraps (a chip, a number) on hover and focus. */
-export function Tip(
-  props: Props & {
-    children: React.ReactNode;
-    /**
-     * The child is a control that takes focus itself (a button), so the
-     * wrapper isn't a second tab stop.
-     */
-    control?: boolean;
-  },
-) {
+export function Tip(props: TipProps) {
+  const C = components.Tip ?? DefaultTip;
+  return <C {...props} />;
+}
+
+function DefaultTip(props: TipProps) {
   const text = body(props);
   const id = `tip-${props.id ?? props.term ?? "info"}`;
   return (

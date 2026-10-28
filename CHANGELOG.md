@@ -21,6 +21,15 @@ version may change an interface, and its entry says how to update.
   `injectionCases(store, suite)` makes its cases from the base suite's
   confirmed ones, each carrying that answer ("From base case" on the
   answer key), and adds new attacks and newly confirmed cases on a rerun.
+- Attacks from other tools, for `injectionSuite`'s `attacks`:
+  `cyberSecEvalAttacks` (Meta's CyberSecEval prompt injection set),
+  `garakSyspromptAttacks` and `garakReportAttacks` (garak's extraction
+  requests, and the attempts in a report from its injection probes run
+  against its offline `test.Blank` generator), and `promptfooBurpAttacks`
+  (`promptfoo redteam generate -o tests.burp`). Where a tool checks for a
+  word, it becomes the canary; attacks that would need a judge model are
+  left out and listed in `skipped`. `readAttacks` and `writeAttacks` keep
+  attacks in a JSONL file. None of them runs a tool or calls the network.
 - `isInjectionSuite(suite)`: code that finds a feature's suite by
   operation should skip injection suites. The example's feedback page,
   "make a case" action, and cost lookup do, and the hub's card for an

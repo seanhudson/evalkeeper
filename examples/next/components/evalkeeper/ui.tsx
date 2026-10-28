@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import type { HealthStatus } from "@crowandraven/evalkeeper";
+import { components } from "@/lib/evalkeeper/appComponents";
 
 export const pct = (x: number) => `${Math.round(x * 100)}%`;
 
@@ -20,13 +21,15 @@ export function StatusBadge({ status }: { status: HealthStatus }) {
   return <Chip tone={s.tone}>{s.label}</Chip>;
 }
 
-export function Card({
-  children,
-  className = "",
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
+/** A box around a section of a page. */
+export type CardProps = { children: React.ReactNode; className?: string };
+
+export function Card(props: CardProps) {
+  const C = components.Card ?? DefaultCard;
+  return <C {...props} />;
+}
+
+function DefaultCard({ children, className = "" }: CardProps) {
   return (
     <section
       className={`rounded-lg border border-line bg-card p-5 ${className}`}
@@ -36,8 +39,16 @@ export function Card({
   );
 }
 
+/** A score: parts right of parts expected. */
+export type ScoreProps = { right: number; total: number };
+
 /** A score with a thin bar, for tables. */
-export function Score({ right, total }: { right: number; total: number }) {
+export function Score(props: ScoreProps) {
+  const C = components.Score ?? DefaultScore;
+  return <C {...props} />;
+}
+
+function DefaultScore({ right, total }: ScoreProps) {
   const rate = total ? right / total : 0;
   return (
     <div className="flex items-center gap-2">
@@ -68,14 +79,16 @@ const CHIP = {
 /** A chip's color. */
 export type ChipTone = keyof typeof CHIP;
 
+/** A small label and its color. */
+export type ChipProps = { tone: ChipTone; children: React.ReactNode };
+
 /** A small rounded label: Live, Fallback, Retires …, serious, minor. */
-export function Chip({
-  tone,
-  children,
-}: {
-  tone: keyof typeof CHIP;
-  children: React.ReactNode;
-}) {
+export function Chip(props: ChipProps) {
+  const C = components.Chip ?? DefaultChip;
+  return <C {...props} />;
+}
+
+function DefaultChip({ tone, children }: ChipProps) {
   return (
     <span
       className={`inline-flex h-6 items-center gap-1 whitespace-nowrap rounded-full px-2.5 text-xs font-medium leading-none ${CHIP[tone]}`}
@@ -85,14 +98,16 @@ export function Chip({
   );
 }
 
+/** Where a back link goes, and its words. */
+export type BackLinkProps = { href: string; children: React.ReactNode };
+
 /** A link back to the page above, with an arrow. */
-export function BackLink({
-  href,
-  children,
-}: {
-  href: string;
-  children: React.ReactNode;
-}) {
+export function BackLink(props: BackLinkProps) {
+  const C = components.BackLink ?? DefaultBackLink;
+  return <C {...props} />;
+}
+
+function DefaultBackLink({ href, children }: BackLinkProps) {
   return (
     <Link
       href={href}

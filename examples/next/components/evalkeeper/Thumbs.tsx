@@ -1,5 +1,6 @@
 "use client";
 
+import { Button, TextInput } from "./Controls";
 import { useState, useTransition } from "react";
 import { ThumbsDown, ThumbsUp } from "lucide-react";
 import { formText } from "@crowandraven/evalkeeper";
@@ -44,7 +45,7 @@ export function Thumbs({
         ? "Good answer"
         : "Not a good answer";
     return (
-      <button
+      <Button
         type="button"
         aria-label={label}
         title={label}
@@ -68,7 +69,7 @@ export function Thumbs({
         ) : (
           <ThumbsDown aria-hidden className="h-4 w-4" />
         )}
-      </button>
+      </Button>
     );
   };
 
@@ -96,20 +97,20 @@ export function Thumbs({
           <label htmlFor={`why-${targetId}`} className="sr-only">
             What was wrong?
           </label>
-          <input
+          <TextInput
             id={`why-${targetId}`}
             name="reason"
             maxLength={1000}
             placeholder="What was wrong? (optional)"
             className="min-w-0 flex-1 rounded-md border border-line bg-card px-3 py-1.5 text-sm focus:border-accent focus:outline-none"
           />
-          <button
+          <Button
             type="submit"
             disabled={pending}
             className="rounded-md border border-line bg-card px-3 py-1.5 text-sm hover:bg-tint disabled:opacity-60"
           >
             Send
-          </button>
+          </Button>
         </form>
       )}
     </div>

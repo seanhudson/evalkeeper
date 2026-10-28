@@ -212,6 +212,16 @@ describe("evalkeeper add pages", () => {
     );
   });
 
+  it("writes the app's components file once, and never over the app's own", () => {
+    const dir = app(AT);
+    cli(dir, "add", "pages");
+    const file = join(dir, "lib/evalkeeper/appComponents.ts");
+    expect(readFileSync(file, "utf8")).toMatch(/export const components/);
+    writeFileSync(file, "// my components");
+    cli(dir, "add", "pages", "--force");
+    expect(readFileSync(file, "utf8")).toBe("// my components");
+  });
+
   it("writes nothing on a dry run, and leaves out the cron route on request", () => {
     const dir = app(AT);
     const dry = cli(dir, "add", "pages", "--dry-run");
@@ -277,7 +287,7 @@ describe("evalkeeper add pages", () => {
       "add",
       "pages",
       "--only",
-      "compare,DisagreementChip,Submit,Tip,ui,paths,Fields",
+      "compare,DisagreementChip,Submit,Tip,ui,paths,Fields,Controls,appComponents,swap",
       "--dry-run",
     );
     expect(r.code).toBe(0);

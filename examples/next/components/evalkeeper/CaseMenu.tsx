@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "./Controls";
 import { useEffect, useRef, useState } from "react";
 import { EllipsisVertical } from "lucide-react";
 
@@ -55,7 +56,7 @@ export function CaseMenu({
   return (
     <>
       <div ref={ref} className="absolute right-3 top-0 z-10">
-        <button
+        <Button
           type="button"
           aria-label="Case actions"
           title="Case actions"
@@ -67,14 +68,14 @@ export function CaseMenu({
           className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted hover:bg-tint hover:text-ink"
         >
           <EllipsisVertical aria-hidden className="h-4 w-4" />
-        </button>
+        </Button>
         {open && (
           <div
             role="menu"
             className="absolute right-0 mt-1 w-44 rounded-md border border-line bg-card p-1 shadow-lg"
           >
             {editLabel && (
-              <button
+              <Button
                 type="button"
                 role="menuitem"
                 className={item}
@@ -84,18 +85,18 @@ export function CaseMenu({
                 }}
               >
                 {editLabel}
-              </button>
+              </Button>
             )}
             <form action={retire}>
               <input type="hidden" name="suite" value={suite} />
               <input type="hidden" name="case" value={caseId} />
-              <button
+              <Button
                 type="submit"
                 role="menuitem"
                 className={`${item} text-bad`}
               >
                 Retire case
-              </button>
+              </Button>
             </form>
           </div>
         )}
@@ -104,7 +105,7 @@ export function CaseMenu({
         <div className="space-y-3 rounded-md bg-tint p-3">
           <div className="flex items-center justify-between gap-2">
             <h4 className="text-sm font-medium">{editLabel}</h4>
-            <button
+            <Button
               type="button"
               onClick={() => {
                 setEditing(false);
@@ -112,7 +113,7 @@ export function CaseMenu({
               className="text-sm text-muted hover:text-ink"
             >
               Cancel
-            </button>
+            </Button>
           </div>
           {edit}
         </div>

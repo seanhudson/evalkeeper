@@ -1,3 +1,4 @@
+import { TextArea } from "@/components/evalkeeper/Controls";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -108,7 +109,7 @@ export default async function RateBlindPage({
               >
                 Why
               </label>
-              <textarea
+              <TextArea
                 id="rate-reason"
                 name="reason"
                 required

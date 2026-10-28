@@ -1,3 +1,4 @@
+import { Select } from "@/components/evalkeeper/Controls";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -364,7 +365,7 @@ function TestPicker({
         {label}
         <InfoTip term={term} id={`${term}-pick`} />
       </label>
-      <select
+      <Select
         id={`pick-${name}`}
         name={name}
         defaultValue={value ?? ""}
@@ -379,7 +380,7 @@ function TestPicker({
             {testName(r)}
           </option>
         ))}
-      </select>
+      </Select>
     </div>
   );
 }

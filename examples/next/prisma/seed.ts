@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import { prismaStore } from "@crowandraven/evalkeeper-prisma";
+import { prismaStore } from "@crowandraven/evalkeeper/prisma";
 import { injectionCases } from "@crowandraven/evalkeeper/suites";
 import { triageInjection } from "../lib/suites/triageInjection";
 import { SUITES } from "../lib/suites";

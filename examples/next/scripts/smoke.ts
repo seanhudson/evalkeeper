@@ -1,7 +1,7 @@
 // Runs every demo model on every suite against the database, then prints
 // each board and the suggestion: the same path the pages take.
 import { PrismaClient } from "@prisma/client";
-import { prismaStore } from "@crowandraven/evalkeeper-prisma";
+import { prismaStore } from "@crowandraven/evalkeeper/prisma";
 import { suggest } from "@crowandraven/evalkeeper";
 import { createRunner } from "@crowandraven/evalkeeper/runner";
 import { MODELS } from "../lib/models";

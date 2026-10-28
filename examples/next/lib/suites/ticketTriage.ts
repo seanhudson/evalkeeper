@@ -5,7 +5,7 @@ import {
   instructionParts,
   instructionsHash,
   slot,
-} from "@crowandraven/evalkeeper-ai-sdk";
+} from "@crowandraven/evalkeeper/ai-sdk";
 import { formText, type CheckDef, type Suite } from "@crowandraven/evalkeeper";
 import { demoCall, demoCost, demoFollows } from "../demo";
 import { MODELS, isDemo } from "../models";

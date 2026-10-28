@@ -14,9 +14,9 @@ import {
   prismaFeedbackStore,
   prismaSettingsStore,
   prismaStore,
-} from "@crowandraven/evalkeeper-prisma";
+} from "@crowandraven/evalkeeper/prisma";
 // TODO: your app's Prisma client, with Evalkeeper's models added to the
-// schema (node_modules/@crowandraven/evalkeeper-prisma/schema/evalkeeper.prisma).
+// schema (node_modules/@crowandraven/evalkeeper/schema/evalkeeper.prisma).
 import { prisma } from "@/lib/prisma";
 
 /** TODO: the models your app can use, with prices and retirement dates. */
@@ -52,13 +52,13 @@ export const answerEditors: Partial<
 
 /**
  * TODO: each feature's instructions hash (instructionsHash from
- * @crowandraven/evalkeeper-ai-sdk), so editing a prompt marks older tests out of date.
+ * @crowandraven/evalkeeper/ai-sdk), so editing a prompt marks older tests out of date.
  */
 const PROMPT_VERSIONS: Record<string, string> = {};
 
 /**
  * TODO: each feature's instructions as text (instructionParts from
- * @crowandraven/evalkeeper-ai-sdk, on the parts you hash), so the suite
+ * @crowandraven/evalkeeper/ai-sdk, on the parts you hash), so the suite
  * page warns when a case was copied into them.
  */
 const INSTRUCTION_TEXTS: Record<string, string[]> = {};

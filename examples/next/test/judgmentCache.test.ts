@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import { prismaJudgmentCache } from "@crowandraven/evalkeeper-prisma";
+import { prismaJudgmentCache } from "@crowandraven/evalkeeper/prisma";
 import { afterAll, describe, expect, it } from "vitest";
 
 const prisma = new PrismaClient();

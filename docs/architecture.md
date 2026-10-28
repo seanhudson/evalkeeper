@@ -18,8 +18,8 @@ flowchart LR
     store_if["EvalStore interface"]
   end
   subgraph adapters["Adapters"]
-    prisma["@crowandraven/evalkeeper-prisma<br/>prismaStore"]
-    aisdk["@crowandraven/evalkeeper-ai-sdk<br/>hashes · pricing · decisions · judge"]
+    prisma["@crowandraven/evalkeeper/prisma<br/>prismaStore"]
+    aisdk["@crowandraven/evalkeeper/ai-sdk<br/>hashes · pricing · decisions · judge"]
     memory["memoryStore"]
   end
   pages --> runner
@@ -37,8 +37,8 @@ flowchart LR
   health, the glossary, grader helpers, and decision scoring (`decisions.ts`). The runner is the one
   server-only module (it hashes with `node:crypto`), and it talks to
   storage only through `EvalStore`.
-- **Adapters** connect the core to services: `@crowandraven/evalkeeper-prisma` stores
-  everything in your database, and `@crowandraven/evalkeeper-ai-sdk` hashes
+- **Adapters** connect the core to services: `@crowandraven/evalkeeper/prisma` stores
+  everything in your database, and `@crowandraven/evalkeeper/ai-sdk` hashes
   instructions, prices calls and decisions, and judges meaning with a model. Another
   ORM or AI library is another adapter.
 - **Your app** owns its suites, its routing (which model is live), its
@@ -65,8 +65,8 @@ flowchart LR
 | A rule for suggestions, health, or stats | `packages/core/src`                                                             | Unit test next to it                                                         |
 | A new word on the pages                  | `packages/core/src/glossary.ts`                                                 | `glossary.test.ts` (length, form)                                            |
 | A storage method                         | `store.ts`, `memoryStore.ts`, every adapter                                     | `describeStoreContract`                                                      |
-| A database or ORM                        | A new adapter package implementing `EvalStore`                                  | `describeStoreContract`                                                      |
-| An AI library                            | A new adapter package                                                           | Unit tests with a mock model                                                 |
+| A database or ORM                        | A new entry point implementing `EvalStore`                                      | `describeStoreContract`                                                      |
+| An AI library                            | A new entry point                                                               | Unit tests with a mock model                                                 |
 | A suite                                  | Your app (`examples/next/lib/suites` for examples)                              | Grader tests on fixed outputs                                                |
 | A ready-made suite                       | `packages/core/src/suites`, exported from `./suites`                            | Grader tests on fixed outputs, `suiteContractProblems`                       |
 | Shipped reviews of starter cases         | `reviews.ts`; a suite's `*Reviews.ts`, written by `scripts/review-starters.mjs` | `reviews.test.ts`, `suiteContractProblems`, browser tests                    |

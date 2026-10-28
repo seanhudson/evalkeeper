@@ -3,7 +3,7 @@ import type { SuiteMetrics } from "./stats.js";
 
 /**
  * Where Evalkeeper keeps cases, answers, tests, and outputs. The runner
- * talks only to this interface: `@crowandraven/evalkeeper-prisma` implements it on your
+ * talks only to this interface: `@crowandraven/evalkeeper/prisma` implements it on your
  * database, and `memoryStore()` keeps everything in memory for tests and
  * demos. Every method is a plain read or write; the rules live in the
  * runner.

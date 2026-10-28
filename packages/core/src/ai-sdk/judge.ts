@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { generateText, Output, type LanguageModel } from "ai";
 import { z } from "zod";
-import type { ModelCatalog } from "@crowandraven/evalkeeper";
+import type { ModelCatalog } from "../index.js";
 import { costOf } from "./usage.js";
 
 /**

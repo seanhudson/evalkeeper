@@ -4,7 +4,7 @@ import {
   prismaFeedbackStore,
   prismaSettingsStore,
   prismaStore,
-} from "@crowandraven/evalkeeper-prisma";
+} from "@crowandraven/evalkeeper/prisma";
 import {
   describeFeedbackStoreContract,
   describeSettingsStoreContract,

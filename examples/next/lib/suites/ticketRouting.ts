@@ -3,7 +3,7 @@ import {
   decideAndPrice,
   instructionParts,
   instructionsHash,
-} from "@crowandraven/evalkeeper-ai-sdk";
+} from "@crowandraven/evalkeeper/ai-sdk";
 import {
   decisionCheck,
   formText,

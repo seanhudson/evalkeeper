@@ -67,7 +67,7 @@ function longestRun(text: string, within: string): string {
  * @param cases - Each case's id, title, and input.
  * @param instructions - Everything the model is told: system text, prompt
  *   templates, schema and tool descriptions (`instructionParts` in
- *   `@crowandraven/evalkeeper-ai-sdk` gives these).
+ *   `@crowandraven/evalkeeper/ai-sdk` gives these).
  * @param opts - Other lengths than `IN_INSTRUCTIONS_MIN_CHARS` and
  *   `IN_INSTRUCTIONS_MIN_WHOLE`.
  * @returns The cases found, each with its longest matching words.

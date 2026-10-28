@@ -18,7 +18,7 @@
     "lint": "eslint .",
     "format:check": "prettier --check .",
     "prepare": "simple-git-hooks",
-    "test:unit": "npm run test -w packages/core -w packages/ai-sdk",
+    "test:unit": "npm run test -w packages/core",
     "docs:api": "npm run build && typedoc"
   },
   "devDependencies": {

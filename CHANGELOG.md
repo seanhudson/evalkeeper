@@ -23,6 +23,15 @@ components,pages,appComponents --dry-run` first); with nothing named,
 
 ### Changed
 
+- One package: the Prisma stores and the AI SDK helpers are now entry
+  points of `@crowandraven/evalkeeper`, at `/prisma` and `/ai-sdk`, with
+  the AI SDK an optional peer dependency (needed only if you import
+  `/ai-sdk`). The schema is at
+  `@crowandraven/evalkeeper/schema/evalkeeper.prisma`. The
+  `@crowandraven/evalkeeper-prisma` and `@crowandraven/evalkeeper-ai-sdk`
+  packages still work, as re-exports, and will be retired. **To update:**
+  install `@crowandraven/evalkeeper` alone, and import from
+  `@crowandraven/evalkeeper/prisma` and `@crowandraven/evalkeeper/ai-sdk`.
 - The suite page and the hub are arrangements of sections: each page
   loads its data once (`loadSuitePage`, `loadHub`) and lists sections
   that hold the logic (`SuiteHeader`, `SuggestionCard`, `ModelTable`,

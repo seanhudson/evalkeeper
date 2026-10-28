@@ -99,7 +99,7 @@ export type ScopedContractOptions = ContractOptions & {
    * after the contract's tests (and so also any left by an earlier run
    * that stopped early). Needs `scope`, and `afterAll` among the test
    * functions. For Prisma, `deleteScopedRows` from
-   * `@crowandraven/evalkeeper-prisma`.
+   * `@crowandraven/evalkeeper/prisma`.
    */
   cleanup?: (scope: string) => Promise<unknown>;
 };
@@ -1035,7 +1035,7 @@ export function describeSuiteContract(
  * @example
  * ```ts
  * import { describeMappedReadCheck } from "@crowandraven/evalkeeper/testing";
- * import { prismaReadCheck } from "@crowandraven/evalkeeper-prisma";
+ * import { prismaReadCheck } from "@crowandraven/evalkeeper/prisma";
  *
  * describeMappedReadCheck(
  *   "our answer key",

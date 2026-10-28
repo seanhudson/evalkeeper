@@ -72,14 +72,14 @@ export type RunnerOptions = {
   models: ModelCatalog;
   /**
    * The current instructions' hash for an operation (see instructionsHash
-   * in `@crowandraven/evalkeeper-ai-sdk`). A test records it, so editing the instructions
+   * in `@crowandraven/evalkeeper/ai-sdk`). A test records it, so editing the instructions
    * marks older tests out of date.
    */
   promptVersion: (operation: string) => string | Promise<string>;
   /**
    * Everything the operation's model is told, as text: system text, prompt
    * templates, schema and tool descriptions (`instructionParts` in
-   * `@crowandraven/evalkeeper-ai-sdk`, from the parts you hash). Lets
+   * `@crowandraven/evalkeeper/ai-sdk`, from the parts you hash). Lets
    * `casesInInstructions` warn when a case was copied into them.
    */
   instructionTexts?: (operation: string) => string[] | Promise<string[]>;

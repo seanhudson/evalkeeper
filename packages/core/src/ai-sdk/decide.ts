@@ -5,7 +5,7 @@ import {
   type Experimental_DecisionResult,
   type Experimental_DecisionState,
 } from "ai";
-import type { ModelCatalog } from "@crowandraven/evalkeeper";
+import type { ModelCatalog } from "../index.js";
 import { costOf } from "./usage.js";
 
 /**

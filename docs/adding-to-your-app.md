@@ -14,7 +14,7 @@ which model each operation runs on and its fallback. Evalkeeper reads
 that route for its board; your app keeps owning it.
 
 Record what each call costs (the AI SDK's `usage` priced with your
-catalog: `costOf` in `@crowandraven/evalkeeper-ai-sdk`) and pass it to the suite's
+catalog: `costOf` in `@crowandraven/evalkeeper/ai-sdk`) and pass it to the suite's
 `onCost`, so tests show real cost per answer.
 
 Or let Evalkeeper keep it: `createSettings({ store, defaults })` with
@@ -54,7 +54,7 @@ suggested as live or as the fallback.
 
 ## 3. Add the tables
 
-Copy the models from `packages/prisma/schema/evalkeeper.prisma` into your
+Copy the models from `packages/core/schema/evalkeeper.prisma` into your
 Prisma schema and write a migration from the schema file. Then:
 
 ```ts
@@ -360,7 +360,7 @@ thumbs up can propose the model's answer. The feedback page
 
 For a feature that uses the AI SDK's decisions, write a suite with
 `decisions: true`. In `run`, call `decideAndPrice` from
-`@crowandraven/evalkeeper-ai-sdk` (it calls `experimental_decide` and prices the call
+`@crowandraven/evalkeeper/ai-sdk` (it calls `experimental_decide` and prices the call
 from your catalog) and return the answers. In `grade`, call
 `decisionCheck(key, answer, expected)` for each question. Mark each
 model in the catalog with `decisions: "native"` or `"prompted"`, and have
@@ -469,7 +469,7 @@ tables differ from Evalkeeper's. Leave out anything named the same.
 import {
   prismaStore,
   prismaJudgmentCache,
-} from "@crowandraven/evalkeeper-prisma";
+} from "@crowandraven/evalkeeper/prisma";
 
 const map = {
   // models: { evalCase: "goldCase" }, // if your models are named differently
@@ -512,7 +512,7 @@ export const judgmentCache = prismaJudgmentCache(prisma, map);
      code reads them. It's safe on a copy of real data:
 
      ```ts
-     import { prismaReadCheck } from "@crowandraven/evalkeeper-prisma";
+     import { prismaReadCheck } from "@crowandraven/evalkeeper/prisma";
      import { describeMappedReadCheck } from "@crowandraven/evalkeeper/testing";
 
      describeMappedReadCheck(
@@ -563,7 +563,7 @@ export const judgmentCache = prismaJudgmentCache(prisma, map);
      does). `make` then returns the store as it is, emptying nothing:
 
      ```ts
-     import { deleteScopedRows } from "@crowandraven/evalkeeper-prisma";
+     import { deleteScopedRows } from "@crowandraven/evalkeeper/prisma";
 
      describeStoreContract("our tables", () => prismaStore(prisma, map), {
        without: ["temperature", "maxOutputTokens"],

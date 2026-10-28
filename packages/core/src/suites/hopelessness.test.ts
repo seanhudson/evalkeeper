@@ -7,6 +7,7 @@ import {
   hopelessnessSuite,
   type HopelessnessLabel,
   type HopelessnessOutput,
+  HOPELESSNESS_REVIEWS,
 } from "./index.js";
 
 const run = (): Promise<HopelessnessOutput> =>
@@ -252,6 +253,12 @@ describe("hopelessnessSuite setup", () => {
     expect(only.starter).toHaveLength(1);
     expect(only.key).toBe("hopeless_jobs");
     expect(only.graderVersion).toBe("2");
+    expect(only.reviews).toEqual([]);
+    expect(suite.reviews).toBe(HOPELESSNESS_REVIEWS);
+    expect(
+      hopelessnessSuite({ operation: "op", run, shippedReviews: false })
+        .reviews,
+    ).toEqual([]);
     expect(suite.key).toBe("hopelessness");
     expect(suite.graderVersion).toBe("1");
   });

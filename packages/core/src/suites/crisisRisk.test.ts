@@ -6,6 +6,7 @@ import {
   CRISIS_GROUPS,
   crisisRiskSuite,
   type CrisisRiskOutput,
+  CRISIS_REVIEWS,
 } from "./index.js";
 
 const run = (): Promise<CrisisRiskOutput> =>
@@ -170,6 +171,11 @@ describe("crisisRiskSuite setup", () => {
     expect(only.starter).toHaveLength(1);
     expect(only.key).toBe("crisis_jobs");
     expect(only.graderVersion).toBe("2");
+    expect(only.reviews).toEqual([]);
+    expect(suite.reviews).toBe(CRISIS_REVIEWS);
+    expect(
+      crisisRiskSuite({ operation: "op", run, shippedReviews: false }).reviews,
+    ).toEqual([]);
     expect(suite.key).toBe("crisis_risk");
     expect(suite.graderVersion).toBe("1");
   });

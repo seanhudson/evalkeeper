@@ -118,6 +118,12 @@ Use `split: "DEV"` for the cases you tune against, `"TEST"` for a
 held-out file, and the default `"auto"` for new cases. Run it against your
 development database only.
 
+A suite's starter cases arrive pending, except those its author or an
+expert reviewed for every app (the suite's `reviews`), which arrive
+confirmed. `importStarters` never adds a review over an answer you
+confirmed, and lists any that disagree in `disagree`. To confirm every
+case yourself, pass `shippedReviews: false` to a ready-made suite.
+
 ```ts
 await importCases({
   store,

@@ -5,6 +5,24 @@ Notable changes, newest first. The format follows
 follow [semantic versioning](https://semver.org/): until 1.0, a minor
 version may change an interface, and its entry says how to update.
 
+## Unreleased
+
+### Added
+
+- Shipped reviews: a suite's `reviews` say its author or an expert
+  confirmed a starter case's answer once, for every app, so
+  `importStarters` adds that case confirmed and in use instead of
+  pending. Each review names who, what qualifies them, and when, and
+  counts only while the case's input and answer are what they saw; the
+  suite contract fails on a stale one. A review is never added over an
+  answer someone in the app confirmed, and one that differs is listed in
+  the import's `disagree`. The answer key marks these answers "Author
+  reviewed" or "Expert reviewed" and shows the review's note. The crisis
+  risk and hopelessness suites take `shippedReviews: false` to leave every
+  case pending; neither ships any reviews yet. `importStarters` also
+  returns `reviewed` and `disagree`; a test that compares its whole
+  result needs both. Copy `AnswerKey` again for the badges.
+
 ## 0.8.0 - 2026-10-25
 
 A ready-made hopelessness suite; a warning when a case's words appear in

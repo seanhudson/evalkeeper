@@ -1,5 +1,5 @@
 import { nextSplit } from "./quickSet.js";
-import { stableJson } from "./stableJson.js";
+import { addShippedReviews, starterKey, type ReviewResult } from "./reviews.js";
 import type { EvalStore, NewCase, NewLabel } from "./store.js";
 import type { AnySuite } from "./types.js";
 
@@ -353,34 +353,34 @@ export async function importCases<Row>(opts: {
   return { added, skipped, removed };
 }
 
-/** A short, stable id for a starter case: a hash of its input. */
-function starterId(input: unknown): string {
-  // FNV-1a: the core stays free of node:crypto; this only names rows.
-  let h = 0x811c9dc5;
-  for (const ch of stableJson(input)) {
-    h ^= ch.charCodeAt(0);
-    h = Math.imul(h, 0x01000193) >>> 0;
-  }
-  return h.toString(16).padStart(8, "0");
-}
-
 /**
  * Adds a suite's `starter` cases as drafts with pending answers, for a
- * person to confirm on the pages. Safe to run again: starters already
- * added (by their input) are skipped. A suite's leak check runs on each,
- * as in `importCases`.
+ * person to confirm on the pages. A case with a review shipped with the
+ * suite (`reviews`: its author or an expert checked it) gets that review
+ * as a confirmed answer instead, and is in use at once; see
+ * `addShippedReviews` for when one is left out. Safe to run again:
+ * starters already added (by their input) are skipped, and reviews shipped
+ * since are added to them. A suite's leak check runs on each, as in
+ * `importCases`.
+ *
+ * @param store - Where to add the cases.
+ * @param suite - The suite whose `starter` cases and `reviews` to add.
+ * @returns What was added and skipped, what the leak check removed, how
+ *   many shipped reviews were added, and cases whose answer from someone
+ *   in the app differs from a shipped review.
  */
-export function importStarters(
+export async function importStarters(
   store: EvalStore,
   suite: AnySuite,
-): Promise<ImportResult> {
-  return importCases({
+): Promise<ImportResult & ReviewResult> {
+  const source = `starter:${suite.key}`;
+  const imported = await importCases({
     store,
     suite,
-    source: `starter:${suite.key}`,
+    source,
     rows: suite.starter ?? [],
     map: (s) => ({
-      id: starterId(s.input),
+      id: starterKey(s.input),
       input: s.input,
       label: s.label,
       tags: s.tags,
@@ -388,4 +388,5 @@ export function importStarters(
       split: s.split,
     }),
   });
+  return { ...imported, ...(await addShippedReviews(store, suite, source)) };
 }

@@ -1,5 +1,6 @@
 import type { z } from "zod";
 import type { ReasoningEffort } from "./models.js";
+import type { ShippedReview } from "./reviews.js";
 
 /**
  * An eval suite: how to run one AI operation on a frozen case and how to
@@ -171,6 +172,15 @@ export type Suite<Input, Output, Label> = {
     smoke?: boolean;
     note: string;
   }[];
+  /**
+   * Reviews of `starter` cases that ship with the suite: its author or an
+   * expert confirmed a case's answer once, for every app, so
+   * `importStarters` adds it confirmed instead of pending. Each names who,
+   * what qualifies them, and when, and counts only while the case's input
+   * and answer are what they saw; the suite contract fails on one that
+   * doesn't.
+   */
+  reviews?: readonly ShippedReview[];
   /**
    * Drafts new cases aimed at what the answer key is missing, for a person
    * to review (they arrive with PENDING answers).

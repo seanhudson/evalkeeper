@@ -39,7 +39,12 @@ answer shape. Every answer has a status:
   graded against.
 - **CONFIRMED:** a person said it's right, on the pages or in the system
   the answer was imported from (which records who and when). Tests grade
-  against the newest one.
+  against the newest one. A suite can ship confirmations of its own
+  starter cases (its `reviews`): the suite's author or an expert checked
+  each once, for every app, and the answer key marks them "Author
+  reviewed" or "Expert reviewed." A review counts only while the case is
+  what they saw, and never replaces an answer someone in your app
+  confirmed.
 - **PROVISIONAL:** put to use before review, by the owner's choice. Tests
   use it, and every score says it rests on unreviewed answers.
 

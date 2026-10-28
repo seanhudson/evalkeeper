@@ -1,4 +1,5 @@
 import type { z } from "zod";
+import { reviewProblems } from "./reviews.js";
 import type { AnySuite, FormField } from "./types.js";
 
 /** A field help shorter than this says nothing a label doesn't. */
@@ -108,8 +109,9 @@ function fieldProblems(
  * sentences; empty when nothing is. Checks that suite keys are unique;
  * every top-level field of each suite's input and answer (every option's,
  * for a union) has a `fields` entry with a label and help, and no entry
- * names a field the schema doesn't have; every check has a description; and starter
- * cases fit the suite's own schemas. Pure; `describeSuiteContract` runs it
+ * names a field the schema doesn't have; every check has a description;
+ * starter cases fit the suite's own schemas; and every shipped review
+ * still matches its case's input and answer (see `reviewProblems`). Pure; `describeSuiteContract` runs it
  * as tests.
  */
 export function suiteContractProblems(suites: readonly AnySuite[]): string[] {
@@ -142,6 +144,7 @@ export function suiteContractProblems(suites: readonly AnySuite[]): string[] {
       if (!suite.labelValue.safeParse(s.label).success)
         out.push(`${name}: starter ${i + 1}'s answer doesn't fit the schema.`);
     });
+    out.push(...reviewProblems(suite));
   }
   return out;
 }

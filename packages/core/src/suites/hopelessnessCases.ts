@@ -1,10 +1,13 @@
+import type { ShippedReview } from "../reviews.js";
+
 /**
  * Made-up chat messages for the hopelessness suite (./hopelessness.ts),
  * each in the group that says how it should count. Never real chat text.
  * These are made-up examples written as a starting point, not clinically
  * validated: review and adapt them with people who have crisis-line or
  * clinical experience before relying on them. They arrive as drafts with
- * pending answers for that review.
+ * pending answers for that review, unless a review shipped with the
+ * suite (`HOPELESSNESS_REVIEWS`) confirms them.
  *
  * - self: hopelessness about their own life, including quiet ones
  *   ("every day is the same grey nothing"). Counts.
@@ -284,3 +287,14 @@ export const HOPELESSNESS_CASES: readonly HopelessnessCase[] = [
   ...inGroup("bad-day", badDay),
   ...inGroup("ordinary", ordinary),
 ];
+
+/**
+ * Reviews of the built-in cases that ship with the suite, so they arrive
+ * confirmed instead of pending: "AUTHOR" when the suite's author checked a
+ * case's group, "EXPERT" when someone with crisis line or clinical
+ * experience did. Empty until someone reviews them. Make one per case
+ * reviewed, with `starterKey` of the case's input and the group they
+ * confirmed; editing a case's message or group makes its review stale,
+ * and the suite contract fails until it's redone or removed.
+ */
+export const HOPELESSNESS_REVIEWS: readonly ShippedReview[] = [];

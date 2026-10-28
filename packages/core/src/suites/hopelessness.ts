@@ -10,6 +10,7 @@ import {
 import {
   HOPELESSNESS_CASES,
   HOPELESSNESS_GROUPS,
+  HOPELESSNESS_REVIEWS,
   type HopelessnessCase,
   type HopelessnessGroup,
 } from "./hopelessnessCases.js";
@@ -164,6 +165,12 @@ export type HopelessnessOptions = {
   extraCases?: readonly HopelessnessCase[];
   /** Leave out the built-in cases and use only `extraCases`. */
   withoutBuiltIn?: boolean;
+  /**
+   * Use the reviews that ship with the built-in cases, so the ones its
+   * author or an expert reviewed arrive confirmed. Default true; false
+   * leaves every case pending for your own people to confirm.
+   */
+  shippedReviews?: boolean;
   /** How many earlier messages the detector reads. Default 3. */
   earlierLimit?: number;
   /** The suite's key. Default "hopelessness". */
@@ -202,7 +209,8 @@ const said = (yes: boolean | null) =>
  * (counts) to "nothing helps with this cough" (doesn't), including jokes
  * that cover real hopelessness and short replies such as "yeah, same"
  * that agree with it. They arrive as drafts with pending answers for a
- * person to confirm.
+ * person to confirm, unless a review shipped with the suite
+ * (`HOPELESSNESS_REVIEWS`) confirms them.
  *
  * These are made-up examples written as a starting point, not clinically
  * validated: review and adapt them with people who have crisis-line or
@@ -271,6 +279,10 @@ export function hopelessnessSuite(
     description:
       "Whether a chat message, and separately what the person wrote before it, voices hopelessness about their own life: “every day is the same grey nothing” does, and “the Broncos are hopeless” doesn't. Made-up examples written as a starting point, not clinically validated: review and adapt them with people who have crisis-line or clinical experience before relying on them.",
     graderVersion: opts.graderVersion ?? "1",
+    reviews:
+      opts.withoutBuiltIn || opts.shippedReviews === false
+        ? []
+        : HOPELESSNESS_REVIEWS,
     decisions: true,
     unitNoun: "messages",
     caseKind: "typed",

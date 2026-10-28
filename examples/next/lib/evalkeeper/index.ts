@@ -52,6 +52,12 @@ const DEFAULTS: Record<string, Settings> = {
     reasoningEffort: null,
     maxOutputTokens: null,
   },
+  detect_crisis_risk: {
+    model: "demo-careful",
+    fallbackModel: null,
+    reasoningEffort: null,
+    maxOutputTokens: null,
+  },
 };
 
 /**

@@ -4,7 +4,7 @@ import { allPassed, money, summarize } from "../index.js";
 import { FieldValues } from "./Fields.js";
 import { ReadableOutput } from "./ReadableOutput.js";
 import { BackLink, Card } from "./pieces.js";
-import { pct } from "./format.js";
+import { pct, momentOf, LINK } from "./format.js";
 
 /** One test: every answer, with what each check found. */
 
@@ -50,14 +50,14 @@ export async function RunView({
           {app.models[run.model]?.label ?? run.model} on {suite.label}
         </h1>
         <p className="text-sm text-muted">
-          {run.startedAt.toLocaleString()} · {run.status.toLowerCase()}
+          {momentOf(run.startedAt)} · {run.status.toLowerCase()}
           {metrics && ` · spent ${money(metrics.costUsd)}`}
           {run.status === "SUCCEEDED" && (
             <>
               {" · "}
               <Link
                 href={`${evalsPath(app, key, "compare")}?${new URLSearchParams({ b: runId })}`}
-                className="hover:text-ink"
+                className={LINK}
               >
                 Compare with another test
               </Link>
@@ -148,7 +148,7 @@ export async function RunView({
               {cases.has(o.caseId) && (
                 <Link
                   href={`${evalsPath(app, key)}#case-${o.caseId}`}
-                  className="mt-2 inline-block text-xs text-accent hover:underline"
+                  className={`mt-2 inline-block text-xs ${LINK}`}
                 >
                   Find the case in the answer key
                 </Link>

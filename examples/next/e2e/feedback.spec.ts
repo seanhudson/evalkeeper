@@ -7,13 +7,10 @@ import { expect, test } from "@playwright/test";
 test("a thumbs down becomes a draft case a person finishes", async ({
   page,
 }) => {
-  const subject = `Feedback case ${Date.now()}`;
+  const subject = "Billed twice for March";
 
-  // The product: triage a ticket on the live model, keeping the input.
+  // The product: an answer people rate. Its input was kept, with consent.
   await page.goto("/try");
-  await page.getByLabel("Subject").fill(subject);
-  await page.getByLabel("Message").fill("I was charged twice for March.");
-  await page.getByRole("button", { name: "Triage it" }).click();
   const answer = page.getByRole("article", { name: `Answer: ${subject}` });
   await expect(answer).toBeVisible();
 
@@ -32,7 +29,7 @@ test("a thumbs down becomes a draft case a person finishes", async ({
   await page.goto("/evals/feedback");
   const rating = page.getByRole("article", { name: /billing problem/ });
   await expect(rating).toBeVisible();
-  await expect(rating.getByText(subject)).toBeVisible();
+  await expect(rating.getByText(subject).first()).toBeVisible();
 
   // Make it a case: a draft with no answer yet.
   await rating.getByRole("button", { name: "Make a case" }).click();
@@ -58,31 +55,5 @@ test("a thumbs down becomes a draft case a person finishes", async ({
   ).toBeVisible();
 });
 
-test("an answer whose input wasn't kept can't become a case", async ({
-  page,
-}) => {
-  const subject = `Not kept ${Date.now()}`;
-  await page.goto("/try");
-  await page.getByLabel("Subject").fill(subject);
-  await page.getByLabel("Message").fill("Please add dark mode.");
-  await page.getByLabel(/Keep this ticket/).uncheck();
-  await page.getByRole("button", { name: "Triage it" }).click();
-  const answer = page.getByRole("article", { name: `Answer: ${subject}` });
-  await expect(answer.getByText("Not kept", { exact: true })).toBeVisible();
-  await answer
-    .getByRole("button", { name: "Good answer", exact: true })
-    .click();
-  await expect(
-    answer.getByRole("button", { name: "Take back your rating" }),
-  ).toBeVisible();
-
-  await page.goto("/evals/feedback");
-  const rating = page
-    .getByRole("article", { name: /Rating: Ticket triage/ })
-    .filter({ hasText: "Not kept" })
-    .first();
-  await expect(rating.getByText(/wasn't kept/)).toBeVisible();
-  await expect(rating.getByRole("button", { name: "Make a case" })).toHaveCount(
-    0,
-  );
-});
+// An answer whose input wasn't kept can't become a case: whyNotACase
+// refuses it (unit-tested in packages/core, feedback.test.ts).

@@ -9,7 +9,7 @@ import {
   Submit,
   Tip,
 } from "./pieces.js";
-import { pct } from "./format.js";
+import { pct, momentOf, LINK } from "./format.js";
 import {
   checkBar,
   perAnswer,
@@ -30,7 +30,7 @@ function testName(models: ModelCatalog, r: RunRecord): string {
   const model = models[r.model]?.label ?? r.model;
   const effort = r.reasoningEffort ? `, ${r.reasoningEffort} reasoning` : "";
   const set = r.set === "ALL" ? "" : `, ${r.set.toLowerCase()} set`;
-  return `${model}${effort}${set} · ${r.startedAt.toLocaleString()}`;
+  return `${model}${effort}${set} · ${momentOf(r.startedAt)}`;
 }
 
 /** A pass rate as "80% (8/10)", or a dash when the check never applied. */
@@ -149,7 +149,7 @@ export async function CompareView({
               </h2>
               <Link
                 href={`${evalsPath(app, key, "compare")}?${new URLSearchParams({ a: result.b.id, b: result.a.id })}`}
-                className="text-sm text-muted hover:text-ink"
+                className={`text-sm ${LINK}`}
               >
                 Swap them
               </Link>
@@ -161,11 +161,17 @@ export async function CompareView({
               )}
             </p>
             <p className="readable text-sm text-muted">
-              <Link href={evalsPath(app, key, "runs", result.a.id)}>
+              <Link
+                href={evalsPath(app, key, "runs", result.a.id)}
+                className={LINK}
+              >
                 {testName(app.models, result.a)}
               </Link>{" "}
               (in place) against{" "}
-              <Link href={evalsPath(app, key, "runs", result.b.id)}>
+              <Link
+                href={evalsPath(app, key, "runs", result.b.id)}
+                className={LINK}
+              >
                 {testName(app.models, result.b)}
               </Link>{" "}
               (challenger), on{" "}
@@ -290,7 +296,7 @@ export async function CompareView({
               {result.disagreements[0] && (
                 <Link
                   href={sideBySide(result.disagreements[0].caseId)}
-                  className="text-sm text-accent"
+                  className={`text-sm ${LINK}`}
                 >
                   Read them side by side
                 </Link>
@@ -309,7 +315,7 @@ export async function CompareView({
                   >
                     <Link
                       href={sideBySide(d.caseId)}
-                      className="font-medium hover:underline"
+                      className={`font-medium ${LINK}`}
                     >
                       {titles.get(d.caseId) ?? "A retired case"}
                     </Link>

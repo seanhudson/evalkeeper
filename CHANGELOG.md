@@ -34,6 +34,17 @@ version may change an interface, and its entry says how to update.
 
 ### Changed
 
+- Dates read the same everywhere, with the month as a word ("Oct 28,
+  2026", and "Oct 28, 2026, 3:04 PM" with a time), from `dayOf` and
+  `momentOf`; "10/28/2026" means different days in different countries.
+- Links that read as words look the same on every screen: the accent,
+  underlined on hover (`LINK`). Numbers that link keep their own color.
+- The example's "Try it" page is now "Rate an answer": one answer with
+  thumbs, instead of a ticket form. The guide says how to put thumbs on a
+  chat's replies.
+- The example app shows the ready-made crisis risk and hopelessness
+  suites, on a demo detector, with their cases imported Author reviewed.
+
 - The model table's "Under attack" column shows only once the feature
   has attack cases, as each model's serious mistakes under attack (or a
   dash until its Test runs them), with no "Test attacks" button; each

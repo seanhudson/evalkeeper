@@ -23,7 +23,7 @@ export default function RootLayout({
             <nav className="flex gap-4 text-sm text-muted">
               <Link href="/evals">Evals</Link>
               <Link href="/evals/feedback">Feedback</Link>
-              <Link href="/try">Try it</Link>
+              <Link href="/try">Rate an answer</Link>
             </nav>
             <span className="ml-auto text-sm text-muted">Example app</span>
           </div>

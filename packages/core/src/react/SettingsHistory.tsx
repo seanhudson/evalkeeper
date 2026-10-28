@@ -1,3 +1,4 @@
+import { momentOf, LINK } from "./format.js";
 import {
   GLOSSARY,
   describeChange,
@@ -161,7 +162,7 @@ export function HistoryEntries({
                   (e.kind === "OUTSIDE"
                     ? "Found by the system"
                     : "System")}{" "}
-                · {e.createdAt.toLocaleString()}
+                · {momentOf(e.createdAt)}
               </span>
             </div>
             <ul className="readable list-disc pl-5">
@@ -184,7 +185,7 @@ export function HistoryEntries({
               {testId && (
                 <Link
                   href={evalsPath(app, suite, "runs", testId)}
-                  className="text-xs underline"
+                  className={`text-xs ${LINK}`}
                 >
                   The test behind it
                 </Link>

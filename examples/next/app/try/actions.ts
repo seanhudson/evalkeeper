@@ -5,13 +5,12 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { formText } from "@crowandraven/evalkeeper";
 import { prisma } from "@/lib/db";
-import { feedbackStore, routeFor } from "@/lib/evalkeeper";
-import { ticketTriage } from "@/lib/suites/ticketTriage";
+import { feedbackStore } from "@/lib/evalkeeper";
 
 /**
- * The "try it" page: the product feature (ticket triage on the live
- * model) and thumbs on its answers. In your app these are your feature's
- * own actions; the rating part is the same.
+ * The "try it" page: thumbs on an AI answer. In your app, rateAnswer is
+ * the part to copy: it records the rating, and the input only when the
+ * person agreed to keep it.
  */
 
 /** Who's rating, without accounts: a random id in a cookie. Use your user id. */
@@ -24,29 +23,6 @@ async function raterId(): Promise<string> {
   return id;
 }
 
-export async function triageTicket(form: FormData): Promise<void> {
-  const input = ticketTriage.inputFromForm(form);
-  const route = await routeFor(ticketTriage.operation);
-  const output = await ticketTriage.run(input, {
-    model: route.model,
-    reasoningEffort: route.reasoningEffort,
-    onCost: () => undefined,
-  });
-  await prisma.demoAnswer.create({
-    data: {
-      operation: ticketTriage.operation,
-      input,
-      output,
-      consented: form.get("consent") === "on",
-    },
-  });
-  revalidatePath("/try");
-}
-
-/**
- * A thumbs up or down. The answer is looked up by id, never taken from the
- * browser, and its input is kept only when the person agreed.
- */
 export async function rateAnswer(form: FormData): Promise<void> {
   const answer = await prisma.demoAnswer.findUnique({
     where: { id: formText(form, "targetId") },

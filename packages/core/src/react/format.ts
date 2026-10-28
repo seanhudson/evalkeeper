@@ -15,3 +15,31 @@ export const pct = (x: number): string => `${Math.round(x * 100)}%`;
  */
 export const QUIET_BUTTON =
   "border border-accent/40 bg-card text-accent hover:bg-accent/10";
+
+/**
+ * A day, with the month as a word so no reader mistakes it:
+ * "Oct 28, 2026" (10/28 is the 10th of the 28th month in most of the world).
+ */
+export const dayOf = (d: Date): string =>
+  d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+
+/** A day and time, the same way: "Oct 28, 2026, 3:04 PM". */
+export const momentOf = (d: Date): string =>
+  d.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+
+/**
+ * Every link that reads as words: the app's accent, underlined on hover.
+ * Numbers that link (a score, a count) keep their own color, and links
+ * styled as buttons, card titles, and the back link have their own look.
+ */
+export const LINK = "text-accent hover:underline";

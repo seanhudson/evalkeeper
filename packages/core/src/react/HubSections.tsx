@@ -13,7 +13,7 @@ import {
   type SettingsVersion,
 } from "../index.js";
 import { Link, Card, InfoTip, StatusBadge } from "./pieces.js";
-import { pct } from "./format.js";
+import { pct, dayOf } from "./format.js";
 import { HistoryEntries } from "./SettingsHistory.js";
 import { daysAgo, evalsPath, loadWeekly, type EvalAppConfig } from "./app.js";
 import type { Runner } from "../runner.js";
@@ -251,7 +251,7 @@ function Stat({
 
 type Board = Awaited<ReturnType<Runner["board"]>>;
 
-const day = (d: Date) => d.toLocaleDateString();
+const day = dayOf;
 /** Green at 95% and up, amber from 80%, red below. */
 const scoreTone = (rate: number) =>
   rate >= 0.95 ? "text-good" : rate >= 0.8 ? "text-warn" : "text-bad";

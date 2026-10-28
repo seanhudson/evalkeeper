@@ -1,93 +1,72 @@
 import { cookies } from "next/headers";
-import { Fields } from "@crowandraven/evalkeeper/react";
-import { Card, InfoTip, Submit } from "@crowandraven/evalkeeper/react";
-import { Thumbs } from "@crowandraven/evalkeeper/react";
+import { Card, Thumbs } from "@crowandraven/evalkeeper/react";
 import { prisma } from "@/lib/db";
 import { feedbackStore } from "@/lib/evalkeeper";
 import { ticketTriage } from "@/lib/suites/ticketTriage";
-import { rateAnswer, triageTicket } from "./actions";
+import { rateAnswer } from "./actions";
 
 export const dynamic = "force-dynamic";
 
+/** One answer to rate: a ticket and where the feature sent it. */
+const SAMPLE = {
+  id: "sample-answer",
+  input: {
+    subject: "Billed twice for March",
+    body: "I was charged twice for March. Can you refund one?",
+  },
+  // Not the right queue, so there's something to rate down.
+  output: { category: "account", urgency: "normal" },
+};
+
 /**
- * The product side: a feature people use, with thumbs on each answer. In
- * your app this is your own page; the thumbs are the part to copy.
+ * Thumbs on an AI answer, as people see them in your product. Rate this
+ * one, and it shows up on the evals' feedback page, where a thumbs down
+ * can become a case. Your app puts the same thumbs on its own answers.
  */
 export default async function TryPage() {
-  const answers = await prisma.demoAnswer.findMany({
-    where: { operation: ticketTriage.operation },
-    orderBy: { createdAt: "desc" },
-    take: 5,
+  // The sample is kept (consented), so a rating on it can become a case.
+  await prisma.demoAnswer.upsert({
+    where: { id: SAMPLE.id },
+    create: {
+      id: SAMPLE.id,
+      operation: ticketTriage.operation,
+      input: SAMPLE.input,
+      output: SAMPLE.output,
+      consented: true,
+    },
+    update: {},
   });
   const rater = (await cookies()).get("rater")?.value;
   const mine = rater
     ? await feedbackStore.listFeedback({ operation: ticketTriage.operation })
     : [];
-  const ratingOf = (id: string) =>
-    mine.find((f) => f.targetId === id && f.raterId === rater)?.rating ?? null;
-  const fields = ticketTriage.fields?.input ?? [];
+  const rating =
+    mine.find((f) => f.targetId === SAMPLE.id && f.raterId === rater)?.rating ??
+    null;
 
   return (
     <div className="space-y-8">
       <div className="readable space-y-2">
-        <h1 className="text-2xl font-semibold">Try it: ticket triage</h1>
+        <h1 className="text-2xl font-semibold">Rate an answer</h1>
         <p className="text-muted">
-          The feature as people use it. Paste a ticket, see where the live model
-          sends it, and rate the answer. Ratings show up on the evals&apos;
-          feedback page, where they can become cases.
+          What people see in your product: an AI answer with thumbs. Rate this
+          one, and say what was wrong if it was. It shows up on the evals&apos;
+          feedback page, where a thumbs down can become a case to test every
+          model on.
         </p>
       </div>
 
-      <Card>
-        <form action={triageTicket} className="space-y-4">
-          <Fields fields={fields} prefix="try-" />
-          <label className="flex items-start gap-2 text-sm">
-            <input
-              type="checkbox"
-              name="consent"
-              defaultChecked
-              className="mt-0.5"
-            />
-            <span className="readable">
-              Keep this ticket to improve the feature
-              <InfoTip term="keepInput" />
-            </span>
-          </label>
-          <Submit>Triage it</Submit>
-        </form>
-      </Card>
-
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Answers</h2>
-        {answers.length === 0 && (
-          <p className="text-sm text-muted">None yet.</p>
-        )}
-        {answers.map((a) => {
-          const input = ticketTriage.input.parse(a.input);
-          const out = a.output as { category: string; urgency: string };
-          return (
-            <article key={a.id} aria-label={`Answer: ${input.subject}`}>
-              <Card className="space-y-3">
-                <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <span className="font-medium">{input.subject}</span>
-                  <span className="text-xs text-muted">
-                    {a.consented ? "Kept to improve the feature" : "Not kept"}
-                  </span>
-                </div>
-                <p className="text-sm">
-                  Queue: <strong>{out.category.replace(/_/g, " ")}</strong> ·
-                  Urgency: <strong>{out.urgency}</strong>
-                </p>
-                <Thumbs
-                  targetId={a.id}
-                  initial={ratingOf(a.id)}
-                  action={rateAnswer}
-                />
-              </Card>
-            </article>
-          );
-        })}
-      </section>
+      <article aria-label={`Answer: ${SAMPLE.input.subject}`}>
+        <Card className="space-y-3">
+          <p className="font-medium">{SAMPLE.input.subject}</p>
+          <p className="readable text-sm text-muted">{SAMPLE.input.body}</p>
+          <p className="text-sm">
+            Queue: <strong>{SAMPLE.output.category}</strong> · Urgency:{" "}
+            <strong>{SAMPLE.output.urgency}</strong>
+          </p>
+          <Thumbs targetId={SAMPLE.id} initial={rating} action={rateAnswer} />
+        </Card>
+      </article>
     </div>
   );
 }

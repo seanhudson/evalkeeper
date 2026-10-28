@@ -7,6 +7,7 @@ import {
 import { ticketRouting, routingTexts, routingVersion } from "./ticketRouting";
 import { ticketTriage, triageTexts, triageVersion } from "./ticketTriage";
 import { triageInjection } from "./triageInjection";
+import { crisisRisk, hopelessness, safetyVersion } from "./safety";
 
 // An injection suite runs on its base suite's operation: list it after
 // the base, and find a feature's suite with !isInjectionSuite.
@@ -15,6 +16,8 @@ export const SUITES: AnySuite[] = [
   actionItems,
   ticketRouting,
   triageInjection,
+  crisisRisk,
+  hopelessness,
 ];
 export const SUITE_BY_KEY = Object.fromEntries(SUITES.map((s) => [s.key, s]));
 
@@ -23,6 +26,7 @@ export const PROMPT_VERSIONS: Record<string, string> = {
   ticket_triage: triageVersion,
   action_items: actionItemsVersion,
   route_ticket: routingVersion,
+  detect_crisis_risk: safetyVersion,
 };
 
 /** Each operation's instructions as text, to find cases copied into them. */
@@ -30,6 +34,7 @@ export const INSTRUCTION_TEXTS: Record<string, string[]> = {
   ticket_triage: triageTexts,
   action_items: actionItemsTexts,
   route_ticket: routingTexts,
+  detect_crisis_risk: [],
 };
 
 /** Features answered by decision models rather than text. */

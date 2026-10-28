@@ -26,7 +26,7 @@ import {
   Submit,
   Tip,
 } from "./pieces.js";
-import { pct } from "./format.js";
+import { pct, LINK } from "./format.js";
 import { RotateCw } from "lucide-react";
 import { evalsPath, type EvalAppConfig } from "./app.js";
 import { SettingsHistory } from "./SettingsHistory.js";
@@ -162,7 +162,7 @@ export function ChosenOnBase({ data }: { data: SuitePageData }) {
           </p>
           <Link
             href={evalsPath(app, suite.base.key)}
-            className="inline-block text-sm text-accent hover:underline"
+            className={`inline-block text-sm ${LINK}`}
           >
             Choose models on {suite.base.label}
           </Link>
@@ -267,7 +267,7 @@ export function ModelTable({ data }: { data: SuitePageData }) {
           <div className="flex items-center gap-4">
             <Link
               href={evalsPath(app, key, "compare")}
-              className="text-sm text-muted hover:text-ink"
+              className={`text-sm ${LINK}`}
             >
               Compare two tests
             </Link>
@@ -456,6 +456,7 @@ export function ModelTable({ data }: { data: SuitePageData }) {
                     {r.vsLive && live?.test && r.test && !r.live ? (
                       <Link
                         href={`${evalsPath(app, key, "compare")}?${new URLSearchParams({ a: live.test.runId, b: r.test.runId })}`}
+                        className={LINK}
                       >
                         {VS[r.vsLive]}
                       </Link>

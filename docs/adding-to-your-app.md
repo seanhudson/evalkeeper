@@ -364,7 +364,8 @@ Add the `EvalFeedback` model from the schema and create
 `prismaFeedbackStore(prisma)`. If your app already records thumbs in its
 own table, map it instead ("Your own thumbs table" under "Bring your
 own"). Put a thumbs up and down on each AI answer
-(`examples/next/components/evalkeeper/Thumbs.tsx`), with a server action
+(`Thumbs` from `@crowandraven/evalkeeper/react`; the example's "Rate an
+answer" page, `examples/next/app/try`, shows one), with a server action
 that looks the answer up by its id, never trusting what the browser sends,
 and calls `feedbackStore.rate(...)` with the person's id.
 
@@ -373,8 +374,16 @@ suite's input shape, with names and contact details removed, and only
 when the person agreed. Pass it as `input`, and the answer as `output`.
 Give suites whose outputs look like answers a `labelFromOutput`, so a
 thumbs up can propose the model's answer. The feedback page
-(`examples/next/app/evals/feedback`) lists ratings and makes cases with
-`caseFromFeedback`.
+(`FeedbackView`) lists ratings and makes cases with `caseFromFeedback`.
+
+**In a chat**, put the thumbs under each of the assistant's replies, not
+on the conversation. Use the reply's message id as `targetId`, and pass
+the reply's text as `output`, so a reviewer reads what was rated. For
+`input`, keep what the suite needs to replay that turn (the latest
+message, and the earlier ones it depends on), and only with the person's
+agreement; without it, the rating still counts toward the thumbs-down
+alerts but can't become a case. Ask for the reason only on a thumbs
+down, and keep it short: "What was wrong?"
 
 ## 9. Test decision models (optional)
 

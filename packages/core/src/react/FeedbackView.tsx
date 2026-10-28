@@ -9,7 +9,7 @@ import {
 } from "../index.js";
 import { FieldValues } from "./Fields.js";
 import { BackLink, Card, Chip, InfoTip, Submit, Tip } from "./pieces.js";
-import { pct } from "./format.js";
+import { pct, momentOf } from "./format.js";
 import { ThumbsDown, ThumbsUp } from "lucide-react";
 
 /**
@@ -167,9 +167,7 @@ function Rating({
             </Chip>
             <span className="font-medium">{feature}</span>
           </span>
-          <span className="text-xs text-muted">
-            {f.updatedAt.toLocaleString()}
-          </span>
+          <span className="text-xs text-muted">{momentOf(f.updatedAt)}</span>
         </div>
         {f.reason && <p className="readable">&ldquo;{f.reason}&rdquo;</p>}
         <div className="grid gap-4 md:grid-cols-2">

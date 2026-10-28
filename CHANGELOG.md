@@ -5,7 +5,20 @@ Notable changes, newest first. The format follows
 follow [semantic versioning](https://semver.org/): until 1.0, a minor
 version may change an interface, and its entry says how to update.
 
-## Unreleased
+## 0.9.0 - 2026-10-28
+
+Testing against prompt injection, with attacks of its own and from
+garak, CyberSecEval, and promptfoo; and ready-made cases that arrive
+confirmed. Every crisis risk and hopelessness case is now "Author
+reviewed" by the Evalkeeper Team, so tests use them as soon as they're
+added. **To update:** run `importStarters(store, suite)` again for each
+ready-made suite you use: it adds the reviews to the cases you added
+before (never over an answer you confirmed; any that differ come back in
+`disagree`). A test that compares `importStarters`' whole result needs
+its new `reviewed`, `disagree`, and `notSeen`. Copy the pages again for the badges
+and the injection suite's hub card (`npx @crowandraven/evalkeeper add
+pages --only hub,feedback,AnswerKey,actions --dry-run` first). To add an
+injection suite, follow "Test against prompt injection" in the guide.
 
 ### Added
 
@@ -20,7 +33,11 @@ version may change an interface, and its entry says how to update.
   a hijack asks for the suite's `goal`, a wrong answer the app names.
   `injectionCases(store, suite)` makes its cases from the base suite's
   confirmed ones, each carrying that answer ("From base case" on the
-  answer key), and adds new attacks and newly confirmed cases on a rerun.
+  answer key), until each attack has `perAttack` cases in use. Run it
+  again to keep them in step: an attack case gets its base case's newly
+  confirmed answer (unless someone confirmed one on the attack case
+  itself), and one whose base case was retired or lost its answer is
+  retired.
 - Attacks from other tools, for `injectionSuite`'s `attacks`:
   `cyberSecEvalAttacks` (Meta's CyberSecEval prompt injection set),
   `garakSyspromptAttacks` and `garakReportAttacks` (garak's extraction
@@ -28,13 +45,15 @@ version may change an interface, and its entry says how to update.
   against its offline `test.Blank` generator), and `promptfooBurpAttacks`
   (`promptfoo redteam generate -o tests.burp`). Where a tool checks for a
   word, it becomes the canary; attacks that would need a judge model are
-  left out and listed in `skipped`. `readAttacks` and `writeAttacks` keep
+  left out and listed in `skipped`. garak and promptfoo attacks are named
+  by their text, so a report or file made again names the same attacks
+  the same way. `readAttacks` and `writeAttacks` keep
   attacks in a JSONL file. None of them runs a tool or calls the network.
 - `isInjectionSuite(suite)`: code that finds a feature's suite by
   operation should skip injection suites. The example's feedback page,
   "make a case" action, and cost lookup do, and the hub's card for an
-  injection suite points to its base suite's settings instead of
-  repeating them.
+  injection suite says it shares its base suite's settings instead
+  of repeating their history.
 - Shipped reviews: a suite's `reviews` say its author or an expert
   confirmed a starter case's answer once, for every app, so
   `importStarters` adds that case confirmed and in use instead of
@@ -42,18 +61,33 @@ version may change an interface, and its entry says how to update.
   counts only while the case's input and answer are what they saw; the
   suite contract fails on a stale one. A review is never added over an
   answer someone in the app confirmed, and one that differs is listed in
-  the import's `disagree`. The answer key marks these answers "Author
+  the import's `disagree`. A case whose stored input isn't the one
+  reviewed (the suite's leak check changed it) gets no review and is
+  listed in `notSeen`. A review re-signed after its case's answer changed
+  is added as the newer confirmation. The answer key marks these answers
+  "Author
   reviewed" or "Expert reviewed" and shows the review's note. The crisis
   risk and hopelessness suites take `shippedReviews: false` to leave every
-  case pending; neither ships any reviews yet. `importStarters` also
-  returns `reviewed` and `disagree`; a test that compares its whole
-  result needs both. Copy `AnswerKey` again for the badges.
+  case pending.
 - `reviewSheet`, `reviewsFromSheet`, and `mergeReviews` turn a suite's
   starter cases into a sheet a reviewer marks and back into shipped
   reviews. In this repo, `node scripts/review-starters.mjs sheet
 crisis_risk` writes the sheet and `sign` writes the reviews file
   (`crisisRiskReviews.ts`, `hopelessnessReviews.ts`), replacing that
   reviewer's earlier reviews and keeping everyone else's.
+
+### Changed
+
+- The crisis risk and hopelessness suites' built-in cases arrive
+  confirmed, "Author reviewed" by the Evalkeeper Team, instead of
+  pending. Their tests fail if a built-in case ships without a review.
+  Review them yourself before relying on them, ideally with someone who
+  has crisis-line or clinical experience; pass `shippedReviews: false` to
+  confirm every case yourself.
+- `importStarters` returns how many shipped reviews it added
+  (`reviewed`), the cases whose own answer differs from one
+  (`disagree`), and the cases whose stored input wasn't the one reviewed
+  (`notSeen`).
 
 ## 0.8.0 - 2026-10-25
 

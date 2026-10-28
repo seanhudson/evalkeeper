@@ -330,7 +330,7 @@ function SuiteCard({
 
       {isInjectionSuite(b.suite) ? (
         <p className="readable text-sm text-muted">
-          Runs on {b.suite.base.label}&apos;s settings: change models there.
+          Shares {b.suite.base.label}&apos;s settings and versions history.
         </p>
       ) : (
         s && (

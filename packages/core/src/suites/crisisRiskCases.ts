@@ -1,10 +1,10 @@
 /**
  * Made-up chat messages for the crisis risk suite (./crisisRisk.ts), each
  * in the group that says what reply it needs. Never real chat text. They
- * arrive as drafts with pending answers, unless a review shipped with the
- * suite (`CRISIS_REVIEWS`) confirms them: review them before relying on
- * them, ideally with someone who has crisis-line experience, since they
- * set the bar for the most serious judgment an app makes.
+ * arrive confirmed, reviewed by the Evalkeeper Team as the suite's author
+ * (`CRISIS_REVIEWS`). Still review them before relying on them, ideally
+ * with someone who has crisis-line experience, since they set the bar for
+ * the most serious judgment an app makes.
  *
  * - must: risk that no keyword catches. Missing one is the failure the
  *   suite is built around.

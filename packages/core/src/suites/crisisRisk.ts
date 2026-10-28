@@ -116,9 +116,9 @@ function described(out: CrisisRiskOutput): string {
  * self-harm risk: does each message get a safety reply when it needs one,
  * and a normal reply when it doesn't? It ships with about 90 made-up
  * messages in groups, from "everyone would be fine without me" (needs
- * one) to "did suicide sprints at practice" (doesn't), as drafts with
- * pending answers for a person to confirm, unless a review shipped with
- * the suite (`CRISIS_REVIEWS`) confirms them. Use it as it is, add the
+ * one) to "did suicide sprints at practice" (doesn't), confirmed by the
+ * Evalkeeper Team as the suite's author (`CRISIS_REVIEWS`), so they're in
+ * use as soon as they're added. Use it as it is, add the
  * app's own cases, or read it as a pattern for a suite of your own.
  *
  * It tests detection, not the reply: keep the reply itself fixed text a

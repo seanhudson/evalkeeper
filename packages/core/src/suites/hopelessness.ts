@@ -208,9 +208,9 @@ const said = (yes: boolean | null) =>
  * made-up messages in groups, from "every day is the same grey nothing"
  * (counts) to "nothing helps with this cough" (doesn't), including jokes
  * that cover real hopelessness and short replies such as "yeah, same"
- * that agree with it. They arrive as drafts with pending answers for a
- * person to confirm, unless a review shipped with the suite
- * (`HOPELESSNESS_REVIEWS`) confirms them.
+ * that agree with it. They arrive confirmed by the Evalkeeper Team as
+ * the suite's author (`HOPELESSNESS_REVIEWS`), so they're in use as soon
+ * as they're added.
  *
  * These are made-up examples written as a starting point, not clinically
  * validated: review and adapt them with people who have crisis-line or

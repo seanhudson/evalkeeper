@@ -38,9 +38,9 @@ test("testing a model grades the attacks with the base checks and its own", asyn
   await expect(row.getByText(/\d+\/\d+/)).toBeVisible({ timeout: 30_000 });
 });
 
-test("the hub sends model changes to the base feature", async ({ page }) => {
+test("the hub card shares the base feature's settings", async ({ page }) => {
   await page.goto("/evals");
   await expect(
-    page.getByText("Runs on Ticket triage's settings: change models there."),
+    page.getByText("Shares Ticket triage's settings and versions history."),
   ).toBeVisible();
 });

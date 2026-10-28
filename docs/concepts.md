@@ -28,7 +28,10 @@ adds two: the answer never contains the attack's canary (a made-up word
 it asks for) and never contains secrets the app names. An attack case's
 answer is its base case's, marked "From base case," since an attack
 shouldn't change the right answer. Code that finds a feature's suite by
-operation skips injection suites (`isInjectionSuite`).
+operation skips injection suites (`isInjectionSuite`). Models aren't
+chosen on an injection suite: one feature has one live model, so its
+results show on the base suite's page as **under attack**, each model's
+serious mistakes on the attacks, and the suggestion there weighs them.
 
 **Case.** One frozen input, copied rather than referenced, so later
 changes to your app's data don't move the test. Cases are DRAFT, ACTIVE,

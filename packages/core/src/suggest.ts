@@ -20,7 +20,11 @@ import { at } from "./util.js";
  * Models the provider is retiring are never suggested, and a retiring live
  * model is replaced by the best-scoring one that isn't. A live model whose
  * current test has failed answers is tested again, not replaced: it can't
- * be compared yet, and a timeout or two isn't a reason to switch. Pure.
+ * be compared yet, and a timeout or two isn't a reason to switch. With a
+ * feature's injection suites (`attacks`), a model is suggested as live only
+ * with a current test against the attacks, and never with more serious
+ * mistakes under attack than live; making at least two fewer is a reason
+ * to switch on its own. Pure.
  */
 
 /** One model's row, as the suggestion reads it. */
@@ -70,6 +74,71 @@ export type Suggestion<R extends SuggestRow = SuggestRow> = {
 };
 
 /**
+ * One injection suite's board, as the suggestion reads it: the same
+ * feature attacked, so a model's row there has the same key as on the
+ * base suite's board. Build it with `attacksFrom`.
+ */
+export type AttackResults = {
+  /** The injection suite's label, for the reasons. */
+  label: string;
+  rows: SuggestRow[];
+  checks: CheckDef[];
+};
+
+/** What else the suggestion weighs, besides the suite's own board. */
+export type SuggestOptions = {
+  /**
+   * The feature's injection suites, from `runner.attackBoards(suiteKey)`
+   * through `attacksFrom`. Without them, attacks aren't weighed.
+   */
+  attacks?: AttackResults[];
+};
+
+/**
+ * Injection suites' boards in the shape `suggest` reads, for its
+ * `attacks` option.
+ *
+ * @param boards - The boards of a feature's injection suites
+ *   (`runner.attackBoards`).
+ * @returns One entry per injection suite.
+ */
+export function attacksFrom(
+  boards: readonly {
+    suite: { label: string; checks: CheckDef[] };
+    rows: SuggestRow[];
+  }[],
+): AttackResults[] {
+  return boards.map((b) => ({
+    label: b.suite.label,
+    rows: b.rows,
+    checks: b.suite.checks,
+  }));
+}
+
+/**
+ * A model's serious mistakes under attack: its serious mistakes on every
+ * injection suite, added up. Null when any of them has no current,
+ * complete test of it, so it can't be compared yet; also null with no
+ * injection suites.
+ *
+ * @param key - The model's row key (model and reasoning setting).
+ * @param attacks - The feature's injection suites.
+ */
+export function attackMistakes(
+  key: string,
+  attacks: readonly AttackResults[],
+): number | null {
+  if (!attacks.length) return null;
+  let total = 0;
+  for (const a of attacks) {
+    const r = a.rows.find((x) => x.key === key);
+    if (!r?.test || r.test.stale || r.test.failedAnswers) return null;
+    total += seriousMistakes(r, a.checks);
+  }
+  return total;
+}
+
+/**
  * How many serious checks a model's test failed; Infinity without a test.
  */
 export function seriousMistakes(row: SuggestRow, checks: CheckDef[]): number {
@@ -113,7 +182,15 @@ export function suggest<R extends SuggestRow>(
   priority: SuitePriority = { favor: "quality" },
   /** Your model catalog: providers (for the fallback) and retirements. */
   models: ModelCatalog = {},
+  /** The feature's injection suites, to weigh attacks too. */
+  opts: SuggestOptions = {},
 ): Suggestion<R> | null {
+  const attacks = opts.attacks ?? [];
+  const weighAttacks = attacks.length > 0;
+  /** Serious mistakes under attack; null when not tested against them. */
+  const underAttack = (r: SuggestRow) => attackMistakes(r.key, attacks);
+  const attackTested = (r: SuggestRow) =>
+    !weighAttacks || underAttack(r) !== null;
   const provider = (model: string) => models[model]?.provider ?? model;
   const retiring = (r: SuggestRow) => retiresLabel(models, r.model);
   const limitMs = priority.maxSeconds ? priority.maxSeconds * 1000 : Infinity;
@@ -162,10 +239,15 @@ export function suggest<R extends SuggestRow>(
     );
   } else if (!live) {
     if (!liveable.length) return null;
+    // Only models tested against the attacks, unless none are.
+    const known = liveable.filter(attackTested);
     next = at(
-      [...liveable].sort(
+      [...(known.length ? known : liveable)].sort(
         (a, b) =>
-          rate(b) - rate(a) || serious(a) - serious(b) || cost(a) - cost(b),
+          rate(b) - rate(a) ||
+          serious(a) - serious(b) ||
+          (underAttack(a) ?? 0) - (underAttack(b) ?? 0) ||
+          cost(a) - cost(b),
       ),
       0,
     );
@@ -174,13 +256,27 @@ export function suggest<R extends SuggestRow>(
         ? `${liveRetires && liveRow ? `${liveRow.label} retires in ${liveRetires}.` : liveSlow} ${next.label} scores highest of the rest (${pct(rate(next))}) with ${mistakes(serious(next))}.`
         : `${next.label} scores highest (${pct(rate(next))}) with ${mistakes(serious(next))}. The live model has no up-to-date test to compare with.`,
     );
+    if (!attackTested(next))
+      reasons.push(
+        `No model has an up-to-date test against the attacks: test ${next.label} on them before relying on it.`,
+      );
   } else {
+    // At least two fewer serious mistakes under attack, as accurate or more.
+    const attackReason = (r: R): string | null => {
+      const ra = underAttack(r);
+      const la = underAttack(live);
+      return ra !== null && la !== null && ra <= la - 2 && rate(r) >= rate(live)
+        ? `${r.label} makes fewer serious mistakes under attack than ${live.label} (${ra} against ${la}), and scores at least as well (${pct(rate(r))} against ${pct(rate(live))}).`
+        : null;
+    };
     const why = (r: R): string | null => {
       if (rate(r) < rate(live)) return trade(r);
       if (r.vsLive === "BETTER")
         return `${r.label} is clearly more accurate than ${live.label}: ${pct(rate(r))} against ${pct(rate(live))}.`;
       if (serious(r) <= serious(live) - 2)
         return `${r.label} makes fewer serious mistakes than ${live.label} (${serious(r)} against ${serious(live)}), and scores at least as well (${pct(rate(r))} against ${pct(rate(live))}).`;
+      const byAttacks = attackReason(r);
+      if (byAttacks) return byAttacks;
       if (priority.favor === "cost" && clearlyLess(cost(r), cost(live)))
         return `${r.label} scores at least as well as ${live.label} (${pct(rate(r))} against ${pct(rate(live))}) at ${Math.round((1 - cost(r) / cost(live)) * 100)}% less per answer.`;
       if (priority.favor === "speed" && clearlyLess(ms(r), ms(live)))
@@ -204,14 +300,23 @@ export function suggest<R extends SuggestRow>(
         return `${close}, and answers in ${(ms(r) / 1000).toFixed(1)}s against ${(ms(live) / 1000).toFixed(1)}s. This suite favors speed.`;
       return null;
     };
+    // Under attack: tested, and no more serious mistakes than live (when
+    // live has a test to compare with).
+    const liveAttack = underAttack(live);
+    const safeUnderAttack = (r: R) => {
+      const a = underAttack(r);
+      return (
+        !weighAttacks ||
+        (a !== null && (liveAttack === null || a <= liveAttack))
+      );
+    };
+    const qualifies = (r: R) =>
+      !r.live &&
+      r.vsLive !== "WORSE" &&
+      serious(r) <= serious(live) &&
+      why(r) !== null;
     const candidates = liveable
-      .filter(
-        (r) =>
-          !r.live &&
-          r.vsLive !== "WORSE" &&
-          serious(r) <= serious(live) &&
-          why(r),
-      )
+      .filter((r) => qualifies(r) && safeUnderAttack(r))
       .sort(
         (a, b) =>
           Number(b.vsLive === "BETTER") - Number(a.vsLive === "BETTER") ||
@@ -227,11 +332,28 @@ export function suggest<R extends SuggestRow>(
       next = at(candidates, 0);
       const reason = why(next);
       if (reason) reasons.push(reason);
+      const a = underAttack(next);
+      if (a !== null && reason !== attackReason(next))
+        reasons.push(
+          liveAttack === null
+            ? `Under attack, ${next.label} makes ${mistakes(a)}. ${live.label} has no up-to-date test against the attacks to compare with.`
+            : `Under attack, ${next.label} makes ${mistakes(a)}, against ${liveAttack} for ${live.label}.`,
+        );
     } else {
       next = live;
       reasons.push(
         `Keep ${live.label}: no other model is safely better on these cases.`,
       );
+      // Would have been suggested, but for the attacks.
+      const held = liveable.find((r) => qualifies(r) && !safeUnderAttack(r));
+      if (held) {
+        const a = underAttack(held);
+        reasons.push(
+          a === null
+            ? `${held.label} would otherwise qualify, but it has no up-to-date test against the attacks. Test it on ${at(attacks, 0).label}.`
+            : `${held.label} would otherwise qualify, but it makes more serious mistakes under attack (${a} against ${liveAttack ?? 0}).`,
+        );
+      }
       // The one to watch: scored higher, but not by enough to tell.
       const watch = tested
         .filter((r) => !r.live && rate(r) > rate(live))
@@ -256,12 +378,22 @@ export function suggest<R extends SuggestRow>(
       )
       .sort(
         (a, b) =>
-          rate(b) - rate(a) || serious(a) - serious(b) || cost(a) - cost(b),
+          rate(b) - rate(a) ||
+          serious(a) - serious(b) ||
+          (underAttack(a) ?? Infinity) - (underAttack(b) ?? Infinity) ||
+          cost(a) - cost(b),
       )[0] ?? null;
-  if (fallback)
+  if (fallback) {
+    const a = underAttack(fallback);
+    const attacked = !weighAttacks
+      ? ""
+      : a === null
+        ? "; not tested against the attacks"
+        : `; ${mistakes(a)} under attack`;
     reasons.push(
-      `Fallback: ${fallback.label} is the most accurate from another provider (${pct(rate(fallback))}, ${mistakes(serious(fallback))}).`,
+      `Fallback: ${fallback.label} is the most accurate from another provider (${pct(rate(fallback))}, ${mistakes(serious(fallback))}${attacked}).`,
     );
+  }
 
   const keepLive = next.live;
   const retestLive = Boolean(liveFailed);

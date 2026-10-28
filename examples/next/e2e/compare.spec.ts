@@ -11,7 +11,7 @@ async function tested(page: Page, label: string) {
   const row = modelRow(page, label);
   const score = row.getByRole("link", { name: /\d+%/ });
   if (!(await score.count()))
-    await row.getByRole("button", { name: "Test" }).click();
+    await row.getByRole("button", { name: "Test", exact: true }).click();
   await expect(score).toBeVisible({ timeout: 30_000 });
 }
 

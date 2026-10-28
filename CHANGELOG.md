@@ -7,8 +7,14 @@ version may change an interface, and its entry says how to update.
 
 ## Unreleased
 
-Structured answers: a JSON field kind, and an app's own answer editors
-that survive copying the pages again.
+Injection suites' results count where a feature's model is chosen, and
+structured answers get a JSON field kind and an app's own editors.
+**To update:** export `answerEditors` from your wiring module (`{}` if
+you have none), then copy the pages again (`npx @crowandraven/evalkeeper
+add pages --only suite,hub,rate,AnswerKey,Fields,actions --dry-run`
+first). If you built your own pages, pass `{ attacks }` to `suggest` and
+`suiteHealth` (see "Test against prompt injection" in the guide), and
+choose models only on base suites.
 
 ### Added
 
@@ -28,6 +34,36 @@ that survive copying the pages again.
   `answerEditors` from your wiring module (`{}` if you have none), and
   copy `Fields.tsx`, `AnswerKey.tsx`, the suite and rate pages, and
   `lib/evalkeeper/actions.ts` again.
+- `runner.attackBoards(suiteKey)` loads the boards of the injection
+  suites that attack a suite, and `attacksFrom(boards)` reads them for
+  `suggest`'s new `attacks` option. `attackMistakes(key, attacks)` is a
+  model's serious mistakes under attack, null until it has a current,
+  complete test on every one. `injectionSuitesOf(suites, baseKey)`
+  finds them in a registry.
+- The suite page's board has an "Under attack" column when injection
+  suites attack the feature: each model's serious mistakes under attack,
+  linked to that test, or a "Test attacks" button with what it costs.
+  The hub shows the live model's on the feature's card.
+
+### Changed
+
+- With `attacks`, the suggestion picks a model as live only once it has
+  a current test on the attacks, never one with more serious mistakes
+  under attack than live, and suggests switching for at least two fewer
+  (as accurate or more). A model held back by the attacks is named, with
+  why. Its reasons say how the new live model and the fallback do under
+  attack, and the fallback breaks a tie on fewer. `suiteHealth` takes the
+  same option, so the hub's status matches the page.
+- An injection suite's page no longer chooses models: no suggestion,
+  "Make live", "Make fallback", or versions. It says models are chosen
+  on its base suite and links there, and `makeLive`, `makeFallback`,
+  `useSuggestion`, and `rollBackSettings` refuse an injection suite.
+  Before, choosing on either page changed the same feature's live model,
+  and the injection page's suggestion weighed attacks alone.
+- The hub no longer gives an injection suite its own card; its line
+  ("Under attack") is on the base feature's card.
+- In the example app, Demo Quick follows some hijacks, so the board
+  shows a model that's cheaper but easier to attack.
 
 ## 0.9.0 - 2026-10-28
 

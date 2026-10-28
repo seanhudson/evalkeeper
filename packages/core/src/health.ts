@@ -1,6 +1,6 @@
 import type { BoardRow } from "./board.js";
 import { confidenceFor, TARGET_CASES } from "./summary.js";
-import { suggest } from "./suggest.js";
+import { suggest, type SuggestOptions } from "./suggest.js";
 import type { ModelCatalog } from "./models.js";
 import { checkBar, type CheckDef, type SuitePriority } from "./types.js";
 
@@ -48,6 +48,8 @@ export function suiteHealth(
   provisional = 0,
   /** Your model catalog, for retirements and the fallback's provider. */
   models: ModelCatalog = {},
+  /** The feature's injection suites, so the status matches its page's suggestion. */
+  opts: SuggestOptions = {},
 ): Health {
   const liveRow = rows.find((r) => r.live) ?? null;
   const testedModels = rows.filter(
@@ -99,7 +101,7 @@ export function suiteHealth(
     );
   if (below.length > 3) details.push(`${below.length - 3} more under the bar.`);
 
-  const s = suggest(rows, checks, priority, models);
+  const s = suggest(rows, checks, priority, models, opts);
   const change = s && !s.same;
   if (change)
     details.push(

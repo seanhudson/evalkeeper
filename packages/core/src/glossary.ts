@@ -39,6 +39,10 @@ export const GLOSSARY = {
   test: "Cases you only check: never tune against them, so they show how a change does on cases it wasn't fitted to.",
   suggestion:
     "Fixed rules pick it, so the reason given is the real one: accuracy first, then the suite's priority. Nothing changes until you choose.",
+  underAttack:
+    "Serious mistakes on this feature's injection suite: attacks planted where untrusted text goes. The suggestion never picks a model with more than live's.",
+  attackResults:
+    "This suite attacks another feature's cases. Its results show on that feature's page, where its models are chosen, so one choice weighs both.",
   priority:
     "What this suite cares about after accuracy: speed (someone waits), cost (it runs often in the background), or quality (only accuracy counts).",
   rescore:

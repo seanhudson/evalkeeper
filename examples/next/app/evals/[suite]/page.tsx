@@ -3,7 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   FAVOR_TEXT,
+  attackMistakes,
+  attacksFrom,
   checkBar,
+  isInjectionSuite,
   meanCalibrationError,
   money,
   probabilityQuality,
@@ -70,20 +73,33 @@ export default async function SuitePage({
   if (!operation) notFound();
   // The board and the settings load together: on a remote database each
   // waits on round trips, so one after the other doubles the wait.
-  const [b, [history, liveSettings], inInstructions] = await Promise.all([
-    runner.board(key),
-    // Records a deploy if the instructions changed under the live
-    // settings, before reading them.
-    settings
-      .syncPrompt(operation)
-      .then(() =>
-        Promise.all([settings.history(operation), settings.current(operation)]),
-      ),
-    runner.casesInInstructions(key),
-  ]);
+  const [b, attackBoards, [history, liveSettings], inInstructions] =
+    await Promise.all([
+      runner.board(key),
+      // Injection suites that attack this feature: their results count here.
+      runner.attackBoards(key),
+      // Records a deploy if the instructions changed under the live
+      // settings, before reading them.
+      settings
+        .syncPrompt(operation)
+        .then(() =>
+          Promise.all([
+            settings.history(operation),
+            settings.current(operation),
+          ]),
+        ),
+      runner.casesInInstructions(key),
+    ]);
   const { suite, rows } = b;
-  const s = suggest(rows, suite.checks, suite.priority, MODELS);
-  const testing = rows.some((r) => r.testing);
+  const attacks = attacksFrom(attackBoards);
+  // An injection suite's models are chosen on its base suite's page.
+  const choosesHere = !isInjectionSuite(suite);
+  const s = choosesHere
+    ? suggest(rows, suite.checks, suite.priority, MODELS, { attacks })
+    : null;
+  const testing =
+    rows.some((r) => r.testing) ||
+    attackBoards.some((a) => a.rows.some((r) => r.testing));
   // What testing each model would cost now, counting answers it would reuse.
   const estimates = new Map(
     await Promise.all(
@@ -95,6 +111,22 @@ export default async function SuitePage({
               reasoningEffort: r.effort,
             }),
           ] as const,
+      ),
+    ),
+  );
+  // What testing each untested model against the attacks would cost.
+  const attackEstimates = new Map(
+    await Promise.all(
+      attackBoards.flatMap((a) =>
+        rows
+          .filter((r) => !r.variant)
+          .map(
+            async (r) =>
+              [
+                `${a.suite.key}|${r.key}`,
+                await runner.estimateRun(a.suite.key, r.model, "ALL", 1),
+              ] as const,
+          ),
       ),
     ),
   );
@@ -112,6 +144,27 @@ export default async function SuitePage({
           <InfoTip term="priority" />
         </p>
       </div>
+
+      {isInjectionSuite(suite) && (
+        <Card className="space-y-2">
+          <h2 className="font-semibold">
+            Models are chosen on {suite.base.label}
+            <InfoTip term="attackResults" />
+          </h2>
+          <p className="readable text-sm text-muted">
+            This suite tests the same feature as {suite.base.label}, so one
+            choice of model serves both. Its results show there as Under attack,
+            and the suggestion there never picks a model with more serious
+            mistakes under attack than live.
+          </p>
+          <Link
+            href={evalsPath(suite.base.key)}
+            className="inline-block text-sm text-accent hover:underline"
+          >
+            Choose models on {suite.base.label}
+          </Link>
+        </Card>
+      )}
 
       {/* Shown when nothing would change too, so a higher score that
           isn't enough to switch for comes with its reason. */}
@@ -202,6 +255,13 @@ export default async function SuitePage({
                     Serious mistakes
                   </Tip>
                 </th>
+                {attackBoards.length > 0 && (
+                  <th className="p-3 font-normal">
+                    <Tip term="underAttack" side="bottom">
+                      Under attack
+                    </Tip>
+                  </th>
+                )}
                 <th className="p-3 font-normal">
                   <Tip term="time" side="bottom" align="end">
                     Time
@@ -319,6 +379,26 @@ export default async function SuitePage({
                   <td className="p-3 tabular-nums">
                     {r.test ? seriousMistakes(r, suite.checks) : "—"}
                   </td>
+                  {attackBoards.length > 0 && (
+                    <td className="p-3">
+                      <div className="flex flex-col gap-1">
+                        {attackBoards.map((a) => (
+                          <UnderAttack
+                            key={a.suite.key}
+                            attackSuite={a.suite.key}
+                            attackLabel={a.suite.label}
+                            row={a.rows.find((x) => x.key === r.key)}
+                            mistakes={attackMistakes(r.key, attacksFrom([a]))}
+                            model={r.model}
+                            variant={r.variant}
+                            estimate={attackEstimates.get(
+                              `${a.suite.key}|${r.key}`,
+                            )}
+                          />
+                        ))}
+                      </div>
+                    </td>
+                  )}
                   <td className="p-3 tabular-nums">
                     {r.test ? seconds(r.test.avgMs) : "—"}
                   </td>
@@ -355,14 +435,14 @@ export default async function SuitePage({
                   <td className="p-3">
                     <div className="flex flex-col items-end gap-0.5">
                       <div className="flex justify-end gap-2">
-                        {r.canMakeFallback && (
+                        {choosesHere && r.canMakeFallback && (
                           <form action={makeFallback}>
                             <input type="hidden" name="suite" value={key} />
                             <input type="hidden" name="model" value={r.model} />
                             <Submit variant="quiet">Make fallback</Submit>
                           </form>
                         )}
-                        {!r.live && r.canMakeLive && (
+                        {choosesHere && !r.live && r.canMakeLive && (
                           <form action={makeLive}>
                             <input type="hidden" name="suite" value={key} />
                             <input type="hidden" name="model" value={r.model} />
@@ -412,13 +492,15 @@ export default async function SuitePage({
         </Card>
       </section>
 
-      <SettingsHistory
-        suite={key}
-        entries={history}
-        liveId={liveSettings.version?.id ?? null}
-        label={(m) => MODELS[m]?.label ?? m}
-        defaults={liveSettings.settings}
-      />
+      {choosesHere && (
+        <SettingsHistory
+          suite={key}
+          entries={history}
+          liveId={liveSettings.version?.id ?? null}
+          label={(m) => MODELS[m]?.label ?? m}
+          defaults={liveSettings.settings}
+        />
+      )}
 
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">
@@ -532,5 +614,74 @@ function EstimateNote({
     >
       <span className="whitespace-nowrap text-xs text-muted">{text}</span>
     </Tip>
+  );
+}
+
+/**
+ * A model's serious mistakes on one injection suite, linked to that test,
+ * or a button to test it there. Out of date and failed tests say so: the
+ * suggestion counts only current, complete ones.
+ */
+function UnderAttack({
+  attackSuite,
+  attackLabel,
+  row,
+  mistakes,
+  model,
+  variant,
+  estimate,
+}: {
+  attackSuite: string;
+  attackLabel: string;
+  row:
+    | {
+        key: string;
+        testing: boolean;
+        test: { runId: string; stale: boolean; failedAnswers: number } | null;
+      }
+    | undefined;
+  mistakes: number | null;
+  model: string;
+  variant: boolean;
+  estimate:
+    { answers: number; reused: number; costUsd: number | null } | undefined;
+}) {
+  if (row?.testing)
+    return (
+      <span role="status" title="Testing" className="inline-flex text-accent">
+        <Spinner />
+      </span>
+    );
+  if (row?.test)
+    return (
+      <Link
+        href={evalsPath(attackSuite, "runs", row.test.runId)}
+        title={attackLabel}
+        className="tabular-nums"
+      >
+        {mistakes ?? "—"}
+        {row.test.stale
+          ? " · out of date"
+          : row.test.failedAnswers
+            ? " · answers failed"
+            : ""}
+      </Link>
+    );
+  // Settings rows are tested on the base suite only.
+  if (variant) return <span className="text-muted">—</span>;
+  return (
+    <form action={testModel} className="flex flex-col items-start gap-0.5">
+      <input type="hidden" name="suite" value={attackSuite} />
+      <input type="hidden" name="model" value={model} />
+      <Tip
+        control
+        id={`attack-${attackSuite}-${row?.key ?? model}`}
+        text={`Test this model on ${attackLabel}, every attack case in use.`}
+        side="bottom"
+      >
+        <Submit variant="quiet">Test attacks</Submit>
+      </Tip>
+      <EstimateNote id={`attack-${attackSuite}-${model}`} estimate={estimate} />
+    </form>
   );
 }

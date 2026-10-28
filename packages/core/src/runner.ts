@@ -38,7 +38,7 @@ import {
 import { SCHEDULED } from "./weekly.js";
 import { confirmedLabel, isProvisional } from "./labels.js";
 export { confirmedLabel, isProvisional };
-import type { AnySuite, CheckResult } from "./types.js";
+import { injectionSuitesOf, type AnySuite, type CheckResult } from "./types.js";
 import { at } from "./util.js";
 import { mustGet } from "./util.js";
 
@@ -1132,11 +1132,25 @@ export function createRunner(opts: RunnerOptions) {
     };
   }
 
+  /**
+   * The boards of the injection suites that attack a suite, for the base
+   * suite's page and its suggestion (`attacksFrom`). Empty when nothing
+   * attacks it.
+   */
+  async function attackBoards(suiteKey: string) {
+    return Promise.all(
+      injectionSuitesOf(opts.suites, suiteOrThrow(suiteKey).key).map((s) =>
+        board(s.key),
+      ),
+    );
+  }
+
   return {
     startDriftCheck,
     runDriftCheck,
     draftFromActivity,
     board,
+    attackBoards,
     suiteOrThrow,
     casesFor,
     estimateRun,

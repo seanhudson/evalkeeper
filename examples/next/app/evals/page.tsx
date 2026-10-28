@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
+  attackMistakes,
+  attacksFrom,
   attention,
   isInjectionSuite,
   perAnswer,
@@ -52,8 +54,14 @@ export default async function EvalsHub() {
   const down = thumbs.reduce((t, s) => t + s.down, 0);
   const waiting = thumbs.reduce((t, s) => t + s.open, 0);
   const flagged = thumbs.filter((s) => s.alert).length;
+  // An injection suite shows on its base suite's card, not its own.
+  const attacksOn = (key: string) =>
+    boards.filter((x) => isInjectionSuite(x.suite) && x.suite.base.key === key);
+  const cards = boards
+    .map((b, i) => ({ b, i }))
+    .filter(({ b }) => !isInjectionSuite(b.suite));
   const needs = attention(
-    boards.map((b) => ({
+    cards.map(({ b }) => ({
       key: b.suite.key,
       label: b.suite.label,
       rows: b.rows,
@@ -124,9 +132,10 @@ export default async function EvalsHub() {
           Suites
           <InfoTip term="suites" />
         </h2>
-        {boards.length === 0 && <NoSuites />}
+        {cards.length === 0 && <NoSuites />}
         <div className="space-y-4">
-          {boards.map((b, i) => {
+          {cards.map(({ b, i }) => {
+            const attacked = attacksOn(b.suite.key);
             const h = suiteHealth(
               b.rows,
               b.suite.checks,
@@ -134,12 +143,14 @@ export default async function EvalsHub() {
               b.cases,
               b.provisional,
               MODELS,
+              { attacks: attacksFrom(attacked) },
             );
             const [history, current] = histories[i] ?? [[], null];
             return (
               <SuiteCard
                 key={b.suite.key}
                 board={b}
+                attacked={attacked}
                 health={h}
                 history={history}
                 current={current}
@@ -224,16 +235,19 @@ const scoreTone = (rate: number) =>
 
 /**
  * One feature on the hub: its live version and models, what the live
- * model costs and how fast it is, its latest test, what needs a look, and
- * its settings history.
+ * model costs and how fast it is, its latest test, how it does under
+ * attack, what needs a look, and its settings history.
  */
 function SuiteCard({
   board: b,
+  attacked,
   health: h,
   history,
   current,
 }: {
   board: Board;
+  /** The injection suites that attack this feature. */
+  attacked: Board[];
   health: ReturnType<typeof suiteHealth>;
   history: HistoryEntry[];
   current: { settings: Settings; version: SettingsVersion | null } | null;
@@ -328,39 +342,57 @@ function SuiteCard({
         </ul>
       )}
 
-      {isInjectionSuite(b.suite) ? (
-        <p className="readable text-sm text-muted">
-          Shares {b.suite.base.label}&apos;s settings and versions history.
-        </p>
-      ) : (
-        s && (
-          <details className="group/history relative rounded-md bg-tint">
-            <summary className="flex list-none items-center justify-between gap-2 p-3 text-sm font-medium">
-              Versions
-              <span className="flex items-center gap-1 text-xs font-normal text-muted">
-                <span className="font-medium text-ink">
-                  v{version?.number ?? 1}
-                </span>{" "}
-                {since ? `live since ${day(since)}` : "defaults from code"} ·{" "}
-                {versions} version{versions === 1 ? "" : "s"}
-                <ChevronDown
-                  aria-hidden
-                  className="h-4 w-4 transition-transform group-open/history:rotate-180"
-                />
+      {attacked.map((a) => {
+        const n = live ? attackMistakes(live.key, attacksFrom([a])) : null;
+        return (
+          <p key={a.suite.key} className="relative text-sm">
+            Under attack
+            <InfoTip term="underAttack" />:{" "}
+            {n === null ? (
+              <span className="text-muted">live model not tested</span>
+            ) : (
+              <span className={n ? "font-semibold text-bad" : "text-good"}>
+                {n} serious {n === 1 ? "mistake" : "mistakes"}
               </span>
-            </summary>
-            <div className="px-3 pb-3">
-              <HistoryEntries
-                suite={b.suite.key}
-                entries={history}
-                liveId={version?.id ?? null}
-                label={label}
-                defaults={s}
-                plain
+            )}{" "}
+            · {a.cases} attack cases ·{" "}
+            <Link
+              href={evalsPath(a.suite.key)}
+              className="text-accent hover:underline"
+            >
+              {a.suite.label}
+            </Link>
+          </p>
+        );
+      })}
+
+      {s && (
+        <details className="group/history relative rounded-md bg-tint">
+          <summary className="flex list-none items-center justify-between gap-2 p-3 text-sm font-medium">
+            Versions
+            <span className="flex items-center gap-1 text-xs font-normal text-muted">
+              <span className="font-medium text-ink">
+                v{version?.number ?? 1}
+              </span>{" "}
+              {since ? `live since ${day(since)}` : "defaults from code"} ·{" "}
+              {versions} version{versions === 1 ? "" : "s"}
+              <ChevronDown
+                aria-hidden
+                className="h-4 w-4 transition-transform group-open/history:rotate-180"
               />
-            </div>
-          </details>
-        )
+            </span>
+          </summary>
+          <div className="px-3 pb-3">
+            <HistoryEntries
+              suite={b.suite.key}
+              entries={history}
+              liveId={version?.id ?? null}
+              label={label}
+              defaults={s}
+              plain
+            />
+          </div>
+        </details>
       )}
     </Card>
   );

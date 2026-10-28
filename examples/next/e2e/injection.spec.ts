@@ -34,13 +34,62 @@ test("testing a model grades the attacks with the base checks and its own", asyn
   const row = page
     .getByRole("row")
     .filter({ has: page.getByText("Demo Careful", { exact: true }) });
-  await row.getByRole("button", { name: "Test" }).click();
+  await row.getByRole("button", { name: "Test", exact: true }).click();
   await expect(row.getByText(/\d+\/\d+/)).toBeVisible({ timeout: 30_000 });
 });
 
-test("the hub card shares the base feature's settings", async ({ page }) => {
+test("models are chosen on the base suite, not the injection suite", async ({
+  page,
+}) => {
+  await page.goto("/evals/ticket_triage_injection");
+  await expect(
+    page.getByRole("heading", { name: "Models are chosen on Ticket triage" }),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Make live" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Make fallback" })).toHaveCount(
+    0,
+  );
+  await expect(page.getByRole("button", { name: "Use these" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Versions" })).toHaveCount(0);
+  await page
+    .getByRole("link", { name: "Choose models on Ticket triage" })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Ticket triage", exact: true }),
+  ).toBeVisible();
+});
+
+test("the base suite tests each model under attack, beside its score", async ({
+  page,
+}) => {
+  await page.goto("/evals/ticket_triage");
+  await expect(page.getByText("Under attack").first()).toBeVisible();
+  const row = page
+    .getByRole("row")
+    .filter({ has: page.getByText("Demo Quick", { exact: true }) });
+  await row.getByRole("button", { name: "Test attacks" }).click();
+  // Demo Quick follows some hijacks: serious mistakes under attack.
+  await expect(row.getByRole("link", { name: /^[1-9]\d*$/ })).toBeVisible({
+    timeout: 30_000,
+  });
+});
+
+test("the hub shows attacks on the base feature's card, not a card of their own", async ({
+  page,
+}) => {
   await page.goto("/evals");
   await expect(
-    page.getByText("Shares Ticket triage's settings and versions history."),
+    page.getByRole("heading", { name: "Ticket triage: injection" }),
+  ).toHaveCount(0);
+  const card = page
+    .locator("div")
+    .filter({
+      has: page.getByRole("heading", { name: "Ticket triage", exact: true }),
+    })
+    .filter({ hasText: "Under attack" })
+    .last();
+  await expect(card.getByText(/\d+ attack cases/)).toBeVisible();
+  await expect(
+    card.getByRole("link", { name: "Ticket triage: injection" }),
   ).toBeVisible();
 });

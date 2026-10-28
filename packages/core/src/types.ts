@@ -352,6 +352,24 @@ export function isInjectionSuite(
   return "base" in suite && "attackCase" in suite;
 }
 
+/**
+ * The injection suites that attack a suite: the ones whose base it is.
+ * Their results belong with the base suite's, since both test the same
+ * feature and one choice of model serves both.
+ *
+ * @param suites - Every registered suite.
+ * @param baseKey - The base suite's key.
+ */
+export function injectionSuitesOf(
+  suites: readonly AnySuite[],
+  baseKey: string,
+): (AnySuite & { base: AnySuite })[] {
+  return suites.filter(
+    (s): s is AnySuite & { base: AnySuite } =>
+      isInjectionSuite(s) && s.base.key === baseKey,
+  );
+}
+
 /** Where a zod issue sits, in plain words: "facts, item 2, name". */
 function issuePath(path: readonly (string | number)[]): string {
   return path

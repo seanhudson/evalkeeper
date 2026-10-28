@@ -40,7 +40,7 @@ export const GLOSSARY = {
   suggestion:
     "Fixed rules pick it, so the reason given is the real one: accuracy first, then the suite's priority. Nothing changes until you choose.",
   underAttack:
-    "Serious mistakes on this feature's injection suite: attacks planted where untrusted text goes. The suggestion never picks a model with more than live's.",
+    "Serious mistakes on attacks planted where untrusted text goes. Testing a model runs them with its cases; the suggestion never picks one with more than live's.",
   attackResults:
     "This suite attacks another feature's cases. Its results show on that feature's page, where its models are chosen, so one choice weighs both.",
   priority:

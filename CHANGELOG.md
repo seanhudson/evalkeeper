@@ -9,6 +9,14 @@ version may change an interface, and its entry says how to update.
 
 ### Added
 
+- One test of a model covers a feature's attacks too: `runner.createTest`
+  brings the feature's attack cases in step with its confirmed answers
+  (`injectionCases`), then makes a run for its cases and one for each
+  injection suite with cases; `runner.estimateTest` gives the whole
+  test's cost. The pages' Test and "Test every model" use them, and the
+  weekly check brings attack cases in step before its quick sets, so
+  nobody makes attack cases or tests attacks separately.
+
 - `@crowandraven/evalkeeper/react`: the pieces Evalkeeper's screens are
   drawn from (`Card`, `Chip`, `Link`, `BackLink`, `Score`, `Submit`,
   `IconSubmit`, `Spinner`, `Tip`, `InfoTip`, `Button`, `TextInput`,
@@ -25,6 +33,13 @@ version may change an interface, and its entry says how to update.
   global CSS so Tailwind styles the screens.
 
 ### Changed
+
+- The model table's "Under attack" column shows only once the feature
+  has attack cases, as each model's serious mistakes under attack (or a
+  dash until its Test runs them), with no "Test attacks" button; each
+  model's estimate covers both. The hub's card says "Under attack: N
+  serious mistakes on M attacks" only then, and drops its "Compare
+  models" link, which went where the card does.
 
 - One package: the Prisma stores and the AI SDK helpers are now entry
   points of `@crowandraven/evalkeeper`, at `/prisma` and `/ai-sdk`, with

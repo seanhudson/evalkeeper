@@ -39,6 +39,7 @@ import { SCHEDULED } from "./weekly.js";
 import { confirmedLabel, isProvisional } from "./labels.js";
 export { confirmedLabel, isProvisional };
 import { injectionSuitesOf, type AnySuite, type CheckResult } from "./types.js";
+import { injectionCases } from "./suites/injection.js";
 import { at } from "./util.js";
 import { mustGet } from "./util.js";
 
@@ -236,6 +237,27 @@ export async function mapLimit<T, R>(
     Array.from({ length: Math.min(limit, items.length) }, worker),
   );
   return results;
+}
+
+/** Several estimates as one; the cost is unknown if any part's is. */
+function totalOf(
+  parts: {
+    cases: number;
+    answers: number;
+    reused: number;
+    costUsd: number | null;
+  }[],
+) {
+  return parts.reduce<(typeof parts)[number]>(
+    (t, p) => ({
+      cases: t.cases + p.cases,
+      answers: t.answers + p.answers,
+      reused: t.reused + p.reused,
+      costUsd:
+        t.costUsd === null || p.costUsd === null ? null : t.costUsd + p.costUsd,
+    }),
+    { cases: 0, answers: 0, reused: 0, costUsd: 0 },
+  );
 }
 
 /**
@@ -1133,6 +1155,77 @@ export function createRunner(opts: RunnerOptions) {
   }
 
   /**
+   * The injection suites that attack a suite, with their attack cases
+   * first brought in step with its confirmed answers (`injectionCases`):
+   * the ones with cases in use for `set`.
+   */
+  async function attacksReady(suiteKey: string, set: EvalSet) {
+    const out: AnySuite[] = [];
+    for (const a of injectionSuitesOf(
+      opts.suites,
+      suiteOrThrow(suiteKey).key,
+    )) {
+      // Trust boundary: injectionSuitesOf returns only suites made by
+      // injectionSuite, which is what injectionCases takes.
+      await injectionCases(
+        store,
+        a as unknown as Parameters<typeof injectionCases>[1],
+      );
+      if ((await casesFor(a.key, set)).length) out.push(a);
+    }
+    return out;
+  }
+
+  /**
+   * A test of a model on a feature, as people start one: the suite's cases
+   * and, when injection suites attack it, their attack cases too, kept in
+   * step with the suite's confirmed answers first. One run per suite; run
+   * each with `runEval`. `createRun` tests one suite alone.
+   *
+   * @param args - As for `createRun`, for the feature's suite.
+   * @returns The runs, the suite's first, and what the whole test costs.
+   */
+  async function createTest(args: Parameters<typeof createRun>[0]) {
+    const attacks = await attacksReady(args.suite, args.set ?? "ALL");
+    const made = [await createRun(args)];
+    for (const a of attacks)
+      made.push(await createRun({ ...args, suite: a.key }));
+    return {
+      runs: made.map((m) => m.run),
+      estimate: totalOf(made.map((m) => m.estimate)),
+    };
+  }
+
+  /**
+   * What a test of a model on a feature would cost now (`createTest`): the
+   * suite's cases and its attack cases together. Doesn't sync attack
+   * cases; it counts the ones in use.
+   *
+   * @param suiteKey - The feature's suite.
+   * @param model - The model to test.
+   * @param set - Which cases.
+   * @param repeats - How many times each.
+   * @param o - As for `estimateRun`.
+   */
+  async function estimateTest(
+    suiteKey: string,
+    model: string,
+    set: EvalSet,
+    repeats: number,
+    o: Parameters<typeof estimateRun>[4] = {},
+  ) {
+    const suites = [
+      suiteOrThrow(suiteKey).key,
+      ...injectionSuitesOf(opts.suites, suiteKey).map((a) => a.key),
+    ];
+    return totalOf(
+      await Promise.all(
+        suites.map((k) => estimateRun(k, model, set, repeats, o)),
+      ),
+    );
+  }
+
+  /**
    * The boards of the injection suites that attack a suite, for the base
    * suite's page and its suggestion (`attacksFrom`). Empty when nothing
    * attacks it.
@@ -1151,6 +1244,8 @@ export function createRunner(opts: RunnerOptions) {
     draftFromActivity,
     board,
     attackBoards,
+    createTest,
+    estimateTest,
     suiteOrThrow,
     casesFor,
     estimateRun,

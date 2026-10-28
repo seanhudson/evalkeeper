@@ -322,43 +322,40 @@ function SuiteCard({
         )}
       </div>
 
-      {s && (
-        <p className="text-sm text-muted">
-          <span className="font-semibold text-ink">{label(s.model)}</span>
-          {s.fallbackModel ? (
+      {/* The models and how live does, read together. */}
+      <div className="space-y-1">
+        {s && (
+          <p className="text-sm text-muted">
+            <span className="font-semibold text-ink">{label(s.model)}</span>
+            {s.fallbackModel ? (
+              <>
+                {" "}
+                · fallback{" "}
+                <span className="font-semibold text-ink">
+                  {label(s.fallbackModel)}
+                </span>
+              </>
+            ) : (
+              " · no fallback"
+            )}
+            {s.reasoningEffort ? ` · reasoning ${s.reasoningEffort}` : ""}
+          </p>
+        )}
+
+        <p className="text-sm">
+          {t ? (
             <>
-              {" "}
-              · fallback{" "}
-              <span className="font-semibold text-ink">
-                {label(s.fallbackModel)}
+              Score{" "}
+              <span className={`font-semibold ${scoreTone(t.right / t.total)}`}>
+                {pct(t.right / t.total)}
               </span>
             </>
           ) : (
-            " · no fallback"
-          )}
-          {s.reasoningEffort ? ` · reasoning ${s.reasoningEffort}` : ""}
+            "Live model not tested yet"
+          )}{" "}
+          · {b.cases} cases · {h.testedModels} models tested
         </p>
-      )}
-
-      <p className="text-sm">
-        {t ? (
-          <>
-            Score{" "}
-            <span className={`font-semibold ${scoreTone(t.right / t.total)}`}>
-              {pct(t.right / t.total)}
-            </span>
-          </>
-        ) : (
-          "Live model not tested yet"
-        )}{" "}
-        · {b.cases} cases · {h.testedModels} models tested ·{" "}
-        <Link
-          href={evalsPath(app, b.suite.key)}
-          className="relative text-accent hover:underline"
-        >
-          Compare models
-        </Link>
-      </p>
+      </div>
 
       {h.details.length > 0 && (
         <ul className="readable list-disc space-y-1 pl-5 text-sm text-muted">
@@ -368,29 +365,29 @@ function SuiteCard({
         </ul>
       )}
 
-      {attacked.map((a) => {
-        const n = live ? attackMistakes(live.key, attacksFrom([a])) : null;
-        return (
-          <p key={a.suite.key} className="relative text-sm">
-            Under attack
-            <InfoTip term="underAttack" />:{" "}
-            {n === null ? (
-              <span className="text-muted">live model not tested</span>
-            ) : (
-              <span className={n ? "font-semibold text-bad" : "text-good"}>
-                {n} serious {n === 1 ? "mistake" : "mistakes"}
-              </span>
-            )}{" "}
-            · {a.cases} attack cases ·{" "}
-            <Link
-              href={evalsPath(app, a.suite.key)}
-              className="text-accent hover:underline"
-            >
-              {a.suite.label}
-            </Link>
-          </p>
-        );
-      })}
+      {/* Once the feature has attack cases (a test makes them). */}
+      {attacked
+        .filter((a) => a.cases > 0)
+        .map((a) => {
+          const n = live ? attackMistakes(live.key, attacksFrom([a])) : null;
+          return (
+            <p key={a.suite.key} className="relative text-sm">
+              Under attack
+              <InfoTip term="underAttack" />:{" "}
+              {n === null ? (
+                <span className="text-muted">not tested yet</span>
+              ) : (
+                <Link
+                  href={evalsPath(app, a.suite.key)}
+                  className={`hover:underline ${n ? "font-semibold text-bad" : "text-good"}`}
+                >
+                  {n} serious {n === 1 ? "mistake" : "mistakes"}
+                </Link>
+              )}{" "}
+              on {a.cases} {a.cases === 1 ? "attack" : "attacks"}
+            </p>
+          );
+        })}
 
       {s && (
         <details className="group/history relative rounded-md bg-tint">

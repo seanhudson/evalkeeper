@@ -69,36 +69,24 @@ export async function loadSuitePage(app: EvalAppConfig, key: string) {
   const testing =
     rows.some((r) => r.testing) ||
     attackBoards.some((a) => a.rows.some((r) => r.testing));
-  // What testing each model would cost now, counting answers it would reuse.
+  // What testing each model would cost now, attack cases included,
+  // counting answers it would reuse.
   const estimates = new Map(
     await Promise.all(
       rows.map(
         async (r) =>
           [
             r.key,
-            await app.runner.estimateRun(key, r.model, "ALL", 1, {
+            await app.runner.estimateTest(key, r.model, "ALL", 1, {
               reasoningEffort: r.effort,
             }),
           ] as const,
       ),
     ),
   );
-  // What testing each untested model against the attacks would cost.
-  const attackEstimates = new Map(
-    await Promise.all(
-      attackBoards.flatMap((a) =>
-        rows
-          .filter((r) => !r.variant)
-          .map(
-            async (r) =>
-              [
-                `${a.suite.key}|${r.key}`,
-                await app.runner.estimateRun(a.suite.key, r.model, "ALL", 1),
-              ] as const,
-          ),
-      ),
-    ),
-  );
+  // Results under attack show once the feature has attack cases: a test
+  // makes them from its confirmed answers.
+  const showAttacks = attackBoards.some((a) => a.cases > 0);
   const live = rows.find((r) => r.live);
 
   return {
@@ -117,7 +105,7 @@ export async function loadSuitePage(app: EvalAppConfig, key: string) {
     choosesHere,
     testing,
     estimates,
-    attackEstimates,
+    showAttacks,
     live,
   };
 }
@@ -268,7 +256,7 @@ export function ModelTable({ data }: { data: SuitePageData }) {
     attackBoards,
     choosesHere,
     estimates,
-    attackEstimates,
+    showAttacks,
     live,
   } = data;
   return (
@@ -304,7 +292,7 @@ export function ModelTable({ data }: { data: SuitePageData }) {
                     Serious mistakes
                   </Tip>
                 </th>
-                {attackBoards.length > 0 && (
+                {showAttacks && (
                   <th className="p-3 font-normal">
                     <Tip term="underAttack" side="bottom">
                       Under attack
@@ -428,7 +416,7 @@ export function ModelTable({ data }: { data: SuitePageData }) {
                   <td className="p-3 tabular-nums">
                     {r.test ? seriousMistakes(r, suite.checks) : "—"}
                   </td>
-                  {attackBoards.length > 0 && (
+                  {showAttacks && (
                     <td className="p-3">
                       <div className="flex flex-col gap-1">
                         {attackBoards.map((a) => (
@@ -439,11 +427,6 @@ export function ModelTable({ data }: { data: SuitePageData }) {
                             attackLabel={a.suite.label}
                             row={a.rows.find((x) => x.key === r.key)}
                             mistakes={attackMistakes(r.key, attacksFrom([a]))}
-                            model={r.model}
-                            variant={r.variant}
-                            estimate={attackEstimates.get(
-                              `${a.suite.key}|${r.key}`,
-                            )}
                           />
                         ))}
                       </div>
@@ -695,8 +678,9 @@ function EstimateNote({
 
 /**
  * A model's serious mistakes on one injection suite, linked to that test,
- * or a button to test it there. Out of date and failed tests say so: the
- * suggestion counts only current, complete ones.
+ * or a dash until the model's Test runs the attacks along with its cases.
+ * Out of date and failed tests say so: the suggestion counts only
+ * current, complete ones.
  */
 function UnderAttack({
   app,
@@ -704,9 +688,6 @@ function UnderAttack({
   attackLabel,
   row,
   mistakes,
-  model,
-  variant,
-  estimate,
 }: {
   app: EvalAppConfig;
   attackSuite: string;
@@ -719,10 +700,6 @@ function UnderAttack({
       }
     | undefined;
   mistakes: number | null;
-  model: string;
-  variant: boolean;
-  estimate:
-    { answers: number; reused: number; costUsd: number | null } | undefined;
 }) {
   if (row?.testing)
     return (
@@ -745,24 +722,6 @@ function UnderAttack({
             : ""}
       </Link>
     );
-  // Settings rows are tested on the base suite only.
-  if (variant) return <span className="text-muted">—</span>;
-  return (
-    <form
-      action={app.actions.testModel}
-      className="flex flex-col items-start gap-0.5"
-    >
-      <input type="hidden" name="suite" value={attackSuite} />
-      <input type="hidden" name="model" value={model} />
-      <Tip
-        control
-        id={`attack-${attackSuite}-${row?.key ?? model}`}
-        text={`Test this model on ${attackLabel}, every attack case in use.`}
-        side="bottom"
-      >
-        <Submit variant="quiet">Test attacks</Submit>
-      </Tip>
-      <EstimateNote id={`attack-${attackSuite}-${model}`} estimate={estimate} />
-    </form>
-  );
+  // Not tested yet: the model's Test runs the attacks with its cases.
+  return <span className="text-muted">—</span>;
 }

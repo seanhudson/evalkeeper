@@ -52,15 +52,21 @@ function choosingSuite(form: FormData) {
 const attacksOn = async (suiteKey: string) =>
   attacksFrom(await runner.attackBoards(suiteKey));
 
+/** Answers a test's runs one after another: the feature's, then its attacks'. */
+async function runAll(runs: { id: string }[]) {
+  for (const r of runs) await runner.runEval(r.id);
+}
+
 export async function testModel(form: FormData) {
   await requireAdmin();
   const suite = suiteFrom(form);
   const model = formText(form, "model");
   if (!modelsFor(suite.operation).includes(model))
     throw new Error("Unknown model");
-  const { run } = await runner.createRun({ suite: suite.key, model });
+  // The feature's cases and its attack cases, in one test.
+  const { runs } = await runner.createTest({ suite: suite.key, model });
   // Answers come back after the response; the page refreshes until done.
-  after(() => runner.runEval(run.id));
+  after(() => runAll(runs));
   revalidatePath(evalsPath(suite.key));
 }
 
@@ -68,8 +74,8 @@ export async function testAll(form: FormData) {
   await requireAdmin();
   const suite = suiteFrom(form);
   for (const model of modelsFor(suite.operation)) {
-    const { run } = await runner.createRun({ suite: suite.key, model });
-    after(() => runner.runEval(run.id));
+    const { runs } = await runner.createTest({ suite: suite.key, model });
+    after(() => runAll(runs));
   }
   revalidatePath(evalsPath(suite.key));
 }

@@ -525,6 +525,71 @@ describe("a feature's attacks, with its base suite", () => {
   });
 });
 
+describe("one test of a feature, attacks included", () => {
+  it("makes the attack cases, then a run per suite, with one estimate", async () => {
+    const store = memoryStore();
+    for (const subject of ["Bug", "Billing"])
+      await store.createCase({
+        suite: "triage",
+        input: { subject, body: "Text." },
+        tags: [],
+        split: "DEV",
+        status: "ACTIVE",
+        source: "OWNER",
+        sourceRef: null,
+        note: null,
+        labels: [
+          {
+            kind: "EXPECTED",
+            status: "CONFIRMED",
+            value: { queue: subject.toLowerCase() },
+            raterRole: "OWNER",
+            raterId: "pat",
+            note: null,
+          },
+        ],
+      });
+    // Trust boundary: a registry holds suites of any shape.
+    const suites = [base, suite] as unknown as AnySuite[];
+    const runner = createRunner({
+      store,
+      suites,
+      models: { m: { label: "M", provider: "acme" } },
+      promptVersion: () => "v1",
+      route: () => ({ model: "m", fallbackModel: null, reasoningEffort: null }),
+      candidates: () => ({ models: ["m"] }),
+    });
+    // No attack cases yet: the test makes them first.
+    expect(await store.listCases(suite.key)).toEqual([]);
+    const { runs, estimate } = await runner.createTest({
+      suite: "triage",
+      model: "m",
+    });
+    expect(runs.map((r) => r.suite)).toEqual(["triage", "triage_injection"]);
+    const attacks = (await store.listCases(suite.key)).length;
+    expect(attacks).toBeGreaterThan(0);
+    expect(estimate.answers).toBe(2 + attacks);
+    expect((await runner.estimateTest("triage", "m", "ALL", 1)).answers).toBe(
+      2 + attacks,
+    );
+  });
+
+  it("tests the suite alone when nothing attacks it, or no attack has cases", async () => {
+    const store = memoryStore();
+    const runner = createRunner({
+      store,
+      suites: [base, suite],
+      models: { m: { label: "M", provider: "acme" } },
+      promptVersion: () => "v1",
+      route: () => ({ model: "m", fallbackModel: null, reasoningEffort: null }),
+      candidates: () => ({ models: ["m"] }),
+    });
+    // No confirmed answers, so no attack cases to test.
+    const { runs } = await runner.createTest({ suite: "triage", model: "m" });
+    expect(runs.map((r) => r.suite)).toEqual(["triage"]);
+  });
+});
+
 describe("INJECTION_ATTACKS", () => {
   it("has unique ids and covers every kind", () => {
     const ids = INJECTION_ATTACKS.map((a) => a.id);

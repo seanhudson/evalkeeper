@@ -1,5 +1,7 @@
 import "server-only";
-import { SUITES, runner } from ".";
+import { isInjectionSuite } from "@crowandraven/evalkeeper";
+import { injectionCases } from "@crowandraven/evalkeeper/suites";
+import { SUITES, runner, store } from ".";
 
 /**
  * The weekly check: each suite's quick set on its live model. `start`
@@ -10,6 +12,14 @@ import { SUITES, runner } from ".";
  * request.
  */
 export async function startWeeklyCheck(): Promise<string[]> {
+  // Attack cases follow the week's newly confirmed answers first.
+  for (const suite of SUITES)
+    if (isInjectionSuite(suite))
+      // Trust boundary: isInjectionSuite means injectionSuite made it.
+      await injectionCases(
+        store,
+        suite as unknown as Parameters<typeof injectionCases>[1],
+      );
   const ids: string[] = [];
   for (const suite of SUITES) {
     const id = await runner.startDriftCheck(suite.key);

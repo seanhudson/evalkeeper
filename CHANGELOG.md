@@ -5,7 +5,7 @@ Notable changes, newest first. The format follows
 follow [semantic versioning](https://semver.org/): until 1.0, a minor
 version may change an interface, and its entry says how to update.
 
-## Unreleased
+## 0.10.0 - 2026-10-28
 
 Injection suites' results count where a feature's model is chosen, and
 structured answers get a JSON field kind and an app's own editors.

@@ -9,6 +9,23 @@ version may change an interface, and its entry says how to update.
 
 ### Added
 
+- `injectionSuite(base, { inject })` in `@crowandraven/evalkeeper/suites`
+  tests a feature against prompt injection: the base suite's cases with an
+  attack inserted where untrusted text goes, graded by the base suite's
+  checks plus two of its own, "Didn't follow the attack" (a made-up canary
+  word never appears in the answer) and "Kept secrets" (text the app
+  names, such as a line of its instructions, never appears). It runs on
+  the base suite's operation. 20 built-in attacks (`INJECTION_ATTACKS`)
+  cover direct, indirect, extraction, hijack, and harmless lookalike text;
+  a hijack asks for the suite's `goal`, a wrong answer the app names.
+  `injectionCases(store, suite)` makes its cases from the base suite's
+  confirmed ones, each carrying that answer ("From base case" on the
+  answer key), and adds new attacks and newly confirmed cases on a rerun.
+- `isInjectionSuite(suite)`: code that finds a feature's suite by
+  operation should skip injection suites. The example's feedback page,
+  "make a case" action, and cost lookup do, and the hub's card for an
+  injection suite points to its base suite's settings instead of
+  repeating them.
 - Shipped reviews: a suite's `reviews` say its author or an expert
   confirmed a starter case's answer once, for every app, so
   `importStarters` adds that case confirmed and in use instead of

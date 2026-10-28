@@ -334,6 +334,20 @@ export function linesOf(form: FormData, name: string): string[] {
  */
 export type AnySuite = Suite<unknown, unknown, unknown>;
 
+/**
+ * Whether a suite is an injection suite (`injectionSuite` from
+ * `@crowandraven/evalkeeper/suites`): it runs on its base suite's
+ * operation, so code that finds a feature's suite by operation should
+ * skip it and find the base suite.
+ *
+ * @param suite - Any registered suite.
+ */
+export function isInjectionSuite(
+  suite: AnySuite,
+): suite is AnySuite & { base: AnySuite } {
+  return "base" in suite && "attackCase" in suite;
+}
+
 /** Where a zod issue sits, in plain words: "facts, item 2, name". */
 function issuePath(path: readonly (string | number)[]): string {
   return path

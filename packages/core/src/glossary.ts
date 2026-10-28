@@ -31,6 +31,8 @@ export const GLOSSARY = {
     "Proposed and not reviewed yet. Tests never grade against it until a person confirms it.",
   authorReviewed:
     "Confirmed by the suite's author, who checked this case once for every app that uses the suite. Your own confirmed answer replaces it.",
+  fromBaseCase:
+    "An attack case's answer, carried from the case it was made from and the person who confirmed that one. An attack shouldn't change the right answer.",
   expertReviewed:
     "Confirmed by an expert in what the suite judges, such as a crisis line counselor, once for every app that uses the suite. Your own confirmed answer replaces it.",
   dev: "Cases you tune against: change prompts and checks while looking at these.",

@@ -1,5 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { prismaStore } from "@crowandraven/evalkeeper-prisma";
+import { injectionCases } from "@crowandraven/evalkeeper/suites";
+import { triageInjection } from "../lib/suites/triageInjection";
 import { SUITES } from "../lib/suites";
 
 /**
@@ -11,6 +13,7 @@ const prisma = new PrismaClient();
 const store = prismaStore(prisma);
 
 for (const suite of SUITES) {
+  if (suite.key === triageInjection.key) continue;
   const existing = await store.listCases(suite.key);
   if (existing.length) continue;
   for (const s of suite.starter ?? [])
@@ -36,4 +39,7 @@ for (const suite of SUITES) {
     });
   console.log(`${suite.label}: ${suite.starter?.length ?? 0} cases`);
 }
+// Attack cases, from ticket triage's confirmed cases above.
+const attacks = await injectionCases(store, triageInjection, { perAttack: 2 });
+console.log(`${triageInjection.label}: ${attacks.added} cases`);
 await prisma.$disconnect();

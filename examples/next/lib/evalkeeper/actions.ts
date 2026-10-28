@@ -6,6 +6,7 @@ import {
   blindRating,
   caseFromFeedback,
   formText,
+  isInjectionSuite,
   leakNote,
   raterStatus,
   skipMark,
@@ -317,7 +318,9 @@ async function find(id: string) {
 export async function makeCase(form: FormData) {
   await requireAdmin();
   const f = await find(formText(form, "feedback"));
-  const suite = SUITES.find((s) => s.operation === f.operation);
+  const suite = SUITES.find(
+    (s) => s.operation === f.operation && !isInjectionSuite(s),
+  );
   const draft = suite ? caseFromFeedback(f, suite) : null;
   if (!draft || !suite) throw new Error("This rating can't become a case");
   const c = await store.createCase(draft);

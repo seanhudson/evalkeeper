@@ -21,6 +21,12 @@ export type ReviewLevel = "AUTHOR" | "EXPERT";
 export const AUTHOR_REVIEWED = "SUITE_AUTHOR";
 /** The `raterRole` on an answer an expert reviewed for the suite. */
 export const EXPERT_REVIEWED = "SUITE_EXPERT";
+/**
+ * The `raterRole` on an attack case's answer (see `injectionCases`),
+ * carried from the base case it was made from: an attack shouldn't change
+ * the right answer, so its confirmation is the base case's.
+ */
+export const FROM_BASE_CASE = "FROM_BASE_CASE";
 
 const ROLE: Record<ReviewLevel, string> = {
   AUTHOR: AUTHOR_REVIEWED,

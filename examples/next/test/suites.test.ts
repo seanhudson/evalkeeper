@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { describeSuiteContract } from "@crowandraven/evalkeeper/testing";
-import { wordPairs } from "@crowandraven/evalkeeper";
+import { isInjectionSuite, wordPairs } from "@crowandraven/evalkeeper";
 import { ticketTriage, TRIAGE_STARTERS } from "../lib/suites/ticketTriage";
 import {
   actionItems,
@@ -17,7 +17,8 @@ describeSuiteContract("the example's suites", SUITES);
 
 describe("every suite", () => {
   it("puts some starters in TEST, never all", () => {
-    for (const suite of SUITES) {
+    // An injection suite has none: its cases come from its base suite's.
+    for (const suite of SUITES.filter((s) => !isInjectionSuite(s))) {
       const test = (suite.starter ?? []).filter(
         (s) => s.split === "TEST",
       ).length;

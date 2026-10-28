@@ -10,7 +10,7 @@ test("the hub shows each suite and what needs attention", async ({ page }) => {
   await page.goto("/evals");
   await expect(page.getByRole("heading", { name: "Evals" })).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Ticket triage" }),
+    page.getByRole("heading", { name: "Ticket triage", exact: true }),
   ).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "Action items" }),

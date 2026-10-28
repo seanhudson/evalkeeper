@@ -6,8 +6,16 @@ import {
 } from "./actionItems";
 import { ticketRouting, routingTexts, routingVersion } from "./ticketRouting";
 import { ticketTriage, triageTexts, triageVersion } from "./ticketTriage";
+import { triageInjection } from "./triageInjection";
 
-export const SUITES: AnySuite[] = [ticketTriage, actionItems, ticketRouting];
+// An injection suite runs on its base suite's operation: list it after
+// the base, and find a feature's suite with !isInjectionSuite.
+export const SUITES: AnySuite[] = [
+  ticketTriage,
+  actionItems,
+  ticketRouting,
+  triageInjection,
+];
 export const SUITE_BY_KEY = Object.fromEntries(SUITES.map((s) => [s.key, s]));
 
 /** Each operation's instructions hash, so editing them marks tests old. */

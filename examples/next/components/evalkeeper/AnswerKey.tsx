@@ -7,6 +7,7 @@ import {
   type BoardRow,
   type CheckResult,
   EXPERT_REVIEWED,
+  FROM_BASE_CASE,
   isShippedReview,
 } from "@crowandraven/evalkeeper";
 import { addCase, editAnswer, retireCase } from "@/lib/evalkeeper/actions";
@@ -175,13 +176,18 @@ function CaseItem({
     c.labels.find((l) => l.status === "CONFIRMED") ??
     c.labels.find((l) => l.status === "PROVISIONAL") ??
     c.labels.find((l) => l.status === "PENDING");
-  // A confirmation that shipped with the suite, and who gave it.
+  // A confirmation from outside the app: shipped with the suite, or
+  // carried from the case an attack case was made from.
   const shipped =
-    answer?.status === "CONFIRMED" && isShippedReview(answer)
-      ? answer.raterRole === EXPERT_REVIEWED
-        ? { text: "Expert reviewed", term: "expertReviewed" as const }
-        : { text: "Author reviewed", term: "authorReviewed" as const }
-      : null;
+    answer?.status !== "CONFIRMED"
+      ? null
+      : answer.raterRole === FROM_BASE_CASE
+        ? { text: "From base case", term: "fromBaseCase" as const }
+        : !isShippedReview(answer)
+          ? null
+          : answer.raterRole === EXPERT_REVIEWED
+            ? { text: "Expert reviewed", term: "expertReviewed" as const }
+            : { text: "Author reviewed", term: "authorReviewed" as const };
   const status = (answer && STATUS[answer.status]) ?? {
     text: "No answer",
     tone: "warn" as const,

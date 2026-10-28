@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { EvalComponentsProvider } from "@crowandraven/evalkeeper/react";
+import { RefreshWhile } from "@/components/evalkeeper/RefreshWhile";
 
 /**
  * Your app's own components for Evalkeeper's screens, so they look like
@@ -14,8 +15,9 @@ import { EvalComponentsProvider } from "@crowandraven/evalkeeper/react";
  */
 export function AppComponents({ children }: { children: React.ReactNode }) {
   return (
-    // Next.js's Link, so moving between eval pages doesn't reload.
-    <EvalComponentsProvider components={{ Link }}>
+    // Next.js's Link, so moving between eval pages doesn't reload, and its
+    // router, so a page refreshes while a test runs.
+    <EvalComponentsProvider components={{ Link, RefreshWhile }}>
       {children}
     </EvalComponentsProvider>
   );

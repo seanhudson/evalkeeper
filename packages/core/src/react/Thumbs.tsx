@@ -1,9 +1,9 @@
 "use client";
 
-import { Button, TextInput } from "@crowandraven/evalkeeper/react";
+import { Button, TextInput } from "./pieces.js";
 import { useState, useTransition } from "react";
 import { ThumbsDown, ThumbsUp } from "lucide-react";
-import { formText } from "@crowandraven/evalkeeper";
+import { formText } from "../index.js";
 
 type Rating = "UP" | "DOWN";
 

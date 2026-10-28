@@ -1,16 +1,11 @@
-import {
-  InfoTip,
-  Select,
-  TextArea,
-  TextInput,
-} from "@crowandraven/evalkeeper/react";
+import { InfoTip, Select, TextArea, TextInput } from "./pieces.js";
 import {
   ANSWER_JSON_FIELD,
   asText,
   fieldValue,
   type AnswerEditorProps,
   type FormField,
-} from "@crowandraven/evalkeeper";
+} from "../index.js";
 
 /**
  * A suite's form fields, rendered from its field specs: label, input, and

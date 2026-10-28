@@ -161,9 +161,10 @@ describe("evalkeeper add pages", () => {
       "app/evals/[suite]/page.tsx",
       "app/evals/[suite]/rate/page.tsx",
       "app/evals/feedback/page.tsx",
-      "components/evalkeeper/AnswerKey.tsx",
+      "components/evalkeeper/RefreshWhile.tsx",
       "components/evalkeeper/evalkeeper.css",
       "lib/evalkeeper/actions.ts",
+      "lib/evalkeeper/evals.ts",
       "lib/evalkeeper/paths.ts",
       "app/api/cron/evals-weekly/route.ts",
       "lib/evalkeeper/index.ts",
@@ -236,20 +237,20 @@ describe("evalkeeper add pages", () => {
 
   it("copies only the pages and components named, and says what they need", () => {
     const dir = app(AT);
-    const r = cli(dir, "add", "pages", "--only", "suite,AnswerKey");
+    const r = cli(dir, "add", "pages", "--only", "suite,RefreshWhile");
     expect(r.code).toBe(0);
     expect(existsSync(join(dir, "app/evals/[suite]/page.tsx"))).toBe(true);
-    expect(existsSync(join(dir, "components/evalkeeper/AnswerKey.tsx"))).toBe(
-      true,
-    );
+    expect(
+      existsSync(join(dir, "components/evalkeeper/RefreshWhile.tsx")),
+    ).toBe(true);
     expect(existsSync(join(dir, "app/evals/page.tsx"))).toBe(false);
-    expect(existsSync(join(dir, "components/evalkeeper/Fields.tsx"))).toBe(
+    expect(existsSync(join(dir, "components/evalkeeper/evalkeeper.css"))).toBe(
       false,
     );
     // The wiring module is the app's; --only leaves it out unless named.
     expect(existsSync(join(dir, "lib/evalkeeper/index.ts"))).toBe(false);
     expect(r.out).toMatch(/which your app doesn't have/);
-    expect(r.out).toMatch(/\bSuiteSections\b/);
+    expect(r.out).toMatch(/\bevals\b/);
     expect(r.out).toMatch(/Check lib\/evalkeeper\/index\.ts exports/);
   });
 
@@ -265,7 +266,7 @@ describe("evalkeeper add pages", () => {
     ).toBe(true);
     expect(existsSync(join(dir, "app/evals/[suite]/page.tsx"))).toBe(false);
     expect(r.out).toMatch(/which your app doesn't have/);
-    expect(r.out).toMatch(/\bDisagreementChip\b/);
+    expect(r.out).toMatch(/\bindex\b/);
     expect(templateName("app/evals/[suite]/side-by-side/page.tsx")).toBe(
       "side-by-side",
     );
@@ -284,14 +285,7 @@ describe("evalkeeper add pages", () => {
 
   it("doesn't call files missing that the same run copies (#66)", () => {
     const dir = app(AT);
-    const r = cli(
-      dir,
-      "add",
-      "pages",
-      "--only",
-      "compare,DisagreementChip,paths,Fields,appComponents",
-      "--dry-run",
-    );
+    const r = cli(dir, "add", "pages", "--only", "compare,paths", "--dry-run");
     expect(r.code).toBe(0);
     // Only the wiring module is missing: this app has none yet.
     expect(r.out).toMatch(/These import index, which your app doesn't have/);
@@ -317,11 +311,13 @@ describe("evalkeeper add pages", () => {
       "--only",
       "hub",
       "--only",
-      "Fields",
+      "RefreshWhile",
       "--dry-run",
     );
     expect(dry.out).toMatch(/skip\s+app\/evals\/page\.tsx \(exists\)/);
-    expect(dry.out).toMatch(/write\s+components\/evalkeeper\/Fields\.tsx/);
+    expect(dry.out).toMatch(
+      /write\s+components\/evalkeeper\/RefreshWhile\.tsx/,
+    );
     const forced = cli(
       dir,
       "add",
@@ -332,9 +328,9 @@ describe("evalkeeper add pages", () => {
       "--dry-run",
     );
     expect(forced.out).toMatch(/overwrite\s+app\/evals\/page\.tsx/);
-    expect(existsSync(join(dir, "components/evalkeeper/Fields.tsx"))).toBe(
-      false,
-    );
+    expect(
+      existsSync(join(dir, "components/evalkeeper/RefreshWhile.tsx")),
+    ).toBe(false);
   });
 
   it("takes groups and the wiring by name, and refuses names it doesn't know", () => {
@@ -366,7 +362,7 @@ describe("evalkeeper add pages", () => {
     const bad = cli(dir, "add", "pages", "--only", "Nope");
     expect(bad.code).toBe(1);
     expect(bad.err).toMatch(/no page or component called "Nope"/);
-    expect(bad.err).toMatch(/AnswerKey/);
+    expect(bad.err).toMatch(/RefreshWhile/);
     expect(pickOnly(["app/evals/page.tsx"], [" ", "HUB"])).toEqual([
       "app/evals/page.tsx",
     ]);

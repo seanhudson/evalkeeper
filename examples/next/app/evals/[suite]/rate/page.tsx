@@ -10,7 +10,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { rateQueue } from "@crowandraven/evalkeeper";
-import { AnswerInput, FieldValues } from "@/components/evalkeeper/Fields";
+import { AnswerInput, FieldValues } from "@crowandraven/evalkeeper/react";
 import {
   answerEditors,
   requireAdmin,

@@ -1,14 +1,13 @@
-import Link from "next/link";
 import {
   GLOSSARY,
   describeChange,
   type ChangeKind,
   type HistoryEntry,
   type Settings,
-} from "@crowandraven/evalkeeper";
-import { RollBack } from "./RollBack";
-import { Chip, InfoTip, Tip } from "@crowandraven/evalkeeper/react";
-import { evalsPath } from "@/lib/evalkeeper/paths";
+} from "../index.js";
+import { RollBack } from "./RollBack.js";
+import { Link, Chip, InfoTip, Tip } from "./pieces.js";
+import { evalsPath, type EvalAppConfig } from "./app.js";
 
 const KIND: Record<
   ChangeKind,
@@ -54,12 +53,15 @@ type Evidence = { runId?: string | null; live?: string | null };
  * live again, with a reason.
  */
 export function SettingsHistory({
+  app,
   suite,
   entries,
   liveId,
   label,
   defaults,
 }: {
+  /** Your screens' configuration. */
+  app: EvalAppConfig;
   suite: string;
   entries: HistoryEntry[];
   liveId: string | null;
@@ -74,6 +76,7 @@ export function SettingsHistory({
         <InfoTip term="versions" />
       </h2>
       <HistoryEntries
+        app={app}
         suite={suite}
         entries={entries}
         liveId={liveId}
@@ -89,6 +92,7 @@ export function SettingsHistory({
  * unless it's live. For a page's history section or a card's history toggle.
  */
 export function HistoryEntries({
+  app,
   suite,
   entries,
   liveId,
@@ -96,6 +100,8 @@ export function HistoryEntries({
   defaults,
   plain = false,
 }: {
+  /** Your screens' configuration. */
+  app: EvalAppConfig;
   suite: string;
   entries: HistoryEntry[];
   liveId: string | null;
@@ -177,7 +183,7 @@ export function HistoryEntries({
             <div className="flex flex-wrap items-center gap-3">
               {testId && (
                 <Link
-                  href={evalsPath(suite, "runs", testId)}
+                  href={evalsPath(app, suite, "runs", testId)}
                   className="text-xs underline"
                 >
                   The test behind it
@@ -185,6 +191,7 @@ export function HistoryEntries({
               )}
               {!isLive && (
                 <RollBack
+                  action={app.actions.rollBackSettings}
                   suite={suite}
                   versionId={e.to.id}
                   number={e.to.number}

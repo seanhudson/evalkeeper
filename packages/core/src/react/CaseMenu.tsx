@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@crowandraven/evalkeeper/react";
+import { Button } from "./pieces.js";
 import { useEffect, useRef, useState } from "react";
 import { EllipsisVertical } from "lucide-react";
 

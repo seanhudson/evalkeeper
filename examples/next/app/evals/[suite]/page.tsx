@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { RefreshWhile } from "@/components/evalkeeper/RefreshWhile";
 import {
   AnswerKeySection,
   CasesInInstructions,
@@ -9,10 +8,12 @@ import {
   ModelTable,
   SuggestionCard,
   SuiteHeader,
+  RefreshWhile,
   Versions,
   loadSuitePage,
-} from "@/components/evalkeeper/SuiteSections";
+} from "@crowandraven/evalkeeper/react";
 import { requireAdmin, SUITE_BY_KEY } from "@/lib/evalkeeper";
+import { evals } from "@/lib/evalkeeper/evals";
 
 export const dynamic = "force-dynamic";
 
@@ -36,7 +37,7 @@ export default async function SuitePage({
 }) {
   await requireAdmin();
   const { suite: key } = await params;
-  const data = await loadSuitePage(key);
+  const data = await loadSuitePage(evals, key);
   if (!data) notFound();
   return (
     <div className="space-y-8">

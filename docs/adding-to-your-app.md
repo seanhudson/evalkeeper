@@ -337,19 +337,23 @@ types), Evalkeeper's `className` included, which yours can use or
 ignore. Your components must be client components. Controls must still
 render the native element, or pass `name` and the value to one, so forms
 submit. Pass your router's link as `Link` so moving between eval pages
-doesn't reload.
+doesn't reload, and a `RefreshWhile` that refreshes the page while a
+test runs (the copied `components/evalkeeper/RefreshWhile.tsx` does it
+for Next.js).
 
 ### Arrange your own page
 
-Each page is a short arrangement of sections that hold all the logic.
-The suite page loads its data once with `loadSuitePage(key)` and lists
+Each page is a short arrangement of sections from
+`@crowandraven/evalkeeper/react` that hold all the logic. They read
+everything from one object, `evals` in `lib/evalkeeper/evals.ts`, made
+with `defineEvals` from your wiring and your actions. The suite page
+loads its data once with `loadSuitePage(evals, key)` and lists
 `SuiteHeader`, `ChosenOnBase`, `SuggestionCard`, `CasesInInstructions`,
-`ModelTable`, `Versions`, `ChecksSection`, and `AnswerKeySection` from
-`components/evalkeeper/SuiteSections.tsx`; the hub loads with
-`loadHub()` and lists `HubIntro`, `HubStats`, `WeeklyCheck`, and
-`SuiteList` from `HubSections.tsx`. For another layout, or a section of
-your own beside them, write your page from the same pieces, as the
-copied pages do, and the sections keep upgrading.
+`ModelTable`, `Versions`, `ChecksSection`, and `AnswerKeySection`; the
+hub loads with `loadHub(evals)` and lists `HubIntro`, `HubStats`,
+`WeeklyCheck`, and `SuiteList`. For another layout, or a section of your
+own beside them, write your page from the same pieces, as the copied
+pages do: the sections come from the package, so they keep upgrading.
 
 ## 8. Add thumbs to your AI answers (optional)
 

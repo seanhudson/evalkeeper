@@ -26,6 +26,7 @@ export const TEMPLATE_FILES = {
     "lib/evalkeeper/time.ts",
     "lib/evalkeeper/paths.ts",
     "lib/evalkeeper/appComponents.tsx",
+    "lib/evalkeeper/evals.ts",
   ],
   /** The weekly check's cron route; skipped with --no-cron. */
   cron: ["app/api/cron/evals-weekly/route.ts"],

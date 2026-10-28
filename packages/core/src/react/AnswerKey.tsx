@@ -6,7 +6,7 @@ import {
   TextInput,
   Tip,
   type ChipTone,
-} from "@crowandraven/evalkeeper/react";
+} from "./pieces.js";
 import {
   allPassed,
   type CaseRecord,
@@ -18,18 +18,20 @@ import {
   EXPERT_REVIEWED,
   FROM_BASE_CASE,
   isShippedReview,
-} from "@crowandraven/evalkeeper";
-import { addCase, editAnswer, retireCase } from "@/lib/evalkeeper/actions";
+} from "../index.js";
 import { Check, ChevronRight, CircleAlert, X } from "lucide-react";
-import { answerEditors, store } from "@/lib/evalkeeper";
-import { AnswerInput, FieldValues, Fields } from "./Fields";
-import { AddCaseHeader } from "./AddCase";
-import { CaseMenu } from "./CaseMenu";
-import { ConfirmAnswer } from "./ConfirmAnswer";
+import type { EvalAppConfig } from "./app.js";
+import { AnswerInput, FieldValues, Fields } from "./Fields.js";
+import { AddCaseHeader } from "./AddCase.js";
+import { CaseMenu } from "./CaseMenu.js";
+import { ConfirmAnswer } from "./ConfirmAnswer.js";
 
 /** A suite's cases in use, with each case's answers newest first. */
-async function loadCases(suite: string): Promise<CaseRecord[]> {
-  return (await store.listCases(suite)).map((c) => ({
+async function loadCases(
+  app: EvalAppConfig,
+  suite: string,
+): Promise<CaseRecord[]> {
+  return (await app.store.listCases(suite)).map((c) => ({
     ...c,
     labels: [...c.labels].sort((a, b) => +b.updatedAt - +a.updatedAt),
   }));
@@ -50,6 +52,7 @@ const STATUS: Record<
  * case, edit an answer, or retire a case.
  */
 export async function AnswerKey({
+  app,
   suite,
   rows,
   heading,
@@ -61,8 +64,10 @@ export async function AnswerKey({
   heading: React.ReactNode;
   /** More buttons beside "Add a case" (rescore). */
   tools?: React.ReactNode;
+  /** Your screens' configuration. */
+  app: EvalAppConfig;
 }) {
-  const cases = await loadCases(suite.key);
+  const cases = await loadCases(app, suite.key);
   // Each model's latest test (at the operation's setting), by case.
   const modelByRun = new Map(
     rows.flatMap((r) =>
@@ -72,9 +77,9 @@ export async function AnswerKey({
   // One query where the store can: one per test is slow on a remote
   // database.
   const runIds = [...modelByRun.keys()];
-  const outputs = store.listOutputsFor
-    ? await store.listOutputsFor(runIds)
-    : (await Promise.all(runIds.map((id) => store.listOutputs(id)))).flat();
+  const outputs = app.store.listOutputsFor
+    ? await app.store.listOutputsFor(runIds)
+    : (await Promise.all(runIds.map((id) => app.store.listOutputs(id)))).flat();
   const byCase = new Map<string, { model: string; output: OutputRecord }[]>();
   for (const o of outputs) {
     byCase.set(o.caseId, [
@@ -91,8 +96,8 @@ export async function AnswerKey({
         tools={tools}
         form={
           fields &&
-          (suite.labelFromForm || answerEditors[suite.key]) && (
-            <form action={addCase} className="space-y-4">
+          (suite.labelFromForm || app.answerEditors[suite.key]) && (
+            <form action={app.actions.addCase} className="space-y-4">
               <input type="hidden" name="suite" value={suite.key} />
               <Fields fields={fields.input} prefix="new-" />
               <p className="readable text-sm text-muted">
@@ -100,7 +105,7 @@ export async function AnswerKey({
               </p>
               <AnswerInput
                 fields={fields.label}
-                editor={answerEditors[suite.key]}
+                editor={app.answerEditors[suite.key]}
                 prefix="new-"
               />
               <div className="grid gap-4 sm:grid-cols-2">
@@ -158,6 +163,7 @@ export async function AnswerKey({
       <div className="space-y-2">
         {cases.map((c) => (
           <CaseItem
+            app={app}
             key={c.id}
             suite={suite}
             c={c}
@@ -171,10 +177,12 @@ export async function AnswerKey({
 }
 
 function CaseItem({
+  app,
   suite,
   c,
   results,
 }: {
+  app: EvalAppConfig;
   suite: AnySuite;
   c: CaseRecord;
   results: {
@@ -349,16 +357,21 @@ function CaseItem({
         )}
 
         {answer?.status === "PENDING" && (
-          <ConfirmAnswer suite={suite.key} labelId={answer.id} />
+          <ConfirmAnswer
+            action={app.actions.confirmAnswer}
+            suite={suite.key}
+            labelId={answer.id}
+          />
         )}
 
         <CaseMenu
           suite={suite.key}
           caseId={c.id}
-          retire={retireCase}
+          retire={app.actions.retireCase}
           startEditing={!answer}
           editLabel={
-            suite.fields && (suite.labelFromForm || answerEditors[suite.key])
+            suite.fields &&
+            (suite.labelFromForm || app.answerEditors[suite.key])
               ? answer
                 ? "Edit answer"
                 : "Write the answer"
@@ -368,14 +381,14 @@ function CaseItem({
             suite.fields && (
               <form
                 key={answer?.updatedAt.toISOString() ?? "none"}
-                action={editAnswer}
+                action={app.actions.editAnswer}
                 className="space-y-4"
               >
                 <input type="hidden" name="suite" value={suite.key} />
                 <input type="hidden" name="case" value={c.id} />
                 <AnswerInput
                   fields={suite.fields.label}
-                  editor={answerEditors[suite.key]}
+                  editor={app.answerEditors[suite.key]}
                   input={c.input}
                   values={answer?.value}
                   prefix={`${c.id}-`}

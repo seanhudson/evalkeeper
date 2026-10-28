@@ -1,9 +1,9 @@
 "use client";
 
-import { Submit, TextInput, Tip } from "@crowandraven/evalkeeper/react";
+import { Submit, TextInput, Tip } from "./pieces.js";
 import { useState } from "react";
-import type { ChangeKind } from "@crowandraven/evalkeeper";
-import { rollBackSettings } from "@/lib/evalkeeper/actions";
+import type { ChangeKind } from "../index.js";
+import type { FormAction } from "./app.js";
 
 /**
  * Rolls a feature back to an earlier version. The button stays off until
@@ -16,7 +16,10 @@ export function RollBack({
   versionId,
   number,
   kind,
+  action,
 }: {
+  /** Your rollBackSettings action. */
+  action: FormAction;
   suite: string;
   versionId: string;
   number: number;
@@ -32,10 +35,7 @@ export function RollBack({
     </Submit>
   );
   return (
-    <form
-      action={rollBackSettings}
-      className="flex flex-wrap items-center gap-2"
-    >
+    <form action={action} className="flex flex-wrap items-center gap-2">
       <input type="hidden" name="suite" value={suite} />
       <input type="hidden" name="version" value={versionId} />
       <label htmlFor={`why-${versionId}`} className="sr-only">

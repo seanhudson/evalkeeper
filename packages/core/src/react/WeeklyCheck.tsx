@@ -1,22 +1,28 @@
-import Link from "next/link";
-import { money, type WeeklySummary } from "@crowandraven/evalkeeper";
-import { runWeeklyNow } from "@/lib/evalkeeper/actions";
-import { RefreshWhile } from "./RefreshWhile";
+import { money, type WeeklySummary } from "../index.js";
 import {
   Card,
   Chip,
   InfoTip,
+  Link,
+  RefreshWhile,
   Submit,
   Tip,
-  pct,
-} from "@crowandraven/evalkeeper/react";
-import { evalsPath } from "@/lib/evalkeeper/paths";
+} from "./pieces.js";
+import { pct } from "./format.js";
+import { evalsPath, type EvalAppConfig } from "./app.js";
 
 /**
  * The weekly check on the evals hub: when it last ran, what it found, and
  * a button to run it now. It only reports; a person decides what to change.
  */
-export function WeeklyCheck({ weekly }: { weekly: WeeklySummary }) {
+export function WeeklyCheck({
+  app,
+  weekly,
+}: {
+  /** Your screens' configuration. */
+  app: EvalAppConfig;
+  weekly: WeeklySummary;
+}) {
   return (
     <section aria-labelledby="weekly" className="space-y-3">
       <RefreshWhile active={weekly.running > 0} />
@@ -25,7 +31,7 @@ export function WeeklyCheck({ weekly }: { weekly: WeeklySummary }) {
           Weekly check
           <InfoTip term="weeklyCheck" />
         </h2>
-        <form action={runWeeklyNow}>
+        <form action={app.actions.runWeeklyNow}>
           <Submit variant="quiet">Run it now</Submit>
         </form>
       </div>
@@ -59,7 +65,7 @@ export function WeeklyCheck({ weekly }: { weekly: WeeklySummary }) {
                 <Chip tone="serious">Drift</Chip>
                 <span>
                   <Link
-                    href={evalsPath(d.suite)}
+                    href={evalsPath(app, d.suite)}
                     className="font-medium underline"
                   >
                     {d.label}
@@ -78,7 +84,7 @@ export function WeeklyCheck({ weekly }: { weekly: WeeklySummary }) {
                 <Chip tone="serious">Didn&apos;t finish</Chip>
                 <span>
                   <Link
-                    href={evalsPath(f.suite)}
+                    href={evalsPath(app, f.suite)}
                     className="font-medium underline"
                   >
                     {f.label}
@@ -96,7 +102,7 @@ export function WeeklyCheck({ weekly }: { weekly: WeeklySummary }) {
                 <span>
                   {r.model}, the {r.role} model for{" "}
                   <Link
-                    href={evalsPath(r.suite)}
+                    href={evalsPath(app, r.suite)}
                     className="font-medium underline"
                   >
                     {r.label}
@@ -115,7 +121,7 @@ export function WeeklyCheck({ weekly }: { weekly: WeeklySummary }) {
                 <Chip tone="warn">Thumbs down</Chip>
                 <span>
                   {t.operation}: {t.down} of {t.up + t.down} ratings this week.{" "}
-                  <Link href={evalsPath("feedback")} className="underline">
+                  <Link href={evalsPath(app, "feedback")} className="underline">
                     Read the reasons
                   </Link>
                   .
@@ -143,7 +149,7 @@ export function WeeklyCheck({ weekly }: { weekly: WeeklySummary }) {
                     : `${d.waiting} waiting for review. `}
                   {d.waiting > 0 && (
                     <Link
-                      href={`${evalsPath(d.suite)}#answer-key`}
+                      href={`${evalsPath(app, d.suite)}#answer-key`}
                       className="underline"
                     >
                       Review them

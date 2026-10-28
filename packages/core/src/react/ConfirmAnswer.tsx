@@ -1,7 +1,7 @@
 "use client";
 
-import { confirmAnswer } from "@/lib/evalkeeper/actions";
-import { Submit } from "@crowandraven/evalkeeper/react";
+import type { FormAction } from "./app.js";
+import { Submit } from "./pieces.js";
 
 /**
  * Confirms a case's pending answer and moves straight on: this case closes
@@ -12,13 +12,16 @@ import { Submit } from "@crowandraven/evalkeeper/react";
 export function ConfirmAnswer({
   suite,
   labelId,
+  action,
 }: {
   suite: string;
   labelId: string;
+  /** Your confirmAnswer action. */
+  action: FormAction;
 }) {
   return (
     <form
-      action={confirmAnswer}
+      action={action}
       onSubmit={(e) => {
         const here = e.currentTarget.closest("details");
         if (!here) return;

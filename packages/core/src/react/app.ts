@@ -61,6 +61,13 @@ export type EvalAppConfig = EvalApp & {
   suiteByKey: Readonly<Record<string, AnySuite>>;
 };
 
+/** A path without its trailing slashes, in one pass (no regex to backtrack). */
+function withoutTrailingSlashes(path: string): string {
+  let end = path.length;
+  while (end > 0 && path[end - 1] === "/") end--;
+  return path.slice(0, end);
+}
+
 /**
  * Makes the object the screens read everything from. Call it once in your
  * wiring module and pass the result to the pages.
@@ -79,7 +86,7 @@ export type EvalAppConfig = EvalApp & {
 export function defineEvals(app: EvalApp): EvalAppConfig {
   return {
     ...app,
-    basePath: app.basePath.replace(/\/+$/, "") || "/",
+    basePath: withoutTrailingSlashes(app.basePath) || "/",
     suiteByKey: Object.fromEntries(app.suites.map((s) => [s.key, s])),
   };
 }

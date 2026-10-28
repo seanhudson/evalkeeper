@@ -42,6 +42,9 @@ describe("the screens' configuration", () => {
     expect(evals.suiteByKey.triage).toBe(suite);
     expect(evals.basePath).toBe("/admin/evals");
     expect(defineEvals(app({ basePath: "/" })).basePath).toBe("/");
+    expect(
+      defineEvals(app({ basePath: "/evals" + "/".repeat(10_000) })).basePath,
+    ).toBe("/evals");
   });
 
   it("links to a page below the base, escaping each part", () => {

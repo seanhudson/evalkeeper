@@ -9,8 +9,11 @@ import {
 import {
   createSettings,
   isInjectionSuite,
+  type AnswerEditorProps,
   type Settings,
 } from "@crowandraven/evalkeeper";
+import type { ComponentType } from "react";
+import { ActionItemsEditor } from "../../components/ActionItemsEditor";
 import { createRunner, type Route } from "@crowandraven/evalkeeper/runner";
 import { prisma } from "../db";
 import { MODELS, availableModels } from "../models";
@@ -134,6 +137,17 @@ export function modelsFor(operation: string): string[] {
   );
 }
 export { SUITES, SUITE_BY_KEY } from "../suites";
+
+/**
+ * Your own editors for answers plain fields can't edit well, keyed by
+ * suite: the answer key, "Add a case", and blind rating use them in place
+ * of the suite's answer fields. Leave it empty if you have none.
+ */
+export const answerEditors: Partial<
+  Record<string, ComponentType<AnswerEditorProps>>
+> = {
+  action_items: ActionItemsEditor,
+};
 
 /**
  * Who may use the eval pages. Every page and action calls this first, and

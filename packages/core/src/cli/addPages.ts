@@ -364,7 +364,7 @@ export function nextSteps(r: {
     "Add Evalkeeper's models to your Prisma schema (node_modules/@crowandraven/evalkeeper-prisma/schema/evalkeeper.prisma), then write a migration from the schema file.",
     `Import the colors into your global CSS, right after Tailwind: @import "${css}"; (a path relative to that CSS file).`,
     !wiring || wiring.action === "skip"
-      ? `Check ${wiring?.path ?? join(r.root, "lib/evalkeeper/index.ts")} exports what the pages use: MODELS, availableModels, modelsFor, SUITES, SUITE_BY_KEY, store, feedbackStore, settings, routeFor, runner, and requireAdmin.`
+      ? `Check ${wiring?.path ?? join(r.root, "lib/evalkeeper/index.ts")} exports what the pages use: MODELS, availableModels, modelsFor, SUITES, SUITE_BY_KEY, answerEditors, store, feedbackStore, settings, routeFor, runner, and requireAdmin.`
       : `Fill in ${wiring.path}: your Prisma client, models, suites, and requireAdmin (until then, nobody can open the pages).`,
     `Open ${urlOfBase(r.base)} in your app.`,
   ];

@@ -25,7 +25,7 @@ export const TEMPLATE_FILES = {
     "lib/evalkeeper/cronAuth.ts",
     "lib/evalkeeper/time.ts",
     "lib/evalkeeper/paths.ts",
-    "lib/evalkeeper/appComponents.ts",
+    "lib/evalkeeper/appComponents.tsx",
   ],
   /** The weekly check's cron route; skipped with --no-cron. */
   cron: ["app/api/cron/evals-weekly/route.ts"],
@@ -36,7 +36,7 @@ export const TEMPLATE_FILES = {
  * overwritten, even with --force.
  */
 export const APP_OWNED: ReadonlySet<string> = new Set([
-  "lib/evalkeeper/appComponents.ts",
+  "lib/evalkeeper/appComponents.tsx",
 ]);
 
 /** The pages, by the names `--only` takes. */
@@ -372,7 +372,7 @@ export function nextSteps(r: {
   return [
     "npm install @crowandraven/evalkeeper server-only lucide-react",
     "Add Evalkeeper's models to your Prisma schema (node_modules/@crowandraven/evalkeeper/schema/evalkeeper.prisma), then write a migration from the schema file.",
-    `Import the colors into your global CSS, right after Tailwind: @import "${css}"; (a path relative to that CSS file).`,
+    `Import the colors into your global CSS, right after Tailwind: @import "${css}"; (a path relative to that CSS file). Then have Tailwind scan Evalkeeper's screens: @source "node_modules/@crowandraven/evalkeeper/dist/react"; (also relative to that file).`,
     !wiring || wiring.action === "skip"
       ? `Check ${wiring?.path ?? join(r.root, "lib/evalkeeper/index.ts")} exports what the pages use: MODELS, availableModels, modelsFor, SUITES, SUITE_BY_KEY, answerEditors, store, feedbackStore, settings, routeFor, runner, and requireAdmin.`
       : `Fill in ${wiring.path}: your Prisma client, models, suites, and requireAdmin (until then, nobody can open the pages).`,

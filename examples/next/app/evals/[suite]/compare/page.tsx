@@ -1,4 +1,13 @@
-import { Select } from "@/components/evalkeeper/Controls";
+import {
+  BackLink,
+  Card,
+  Chip,
+  InfoTip,
+  Select,
+  Submit,
+  Tip,
+  pct,
+} from "@crowandraven/evalkeeper/react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -11,9 +20,6 @@ import {
   type RunRecord,
 } from "@crowandraven/evalkeeper";
 import { DisagreementChip } from "@/components/evalkeeper/DisagreementChip";
-import { Submit } from "@/components/evalkeeper/Submit";
-import { InfoTip, Tip } from "@/components/evalkeeper/Tip";
-import { BackLink, Card, Chip, pct } from "@/components/evalkeeper/ui";
 import {
   MODELS,
   SUITE_BY_KEY,

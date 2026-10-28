@@ -1,11 +1,9 @@
 "use client";
 
-import { TextInput } from "./Controls";
+import { Submit, TextInput, Tip } from "@crowandraven/evalkeeper/react";
 import { useState } from "react";
 import type { ChangeKind } from "@crowandraven/evalkeeper";
 import { rollBackSettings } from "@/lib/evalkeeper/actions";
-import { Submit } from "./Submit";
-import { Tip } from "./Tip";
 
 /**
  * Rolls a feature back to an earlier version. The button stays off until

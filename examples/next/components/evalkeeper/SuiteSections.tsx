@@ -15,9 +15,19 @@ import {
   suggest,
 } from "@crowandraven/evalkeeper";
 import { AnswerKey } from "@/components/evalkeeper/AnswerKey";
-import { IconSubmit, Spinner, Submit } from "@/components/evalkeeper/Submit";
+import {
+  BackLink,
+  Card,
+  Chip,
+  IconSubmit,
+  InfoTip,
+  Score,
+  Spinner,
+  Submit,
+  Tip,
+  pct,
+} from "@crowandraven/evalkeeper/react";
 import { RotateCw } from "lucide-react";
-import { BackLink, Card, Chip, Score, pct } from "@/components/evalkeeper/ui";
 import {
   answerEditors,
   MODELS,
@@ -34,7 +44,6 @@ import {
   testModel,
   useSuggestion,
 } from "@/lib/evalkeeper/actions";
-import { InfoTip, Tip } from "@/components/evalkeeper/Tip";
 import { EVALS_BASE, evalsPath } from "@/lib/evalkeeper/paths";
 
 /**

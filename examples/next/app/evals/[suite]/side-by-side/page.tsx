@@ -12,8 +12,13 @@ import {
 import { DisagreementChip } from "@/components/evalkeeper/DisagreementChip";
 import { FieldValues } from "@/components/evalkeeper/Fields";
 import { ReadableOutput } from "@/components/evalkeeper/ReadableOutput";
-import { InfoTip, Tip } from "@/components/evalkeeper/Tip";
-import { BackLink, Card, pct } from "@/components/evalkeeper/ui";
+import {
+  BackLink,
+  Card,
+  InfoTip,
+  Tip,
+  pct,
+} from "@crowandraven/evalkeeper/react";
 import {
   MODELS,
   requireAdmin,

@@ -284,18 +284,21 @@ It reads your `tsconfig.json` import alias (`@/*`, `~/*`, and code under
 - their glue (`lib/evalkeeper/actions.ts`, `weekly.ts`, `cronAuth.ts`,
   `time.ts`, and `paths.ts` with your base path)
 - the weekly check's cron route (`--no-cron` to leave it out)
-- a starter `lib/evalkeeper/index.ts` and `lib/evalkeeper/appComponents.ts`,
+- a starter `lib/evalkeeper/index.ts` and `lib/evalkeeper/appComponents.tsx`,
   only if you don't have them
 
 Existing files stay as they are unless you pass `--force`, which still
-never touches your `lib/evalkeeper/index.ts` or `appComponents.ts`. `--dry-run` shows the plan
+never touches your `lib/evalkeeper/index.ts` or `appComponents.tsx`. `--dry-run` shows the plan
 and writes nothing. `--only` copies just the pages and components you
 name, for an app that keeps its own (see "Bring your own" below).
 
 Then:
 
-1. Import the colors into your global CSS, right after Tailwind:
-   `@import "../components/evalkeeper/evalkeeper.css";`
+1. Import the colors into your global CSS, right after Tailwind, and have
+   Tailwind scan Evalkeeper's screens, which come from the package:
+   `@import "../components/evalkeeper/evalkeeper.css";` and
+   `@source "../node_modules/@crowandraven/evalkeeper/dist/react";`
+   (both relative to that CSS file).
 2. Fill in `lib/evalkeeper/index.ts`: your Prisma client, models, suites,
    and `requireAdmin`. Every page and action calls `requireAdmin` first,
    and the starter's refuses everyone until you write yours.
@@ -305,26 +308,36 @@ Then:
 
 ### Look like your app
 
-The pages are drawn from a few pieces: `Card`, `Chip`, `BackLink`,
-`Score`, `Submit`, `IconSubmit`, `Spinner`, `Tip`, `InfoTip`, and the
-plain controls `Button`, `TextInput`, `TextArea`, and `Select`. Name
-your app's own in `lib/evalkeeper/appComponents.ts`, and the pages use
-them; leave one out to keep Evalkeeper's:
+The screens are drawn from a few pieces in `@crowandraven/evalkeeper/react`:
+`Card`, `Chip`, `Link`, `BackLink`, `Score`, `Submit`, `IconSubmit`,
+`Spinner`, `Tip`, `InfoTip`, and the plain controls `Button`, `TextInput`,
+`TextArea`, and `Select`. Name your app's own in
+`lib/evalkeeper/appComponents.tsx`, which the eval pages' layout wraps
+around every page, and the screens use them; leave one out to keep
+Evalkeeper's:
 
-```ts
-import type { EvalComponents } from "@/components/evalkeeper/swap";
+```tsx
+"use client";
+import Link from "next/link";
+import { EvalComponentsProvider } from "@crowandraven/evalkeeper/react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
-export const components: Partial<EvalComponents> = { Button, Card };
+export function AppComponents({ children }: { children: React.ReactNode }) {
+  return (
+    <EvalComponentsProvider components={{ Link, Button, Card }}>
+      {children}
+    </EvalComponentsProvider>
+  );
+}
 ```
 
-Each gets the props Evalkeeper's own would (the types are in
-`components/evalkeeper/swap.ts`), Evalkeeper's `className` included,
-which yours can use or ignore. Controls must still render the native
-element, or pass `name` and the value to one, so forms submit. Pieces
-that use state or a form's status (`Submit`, `IconSubmit`, and usually
-the controls) must be client components.
+Each gets the props Evalkeeper's own would (`EvalComponents` has the
+types), Evalkeeper's `className` included, which yours can use or
+ignore. Your components must be client components. Controls must still
+render the native element, or pass `name` and the value to one, so forms
+submit. Pass your router's link as `Link` so moving between eval pages
+doesn't reload.
 
 ### Arrange your own page
 

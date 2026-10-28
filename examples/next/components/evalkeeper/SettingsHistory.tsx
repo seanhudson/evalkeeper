@@ -7,8 +7,7 @@ import {
   type Settings,
 } from "@crowandraven/evalkeeper";
 import { RollBack } from "./RollBack";
-import { InfoTip, Tip } from "./Tip";
-import { Chip } from "./ui";
+import { Chip, InfoTip, Tip } from "@crowandraven/evalkeeper/react";
 import { evalsPath } from "@/lib/evalkeeper/paths";
 
 const KIND: Record<

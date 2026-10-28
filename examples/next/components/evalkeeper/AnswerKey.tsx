@@ -1,4 +1,12 @@
-import { Select, TextInput } from "./Controls";
+import {
+  Chip,
+  InfoTip,
+  Select,
+  Submit,
+  TextInput,
+  Tip,
+  type ChipTone,
+} from "@crowandraven/evalkeeper/react";
 import {
   allPassed,
   type CaseRecord,
@@ -18,9 +26,6 @@ import { AnswerInput, FieldValues, Fields } from "./Fields";
 import { AddCaseHeader } from "./AddCase";
 import { CaseMenu } from "./CaseMenu";
 import { ConfirmAnswer } from "./ConfirmAnswer";
-import { Submit } from "./Submit";
-import { Chip, type ChipTone } from "./ui";
-import { InfoTip, Tip } from "./Tip";
 
 /** A suite's cases in use, with each case's answers newest first. */
 async function loadCases(suite: string): Promise<CaseRecord[]> {

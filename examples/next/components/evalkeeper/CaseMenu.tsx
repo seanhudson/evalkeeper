@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "./Controls";
+import { Button } from "@crowandraven/evalkeeper/react";
 import { useEffect, useRef, useState } from "react";
 import { EllipsisVertical } from "lucide-react";
 

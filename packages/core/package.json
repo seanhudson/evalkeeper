@@ -39,12 +39,17 @@
     "./ai-sdk": {
       "types": "./dist/ai-sdk/index.d.ts",
       "default": "./dist/ai-sdk/index.js"
+    },
+    "./react": {
+      "types": "./dist/react/index.d.ts",
+      "default": "./dist/react/index.js"
     }
   },
   "files": [
     "dist",
     "src",
     "!src/**/*.test.ts",
+    "!src/**/*.test.tsx",
     "bin",
     "templates",
     "starter",
@@ -59,11 +64,19 @@
   "peerDependencies": {
     "zod": "^3.25.0",
     "vitest": ">=3",
-    "ai": ">=7"
+    "ai": ">=7",
+    "react": ">=19",
+    "react-dom": ">=19",
+    "lucide-react": ">=1"
   },
   "devDependencies": {
     "zod": "^3.25.76",
-    "ai": "^7.0.146"
+    "ai": "^7.0.146",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "lucide-react": "^1.60.0",
+    "@types/react": "^19",
+    "@types/react-dom": "^19"
   },
   "keywords": [
     "evals",
@@ -77,6 +90,15 @@
       "optional": true
     },
     "ai": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    },
+    "lucide-react": {
       "optional": true
     }
   },

@@ -13,7 +13,12 @@ import {
   type Settings,
   type SettingsVersion,
 } from "@crowandraven/evalkeeper";
-import { Card, StatusBadge, pct } from "@/components/evalkeeper/ui";
+import {
+  Card,
+  InfoTip,
+  StatusBadge,
+  pct,
+} from "@crowandraven/evalkeeper/react";
 import {
   feedbackStore,
   MODELS,
@@ -23,7 +28,6 @@ import {
 } from "@/lib/evalkeeper";
 import { daysAgo } from "@/lib/evalkeeper/time";
 import { loadWeekly } from "@/lib/evalkeeper/weekly";
-import { InfoTip } from "@/components/evalkeeper/Tip";
 import { evalsPath } from "@/lib/evalkeeper/paths";
 import { HistoryEntries } from "@/components/evalkeeper/SettingsHistory";
 import { ChevronDown } from "lucide-react";

@@ -1,5 +1,9 @@
 @import "tailwindcss";
 @import "../components/evalkeeper/evalkeeper.css";
+/* Evalkeeper's screens come from the package: Tailwind scans it too. In
+   an app that's "../node_modules/…"; this monorepo installs it at the
+   root. */
+@source "../../../node_modules/@crowandraven/evalkeeper/dist/react";
 
 body {
   background: var(--bg);

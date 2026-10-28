@@ -9,17 +9,20 @@ version may change an interface, and its entry says how to update.
 
 ### Added
 
-- The pages draw with your app's own components. Name any of `Card`,
-  `Chip`, `BackLink`, `Score`, `Submit`, `IconSubmit`, `Spinner`, `Tip`,
-  `InfoTip`, `Button`, `TextInput`, `TextArea`, and `Select` in
-  `lib/evalkeeper/appComponents.ts` (types in
-  `components/evalkeeper/swap.ts`), and every page uses yours, with the
-  same props; the rest stay Evalkeeper's. `add pages` writes the file
-  once and never overwrites it, even with `--force`. The guide's "Look
-  like your app" has how. **To update:** copy the components and the
-  pages again (`npx @crowandraven/evalkeeper add pages --only
-components,pages,appComponents --dry-run` first); with nothing named,
-  the pages look as before.
+- `@crowandraven/evalkeeper/react`: the pieces Evalkeeper's screens are
+  drawn from (`Card`, `Chip`, `Link`, `BackLink`, `Score`, `Submit`,
+  `IconSubmit`, `Spinner`, `Tip`, `InfoTip`, `Button`, `TextInput`,
+  `TextArea`, and `Select`), and `EvalComponentsProvider`, which draws
+  them with your app's own. Name yours in
+  `lib/evalkeeper/appComponents.tsx`, which the eval pages' new layout
+  wraps around every page; the rest stay Evalkeeper's. `add pages` writes
+  that file once and never overwrites it, even with `--force`. React and
+  `lucide-react` are optional peer dependencies, needed only for
+  `/react`. The guide's "Look like your app" has how. **To update:** copy
+  the pages and components again (`npx @crowandraven/evalkeeper add pages
+--dry-run` first), and add
+  `@source "../node_modules/@crowandraven/evalkeeper/dist/react";` to your
+  global CSS so Tailwind styles the screens.
 
 ### Changed
 

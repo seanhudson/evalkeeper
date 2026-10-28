@@ -56,7 +56,8 @@ Coverage limits never go down.
    (`scripts/release-notes.mjs`); rerun it from the Actions tab with a tag
    to rewrite an older release.
 4. Build from the tagged commit: `npm run build`.
-5. Publish in dependency order: core, then prisma, then ai-sdk
+5. Publish in dependency order: core, then the two packages that only
+   re-export its `/prisma` and `/ai-sdk` entry points for older apps
    (`npm publish -w packages/core`, then `-w packages/prisma`, then
    `-w packages/ai-sdk`). npm stages each publish for the owner to
    approve, so approve each one before publishing the next.

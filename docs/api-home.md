@@ -19,5 +19,5 @@ pieces fit, start with the guides in the repository:
 | `@crowandraven/evalkeeper/memory`  | An in-memory store                                                   |
 | `@crowandraven/evalkeeper/testing` | The store contracts, as Vitest tests                                 |
 | `@crowandraven/evalkeeper/cli`     | The `evalkeeper` command                                             |
-| `@crowandraven/evalkeeper-prisma`  | The Prisma tables and stores                                         |
-| `@crowandraven/evalkeeper-ai-sdk`  | Instruction hashes, pricing, and the meaning judge                   |
+| `@crowandraven/evalkeeper/prisma`  | The Prisma tables and stores                                         |
+| `@crowandraven/evalkeeper/ai-sdk`  | Instruction hashes, pricing, and the meaning judge                   |

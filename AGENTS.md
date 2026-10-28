@@ -86,14 +86,17 @@ Every change comes with the tests that prove it, at the right level:
 
 ### Structure
 
-- The core (`packages/core`) stays pure: no database, framework, or
-  provider imports, except `runner.ts` (`node:crypto`) and `cli/` (the
-  `evalkeeper` command, which reads and writes files).
-  Anything that talks to a service is an adapter package.
+- Everything ships in one package, `@crowandraven/evalkeeper`, with an
+  entry point per part. The root entry stays pure: no database,
+  framework, or provider imports, except `runner.ts` (`node:crypto`) and
+  `cli/` (the `evalkeeper` command, which reads and writes files).
+  Anything that talks to a service is its own entry point (`/prisma`,
+  `/ai-sdk`), whose library is an optional peer dependency, never a new
+  package.
 - Pages and actions talk to storage through `EvalStore`, never to tables
   directly, so they work with any store.
 - The Prisma stores read and write every column through the map
-  (`packages/prisma/src/mapping.ts`), so apps with their own tables keep
+  (`packages/core/src/prisma/mapping.ts`), so apps with their own tables keep
   working. A new column or table goes through it too, gets a case in the
   mapped-store test on the app-shaped schema
   (`examples/next/test/byo`), and an unmapped store still builds the same

@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { PrismaClient } from "@prisma/client";
-import { prismaStore } from "@crowandraven/evalkeeper-prisma";
+import { prismaStore } from "@crowandraven/evalkeeper/prisma";
 import {
   BLIND_RATER,
   confirmedLabel,

@@ -30,6 +30,15 @@
     "./cli": {
       "types": "./dist/cli/main.d.ts",
       "default": "./dist/cli/main.js"
+    },
+    "./prisma": {
+      "types": "./dist/prisma/index.d.ts",
+      "default": "./dist/prisma/index.js"
+    },
+    "./prisma/schema": "./schema/evalkeeper.prisma",
+    "./ai-sdk": {
+      "types": "./dist/ai-sdk/index.d.ts",
+      "default": "./dist/ai-sdk/index.js"
     }
   },
   "files": [
@@ -38,7 +47,8 @@
     "!src/**/*.test.ts",
     "bin",
     "templates",
-    "starter"
+    "starter",
+    "schema"
   ],
   "sideEffects": false,
   "scripts": {
@@ -48,10 +58,12 @@
   },
   "peerDependencies": {
     "zod": "^3.25.0",
-    "vitest": ">=3"
+    "vitest": ">=3",
+    "ai": ">=7"
   },
   "devDependencies": {
-    "zod": "^3.25.76"
+    "zod": "^3.25.76",
+    "ai": "^7.0.146"
   },
   "keywords": [
     "evals",
@@ -62,6 +74,9 @@
   ],
   "peerDependenciesMeta": {
     "vitest": {
+      "optional": true
+    },
+    "ai": {
       "optional": true
     }
   },

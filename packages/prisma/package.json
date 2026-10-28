@@ -19,14 +19,11 @@
     "schema"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "node -e \"require('fs').cpSync('../core/schema','schema',{recursive:true})\" && tsc -p tsconfig.json",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@crowandraven/evalkeeper": "0.10.0"
-  },
-  "peerDependencies": {
-    "@prisma/client": "^5.0.0 || ^6.0.0"
   },
   "author": "Sean Hudson",
   "homepage": "https://github.com/seanhudson/evalkeeper#readme",

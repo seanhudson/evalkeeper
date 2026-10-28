@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { PrismaClient } from "@prisma/client";
-import { prismaStore } from "@crowandraven/evalkeeper-prisma";
+import { prismaStore } from "@crowandraven/evalkeeper/prisma";
 
 // Reviewing drafts: confirming a pending answer closes its case and opens
 // the next one waiting, without waiting for the page to refresh. The

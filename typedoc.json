@@ -8,8 +8,8 @@
     "packages/core/src/testing.ts",
     "packages/core/src/suites/index.ts",
     "packages/core/src/cli/main.ts",
-    "packages/prisma/src/index.ts",
-    "packages/ai-sdk/src/index.ts"
+    "packages/core/src/prisma/index.ts",
+    "packages/core/src/ai-sdk/index.ts"
   ],
   "tsconfig": "tsconfig.typedoc.json",
   "out": "docs/api",

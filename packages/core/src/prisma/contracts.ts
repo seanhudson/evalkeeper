@@ -9,7 +9,7 @@ import {
   type ReadCheckOptions,
   type ReadCheckReport,
   type ReadRow,
-} from "@crowandraven/evalkeeper";
+} from "../index.js";
 import type {
   PrismaFeedbackMap,
   PrismaSettingsMap,
@@ -191,8 +191,8 @@ export async function deleteScopedRows(
  *
  * @example
  * ```ts
- * import { prismaReadCheck } from "@crowandraven/evalkeeper-prisma";
- * import { readCheckSummary } from "@crowandraven/evalkeeper";
+ * import { prismaReadCheck } from "@crowandraven/evalkeeper/prisma";
+ * import { readCheckSummary } from "../index.js";
  *
  * const report = await prismaReadCheck(prisma, map, { suites: SUITES });
  * console.log(readCheckSummary(report).join("\n"));

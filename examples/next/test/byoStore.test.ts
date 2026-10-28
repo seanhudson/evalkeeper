@@ -8,7 +8,7 @@ import {
   type PrismaFeedbackMap,
   type PrismaSettingsMap,
   type PrismaStoreMap,
-} from "@crowandraven/evalkeeper-prisma";
+} from "@crowandraven/evalkeeper/prisma";
 import { checkStoreReads, type AnySuite } from "@crowandraven/evalkeeper";
 import {
   describeFeedbackStoreContract,

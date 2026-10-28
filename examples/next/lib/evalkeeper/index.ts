@@ -1,11 +1,11 @@
 import "server-only";
-import { createMeaningJudge } from "@crowandraven/evalkeeper-ai-sdk";
+import { createMeaningJudge } from "@crowandraven/evalkeeper/ai-sdk";
 import {
   prismaFeedbackStore,
   prismaJudgmentCache,
   prismaSettingsStore,
   prismaStore,
-} from "@crowandraven/evalkeeper-prisma";
+} from "@crowandraven/evalkeeper/prisma";
 import {
   createSettings,
   isInjectionSuite,

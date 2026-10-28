@@ -13,6 +13,9 @@ export default defineConfig({
         "src/index.ts",
         "src/store.ts",
         "src/testing.ts",
+        // The Prisma stores run on a real database: their tests are in
+        // examples/next (prismaStore, byoStore, judgmentCache), not here.
+        "src/prisma/**",
       ],
       thresholds: {
         statements: 95,

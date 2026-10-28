@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { PrismaClient } from "@prisma/client";
-import { prismaStore } from "@crowandraven/evalkeeper-prisma";
+import { prismaStore } from "@crowandraven/evalkeeper/prisma";
 import { AUTHOR_REVIEWED, EXPERT_REVIEWED } from "@crowandraven/evalkeeper";
 
 // Answers that shipped with a suite: the answer key says who reviewed

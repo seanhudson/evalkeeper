@@ -14,24 +14,14 @@
   },
   "files": [
     "dist",
-    "src",
-    "!src/**/*.test.ts"
+    "src"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run --coverage"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@crowandraven/evalkeeper": "0.10.0"
-  },
-  "peerDependencies": {
-    "ai": ">=7",
-    "zod": "^3.25.0"
-  },
-  "devDependencies": {
-    "ai": "^7.0.146",
-    "zod": "^3.25.76"
   },
   "author": "Sean Hudson",
   "homepage": "https://github.com/seanhudson/evalkeeper#readme",

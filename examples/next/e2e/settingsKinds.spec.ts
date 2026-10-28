@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { PrismaClient } from "@prisma/client";
-import { prismaSettingsStore } from "@crowandraven/evalkeeper-prisma";
+import { prismaSettingsStore } from "@crowandraven/evalkeeper/prisma";
 import {
   GLOSSARY,
   createSettings,

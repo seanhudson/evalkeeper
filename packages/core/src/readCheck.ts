@@ -50,7 +50,7 @@ export type ReadRow = Readonly<Record<string, unknown>>;
 /**
  * Where a read check reads rows from: a store's records
  * (`checkStoreReads`), or an adapter's raw rows before it fills in
- * defaults (`prismaReadCheck` in `@crowandraven/evalkeeper-prisma`), so a
+ * defaults (`prismaReadCheck` in `@crowandraven/evalkeeper/prisma`), so a
  * value the store would quietly replace still shows. Cases come with
  * their answers in `labels`.
  */

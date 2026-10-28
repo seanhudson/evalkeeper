@@ -226,11 +226,11 @@ piece and what it costs. The steps below are for starting fresh.
 **1. Install.**
 
 ```bash
-npm install @crowandraven/evalkeeper @crowandraven/evalkeeper-prisma @crowandraven/evalkeeper-ai-sdk
+npm install @crowandraven/evalkeeper
 ```
 
 **2. Add the tables.** Copy the models from
-[`packages/prisma/schema/evalkeeper.prisma`](packages/prisma/schema/evalkeeper.prisma)
+[`packages/core/schema/evalkeeper.prisma`](packages/core/schema/evalkeeper.prisma)
 into your schema. They work on PostgreSQL, MySQL, and SQLite. Have eval
 tables already? Map onto them instead
 ([Bring your own](docs/adding-to-your-app.md#bring-your-own)).
@@ -274,7 +274,7 @@ routing.
 
 ```ts
 import { createRunner } from "@crowandraven/evalkeeper/runner";
-import { prismaStore } from "@crowandraven/evalkeeper-prisma";
+import { prismaStore } from "@crowandraven/evalkeeper/prisma";
 
 export const runner = createRunner({
   store: prismaStore(prisma),
@@ -314,12 +314,12 @@ them for you.
 
 ## Packages
 
-| Package                                              | What it is                                                                                        |
-| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| [`evalkeeper`](packages/core)                        | The core: suite types, stats, comparisons, suggestions, health, grader helpers, and the runner.   |
-| [`@crowandraven/evalkeeper-prisma`](packages/prisma) | The tables, a store on your Prisma client (or mapped onto your own tables), and a judgment cache. |
-| [`@crowandraven/evalkeeper-ai-sdk`](packages/ai-sdk) | For the Vercel AI SDK: instruction hashes, call pricing, priced decisions, and a meaning judge.   |
-| [`examples/next`](examples/next)                     | A Next.js app with two suites, demo models, and the eval pages.                                   |
+| Package                                         | What it is                                                                                        |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| [`evalkeeper`](packages/core)                   | The core: suite types, stats, comparisons, suggestions, health, grader helpers, and the runner.   |
+| [`evalkeeper/prisma`](packages/core/src/prisma) | The tables, a store on your Prisma client (or mapped onto your own tables), and a judgment cache. |
+| [`evalkeeper/ai-sdk`](packages/core/src/ai-sdk) | For the Vercel AI SDK: instruction hashes, call pricing, priced decisions, and a meaning judge.   |
+| [`examples/next`](examples/next)                | A Next.js app with two suites, demo models, and the eval pages.                                   |
 
 Already on Prisma with tables of your own? Pass a map to `prismaStore`
 instead of writing a store. Bring another database by implementing

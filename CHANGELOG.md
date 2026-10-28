@@ -35,17 +35,18 @@ version may change an interface, and its entry says how to update.
   packages still work, as re-exports, and will be retired. **To update:**
   install `@crowandraven/evalkeeper` alone, and import from
   `@crowandraven/evalkeeper/prisma` and `@crowandraven/evalkeeper/ai-sdk`.
-- The suite page and the hub are arrangements of sections: each page
-  loads its data once (`loadSuitePage`, `loadHub`) and lists sections
-  that hold the logic (`SuiteHeader`, `SuggestionCard`, `ModelTable`,
-  `Versions`, `ChecksSection`, `AnswerKeySection`, and the rest in
-  `SuiteSections.tsx`; `HubIntro`, `HubStats`, and `SuiteList` in
-  `HubSections.tsx`). The pages look and work as before. A page of your
-  own can load the same data and arrange the sections its own way, the
-  first step of the add-on plan (docs/plan-add-on.md). **To update:**
-  copy the suite and hub pages and the two section files again (`npx
-@crowandraven/evalkeeper add pages --only suite,hub,SuiteSections,HubSections --dry-run`
-  first).
+- The screens come from the package. The sections, the answer key,
+  settings history, the weekly check, and the smaller components are in
+  `@crowandraven/evalkeeper/react`, and read everything from one object
+  made with `defineEvals` (your runner, settings, stores, models, suites,
+  answer editors, actions, and base path), instead of importing your
+  app's modules. The copied pages are short arrangements of them: the
+  suite page loads with `loadSuitePage(evals, key)` and the hub with
+  `loadHub(evals)`. `RefreshWhile` is a piece your app passes (the copied
+  one uses Next.js's router). **To update:** copy the pages and glue
+  again (`npx @crowandraven/evalkeeper add pages --dry-run` first), which
+  adds `lib/evalkeeper/evals.ts`; delete your copies of the components
+  that moved, and add `RefreshWhile` to `lib/evalkeeper/appComponents.tsx`.
 
 ## 0.10.0 - 2026-10-28
 

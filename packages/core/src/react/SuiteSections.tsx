@@ -1,4 +1,3 @@
-import Link from "next/link";
 import {
   FAVOR_TEXT,
   attackMistakes,
@@ -13,9 +12,10 @@ import {
   seconds,
   seriousMistakes,
   suggest,
-} from "@crowandraven/evalkeeper";
-import { AnswerKey } from "@/components/evalkeeper/AnswerKey";
+} from "../index.js";
+import { AnswerKey } from "./AnswerKey.js";
 import {
+  Link,
   BackLink,
   Card,
   Chip,
@@ -25,26 +25,11 @@ import {
   Spinner,
   Submit,
   Tip,
-  pct,
-} from "@crowandraven/evalkeeper/react";
+} from "./pieces.js";
+import { pct } from "./format.js";
 import { RotateCw } from "lucide-react";
-import {
-  answerEditors,
-  MODELS,
-  runner,
-  settings,
-  SUITE_BY_KEY,
-} from "@/lib/evalkeeper";
-import { SettingsHistory } from "@/components/evalkeeper/SettingsHistory";
-import {
-  makeFallback,
-  makeLive,
-  rescore,
-  testAll,
-  testModel,
-  useSuggestion,
-} from "@/lib/evalkeeper/actions";
-import { EVALS_BASE, evalsPath } from "@/lib/evalkeeper/paths";
+import { evalsPath, type EvalAppConfig } from "./app.js";
+import { SettingsHistory } from "./SettingsHistory.js";
 
 /**
  * Everything a suite's page shows, loaded together: on a remote database
@@ -54,32 +39,32 @@ import { EVALS_BASE, evalsPath } from "@/lib/evalkeeper/paths";
  *
  * @param key - The suite's key.
  */
-export async function loadSuitePage(key: string) {
-  const operation = SUITE_BY_KEY[key]?.operation;
+export async function loadSuitePage(app: EvalAppConfig, key: string) {
+  const operation = app.suiteByKey[key]?.operation;
   if (!operation) return null;
   const [b, attackBoards, [history, liveSettings], inInstructions] =
     await Promise.all([
-      runner.board(key),
+      app.runner.board(key),
       // Injection suites that attack this feature: their results count here.
-      runner.attackBoards(key),
+      app.runner.attackBoards(key),
       // Records a deploy if the instructions changed under the live
       // settings, before reading them.
-      settings
+      app.settings
         .syncPrompt(operation)
         .then(() =>
           Promise.all([
-            settings.history(operation),
-            settings.current(operation),
+            app.settings.history(operation),
+            app.settings.current(operation),
           ]),
         ),
-      runner.casesInInstructions(key),
+      app.runner.casesInInstructions(key),
     ]);
   const { suite, rows } = b;
   const attacks = attacksFrom(attackBoards);
   // An injection suite's models are chosen on its base suite's page.
   const choosesHere = !isInjectionSuite(suite);
   const s = choosesHere
-    ? suggest(rows, suite.checks, suite.priority, MODELS, { attacks })
+    ? suggest(rows, suite.checks, suite.priority, app.models, { attacks })
     : null;
   const testing =
     rows.some((r) => r.testing) ||
@@ -91,7 +76,7 @@ export async function loadSuitePage(key: string) {
         async (r) =>
           [
             r.key,
-            await runner.estimateRun(key, r.model, "ALL", 1, {
+            await app.runner.estimateRun(key, r.model, "ALL", 1, {
               reasoningEffort: r.effort,
             }),
           ] as const,
@@ -108,7 +93,7 @@ export async function loadSuitePage(key: string) {
             async (r) =>
               [
                 `${a.suite.key}|${r.key}`,
-                await runner.estimateRun(a.suite.key, r.model, "ALL", 1),
+                await app.runner.estimateRun(a.suite.key, r.model, "ALL", 1),
               ] as const,
           ),
       ),
@@ -117,6 +102,7 @@ export async function loadSuitePage(key: string) {
   const live = rows.find((r) => r.live);
 
   return {
+    app,
     key,
     operation,
     b,
@@ -153,11 +139,11 @@ const VS: Record<string, string> = {
 
 /** The suite's name, what it tests, and its priority. */
 export function SuiteHeader({ data }: { data: SuitePageData }) {
-  const { suite } = data;
+  const { app, suite } = data;
   return (
     <>
       <div className="space-y-2">
-        <BackLink href={EVALS_BASE}>Evals</BackLink>
+        <BackLink href={app.basePath}>Evals</BackLink>
         <h1 className="text-2xl font-semibold">{suite.label}</h1>
         <p className="readable text-muted">{suite.description}</p>
         <p className="readable text-sm text-muted">
@@ -171,7 +157,7 @@ export function SuiteHeader({ data }: { data: SuitePageData }) {
 
 /** On an injection suite: models are chosen on its base suite, with a link there. */
 export function ChosenOnBase({ data }: { data: SuitePageData }) {
-  const { suite } = data;
+  const { app, suite } = data;
   return (
     <>
       {isInjectionSuite(suite) && (
@@ -187,7 +173,7 @@ export function ChosenOnBase({ data }: { data: SuitePageData }) {
             mistakes under attack than live.
           </p>
           <Link
-            href={evalsPath(suite.base.key)}
+            href={evalsPath(app, suite.base.key)}
             className="inline-block text-sm text-accent hover:underline"
           >
             Choose models on {suite.base.label}
@@ -200,7 +186,7 @@ export function ChosenOnBase({ data }: { data: SuitePageData }) {
 
 /** Which models to make live and the fallback, and why; shown when nothing would change too. */
 export function SuggestionCard({ data }: { data: SuitePageData }) {
-  const { key, s } = data;
+  const { app, key, s } = data;
   return (
     <>
       {/* Shown when nothing would change too, so a higher score that
@@ -215,7 +201,7 @@ export function SuggestionCard({ data }: { data: SuitePageData }) {
             {/* Retesting live changes nothing until the fallback would. */}
             {!s.same &&
               !(s.retestLive && (!s.fallback || s.fallback.fallback)) && (
-                <form action={useSuggestion}>
+                <form action={app.actions.useSuggestion}>
                   <input type="hidden" name="suite" value={key} />
                   <Submit>Use these</Submit>
                 </form>
@@ -275,6 +261,7 @@ export function CasesInInstructions({ data }: { data: SuitePageData }) {
 /** Every model the feature can use: its latest test, how it compares with live, under attack, and buttons to test it or choose it. */
 export function ModelTable({ data }: { data: SuitePageData }) {
   const {
+    app,
     key,
     suite,
     rows,
@@ -291,12 +278,12 @@ export function ModelTable({ data }: { data: SuitePageData }) {
           <h2 className="text-lg font-semibold">Models</h2>
           <div className="flex items-center gap-4">
             <Link
-              href={evalsPath(key, "compare")}
+              href={evalsPath(app, key, "compare")}
               className="text-sm text-muted hover:text-ink"
             >
               Compare two tests
             </Link>
-            <form action={testAll}>
+            <form action={app.actions.testAll}>
               <input type="hidden" name="suite" value={key} />
               <Submit variant="quiet">Test every model</Submit>
             </form>
@@ -380,21 +367,21 @@ export function ModelTable({ data }: { data: SuitePageData }) {
                           <Chip tone="fallback">Fallback</Chip>
                         </Tip>
                       )}
-                      {retiresLabel(MODELS, r.model) && (
+                      {retiresLabel(app.models, r.model) && (
                         <Tip
                           term="retiring"
                           side="bottom"
                           id={`retiring-${r.key}`}
                         >
                           <Chip tone="warn">
-                            Retires {retiresLabel(MODELS, r.model)}
+                            Retires {retiresLabel(app.models, r.model)}
                           </Chip>
                         </Tip>
                       )}
-                      {suite.decisions && MODELS[r.model]?.decisions && (
+                      {suite.decisions && app.models[r.model]?.decisions && (
                         <Tip
                           term={
-                            MODELS[r.model]?.decisions === "native"
+                            app.models[r.model]?.decisions === "native"
                               ? "nativeProbabilities"
                               : "promptedProbabilities"
                           }
@@ -402,7 +389,7 @@ export function ModelTable({ data }: { data: SuitePageData }) {
                           id={`decisions-${r.key}`}
                         >
                           <Chip tone="neutral">
-                            {MODELS[r.model]?.decisions === "native"
+                            {app.models[r.model]?.decisions === "native"
                               ? "Native probabilities"
                               : "Prompted"}
                           </Chip>
@@ -429,7 +416,7 @@ export function ModelTable({ data }: { data: SuitePageData }) {
                         <Spinner />
                       </span>
                     ) : r.test ? (
-                      <Link href={evalsPath(key, "runs", r.test.runId)}>
+                      <Link href={evalsPath(app, key, "runs", r.test.runId)}>
                         <Score right={r.test.right} total={r.test.total} />
                       </Link>
                     ) : (
@@ -446,6 +433,7 @@ export function ModelTable({ data }: { data: SuitePageData }) {
                       <div className="flex flex-col gap-1">
                         {attackBoards.map((a) => (
                           <UnderAttack
+                            app={app}
                             key={a.suite.key}
                             attackSuite={a.suite.key}
                             attackLabel={a.suite.label}
@@ -484,7 +472,7 @@ export function ModelTable({ data }: { data: SuitePageData }) {
                   <td className="p-3">
                     {r.vsLive && live?.test && r.test && !r.live ? (
                       <Link
-                        href={`${evalsPath(key, "compare")}?${new URLSearchParams({ a: live.test.runId, b: r.test.runId })}`}
+                        href={`${evalsPath(app, key, "compare")}?${new URLSearchParams({ a: live.test.runId, b: r.test.runId })}`}
                       >
                         {VS[r.vsLive]}
                       </Link>
@@ -498,20 +486,20 @@ export function ModelTable({ data }: { data: SuitePageData }) {
                     <div className="flex flex-col items-end gap-0.5">
                       <div className="flex justify-end gap-2">
                         {choosesHere && r.canMakeFallback && (
-                          <form action={makeFallback}>
+                          <form action={app.actions.makeFallback}>
                             <input type="hidden" name="suite" value={key} />
                             <input type="hidden" name="model" value={r.model} />
                             <Submit variant="quiet">Make fallback</Submit>
                           </form>
                         )}
                         {choosesHere && !r.live && r.canMakeLive && (
-                          <form action={makeLive}>
+                          <form action={app.actions.makeLive}>
                             <input type="hidden" name="suite" value={key} />
                             <input type="hidden" name="model" value={r.model} />
                             <Submit variant="quiet">Make live</Submit>
                           </form>
                         )}
-                        <form action={testModel}>
+                        <form action={app.actions.testModel}>
                           <input type="hidden" name="suite" value={key} />
                           <input type="hidden" name="model" value={r.model} />
                           <Tip
@@ -559,15 +547,16 @@ export function ModelTable({ data }: { data: SuitePageData }) {
 
 /** The feature's settings history, with rollback; not on an injection suite. */
 export function Versions({ data }: { data: SuitePageData }) {
-  const { key, history, liveSettings, choosesHere } = data;
+  const { app, key, history, liveSettings, choosesHere } = data;
   return (
     <>
       {choosesHere && (
         <SettingsHistory
+          app={app}
           suite={key}
           entries={history}
           liveId={liveSettings.version?.id ?? null}
-          label={(m) => MODELS[m]?.label ?? m}
+          label={(m) => app.models[m]?.label ?? m}
           defaults={liveSettings.settings}
         />
       )}
@@ -632,12 +621,13 @@ export function ChecksSection({ data }: { data: SuitePageData }) {
 
 /** The answer key: the cases in use and their answers, with ways to add and rate them. */
 export function AnswerKeySection({ data }: { data: SuitePageData }) {
-  const { key, b, suite, rows } = data;
+  const { app, key, b, suite, rows } = data;
   return (
     <>
       {/* The weekly check links here to review drafts. */}
       <section id="answer-key" className="scroll-mt-4 space-y-3">
         <AnswerKey
+          app={app}
           suite={suite}
           rows={rows}
           heading={
@@ -649,17 +639,17 @@ export function AnswerKeySection({ data }: { data: SuitePageData }) {
           tools={
             <>
               {suite.caseKind === "imported" &&
-                (suite.labelFromForm || answerEditors[key]) && (
+                (suite.labelFromForm || app.answerEditors[key]) && (
                   <Tip control term="rateBlind" side="bottom" align="end">
                     <Link
-                      href={evalsPath(key, "rate")}
+                      href={evalsPath(app, key, "rate")}
                       className="inline-flex items-center rounded-md border border-accent/40 bg-card px-3 py-1.5 text-sm text-accent hover:bg-accent/10"
                     >
                       Rate blind
                     </Link>
                   </Tip>
                 )}
-              <form action={rescore}>
+              <form action={app.actions.rescore}>
                 <input type="hidden" name="suite" value={key} />
                 <Tip control term="rescore" side="bottom" align="end">
                   <IconSubmit
@@ -709,6 +699,7 @@ function EstimateNote({
  * suggestion counts only current, complete ones.
  */
 function UnderAttack({
+  app,
   attackSuite,
   attackLabel,
   row,
@@ -717,6 +708,7 @@ function UnderAttack({
   variant,
   estimate,
 }: {
+  app: EvalAppConfig;
   attackSuite: string;
   attackLabel: string;
   row:
@@ -741,7 +733,7 @@ function UnderAttack({
   if (row?.test)
     return (
       <Link
-        href={evalsPath(attackSuite, "runs", row.test.runId)}
+        href={evalsPath(app, attackSuite, "runs", row.test.runId)}
         title={attackLabel}
         className="tabular-nums"
       >
@@ -756,7 +748,10 @@ function UnderAttack({
   // Settings rows are tested on the base suite only.
   if (variant) return <span className="text-muted">—</span>;
   return (
-    <form action={testModel} className="flex flex-col items-start gap-0.5">
+    <form
+      action={app.actions.testModel}
+      className="flex flex-col items-start gap-0.5"
+    >
       <input type="hidden" name="suite" value={attackSuite} />
       <input type="hidden" name="model" value={model} />
       <Tip

@@ -1,11 +1,5 @@
 import "server-only";
-import {
-  thumbsSummary,
-  weeklySummary,
-  type WeeklySummary,
-} from "@crowandraven/evalkeeper";
-import { MODELS, SUITES, feedbackStore, routeFor, runner, store } from ".";
-import { daysAgo } from "./time";
+import { SUITES, runner } from ".";
 
 /**
  * The weekly check: each suite's quick set on its live model. `start`
@@ -47,28 +41,5 @@ export async function draftWeekly(): Promise<void> {
   }
 }
 
-/** Where the weekly check stands, for the evals hub. */
-export async function loadWeekly(): Promise<WeeklySummary> {
-  const [runs, routes, feedback, cases] = await Promise.all([
-    Promise.all(SUITES.map((s) => store.listRuns(s.key, { limit: 50 }))).then(
-      (r) => r.flat(),
-    ),
-    Promise.all(
-      SUITES.map(
-        async (s) => [s.operation, await routeFor(s.operation)] as const,
-      ),
-    ).then((r) => Object.fromEntries(r)),
-    feedbackStore.listFeedback({ since: daysAgo(7) }),
-    Promise.all(SUITES.map((s) => store.listCases(s.key))).then((c) =>
-      c.flat(),
-    ),
-  ]);
-  return weeklySummary({
-    runs,
-    suites: SUITES,
-    routes,
-    models: MODELS,
-    thumbs: thumbsSummary(feedback, daysAgo(7)),
-    cases,
-  });
-}
+// Where the weekly check stands, for the hub, is loadWeekly in
+// @crowandraven/evalkeeper/react.

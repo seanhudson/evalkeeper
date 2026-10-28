@@ -17,6 +17,11 @@ export default defineConfig({
         // The Prisma stores run on a real database: their tests are in
         // examples/next (prismaStore, byoStore, judgmentCache), not here.
         "src/prisma/**",
+        // The screens run in a browser: their tests are examples/next's
+        // browser tests. The pieces (pieces.tsx) and the app object
+        // (app.ts) have unit tests here.
+        "src/react/!(pieces|app|format).tsx",
+        "src/react/index.ts",
       ],
       thresholds: {
         statements: 95,

@@ -1,4 +1,4 @@
-import { asText } from "@crowandraven/evalkeeper";
+import { asText } from "../index.js";
 
 /**
  * Any answer, readable, for suites without their own way to show it (no

@@ -80,6 +80,8 @@ export type TipProps = InfoTipProps & {
    */
   control?: boolean;
 };
+/** Whether a test is running, so the page should keep refreshing. */
+export type RefreshWhileProps = { active: boolean };
 /** A plain button: a toggle, a menu item, a step in a form. */
 export type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement>;
 /** A one-line text field. */
@@ -110,6 +112,7 @@ export type EvalComponents = {
   TextInput: ComponentType<TextInputProps>;
   TextArea: ComponentType<TextAreaProps>;
   Select: ComponentType<SelectProps>;
+  RefreshWhile: ComponentType<RefreshWhileProps>;
 };
 
 const Swapped = createContext<Partial<EvalComponents>>({});
@@ -396,4 +399,14 @@ export function TextArea(props: TextAreaProps) {
 export function Select(props: SelectProps) {
   const C = useSwapped("Select");
   return C ? createElement(C, props) : <select {...props} />;
+}
+
+/**
+ * Keeps a page up to date while a test runs. Refreshing is your router's
+ * job (Next.js's `router.refresh()`), so this draws nothing unless your
+ * app names its own `RefreshWhile`; without one, reload to see results.
+ */
+export function RefreshWhile(props: RefreshWhileProps) {
+  const C = useSwapped("RefreshWhile");
+  return C ? createElement(C, props) : null;
 }

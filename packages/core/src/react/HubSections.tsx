@@ -1,4 +1,3 @@
-import Link from "next/link";
 import {
   attackMistakes,
   attacksFrom,
@@ -12,44 +11,35 @@ import {
   type HistoryEntry,
   type Settings,
   type SettingsVersion,
-} from "@crowandraven/evalkeeper";
-import {
-  Card,
-  InfoTip,
-  StatusBadge,
-  pct,
-} from "@crowandraven/evalkeeper/react";
-import {
-  feedbackStore,
-  MODELS,
-  runner,
-  settings,
-  SUITES,
-} from "@/lib/evalkeeper";
-import { daysAgo } from "@/lib/evalkeeper/time";
-import { loadWeekly } from "@/lib/evalkeeper/weekly";
-import { evalsPath } from "@/lib/evalkeeper/paths";
-import { HistoryEntries } from "@/components/evalkeeper/SettingsHistory";
+} from "../index.js";
+import { Link, Card, InfoTip, StatusBadge } from "./pieces.js";
+import { pct } from "./format.js";
+import { HistoryEntries } from "./SettingsHistory.js";
+import { daysAgo, evalsPath, loadWeekly, type EvalAppConfig } from "./app.js";
+import type { Runner } from "../runner.js";
 import { ChevronDown } from "lucide-react";
 
 /**
  * Everything the evals hub shows, loaded together. Sections read from
  * this, so a hub of your own loads the same data once.
  */
-export async function loadHub() {
+export async function loadHub(app: EvalAppConfig) {
   const [boards, weekly] = await Promise.all([
-    Promise.all(SUITES.map((s) => runner.board(s.key))),
-    loadWeekly(),
+    Promise.all(app.suites.map((s) => app.runner.board(s.key))),
+    loadWeekly(app),
   ]);
   const histories = await Promise.all(
-    SUITES.map((s) =>
+    app.suites.map((s) =>
       Promise.all([
-        settings.history(s.operation),
-        settings.current(s.operation),
+        app.settings.history(s.operation),
+        app.settings.current(s.operation),
       ]),
     ),
   );
-  const thumbs = thumbsSummary(await feedbackStore.listFeedback(), daysAgo(7));
+  const thumbs = thumbsSummary(
+    await app.feedbackStore.listFeedback(),
+    daysAgo(7),
+  );
   const down = thumbs.reduce((t, s) => t + s.down, 0);
   const waiting = thumbs.reduce((t, s) => t + s.open, 0);
   const flagged = thumbs.filter((s) => s.alert).length;
@@ -68,6 +58,7 @@ export async function loadHub() {
     })),
   );
   return {
+    app,
     boards,
     weekly,
     histories,
@@ -101,7 +92,7 @@ export function HubIntro() {
 
 /** Where the features stand: most room to improve, the slowest and costliest live models, and thumbs down this week. */
 export function HubStats({ data }: { data: HubData }) {
-  const { down, waiting, flagged, needs } = data;
+  const { app, down, waiting, flagged, needs } = data;
   return (
     <>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -137,7 +128,7 @@ export function HubStats({ data }: { data: HubData }) {
               : "—"
           }
         />
-        <Link href={evalsPath("feedback")}>
+        <Link href={evalsPath(app, "feedback")}>
           <Stat
             title="Thumbs down this week"
             term="thumbs"
@@ -156,7 +147,7 @@ export function HubStats({ data }: { data: HubData }) {
 
 /** One card per feature, with an injection suite's results on its base feature's card. */
 export function SuiteList({ data }: { data: HubData }) {
-  const { histories, attacksOn, cards } = data;
+  const { app, histories, attacksOn, cards } = data;
   return (
     <>
       <section aria-labelledby="suites" className="space-y-3">
@@ -174,12 +165,13 @@ export function SuiteList({ data }: { data: HubData }) {
               b.suite.priority,
               b.cases,
               b.provisional,
-              MODELS,
+              app.models,
               { attacks: attacksFrom(attacked) },
             );
             const [history, current] = histories[i] ?? [[], null];
             return (
               <SuiteCard
+                app={app}
                 key={b.suite.key}
                 board={b}
                 attacked={attacked}
@@ -210,8 +202,8 @@ function NoSuites() {
           <code>run</code>, and <code>grade</code>.
         </li>
         <li>
-          Add it to <code>SUITES</code> in <code>lib/evalkeeper/index.ts</code>,
-          with its instructions hash.
+          Add it to <code>app.suites</code> in{" "}
+          <code>lib/evalkeeper/index.ts</code>, with its instructions hash.
         </li>
         <li>
           Add cases (here, or with <code>importCases</code> from files you
@@ -257,9 +249,8 @@ function Stat({
   );
 }
 
-type Board = Awaited<ReturnType<typeof runner.board>>;
+type Board = Awaited<ReturnType<Runner["board"]>>;
 
-const label = (model: string) => MODELS[model]?.label ?? model;
 const day = (d: Date) => d.toLocaleDateString();
 /** Green at 95% and up, amber from 80%, red below. */
 const scoreTone = (rate: number) =>
@@ -271,12 +262,14 @@ const scoreTone = (rate: number) =>
  * attack, what needs a look, and its settings history.
  */
 function SuiteCard({
+  app,
   board: b,
   attacked,
   health: h,
   history,
   current,
 }: {
+  app: EvalAppConfig;
   board: Board;
   /** The injection suites that attack this feature. */
   attacked: Board[];
@@ -284,6 +277,7 @@ function SuiteCard({
   history: HistoryEntry[];
   current: { settings: Settings; version: SettingsVersion | null } | null;
 }) {
+  const label = (model: string) => app.models[model]?.label ?? model;
   const live = b.rows.find((r) => r.live && !r.variant);
   const t = live?.test;
   const version = current?.version ?? null;
@@ -292,7 +286,7 @@ function SuiteCard({
       version.createdAt)
     : null;
   const s = current?.settings;
-  const price = s ? MODELS[s.model] : undefined;
+  const price = s ? app.models[s.model] : undefined;
   const versions = Math.max(1, ...history.map((e) => e.to.number));
   return (
     <Card className="relative space-y-4 transition-colors hover:border-muted">
@@ -302,7 +296,7 @@ function SuiteCard({
             <h2 className="font-semibold">
               {/* Covers the whole card; the versions toggle sits above it. */}
               <Link
-                href={evalsPath(b.suite.key)}
+                href={evalsPath(app, b.suite.key)}
                 className="after:absolute after:inset-0 after:rounded-lg"
               >
                 {b.suite.label}
@@ -359,7 +353,7 @@ function SuiteCard({
         )}{" "}
         · {b.cases} cases · {h.testedModels} models tested ·{" "}
         <Link
-          href={evalsPath(b.suite.key)}
+          href={evalsPath(app, b.suite.key)}
           className="relative text-accent hover:underline"
         >
           Compare models
@@ -389,7 +383,7 @@ function SuiteCard({
             )}{" "}
             · {a.cases} attack cases ·{" "}
             <Link
-              href={evalsPath(a.suite.key)}
+              href={evalsPath(app, a.suite.key)}
               className="text-accent hover:underline"
             >
               {a.suite.label}
@@ -416,6 +410,7 @@ function SuiteCard({
           </summary>
           <div className="px-3 pb-3">
             <HistoryEntries
+              app={app}
               suite={b.suite.key}
               entries={history}
               liveId={version?.id ?? null}

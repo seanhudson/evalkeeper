@@ -19,6 +19,7 @@ const FILES = [
   "lib/evalkeeper/time.ts",
   "lib/evalkeeper/paths.ts",
   "lib/evalkeeper/appComponents.tsx",
+  "lib/evalkeeper/evals.ts",
   "app/api/cron/evals-weekly/route.ts",
 ];
 

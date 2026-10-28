@@ -19,7 +19,7 @@ import {
   type Rate,
   type RunRecord,
 } from "@crowandraven/evalkeeper";
-import { DisagreementChip } from "@/components/evalkeeper/DisagreementChip";
+import { DisagreementChip } from "@crowandraven/evalkeeper/react";
 import {
   MODELS,
   SUITE_BY_KEY,

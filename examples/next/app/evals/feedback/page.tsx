@@ -7,7 +7,7 @@ import {
   type AnySuite,
   type FeedbackRecord,
 } from "@crowandraven/evalkeeper";
-import { FieldValues } from "@/components/evalkeeper/Fields";
+import { FieldValues } from "@crowandraven/evalkeeper/react";
 import {
   BackLink,
   Card,

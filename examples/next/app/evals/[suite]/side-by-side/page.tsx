@@ -9,9 +9,9 @@ import {
   type OutputRecord,
   type RunRecord,
 } from "@crowandraven/evalkeeper";
-import { DisagreementChip } from "@/components/evalkeeper/DisagreementChip";
-import { FieldValues } from "@/components/evalkeeper/Fields";
-import { ReadableOutput } from "@/components/evalkeeper/ReadableOutput";
+import { DisagreementChip } from "@crowandraven/evalkeeper/react";
+import { FieldValues } from "@crowandraven/evalkeeper/react";
+import { ReadableOutput } from "@crowandraven/evalkeeper/react";
 import {
   BackLink,
   Card,

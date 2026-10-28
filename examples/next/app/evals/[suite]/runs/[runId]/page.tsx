@@ -2,8 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { allPassed, money, summarize } from "@crowandraven/evalkeeper";
 import type { Metadata } from "next";
-import { FieldValues } from "@/components/evalkeeper/Fields";
-import { ReadableOutput } from "@/components/evalkeeper/ReadableOutput";
+import { FieldValues } from "@crowandraven/evalkeeper/react";
+import { ReadableOutput } from "@crowandraven/evalkeeper/react";
 import { BackLink, Card, pct } from "@crowandraven/evalkeeper/react";
 import {
   MODELS,

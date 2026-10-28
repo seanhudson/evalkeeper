@@ -1,7 +1,7 @@
 # Plan: Evalkeeper as an add-on that stays in step
 
-A plan to decide on before anything is built. Decisions are numbered at
-the end.
+A plan for building Evalkeeper into an add-on. The decisions at the end
+are settled.
 
 ## The goal
 
@@ -99,16 +99,44 @@ evalkeeper.prisma`) that the CLI writes and rewrites on upgrade, with
   read an app's old tables during the move, and new apps are never
   pointed at them.
 
+## One package, optional parts
+
+Everything ships in one package, `@crowandraven/evalkeeper`, with one
+version and one changelog, so its parts can't fall out of step. Each
+part is an entry point an app imports only if it wants it:
+
+| Import                              | What it is                                                 | Needs       |
+| ----------------------------------- | ---------------------------------------------------------- | ----------- |
+| `@crowandraven/evalkeeper`          | the core: types, checks, statistics, suggestions           | nothing     |
+| `…/runner`, `…/suites`, `…/testing` | as today                                                   | nothing new |
+| `…/react`                           | screens, sections, default components, and the provider    | React       |
+| `…/next`                            | route and server action glue                               | Next.js     |
+| `…/prisma`                          | the stores and the schema file                             | Prisma      |
+| `…/ai-sdk`                          | instructions hashing, pricing, judging, and the AI Gateway | the AI SDK  |
+
+React, Next.js, Prisma, and the AI SDK are optional peer dependencies:
+an app installs the ones its entry points need, and an entry point it
+never imports is never loaded. The root entry stays as pure as the core
+is today, which becomes the rule in AGENTS.md.
+
+The Prisma and AI SDK packages published today stay for a while as thin
+re-exports of their entry points, so apps using them keep working until
+they switch.
+
+**The AI Gateway, when it comes, is an option in `…/ai-sdk`,** not a
+package: model names as the gateway knows them in the model catalog,
+prices from the gateway, and calls routed through it. An app that
+doesn't use the gateway is unaffected.
+
 ## Framework glue
 
 - **React components, framework-free.** Screens take their data and
   actions through the provider and props, so they work in any React
   app.
-- **Next.js first.** A small `@crowandraven/evalkeeper-next` package
-  generates the route files and one server actions file, each a few
-  lines with no logic, written once by the CLI and rewritten only when
-  their shape changes.
-- **Other frameworks later**, as small adapters doing the same job.
+- **Next.js first.** `…/next` and the CLI generate the route files and
+  one server actions file, each a few lines with no logic, written once
+  and rewritten only when their shape changes.
+- **Other frameworks later**, as more entry points doing the same job.
 
 ## `init`: adding it to an app that already has things to evaluate
 
@@ -165,8 +193,9 @@ docs for the version it's on.
    passing unchanged.
 2. **Components and the provider.** Default components, and the provider
    that swaps them, proved by a second theme in the example.
-3. **The package and glue.** `evalkeeper-next`, with the example app
-   moving off copied pages onto it.
+3. **The entry points and glue.** `…/react` and `…/next`, and `…/prisma`
+   and `…/ai-sdk` moved in from their packages. The example app moves
+   off copied pages onto them.
 4. **One schema file and `evalkeeper migration`.** Then `move-in`, tried
    on a copy of an app's real data before any production move.
 5. **`init` and `upgrade`.**
@@ -195,20 +224,19 @@ pages and mapped tables keeps working until it does.
 - **Peer versions.** React and Next.js become peer dependencies, so an
   app on an older version waits until it upgrades.
 
-## Decisions
+## Decisions (settled)
 
-1. **Separate packages** for the React screens and for Next.js glue
-   (recommended), so the core stays free of both.
-2. **Settings and thumbs in Evalkeeper's tables too** (recommended), or
-   only the eval data, leaving an app's own model settings and thumbs
-   where they are.
-3. **Mapped stores** kept only for moving in (recommended), or kept as a
-   supported way to run.
+1. **One package with entry points** for every part, each optional
+   (replacing separate packages for the screens and the glue). The AI
+   Gateway, when added, is an option in `…/ai-sdk`.
+2. **Settings and thumbs live in Evalkeeper's tables too,** not only the
+   eval data. An app's model router reads the live settings from
+   Evalkeeper.
+3. **Mapped stores are kept only for moving in.** New apps are never
+   pointed at them.
 4. **One Test** runs a model on a feature's cases and its attack cases
-   together, with one estimate (recommended), or attacks stay a second
-   test.
-5. **Copying pages** stays as a documented last resort (recommended), or
-   goes.
-6. **Where the docs live:** the repo's `docs/`, published on GitHub
-   Pages with each release (recommended), or the GitHub wiki, which is
-   edited apart from the code and isn't tied to a release.
+   together, with one estimate.
+5. **Copying pages stays as a documented last resort,** and a copied
+   page no longer upgrades.
+6. **The docs live in the repo's `docs/`,** published on GitHub Pages
+   with each release, rather than the GitHub wiki.

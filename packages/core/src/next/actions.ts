@@ -309,6 +309,25 @@ export function evalActions(w: EvalWiring): Required<EvalActions> {
     },
 
     /**
+     * Retires the easy cases beyond the floor, then rescores recent tests
+     * (free), so their scores leave the retired cases out.
+     */
+    async retireEasy(form) {
+      await w.requireAdmin();
+      const suite = suiteFrom(form);
+      await runner.retireEasy(suite.key);
+      revalidatePath(page(suite.key));
+    },
+
+    /** Retires drafts nobody reviewed in STALE_DRAFT_DAYS. */
+    async retireStaleDrafts(form) {
+      await w.requireAdmin();
+      const suite = suiteFrom(form);
+      await runner.retireStaleDrafts(suite.key);
+      revalidatePath(page(suite.key));
+    },
+
+    /**
      * A person rates an imported case blind: their own confirmed answer,
      * with their reason, added beside anyone else's. Tests are rescored
      * for free.

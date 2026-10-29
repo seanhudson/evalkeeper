@@ -16,6 +16,7 @@ import {
 import type { BoardRow } from "./board.js";
 import { allPassed } from "./stats.js";
 import { pickQuickSet } from "./quickSet.js";
+import { answerKeyHealth } from "./prune.js";
 import { stableJson } from "./stableJson.js";
 import { suiteMetrics, type ScoredOutput } from "./stats.js";
 import type {
@@ -531,8 +532,12 @@ export function createRunner(opts: RunnerOptions) {
     run: RunRecord,
     suite: AnySuite,
     judgeCostUsd: number,
+    /** Only these cases' answers count; all when absent. */
+    caseIds?: ReadonlySet<string>,
   ): Promise<RunMetrics> {
-    const outputs = await store.listOutputs(run.id);
+    const outputs = (await store.listOutputs(run.id)).filter(
+      (o) => !caseIds || caseIds.has(o.caseId),
+    );
     const scored: ScoredOutput[] = outputs.map((o) => ({
       caseId: o.caseId,
       repeat: o.repeat,
@@ -737,10 +742,13 @@ export function createRunner(opts: RunnerOptions) {
     await store.updateRun(runId, {
       graderVersion: suite.graderVersion,
       ...(madeOnOldInputs ? {} : { datasetVersion: datasetVersion(used) }),
+      // A retired case's answers leave the score, as they left the
+      // dataset version.
       metrics: await metricsFor(
         run,
         suite,
         (run.metrics?.judgeCostUsd ?? 0) + judgeCost,
+        new Set(cases.keys()),
       ),
     });
   }
@@ -752,6 +760,45 @@ export function createRunner(opts: RunnerOptions) {
       limit,
     }))
       await rescoreRun(r.id);
+  }
+
+  /**
+   * A suite's answer-key health: cases every current model gets right
+   * (easy), cases models split on, near-duplicates, old drafts, and how
+   * the tags spread, from the board's current tests.
+   */
+  async function answerKeyHealthOf(suiteKey: string, today = new Date()) {
+    const [b, cases] = await Promise.all([
+      board(suiteKey),
+      store.listCases(suiteKey),
+    ]);
+    return answerKeyHealth(cases, b.caseResults, today);
+  }
+
+  /**
+   * Retires a suite's easy cases beyond the floor, then rescores its
+   * recent tests (free), so their scores leave the retired cases out.
+   * Returns how many it retired.
+   */
+  async function retireEasy(suiteKey: string): Promise<number> {
+    const { easyToRetire } = await answerKeyHealthOf(suiteKey);
+    for (const c of easyToRetire) await store.setCaseStatus(c.id, "RETIRED");
+    if (easyToRetire.length) await rescoreRecent(suiteKey);
+    return easyToRetire.length;
+  }
+
+  /**
+   * Retires a suite's drafts nobody reviewed in STALE_DRAFT_DAYS. Drafts
+   * are never graded against, so no test changes. Returns how many.
+   */
+  async function retireStaleDrafts(
+    suiteKey: string,
+    today = new Date(),
+  ): Promise<number> {
+    const cases = await store.listCases(suiteOrThrow(suiteKey).key);
+    const { staleDrafts } = answerKeyHealth(cases, {}, today);
+    for (const c of staleDrafts) await store.setCaseStatus(c.id, "RETIRED");
+    return staleDrafts.length;
   }
 
   /**
@@ -1273,6 +1320,9 @@ export function createRunner(opts: RunnerOptions) {
     gradeOutput,
     rescoreRun,
     rescoreRecent,
+    answerKeyHealth: answerKeyHealthOf,
+    retireEasy,
+    retireStaleDrafts,
     stopStuckRuns,
     compare,
     casesInInstructions: casesInInstructionsFor,

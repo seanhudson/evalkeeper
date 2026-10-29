@@ -56,6 +56,12 @@ export function weeklyCheck(
       return ids;
     },
     async run(ids) {
+      // Drafts nobody reviewed in a month go, so the review queue stays
+      // short; the weekly job's other half adds this week's.
+      for (const suite of w.suites)
+        await w.runner.retireStaleDrafts(suite.key).catch((e: unknown) => {
+          console.error(`Retiring old drafts failed for ${suite.key}`, e);
+        });
       await draft();
       // runEval never throws: a suite that fails says why on its own test.
       for (const id of ids) await w.runner.runEval(id, { fresh: true });

@@ -13,10 +13,6 @@ Already planned, and the next to be built:
   (its AI features, eval data, and model router) and sets Evalkeeper up
   around them. `upgrade` brings an app to a new release: the tables, the
   generated files, and a list of what changed.
-- **Answer-key health on each feature's page.** Suggests cases every
-  model now gets right, to retire while keeping a floor; flags cases
-  models split on, whose answer may be unclear; finds near-duplicates;
-  and retires drafts nobody reviewed.
 - **More from apps already using it.** Testing a reasoning setting, each
   check per model, buttons for starter cases and drafts, a suite's answer
   guide, AI features with no suite yet, and code as the fallback.

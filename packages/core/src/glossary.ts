@@ -117,6 +117,20 @@ export const GLOSSARY = {
     "A test's score on this one case: 100% when every check passed, or parts right of parts expected with partial credit, averaged over repeats.",
   sideBySide:
     "Both tests' answers to one case, next to the expected answer, with what each check found. Step through every case where they differ.",
+  answerKeyHealth:
+    "What would keep this answer key useful: cases that no longer tell models apart, cases to check, near-duplicates, old drafts, and thin tags.",
+  easyCases:
+    "Cases every current model gets fully right, with at least 3 models tested. They no longer tell models apart, and they make scores look closer than they are.",
+  easyFloor:
+    "Easy cases kept so a test still catches a model that breaks the basics: about a tenth of the cases in use, quick set first.",
+  splitCases:
+    "Cases models divide about evenly on. Often the answer is unclear, so check it. Once it's right, it's the most useful kind of case.",
+  nearDuplicates:
+    "Pairs of cases whose inputs share nearly all their words. Keep the clearer one: a duplicate counts the same thing twice.",
+  oldDrafts:
+    "Drafts nobody reviewed in 30 days. They're never graded against. The weekly check retires them on its own.",
+  tagCoverage:
+    "How many cases in use test each tag. A tag with one case is thinly tested: a new case there tells you the most.",
   expectedAnswer:
     "The answer the checks grade against: confirmed by a person, or provisional when put to use before review.",
 } as const;

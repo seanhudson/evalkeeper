@@ -85,7 +85,10 @@ design.
 - **An answer key that keeps up.** Suites can draft a few cases a week
   from your app's real activity (inputs people rated or admins flagged),
   as pending drafts for review, never the same input twice, and the
-  weekly check links to them.
+  weekly check links to them. Each feature's page suggests retiring
+  cases every model now gets right (keeping a floor), flags cases models
+  split on and near-duplicates, and retires drafts nobody reviewed in a
+  month.
 - **Decision models, graded on their probabilities.** For features that
   answer typed questions (pick a queue, say true or false) with the AI
   SDK's decisions, a suite scores the pick and the probabilities: how close
@@ -379,8 +382,8 @@ counted.
 
 ## Roadmap
 
-Next up: one command to add it and one to upgrade, answer-key health on
-each feature's page, AI gateway support, and a live demo. Later: stores
+Next up: one command to add it and one to upgrade, AI gateway support,
+and a live demo. Later: stores
 for Drizzle and plain Postgres, a CI gate, judge agreement, and more.
 The [roadmap](docs/roadmap.md) has the whole list.
 

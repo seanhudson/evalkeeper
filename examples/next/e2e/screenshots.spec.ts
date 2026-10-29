@@ -154,6 +154,16 @@ for (const scheme of SCHEMES) {
     });
     await shot("confirm");
 
+    // Answer-key health: easy cases to retire, once every model is tested.
+    await page.goto("/evals/ticket_triage");
+    await page
+      .getByRole("heading", { name: "Answer key health" })
+      .evaluate((el) => {
+        el.scrollIntoView({ block: "start" });
+        window.scrollBy(0, -24);
+      });
+    await shot("health");
+
     // Retiring a case: its menu in the answer key.
     await page.goto("/evals/ticket_triage");
     const easy = page

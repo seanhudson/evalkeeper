@@ -31,30 +31,49 @@ key](answer-key.md)); a draft nobody confirms is never graded against.
 
 ## Retire cases nobody misses any more
 
-Each case in the answer key shows how many of the models tested on it
-got it right (`4/4`). A case every model gets right, test after test, no
-longer tells models apart. It still costs money each time it runs, and it
-makes every score look closer than it is.
+A case every model gets right, test after test, no longer tells models
+apart. It still costs money each time it runs, and it makes every score
+look closer than it is. Each case in the answer key shows how many of
+the models tested on it got it right (`4/4`).
 
-To retire one, open the case, open its menu, and press **Retire case**.
-It leaves every future test and every score. Its answers and past
-results stay in your database.
+### Answer key health
 
-![A case open in the answer key, with its menu showing Retire case.](screenshots/retire-light.png "Retiring a case every model gets right.")
+Once three or more models have current tests, each feature's page shows
+**Answer key health** above the answer key, when something needs a
+look:
 
-Before you retire easy cases:
+![The answer key health panel: easy cases to retire with a floor kept, cases models split on, and tags with a single case.](screenshots/health-light.png "Answer key health on the ticket triage feature.")
 
-- **Keep a floor.** Keep about one in ten easy cases, the basics your
-  feature must never get wrong, so a test still catches a model that
-  breaks them.
-- **Wait for enough models.** A case three or more current models all
-  get right is easy; one model getting it right isn't evidence.
-- **Check the cases models split on, and keep them.** When models divide
-  about evenly on a case, its answer may be unclear, so check it first.
-  Once it's right, it's the most useful kind of case you have.
+- **Easy cases:** cases every current model gets fully right. **Retire
+  N easy cases** retires them all but a floor, then rescores recent
+  tests for free, so their scores leave the retired cases out.
+- **Split cases:** cases models divide about evenly on. The answer may
+  be unclear, so check it first. Once it's right, it's the most useful
+  kind of case you have.
+- **Near-duplicates:** pairs of cases whose inputs share nearly all
+  their words. Keep the clearer one.
+- **Old drafts:** drafts nobody reviewed in 30 days. The weekly check
+  retires them on its own, or press **Retire N old drafts now**.
+- **Coverage:** tags with a single case. A new case there tells you the
+  most.
+
+### The floor
+
+Retiring every easy case would leave nothing to catch a model that
+breaks the basics. So some easy cases stay: as many as a tenth of the
+cases in use, and at least one. The quick set's cases are kept first,
+since the weekly check runs those. A case counts as easy only once three or more current models all
+get it right; one model getting it right isn't evidence.
+
+### Retire one case by hand
 
 Retire a case for another reason too: its input no longer happens in
-your product, or it nearly repeats another case.
+your product, or it nearly repeats another case. Open the case, open its
+menu, and press **Retire case**. It leaves every future test and every
+score, and its answers and past results stay in your database. Press
+**Rescore tests** afterwards (free) so recent tests leave it out too.
+
+![A case open in the answer key, with its menu showing Retire case.](screenshots/retire-light.png "Retiring one case by hand.")
 
 ## Test again when something changes
 

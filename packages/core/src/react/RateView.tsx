@@ -30,6 +30,7 @@ export async function RateView({
   if (
     !suite ||
     suite.caseKind !== "imported" ||
+    suite.rateBlind === false ||
     !fields ||
     !(suite.labelFromForm || app.answerEditors[key])
   )

@@ -82,6 +82,39 @@ describe("suiteHealth", () => {
     expect(h.details[1]).toMatch(/Rule: 80%, under the 95% bar \(serious\)/);
   });
 
+  it("names each reason as a flag", () => {
+    const under = [
+      row("Luna", "gpt-6-luna", { live: true, passed: 20 }),
+      row("Haiku", "claude-haiku-5-5", { passed: 20 }),
+    ];
+    // Under the bar, and no fallback yet: one chip for each.
+    expect(suiteHealth(under, checks, quality, 60).flags).toEqual([
+      { kind: "below", serious: 1, minor: 0 },
+      { kind: "suggestFallback" },
+    ]);
+    // A cheaper model alone is a suggestion, not work to do.
+    const cheap = row("Haiku", "claude-haiku-5-5");
+    if (cheap.test) cheap.test.costPerAnswer = 0.001;
+    const h = suiteHealth(
+      [row("Luna", "gpt-6-luna", { live: true }), cheap],
+      checks,
+      { favor: "cost" },
+      60,
+    );
+    expect(h.status).toBe("change");
+    expect(h.flags).toEqual([{ kind: "suggestLive" }]);
+    // Meets every bar, short of the target: add cases.
+    const fine = [row("Luna", "gpt-6-luna", { live: true })];
+    expect(suiteHealth(fine, checks, quality, 33).flags).toContainEqual({
+      kind: "addCases",
+      cases: 33,
+      target: 50,
+    });
+    expect(suiteHealth(fine, checks, quality, 60).flags).toEqual([
+      { kind: "good" },
+    ]);
+  });
+
   it("shows room to improve when live misses a bar", () => {
     const rows = [
       row("Luna", "gpt-6-luna", { live: true, passed: 20 }),

@@ -5,6 +5,7 @@ import {
   answerFromForm,
   asText,
   barStatus,
+  pctBeside,
   checkBar,
   fieldValue,
   formText,
@@ -234,5 +235,14 @@ describe("JSON fields and answer editors (#62, #63)", () => {
     expect(() => answerFromForm(suite, form({}))).toThrow(
       "This suite has no answer form",
     );
+  });
+});
+
+describe("pctBeside", () => {
+  it("never rounds a rate under its bar up to it", () => {
+    expect(pctBeside(18 / 19, 0.95)).toBe("94.7%");
+    expect(pctBeside(0.95, 0.95)).toBe("95%");
+    expect(pctBeside(0.9, 0.95)).toBe("90%");
+    expect(pctBeside(0.996, 0.95)).toBe("100%");
   });
 });

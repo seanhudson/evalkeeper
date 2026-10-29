@@ -5,6 +5,53 @@ Notable changes, newest first. The format follows
 follow [semantic versioning](https://semver.org/): until 1.0, a minor
 version may change an interface, and its entry says how to update.
 
+## Unreleased
+
+### Added
+
+- **Each suite card names its reasons.** In place of one status word,
+  chips say why: "2 serious under bar", "New fallback suggested",
+  "Add cases (33 of 50)", "Retest live", "Good" (`HealthChips`, from a
+  new `flags` list on `suiteHealth`). A suggestion alone is the new
+  `change` status, not "Needs work".
+- **The board reads in the suggestion's order:** the suggested model,
+  live, then fewest serious mistakes, accuracy, and the priority
+  (`orderRows`), with **Suggested** and **Suggested fallback** chips.
+  **Against live** adds the gain when it's about as accurate ("About as
+  accurate, 4× cheaper", `priorityGain`). Cost and speed only break ties.
+- **The priority beside Models:** "Favors cost", "Favors speed", or
+  "Favors accuracy".
+- **The answer key health panel lists what to do,** in order: check these
+  answers, add cases here (only the thin topics, with **Draft cases for
+  these topics**), and retire these.
+- **Update attack cases** and an **Add an attack** link on the Attacks
+  tab.
+- `changedBy: "id"` in your wiring, for a settings history that keeps a
+  user id rather than a name.
+- `rateBlind: false` on a suite, to leave out **Rate blind** where answers
+  are one person's own or the app has no rate page.
+
+### Changed
+
+- The board's **Score** and **Time** columns are **Accuracy** and
+  **Speed**, and the hub's cards say accuracy too.
+- **Test** moved into each row's menu, with what it costs ("free, all 34
+  reused"), so the table loses a column. The menu closes once you choose.
+- Checks list serious ones first.
+- The hub's four cards are the same height.
+- A failed attack test says how many answers failed and to test again,
+  in place of "— · answers failed".
+
+### Fixed
+
+- "95%, under the 95% bar": a rate under its bar that would round up to
+  it shows one decimal ("94.7%", `pctBeside`).
+- A new fallback, saved with its test as evidence, was recorded as a
+  promotion. Only a new live model or reasoning setting is one now.
+
+**To update:** if your settings store keeps a user id as who made a
+change, set `changedBy: "id"` in your wiring. Nothing else needs a step.
+
 ## 0.12.0 - 2026-10-29
 
 The suite page now does what apps were building beside it: test a

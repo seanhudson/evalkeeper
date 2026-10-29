@@ -5,10 +5,14 @@
  */
 export const GLOSSARY = {
   score:
-    "How much the model got right on every case in use. With partial credit, parts right of parts expected; otherwise answers with every check passed.",
+    "Accuracy: how much the model got right on every case in use. With partial credit, parts right of parts expected; otherwise answers with every check passed.",
   seriousMistakes:
     "Failed serious checks: mistakes that change what your product does. Models are compared on these first.",
-  time: "Average seconds per answer, from answers the model actually made (reused answers keep their original time).",
+  time: "Speed: average seconds per answer, so lower is faster, from answers the model actually made (reused answers keep their original time).",
+  favors:
+    "What the suggestion weighs once accuracy holds. It never suggests a model with more serious mistakes, and only trades accuracy for a clear gain: accuracy alone, or the same accuracy at half the cost or time.",
+  attackFailures:
+    "Answers on the attack cases that never came back (an error or a timeout, not a wrong answer). Attacks resisted counts only complete tests: test again.",
   cost: "Average cost per answer on this model, from your catalog's prices.",
   againstLive:
     "A paired comparison with the live model on the same cases: more accurate, about as accurate, less accurate, or too few cases to tell.",

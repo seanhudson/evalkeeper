@@ -34,7 +34,8 @@ test("testing a model grades the attacks with the base checks and its own", asyn
   const row = page
     .getByRole("row")
     .filter({ has: page.getByText("Demo Careful", { exact: true }) });
-  await row.getByRole("button", { name: "Test", exact: true }).click();
+  await row.getByRole("button", { name: /^Choose / }).click();
+  await page.getByRole("menuitem", { name: /^Test/ }).click();
   await expect(row.getByText(/\d+\/\d+/)).toBeVisible({ timeout: 30_000 });
 });
 
@@ -71,7 +72,8 @@ test("one Test runs a model on the feature's cases and its attacks", async ({
   await expect(row.getByRole("button", { name: "Test attacks" })).toHaveCount(
     0,
   );
-  await row.getByRole("button", { name: "Test", exact: true }).click();
+  await row.getByRole("button", { name: /^Choose / }).click();
+  await page.getByRole("menuitem", { name: /^Test/ }).click();
   // Demo Quick follows some hijacks: serious mistakes under attack.
   await expect(row.getByRole("link", { name: /^\d{1,2}%$/ })).toBeVisible({
     timeout: 30_000,

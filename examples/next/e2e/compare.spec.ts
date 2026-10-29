@@ -11,8 +11,10 @@ async function tested(page: Page, label: string) {
   const row = modelRow(page, label);
   // The score links to the test; it reads "75% 12/16".
   const score = row.getByRole("link", { name: /\d+\/16/ });
-  if (!(await score.count()))
-    await row.getByRole("button", { name: "Test", exact: true }).click();
+  if (!(await score.count())) {
+    await row.getByRole("button", { name: /^Choose / }).click();
+    await page.getByRole("menuitem", { name: /^Test/ }).click();
+  }
   await expect(score).toBeVisible({ timeout: 30_000 });
 }
 

@@ -21,9 +21,11 @@ test("the hub shows each suite and what needs attention", async ({ page }) => {
 test("testing a model fills in its score", async ({ page }) => {
   await page.goto("/evals/ticket_triage");
   const row = modelRow(page, "Demo Careful");
-  // One estimate, for the feature's cases and its attacks.
-  await expect(row.getByText(/~\$|under 1¢/)).toBeVisible();
-  await row.getByRole("button", { name: "Test", exact: true }).click();
+  // One estimate, for the feature's cases and its attacks, in the menu.
+  await row.getByRole("button", { name: /^Choose / }).click();
+  const test = page.getByRole("menuitem", { name: /^Test/ });
+  await expect(test).toContainText(/~\$|under 1¢/);
+  await test.click();
   await expect(row.getByText(/\d+\/16/)).toBeVisible({ timeout: 30_000 });
   // The same test runs the attacks: its result under attack follows.
   await expect(row.getByRole("link", { name: /^\d+%$/ })).toBeVisible({
@@ -31,9 +33,12 @@ test("testing a model fills in its score", async ({ page }) => {
   });
   // Testing it again would reuse every answer, so the estimate says free.
   await page.reload();
+  await modelRow(page, "Demo Careful")
+    .getByRole("button", { name: /^Choose / })
+    .click();
   await expect(
-    modelRow(page, "Demo Careful").getByText(/^Free: all \d+ reused$/),
-  ).toBeVisible();
+    page.getByRole("menuitem", { name: /^Test again/ }),
+  ).toContainText(/free, all \d+ reused/);
 });
 
 test("the board marks the live model and a retiring one with chips", async ({
@@ -48,7 +53,7 @@ test("the board marks the live model and a retiring one with chips", async ({
 test("tooltips explain the columns on keyboard focus", async ({ page }) => {
   await page.goto("/evals/ticket_triage");
   const info = page
-    .getByRole("columnheader", { name: /Score/ })
+    .getByRole("columnheader", { name: /Accuracy/ })
     .locator("[aria-describedby]");
   await info.focus();
   const tip = page.locator(`#${await info.getAttribute("aria-describedby")}`);
@@ -61,7 +66,8 @@ test("a test's page shows each answer and why it was wrong", async ({
 }) => {
   await page.goto("/evals/ticket_triage");
   const row = modelRow(page, "Demo Quick");
-  await row.getByRole("button", { name: "Test", exact: true }).click();
+  await row.getByRole("button", { name: /^Choose / }).click();
+  await page.getByRole("menuitem", { name: /^Test/ }).click();
   const score = row.getByRole("link", { name: /\d+\/16/ });
   await expect(score).toBeVisible({ timeout: 30_000 });
   await score.click();
@@ -84,7 +90,8 @@ test("making a model live moves the Live chip", async ({ page }) => {
   await page.goto("/evals/action_items");
   for (const label of ["Demo Quick", "Demo Careful"]) {
     const row = modelRow(page, label);
-    await row.getByRole("button", { name: "Test", exact: true }).click();
+    await row.getByRole("button", { name: /^Choose / }).click();
+    await page.getByRole("menuitem", { name: /^Test/ }).click();
     await expect(row.getByRole("link", { name: /\d+\/\d+/ })).toBeVisible({
       timeout: 30_000,
     });

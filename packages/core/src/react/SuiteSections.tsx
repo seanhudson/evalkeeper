@@ -7,6 +7,9 @@ import {
   draftAnswers,
   draftsToTarget,
   newStarters,
+  orderRows,
+  pctBeside,
+  priorityGain,
   isInjectionSuite,
   meanCalibrationError,
   money,
@@ -132,6 +135,9 @@ export type SuitePageData = NonNullable<
 
 /** A share as a whole percent, or a dash when there's nothing to show. */
 const asPct = (x: number | null) => (x === null ? "—" : pct(x));
+
+/** The suite's priority, as the page names it. */
+const FAVORS = { cost: "cost", speed: "speed", quality: "accuracy" } as const;
 
 const VS: Record<string, string> = {
   BETTER: "More accurate",
@@ -273,12 +279,25 @@ export function ModelTable({ data }: { data: SuitePageData }) {
     estimates,
     showAttacks,
     live,
+    s,
   } = data;
+  const priority = suite.priority;
+  const suggestedLive = s && !s.keepLive ? s.live.key : null;
+  const suggestedFallback =
+    s?.fallback && !s.fallback.fallback ? s.fallback.key : null;
+  const ordered = orderRows(rows, suite.checks, priority, {
+    live: suggestedLive,
+  });
   return (
     <>
       <section className="space-y-3">
         <div className="flex items-center justify-between gap-4">
-          <h2 className="text-lg font-semibold">Models</h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-lg font-semibold">Models</h2>
+            <Tip term="favors" side="bottom" id="favors">
+              <Chip tone="neutral">Favors {FAVORS[priority.favor]}</Chip>
+            </Tip>
+          </div>
           <div className="flex items-center gap-4">
             <form action={app.actions.testAll}>
               <input type="hidden" name="suite" value={key} />
@@ -293,7 +312,7 @@ export function ModelTable({ data }: { data: SuitePageData }) {
                 <th className="p-3 font-normal">Model</th>
                 <th className="p-3 font-normal">
                   <Tip term="score" side="bottom">
-                    Score
+                    Accuracy
                   </Tip>
                 </th>
                 <th className="p-3 font-normal">
@@ -310,7 +329,7 @@ export function ModelTable({ data }: { data: SuitePageData }) {
                 )}
                 <th className="p-3 font-normal">
                   <Tip term="time" side="bottom" align="end">
-                    Time
+                    Speed
                   </Tip>
                 </th>
                 {suite.decisions && (
@@ -341,7 +360,7 @@ export function ModelTable({ data }: { data: SuitePageData }) {
               </tr>
             </thead>
             <tbody>
-              {rows.map((r) => (
+              {ordered.map((r) => (
                 <tr key={r.key} className="border-b border-line last:border-0">
                   <td className="p-3">
                     <div className="flex flex-wrap items-center gap-2">
@@ -362,6 +381,20 @@ export function ModelTable({ data }: { data: SuitePageData }) {
                           id={`fallback-${r.key}`}
                         >
                           <Chip tone="fallback">Fallback</Chip>
+                        </Tip>
+                      )}
+                      {(r.key === suggestedLive ||
+                        r.key === suggestedFallback) && (
+                        <Tip
+                          term="suggestion"
+                          side="bottom"
+                          id={`suggested-${r.key}`}
+                        >
+                          <Chip tone="suggested">
+                            {r.key === suggestedLive
+                              ? "Suggested"
+                              : "Suggested fallback"}
+                          </Chip>
                         </Tip>
                       )}
                       {retiresLabel(app.models, r.model) && (
@@ -413,9 +446,18 @@ export function ModelTable({ data }: { data: SuitePageData }) {
                         <Spinner />
                       </span>
                     ) : r.test ? (
-                      <Link href={evalsPath(app, key, "runs", r.test.runId)}>
-                        <Score right={r.test.right} total={r.test.total} />
-                      </Link>
+                      <div className="flex flex-col gap-0.5">
+                        <Link href={evalsPath(app, key, "runs", r.test.runId)}>
+                          <Score right={r.test.right} total={r.test.total} />
+                        </Link>
+                        {!r.test.stale && r.test.failedAnswers > 0 && (
+                          <span className="text-xs text-muted">
+                            {r.test.failedAnswers}{" "}
+                            {r.test.failedAnswers === 1 ? "answer" : "answers"}{" "}
+                            failed: test again
+                          </span>
+                        )}
+                      </div>
                     ) : (
                       <span className="text-muted">
                         {r.failed ?? "Not tested"}
@@ -468,6 +510,9 @@ export function ModelTable({ data }: { data: SuitePageData }) {
                         className={LINK}
                       >
                         {VS[r.vsLive]}
+                        {(r.vsLive === "SAME" || r.vsLive === "BETTER") &&
+                          priorityGain(r, live, priority) &&
+                          `, ${priorityGain(r, live, priority)}`}
                       </Link>
                     ) : r.vsLive ? (
                       VS[r.vsLive]
@@ -476,68 +521,28 @@ export function ModelTable({ data }: { data: SuitePageData }) {
                     )}
                   </td>
                   <td className="p-3">
-                    <div className="flex flex-col items-end gap-0.5">
-                      <div className="flex justify-end gap-2">
-                        <form action={app.actions.testModel}>
-                          <input type="hidden" name="suite" value={key} />
-                          <input type="hidden" name="model" value={r.model} />
-                          {/* A row at another setting tests at its own. */}
-                          {r.variant && (
-                            <input
-                              type="hidden"
-                              name="effort"
-                              value={r.effort ?? "default"}
-                            />
-                          )}
-                          <Tip
-                            control
-                            id={`test-${r.key}`}
-                            text={
-                              r.test
-                                ? "Test this model again on every case in use."
-                                : "Test this model on every case in use."
-                            }
-                            side="bottom"
-                            align="end"
-                          >
-                            <IconSubmit
-                              label="Test"
-                              icon={
-                                <RotateCw aria-hidden className="h-4 w-4" />
-                              }
-                            />
-                          </Tip>
-                        </form>
-                        {choosesHere && (
-                          <ModelMenu
-                            suite={key}
-                            model={r.model}
-                            label={r.label}
-                            makeLive={
-                              !r.live && r.canMakeLive
-                                ? app.actions.makeLive
-                                : null
-                            }
-                            makeFallback={
-                              r.canMakeFallback
-                                ? app.actions.makeFallback
-                                : null
-                            }
-                            effort={r.variant ? r.effort : undefined}
-                          />
-                        )}
-                      </div>
-                      <EstimateNote
-                        id={r.key}
-                        estimate={estimates.get(r.key)}
+                    <div className="flex justify-end">
+                      <ModelMenu
+                        suite={key}
+                        model={r.model}
+                        label={r.label}
+                        test={{
+                          action: app.actions.testModel,
+                          text: r.test ? "Test again" : "Test",
+                          note: estimateText(estimates.get(r.key)),
+                        }}
+                        makeLive={
+                          choosesHere && !r.live && r.canMakeLive
+                            ? app.actions.makeLive
+                            : null
+                        }
+                        makeFallback={
+                          choosesHere && r.canMakeFallback
+                            ? app.actions.makeFallback
+                            : null
+                        }
+                        effort={r.variant ? r.effort : undefined}
                       />
-                      {r.test && !r.test.stale && r.test.failedAnswers > 0 && (
-                        <span className="text-right text-xs text-muted">
-                          {r.test.failedAnswers}{" "}
-                          {r.test.failedAnswers === 1 ? "answer" : "answers"}{" "}
-                          failed on its last test
-                        </span>
-                      )}
                     </div>
                   </td>
                 </tr>
@@ -676,7 +681,7 @@ export function CheckBreakdownSection({ data }: { data: SuitePageData }) {
                           <span
                             className={`inline-block rounded px-2 py-0.5 tabular-nums ${BAR_TONE[barStatus(rate, checkBar(c))]}`}
                           >
-                            {pct(rate)}
+                            {pctBeside(rate, checkBar(c))}
                           </span>
                         )}
                       </td>
@@ -730,7 +735,11 @@ export function ChecksSection({ data }: { data: SuitePageData }) {
           <InfoTip term="checks" />
         </h2>
         <div className="grid gap-3 md:grid-cols-2">
-          {suite.checks.map((c) => {
+          {/* Serious first; each group keeps the suite's own order. */}
+          {[
+            ...suite.checks.filter((c) => c.severity === "serious"),
+            ...suite.checks.filter((c) => c.severity !== "serious"),
+          ].map((c) => {
             const rate = live?.test?.byCheck[c.key];
             return (
               <Card key={c.key} className="space-y-1">
@@ -756,7 +765,7 @@ export function ChecksSection({ data }: { data: SuitePageData }) {
                             : "text-warn"
                         }
                       >
-                        {pct(rate.passed / rate.n)}
+                        {pctBeside(rate.passed / rate.n, checkBar(c))}
                       </span>{" "}
                       ({rate.passed}/{rate.n}) ·{" "}
                     </>
@@ -934,6 +943,7 @@ export function AnswerKeySection({ data }: { data: SuitePageData }) {
       tools={
         <>
           {suite.caseKind === "imported" &&
+            suite.rateBlind !== false &&
             (suite.labelFromForm || app.answerEditors[key]) && (
               <Tip control term="rateBlind" side="bottom" align="end">
                 <Link
@@ -984,6 +994,26 @@ export function AnswerKeySection({ data }: { data: SuitePageData }) {
                       answers change.
                     </p>
                   }
+                  tools={
+                    <>
+                      <a
+                        href="https://seanhudson.github.io/evalkeeper/guides/suites/#more-attacks"
+                        className={LINK}
+                      >
+                        Add an attack
+                      </a>
+                      {app.actions.makeAttackCases && (
+                        <form action={app.actions.makeAttackCases}>
+                          <input
+                            type="hidden"
+                            name="suite"
+                            value={a.suite.key}
+                          />
+                          <Submit variant="quiet">Update attack cases</Submit>
+                        </form>
+                      )}
+                    </>
+                  }
                 />
               ),
             })),
@@ -995,30 +1025,19 @@ export function AnswerKeySection({ data }: { data: SuitePageData }) {
 }
 
 /** "Free: all 16 reused" or "~$0.03, 4 of 16 reused", under a model's buttons. */
-function EstimateNote({
-  id,
-  estimate,
-}: {
-  id: string;
+/**
+ * What testing a model costs now, as the menu says it: "free, all 34
+ * reused", "~$0.10, 15 of 34 reused". Null before any cases.
+ */
+function estimateText(
   estimate:
-    { answers: number; reused: number; costUsd: number | null } | undefined;
-}) {
+    { answers: number; reused: number; costUsd: number | null } | undefined,
+): string | null {
   if (!estimate || estimate.answers === 0) return null;
   const { answers, reused, costUsd } = estimate;
-  const text =
-    reused === answers
-      ? `Free: all ${answers} reused`
-      : `${costUsd === null ? "Cost unknown" : `~${money(costUsd)}`}${reused ? `, ${reused} of ${answers} reused` : ""}`;
-  return (
-    <Tip
-      text="What testing this model costs now. Answers an identical request gave in the last 7 days are reused for free."
-      id={`estimate-${id}`}
-      side="bottom"
-      align="end"
-    >
-      <span className="whitespace-nowrap text-xs text-muted">{text}</span>
-    </Tip>
-  );
+  return reused === answers
+    ? `free, all ${answers} reused`
+    : `${costUsd === null ? "cost unknown" : `~${money(costUsd)}`}${reused ? `, ${reused} of ${answers} reused` : ""}`;
 }
 
 /**
@@ -1059,12 +1078,23 @@ function UnderAttack({
         title={attackLabel}
         className="tabular-nums"
       >
-        {resisted ? pct(resisted.resisted / resisted.of) : "—"}
-        {row.test.stale
-          ? " · out of date"
-          : row.test.failedAnswers
-            ? " · answers failed"
-            : ""}
+        {row.test.stale ? (
+          `${resisted ? pct(resisted.resisted / resisted.of) : "—"} · out of date`
+        ) : row.test.failedAnswers && !resisted ? (
+          <Tip
+            term="attackFailures"
+            side="bottom"
+            id={`attack-failed-${row.key}`}
+          >
+            <span className="text-warn">
+              {row.test.failedAnswers} failed: test again
+            </span>
+          </Tip>
+        ) : resisted ? (
+          pct(resisted.resisted / resisted.of)
+        ) : (
+          "—"
+        )}
       </Link>
     );
   // Not tested yet: the model's Test runs the attacks with its cases.
@@ -1099,102 +1129,144 @@ export function AnswerKeyHealthSection({ data }: { data: SuitePageData }) {
   const { retireEasy, retireStaleDrafts } = app.actions;
   const cases = (n: number) => `${n} ${n === 1 ? "case" : "cases"}`;
   const drafts = (n: number) => `${n} ${n === 1 ? "draft" : "drafts"}`;
+  const { draftMore } = app.actions;
+  const check = h.split.length > 0 || h.duplicates.length > 0;
+  const retire = h.easyToRetire.length > 0 || h.staleDrafts.length > 0;
   return (
     <section className="space-y-3" aria-labelledby="answer-key-health">
       <h2 id="answer-key-health" className="text-lg font-semibold">
         Answer key health
         <InfoTip term="answerKeyHealth" />
       </h2>
-      <Card className="space-y-5 text-sm">
-        {h.easyToRetire.length > 0 && (
-          <div className="readable space-y-2">
-            <p>
-              <span className="font-medium">Easy cases</span>
-              <InfoTip term="easyCases" />: every current model gets{" "}
-              {cases(h.easy.length)} fully right, so they no longer tell models
-              apart. Retire {h.easyToRetire.length} and keep{" "}
-              {h.easy.length - h.easyToRetire.length} as a floor
-              <InfoTip term="easyFloor" />, so a test still catches a model that
-              breaks the basics. Recent tests are rescored for free.
-            </p>
-            {retireEasy && (
-              <form action={retireEasy}>
-                <input type="hidden" name="suite" value={key} />
-                <Submit variant="quiet">
-                  Retire {h.easyToRetire.length} easy{" "}
-                  {h.easyToRetire.length === 1 ? "case" : "cases"}
-                </Submit>
-              </form>
+      {/* What to do, in order: fix doubtful answers, fill thin spots, prune. */}
+      <Card className="space-y-6 text-sm">
+        {check && (
+          <div className="readable space-y-3">
+            <h3 className="font-medium">Check these answers</h3>
+            {h.split.length > 0 && (
+              <div className="space-y-1">
+                <p>
+                  Models split about evenly on {cases(h.split.length)}. That
+                  usually means the answer key is wrong or the case has no clear
+                  answer. Open each one: fix the answer, or retire the case if
+                  there&apos;s no right one.
+                  <InfoTip term="splitCases" />
+                </p>
+                <ul className="list-disc space-y-0.5 pl-5">
+                  {h.split.map((c) => (
+                    <li key={c.id}>{caseLink(c)}</li>
+                  ))}
+                </ul>
+              </div>
             )}
-          </div>
-        )}
-        {h.split.length > 0 && (
-          <div className="readable space-y-1">
-            <p>
-              <span className="font-medium">Split cases</span>
-              <InfoTip term="splitCases" />: models divide about evenly on{" "}
-              {cases(h.split.length)}. The answer may be unclear, so check it
-              first.
-            </p>
-            <ul className="list-disc space-y-0.5 pl-5">
-              {h.split.map((c) => (
-                <li key={c.id}>{caseLink(c)}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-        {h.duplicates.length > 0 && (
-          <div className="readable space-y-1">
-            <p>
-              <span className="font-medium">Near-duplicates</span>
-              <InfoTip term="nearDuplicates" />: these pairs share nearly all
-              their words. Keep the clearer one.
-            </p>
-            <ul className="list-disc space-y-0.5 pl-5">
-              {h.duplicates.map(([a, b]) => (
-                <li key={`${a.id}-${b.id}`}>
-                  {caseLink(a)} and {caseLink(b)}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-        {h.staleDrafts.length > 0 && (
-          <div className="readable space-y-2">
-            <p>
-              <span className="font-medium">Old drafts</span>
-              <InfoTip term="oldDrafts" />: {drafts(h.staleDrafts.length)}{" "}
-              nobody reviewed in 30 days. The weekly check retires them on its
-              own.
-            </p>
-            {retireStaleDrafts && (
-              <form action={retireStaleDrafts}>
-                <input type="hidden" name="suite" value={key} />
-                <Submit variant="quiet">
-                  Retire {h.staleDrafts.length} old{" "}
-                  {h.staleDrafts.length === 1 ? "draft" : "drafts"} now
-                </Submit>
-              </form>
+            {h.duplicates.length > 0 && (
+              <div className="space-y-1">
+                <p>
+                  These pairs share nearly all their words, so each counts
+                  twice. Keep the clearer one and retire the other.
+                  <InfoTip term="nearDuplicates" />
+                </p>
+                <ul className="list-disc space-y-0.5 pl-5">
+                  {h.duplicates.map(([a, b]) => (
+                    <li key={`${a.id}-${b.id}`}>
+                      {caseLink(a)} and {caseLink(b)}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
           </div>
         )}
         {thin.length > 0 && (
           <div className="space-y-2">
+            <h3 className="font-medium">Add cases here</h3>
             <p className="readable">
-              <span className="font-medium">Coverage</span>
-              <InfoTip term="tagCoverage" />: {thin.length}{" "}
-              {thin.length === 1 ? "tag has" : "tags have"} a single case. A new
-              case there tells you the most.
+              {thin.length} {thin.length === 1 ? "topic has" : "topics have"}{" "}
+              only one case, so the score on each rests on a single example: one
+              mistake swings it, and a fix can&apos;t be confirmed. Add a case
+              or two to each.
+              <InfoTip term="tagCoverage" />
             </p>
             <ul className="flex flex-wrap gap-1.5">
-              {h.tags.map(([t, n]) => (
+              {thin.map((t) => (
                 <li key={t}>
-                  <Chip tone={n === 1 ? "warn" : "neutral"}>
-                    {t} · {n}
-                  </Chip>
+                  <Chip tone="warn">{t}</Chip>
                 </li>
               ))}
             </ul>
+            {draftMore && suite.draftMore && (
+              <form action={draftMore}>
+                <input type="hidden" name="suite" value={key} />
+                <input
+                  type="hidden"
+                  name="focus"
+                  value={`Cases on these topics: ${thin.join(", ")}`.slice(
+                    0,
+                    500,
+                  )}
+                />
+                <Submit variant="quiet">Draft cases for these topics</Submit>
+              </form>
+            )}
+            <details className="group">
+              <summary className="cursor-pointer text-muted">
+                Show all topics
+              </summary>
+              <ul className="mt-2 flex flex-wrap gap-1.5">
+                {h.tags.map(([t, n]) => (
+                  <li key={t}>
+                    <Chip tone={n === 1 ? "warn" : "neutral"}>
+                      {t} · {n}
+                    </Chip>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          </div>
+        )}
+        {retire && (
+          <div className="readable space-y-3">
+            <h3 className="font-medium">Retire these</h3>
+            {h.easyToRetire.length > 0 && (
+              <div className="space-y-2">
+                <p>
+                  Every current model gets {cases(h.easy.length)} fully right,
+                  so they no longer tell models apart. Retire{" "}
+                  {h.easyToRetire.length} and keep{" "}
+                  {h.easy.length - h.easyToRetire.length} as a floor, so a test
+                  still catches a model that breaks the basics. Recent tests are
+                  rescored for free.
+                  <InfoTip term="easyCases" />
+                </p>
+                {retireEasy && (
+                  <form action={retireEasy}>
+                    <input type="hidden" name="suite" value={key} />
+                    <Submit variant="quiet">
+                      Retire {h.easyToRetire.length} easy{" "}
+                      {h.easyToRetire.length === 1 ? "case" : "cases"}
+                    </Submit>
+                  </form>
+                )}
+              </div>
+            )}
+            {h.staleDrafts.length > 0 && (
+              <div className="space-y-2">
+                <p>
+                  {drafts(h.staleDrafts.length)} nobody reviewed in 30 days. The
+                  weekly check retires them on its own.
+                  <InfoTip term="oldDrafts" />
+                </p>
+                {retireStaleDrafts && (
+                  <form action={retireStaleDrafts}>
+                    <input type="hidden" name="suite" value={key} />
+                    <Submit variant="quiet">
+                      Retire {h.staleDrafts.length} old{" "}
+                      {h.staleDrafts.length === 1 ? "draft" : "drafts"} now
+                    </Submit>
+                  </form>
+                )}
+              </div>
+            )}
           </div>
         )}
       </Card>

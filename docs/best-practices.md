@@ -91,6 +91,19 @@ a field meant. Give every input and answer field a plain label and help.
   tests from before a fix. Quote the board, and say which tests a number
   comes from.
 
+## Plan for a provider going down
+
+**Make the fallback another provider's model.** A fallback answers when
+the live model can't: an outage, a rate limit, credits running out. If
+both come from the same provider, the event that stops one stops the
+other. Evalkeeper only suggests a fallback from a different provider
+than live.
+
+**Start with at least two providers.** List models from two or more
+providers in your catalog from the first day, with a key for each, and
+test models from both. With one provider, no fallback can be suggested,
+and the first outage takes the feature down.
+
 ## Say plainly what a score means
 
 Every score shows how many cases it rests on and how far off it could

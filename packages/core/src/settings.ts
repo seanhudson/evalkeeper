@@ -436,9 +436,16 @@ export function createSettings(opts: {
         expectLive: null,
       });
     } else if (sameSettings(settingsOf(live), next)) return null;
+    // A promotion changes what answers: the live model or its reasoning.
+    // A new fallback, even with evidence, is a change.
+    const was = settingsOf(live);
+    const promoted =
+      by.evidence !== undefined &&
+      (was.model !== next.model ||
+        (was.reasoningEffort ?? null) !== (next.reasoningEffort ?? null));
     return store.switchTo(operation, {
       create: { settings: settingsOf(next), promptVersion },
-      kind: by.evidence === undefined ? "CHANGE" : "PROMOTE",
+      kind: promoted ? "PROMOTE" : "CHANGE",
       reason: by.reason,
       by: by.by,
       evidence: by.evidence,

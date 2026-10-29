@@ -146,6 +146,11 @@ List the models your app can use in a `ModelCatalog`. For each one, give:
 - the reasoning settings it accepts
 - when the provider retires it
 
+Include models from at least two providers, with a key for each. A
+feature's fallback should come from a different provider than its live
+model, so one outage can't take out both, and with one provider no
+fallback can be suggested.
+
 [Models and prices](models.md) has the fields, where prices come from,
 and how costs are counted.
 

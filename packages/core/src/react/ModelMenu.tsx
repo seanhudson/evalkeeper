@@ -6,14 +6,15 @@ import { Button } from "./pieces.js";
 import type { FormAction } from "./app.js";
 
 /**
- * A model row's menu: make it live, or make it the fallback, where the
- * row allows either. Keeps the model table narrow. Closes on a click
- * outside or Escape.
+ * A model row's menu: test it (with what that costs now), make it live,
+ * or make it the fallback, where the row allows either. Keeps the model
+ * table narrow. Closes on a click outside or Escape.
  */
 export function ModelMenu({
   suite,
   model,
   label,
+  test,
   makeLive,
   makeFallback,
   effort,
@@ -22,6 +23,11 @@ export function ModelMenu({
   model: string;
   /** The model's name, for the button's accessible name. */
   label: string;
+  /**
+   * Your testModel action, its words ("Test", "Test again"), and what
+   * testing costs now ("free, all 34 reused"), when known.
+   */
+  test?: { action: FormAction; text: string; note: string | null };
   /** Your makeLive action, when the model can be made live. */
   makeLive: FormAction | null;
   /** Your makeFallback action, when it can be the fallback. */
@@ -53,11 +59,20 @@ export function ModelMenu({
     };
   }, [open]);
 
-  if (!makeLive && !makeFallback) return null;
+  if (!test && !makeLive && !makeFallback) return null;
   const item =
     "block w-full rounded px-3 py-1.5 text-left text-sm hover:bg-tint";
-  const choice = (action: FormAction, text: string) => (
-    <form action={action}>
+  const choice = (action: FormAction, text: string, note?: string | null) => (
+    // Closes once chosen (after the submit is read), so the open menu
+    // doesn't cover the rows below it.
+    <form
+      action={action}
+      onSubmit={() =>
+        setTimeout(() => {
+          setOpen(false);
+        })
+      }
+    >
       <input type="hidden" name="suite" value={suite} />
       <input type="hidden" name="model" value={model} />
       {effort !== undefined && (
@@ -65,6 +80,7 @@ export function ModelMenu({
       )}
       <Button type="submit" role="menuitem" className={item}>
         {text}
+        {note && <span className="block text-xs text-muted">{note}</span>}
       </Button>
     </form>
   );
@@ -87,8 +103,9 @@ export function ModelMenu({
       {open && (
         <div
           role="menu"
-          className="absolute right-0 z-20 mt-1 w-40 rounded-md border border-line bg-card p-1 shadow-lg"
+          className="absolute right-0 z-20 mt-1 w-56 rounded-md border border-line bg-card p-1 shadow-lg"
         >
+          {test && choice(test.action, test.text, test.note)}
           {makeLive && choice(makeLive, "Make live")}
           {makeFallback && choice(makeFallback, "Make fallback")}
         </div>

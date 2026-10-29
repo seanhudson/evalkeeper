@@ -7,10 +7,10 @@ evidence on the record. This guide walks through it on a feature's page.
 ## Test the models
 
 The **Models** table lists every model the feature can use. Press **Test
-every model** to test them all, or the test button on one row to test
-just that model. The button shows what the test should cost first
-(`~$0.16`), or "Free" when every answer can be reused from a test in the
-last week.
+every model** to test them all, or open a row's menu (⋮) and choose
+**Test** to test just that model. The menu shows what the test should
+cost first (`~$0.16`), or "free" when every answer can be reused from a
+test in the last week.
 
 A test sends every case in use to the model, grades each answer with the
 suite's checks, and records what each answer cost and how long it took.
@@ -23,16 +23,26 @@ background; you can leave the page.
 
 For each model:
 
-- **Score:** the share of cases it got fully right, and how many.
+- **Accuracy:** the share of the checks it passed, with partial credit,
+  and how many.
 - **Serious mistakes:** answers that would change what your product
   does (the wrong queue, a missed urgent ticket). Fewer is better, and
-  it matters more than the score.
-- **Time and cost** per answer.
+  it matters more than accuracy.
+- **Speed and cost:** seconds and cost per answer.
 - **Against live:** is it **More accurate**, **About as accurate**, or
   **Less accurate** than the live model, or are there **Too few cases to
   tell**? Evalkeeper works this out from the cases both tested, not from
   the gap between scores, so a 3-point gap on 16 cases isn't called a
-  win.
+  win. When it's about as accurate, it says what it gains on the
+  feature's priority: "About as accurate, 4× cheaper".
+
+Beside **Models**, **Favors cost**, **Favors speed**, or **Favors
+accuracy** says what the feature weighs once accuracy holds. The rows
+come in the order the suggestion weighs them: the suggested model, then
+live, then the rest by fewest serious mistakes, then accuracy, then the
+priority. **Suggested** and **Suggested fallback** mark its picks.
+There's no blended score: cost and speed only ever break ties between
+models that are about as accurate.
 
 A model marked **Out of date** was tested before the instructions, the
 cases, or the checks changed. Test it again before trusting its numbers.
@@ -88,7 +98,8 @@ one reason each. Accuracy is the floor: a cheaper or faster model is
 suggested only when it's about as accurate, and only for a feature whose
 priority is cost or speed. A model about to retire is never suggested,
 and the fallback comes from another provider, so one outage can't take
-out both.
+out both. That needs models from at least two providers in your
+[catalog](models.md): with one, no fallback can be suggested.
 
 - Press **Use these** to take the suggestion.
 - Or choose yourself: open a row's menu and pick **Make live** or **Make

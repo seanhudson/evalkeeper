@@ -46,7 +46,8 @@ test("test a reasoning setting, and see each check per model", async ({
   ).toBeVisible();
 
   // The row's own Test retests at its setting: still one row for it.
-  await row.getByRole("button", { name: "Test" }).click();
+  await row.getByRole("button", { name: /^Choose / }).click();
+  await page.getByRole("menuitem", { name: /^Test/ }).click();
   await waitForTests(page);
   await expect(modelRow(page, "Demo Steady · high reasoning")).toHaveCount(1);
 });

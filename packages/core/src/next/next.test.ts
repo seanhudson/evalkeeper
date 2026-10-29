@@ -267,6 +267,23 @@ describe("the eval actions", () => {
     ).rejects.toThrow("This suite has no attacks");
   });
 
+  it("record who changed settings by name, or by id when asked", async () => {
+    const { actions, settings } = setup();
+    await addCases(actions);
+    await actions.testAll(form({ suite: "double" }));
+    await flush();
+    await actions.makeLive(form({ suite: "double", model: "bad" }));
+    expect((await settings.history("double_op"))[0]?.by).toBe("Ada");
+    const byId = setup();
+    byId.wiring.changedBy = "id";
+    const idActions = evalActions(byId.wiring);
+    await addCases(idActions);
+    await idActions.testAll(form({ suite: "double" }));
+    await flush();
+    await idActions.makeLive(form({ suite: "double", model: "bad" }));
+    expect((await byId.settings.history("double_op"))[0]?.by).toBe("ada");
+  });
+
   it("make a setting's row live at its own setting", async () => {
     const models = {
       bad: { label: "Bad", provider: "x", efforts: ["low", "high"] },

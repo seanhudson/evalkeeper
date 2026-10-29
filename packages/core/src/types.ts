@@ -62,6 +62,18 @@ export function checkBar(c: CheckDef): number {
   return c.bar ?? (c.severity === "serious" ? 0.95 : 0.75);
 }
 
+/**
+ * A rate as a whole percent, except when it's under its bar but would
+ * round up to it: then one decimal, so "94.7%, under the 95% bar" never
+ * reads as "95%, under the 95% bar". Pure.
+ */
+export function pctBeside(rate: number, bar: number): string {
+  const whole = Math.round(rate * 100);
+  return rate < bar && whole >= Math.round(bar * 100)
+    ? `${(Math.floor(rate * 1000) / 10).toFixed(1)}%`
+    : `${whole}%`;
+}
+
 /** Meets the bar, is within 10 points of it, or is further below. */
 export function barStatus(
   rate: number,
@@ -260,6 +272,12 @@ export type Suite<Input, Output, Label> = {
   describe?(input: Input): string;
   /** Fixture suites: what the expected answer's fields mean. */
   labelHelp?: string;
+  /**
+   * False when blind rating doesn't fit the suite's cases: each answer is
+   * one person's own (a verdict on their own data), or your app has no
+   * rate page. The answer key then offers no **Rate blind**.
+   */
+  rateBlind?: boolean;
   /**
    * How a person should judge an answer, where it takes more than each
    * field's help: shown above the answer key as "How to judge an answer".

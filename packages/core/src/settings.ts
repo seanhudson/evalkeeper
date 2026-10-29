@@ -1,5 +1,6 @@
 import type { ReasoningEffort } from "./models.js";
 import type { Route } from "./runner.js";
+import type { SuitePriority } from "./types.js";
 
 /**
  * Versioned model settings. Each AI feature's settings (its model,
@@ -28,7 +29,26 @@ export type Settings = {
    * temperature than the live one is out of date.
    */
   temperature?: number | null;
+  /**
+   * What the suggestion favors once accuracy holds: cost, speed, or
+   * quality (accuracy alone). Null or unset: the suite's own priority. An
+   * admin can change it on the suite's page, as a version like the rest.
+   */
+  favor?: SuitePriority["favor"] | null;
 };
+
+/**
+ * A suite's priority with its live settings' `favor`, when one is set:
+ * what its page, its hub card, and **Use these** weigh. Pure.
+ */
+export function priorityOf(
+  suite: { priority: SuitePriority },
+  settings: Pick<Settings, "favor"> | null | undefined,
+): SuitePriority {
+  return settings?.favor
+    ? { ...suite.priority, favor: settings.favor }
+    : suite.priority;
+}
 
 /**
  * One numbered version of a feature's settings, with the instructions it ran with. Never changed.
@@ -201,7 +221,8 @@ export function sameSettings(a: Settings, b: Settings): boolean {
     a.fallbackModel === b.fallbackModel &&
     a.reasoningEffort === b.reasoningEffort &&
     a.maxOutputTokens === b.maxOutputTokens &&
-    (a.temperature ?? null) === (b.temperature ?? null)
+    (a.temperature ?? null) === (b.temperature ?? null) &&
+    (a.favor ?? null) === (b.favor ?? null)
   );
 }
 
@@ -213,6 +234,8 @@ export function settingsOf(v: Settings): Settings {
     reasoningEffort: v.reasoningEffort,
     maxOutputTokens: v.maxOutputTokens,
     temperature: v.temperature ?? null,
+    // Only when set, so a store whose tables predate it keeps working.
+    ...(v.favor ? { favor: v.favor } : {}),
   };
 }
 
@@ -242,6 +265,11 @@ export function describeChange(
     out.push(
       `Temperature: ${from.temperature ?? "default"} → ${to.temperature ?? "default"}`,
     );
+  if ((from.favor ?? null) !== (to.favor ?? null)) {
+    const name = (f: Settings["favor"]) =>
+      f === "quality" ? "accuracy" : (f ?? "the suite's own");
+    out.push(`Favors: ${name(from.favor)} → ${name(to.favor)}`);
+  }
   return out;
 }
 

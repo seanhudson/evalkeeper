@@ -863,6 +863,7 @@ export type EvalSettingsVersionRow = {
   reasoningEffort: string | null;
   maxOutputTokens: number | null;
   temperature: number | null;
+  favor?: string | null;
   promptVersion: string | null;
   createdAt: Date;
 };
@@ -921,9 +922,13 @@ const version = (v: Row): SettingsVersion => ({
   reasoningEffort: strOrNull(v.reasoningEffort),
   maxOutputTokens: numOrNull(v.maxOutputTokens),
   temperature: numOrNull(v.temperature),
+  // An unknown or missing value reads as the suite's own priority.
+  favor: FAVORS.find((f) => f === v.favor) ?? null,
   promptVersion: strOrNull(v.promptVersion),
   createdAt: date(v.createdAt),
 });
+
+const FAVORS = ["speed", "cost", "quality"] as const;
 
 const settingsChange = (c: Row, by: string | null): SettingsChange => ({
   id: str(c.id),

@@ -10,6 +10,8 @@ import {
   orderRows,
   pctBeside,
   priorityGain,
+  priorityOf,
+  type SuitePriority,
   isInjectionSuite,
   meanCalibrationError,
   money,
@@ -40,7 +42,12 @@ import {
 } from "./pieces.js";
 import { pct, LINK } from "./format.js";
 import { ChevronDown, RotateCw, ShieldAlert, Sparkles } from "lucide-react";
-import { evalsPath, type EvalAppConfig, attacksResisted } from "./app.js";
+import {
+  evalsPath,
+  type EvalAppConfig,
+  type FormAction,
+  attacksResisted,
+} from "./app.js";
 import { SettingsHistory } from "./SettingsHistory.js";
 
 /**
@@ -77,8 +84,10 @@ export async function loadSuitePage(app: EvalAppConfig, key: string) {
   const attacks = attacksFrom(attackBoards);
   // An injection suite's models are chosen on its base suite's page.
   const choosesHere = !isInjectionSuite(suite);
+  // The suite's priority, or the one an admin chose in its settings.
+  const priority = priorityOf(suite, liveSettings.settings);
   const s = choosesHere
-    ? suggest(rows, suite.checks, suite.priority, app.models, { attacks })
+    ? suggest(rows, suite.checks, priority, app.models, { attacks })
     : null;
   const testing =
     rows.some((r) => r.testing) ||
@@ -125,6 +134,7 @@ export async function loadSuitePage(app: EvalAppConfig, key: string) {
     live,
     health,
     cases,
+    priority,
   };
 }
 
@@ -135,6 +145,13 @@ export type SuitePageData = NonNullable<
 
 /** A share as a whole percent, or a dash when there's nothing to show. */
 const asPct = (x: number | null) => (x === null ? "—" : pct(x));
+
+/** The choices when changing it: accuracy is always held. */
+const CHOICES = {
+  quality: "Accuracy alone",
+  speed: "Speed",
+  cost: "Cost",
+} as const;
 
 /** The suite's priority, as the page names it. */
 const FAVORS = { cost: "cost", speed: "speed", quality: "accuracy" } as const;
@@ -148,7 +165,7 @@ const VS: Record<string, string> = {
 
 /** The suite's name, what it tests, and its priority. */
 export function SuiteHeader({ data }: { data: SuitePageData }) {
-  const { app, suite } = data;
+  const { app, suite, priority } = data;
   return (
     <>
       <div className="space-y-2">
@@ -156,7 +173,7 @@ export function SuiteHeader({ data }: { data: SuitePageData }) {
         <h1 className="text-2xl font-semibold">{suite.label}</h1>
         <p className="readable text-muted">{suite.description}</p>
         <p className="readable text-sm text-muted">
-          Priority: {FAVOR_TEXT[suite.priority.favor]}.
+          Priority: {FAVOR_TEXT[priority.favor]}.
           <InfoTip term="priority" />
         </p>
       </div>
@@ -280,8 +297,8 @@ export function ModelTable({ data }: { data: SuitePageData }) {
     showAttacks,
     live,
     s,
+    priority,
   } = data;
-  const priority = suite.priority;
   const suggestedLive = s && !s.keepLive ? s.live.key : null;
   const suggestedFallback =
     s?.fallback && !s.fallback.fallback ? s.fallback.key : null;
@@ -297,6 +314,14 @@ export function ModelTable({ data }: { data: SuitePageData }) {
             <Tip term="favors" side="bottom" id="favors">
               <Chip tone="neutral">Favors {FAVORS[priority.favor]}</Chip>
             </Tip>
+            {choosesHere && app.actions.setPriority && (
+              <PriorityControl
+                action={app.actions.setPriority}
+                suite={key}
+                favor={priority.favor}
+                own={suite.priority.favor}
+              />
+            )}
           </div>
           <div className="flex items-center gap-4">
             <form action={app.actions.testAll}>
@@ -1025,6 +1050,68 @@ export function AnswerKeySection({ data }: { data: SuitePageData }) {
 }
 
 /** "Free: all 16 reused" or "~$0.03, 4 of 16 reused", under a model's buttons. */
+/**
+ * Changing what a feature's suggestion favors: accuracy, speed, or cost.
+ * It's saved as a new settings version, with an optional reason, so it
+ * shows under Versions and can be rolled back.
+ */
+function PriorityControl({
+  action,
+  suite,
+  favor,
+  own,
+}: {
+  action: FormAction;
+  suite: string;
+  favor: SuitePriority["favor"];
+  /** The suite's own priority, from its code. */
+  own: SuitePriority["favor"];
+}) {
+  return (
+    <details className="group relative text-sm font-normal">
+      <summary className="cursor-pointer list-none text-accent hover:underline">
+        Change
+      </summary>
+      <form
+        action={action}
+        className="absolute left-0 z-20 mt-2 w-72 space-y-3 rounded-md border border-line bg-card p-4 shadow-lg"
+      >
+        <input type="hidden" name="suite" value={suite} />
+        <div>
+          <label htmlFor="favor" className="block font-medium">
+            Once accuracy holds, favor
+          </label>
+          <Select
+            id="favor"
+            name="favor"
+            defaultValue={favor}
+            className="mt-1 w-full rounded-md border border-line bg-card px-3 py-2"
+          >
+            {(["quality", "speed", "cost"] as const).map((f) => (
+              <option key={f} value={f}>
+                {CHOICES[f]}
+                {f === own ? " (the suite's own)" : ""}
+              </option>
+            ))}
+          </Select>
+        </div>
+        <div>
+          <label htmlFor="favor-reason" className="block font-medium">
+            Why? <span className="font-normal text-muted">(optional)</span>
+          </label>
+          <TextInput
+            id="favor-reason"
+            name="reason"
+            maxLength={300}
+            className="mt-1 w-full rounded-md border border-line bg-card px-3 py-2"
+          />
+        </div>
+        <Submit>Save as a new version</Submit>
+      </form>
+    </details>
+  );
+}
+
 /**
  * What testing a model costs now, as the menu says it: "free, all 34
  * reused", "~$0.10, 15 of 34 reused". Null before any cases.

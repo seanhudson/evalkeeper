@@ -16,6 +16,7 @@ import {
   suggest,
   useDraftsProvisionally,
   withoutLeaks,
+  priorityOf,
   type ReasoningEffort,
 } from "../index.js";
 import { evalsPath, type EvalActions } from "../react/app.js";
@@ -258,9 +259,16 @@ export function evalActions(w: EvalWiring): Required<EvalActions> {
         runner.board(suite.key),
         attacksOn(suite.key),
       ]);
-      const s = suggest(board.rows, suite.checks, suite.priority, w.models, {
-        attacks,
-      });
+      const { settings: live } = await settings.current(suite.operation);
+      const s = suggest(
+        board.rows,
+        suite.checks,
+        priorityOf(suite, live),
+        w.models,
+        {
+          attacks,
+        },
+      );
       if (!s || s.same) return;
       await settings.update(
         suite.operation,
@@ -434,6 +442,28 @@ export function evalActions(w: EvalWiring): Required<EvalActions> {
             : null,
       });
       revalidatePath(page(suite.key));
+    },
+
+    async setPriority(form) {
+      const admin = await w.requireAdmin();
+      const suite = choosingSuite(form);
+      const favor = formText(form, "favor");
+      if (favor !== "quality" && favor !== "speed" && favor !== "cost")
+        throw new Error("Pick accuracy, speed, or cost");
+      const reason = form.get("reason");
+      await settings.update(
+        suite.operation,
+        // The suite's own priority needs no override.
+        { favor: favor === suite.priority.favor ? null : favor },
+        {
+          by: changer(admin),
+          reason:
+            typeof reason === "string" && reason.trim()
+              ? reason.trim().slice(0, 300)
+              : `Favors ${favor === "quality" ? "accuracy" : favor}`,
+        },
+      );
+      everyPage();
     },
 
     async useDraftsProvisionally(form) {

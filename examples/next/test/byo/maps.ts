@@ -40,7 +40,7 @@ export const settingsMap: PrismaSettingsMap = {
     evalSettingsChange: "versionSwitch",
   },
   fields: {
-    evalSettingsVersion: { temperature: null },
+    evalSettingsVersion: { temperature: null, favor: null },
     evalSettingsChange: { by: "userId" },
   },
   // The kind column is an enum made before OUTSIDE and INSTRUCTIONS.

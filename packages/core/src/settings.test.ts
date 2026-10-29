@@ -6,6 +6,7 @@ import {
   SettingsConflict,
   createSettings,
   describeChange,
+  priorityOf,
   promptVersionOf,
   splitPromptVersion,
   type Settings,
@@ -656,5 +657,33 @@ describe("instructions edited at runtime", () => {
       "OUTSIDE",
       "INSTRUCTIONS",
     ]);
+  });
+});
+
+describe("a feature's priority as a setting", () => {
+  it("overrides the suite's own, and shows in the history", async () => {
+    const { settings } = setup();
+    await settings.change("triage", DEFAULT, { by: "sam", reason: null });
+    await settings.update(
+      "triage",
+      { favor: "speed" },
+      { by: "sam", reason: "People wait on it now" },
+    );
+    const { settings: live } = await settings.current("triage");
+    expect(live.favor).toBe("speed");
+    const suite = { priority: { favor: "cost" as const, maxSeconds: 9 } };
+    expect(priorityOf(suite, live)).toEqual({ favor: "speed", maxSeconds: 9 });
+    expect(priorityOf(suite, { favor: null })).toEqual(suite.priority);
+    expect(describeChange(DEFAULT, live)).toEqual([
+      "Favors: the suite's own → speed",
+    ]);
+    // The same priority again changes nothing.
+    expect(
+      await settings.update(
+        "triage",
+        { favor: "speed" },
+        { by: "sam", reason: null },
+      ),
+    ).toBeNull();
   });
 });

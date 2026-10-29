@@ -133,7 +133,7 @@ describeSettingsStoreContract(
     await empty();
     return prismaSettingsStore(db, settingsMap);
   },
-  { without: ["temperature"] },
+  { without: ["temperature", "favor"] },
 );
 
 describeFeedbackStoreContract(
@@ -578,7 +578,7 @@ describe("scoped contracts on an app's own tables with other rows", () => {
   describeSettingsStoreContract(
     "mapped prismaSettingsStore, scoped",
     () => prismaSettingsStore(db, settingsMap),
-    { scope, cleanup, without: ["temperature"] },
+    { scope, cleanup, without: ["temperature", "favor"] },
   );
   describeFeedbackStoreContract(
     "mapped prismaFeedbackStore, scoped",

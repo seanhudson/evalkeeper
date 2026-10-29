@@ -789,7 +789,7 @@ export function describeFeedbackStoreContract(
 /** Options for the settings store contract. */
 export type SettingsStoreContractOptions = ScopedContractOptions & {
   /** Settings the store has no column for (see `StoreContractOptions`). */
-  without?: "temperature"[];
+  without?: ("temperature" | "favor")[];
 };
 
 /**
@@ -937,6 +937,40 @@ export function describeSettingsStoreContract(
         expect((await store.liveVersion(op))?.temperature).toBe(0.4);
         const v2 = await store.switchTo(op, create("b", v1.id));
         expect(v2.temperature ?? null).toBeNull();
+      });
+    }
+
+    if (opts.without?.includes("favor")) {
+      it("refuses a priority it has no column for, and keeps none", async () => {
+        const store = await make();
+        const op = names()("triage");
+        await expect(
+          store.switchTo(op, {
+            ...create("a", null),
+            create: {
+              settings: { ...settings("a"), favor: "speed" },
+              promptVersion: "p1",
+            },
+          }),
+        ).rejects.toThrow("favor");
+        const v1 = await store.switchTo(op, create("a", null));
+        expect(v1.favor ?? null).toBeNull();
+      });
+    } else {
+      it("keeps a version's priority", async () => {
+        const store = await make();
+        const op = names()("triage");
+        const v1 = await store.switchTo(op, {
+          ...create("a", null),
+          create: {
+            settings: { ...settings("a"), favor: "speed" },
+            promptVersion: "p1",
+          },
+        });
+        expect(v1.favor).toBe("speed");
+        expect((await store.liveVersion(op))?.favor).toBe("speed");
+        const v2 = await store.switchTo(op, create("b", v1.id));
+        expect(v2.favor ?? null).toBeNull();
       });
     }
 

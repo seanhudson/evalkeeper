@@ -93,6 +93,10 @@ export async function useDraftsProvisionally(form: FormData) {
   return actions.useDraftsProvisionally(form);
 }
 
+export async function setPriority(form: FormData) {
+  return actions.setPriority(form);
+}
+
 export async function runWeeklyNow() {
   return actions.runWeeklyNow();
 }

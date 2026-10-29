@@ -158,6 +158,9 @@ model EvalSettingsVersion {
   maxOutputTokens Int?
   /// Null: none sent.
   temperature     Float?
+  /// What suggestions favor once accuracy holds: speed, cost, or quality.
+  /// Null: the suite's own priority.
+  favor           String?
   /// The instructions' hash when this version was made.
   promptVersion   String?
   createdAt       DateTime @default(now())

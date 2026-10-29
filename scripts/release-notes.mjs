@@ -1,5 +1,5 @@
 // Writes a version's GitHub release notes from CHANGELOG.md: its section
-// there, with the install line and the three packages on npm. The release
+// there, with the install line and the package on npm. The release
 // workflow runs it for each version tag, so the release page keeps up with
 // the changelog instead of being written by hand.
 //
@@ -7,11 +7,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-const PACKAGES = [
-  "@crowandraven/evalkeeper",
-  "@crowandraven/evalkeeper-prisma",
-  "@crowandraven/evalkeeper-ai-sdk",
-];
+const PACKAGES = ["@crowandraven/evalkeeper"];
 
 /**
  * The changelog's section for `version`: its heading line and its body

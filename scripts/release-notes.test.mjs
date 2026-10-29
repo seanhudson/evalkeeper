@@ -39,10 +39,12 @@ test("adds the install line, the packages on npm, and the changelog link", () =>
   const notes = releaseNotes(CHANGELOG, "1.2.0") ?? "";
   assert.ok(notes.startsWith("New things."));
   // Split so the scrub check doesn't read "package@version" as an email.
-  assert.ok(notes.includes("npm install @crowandraven/evalkeeper" + "@1.2.0 "));
+  assert.ok(
+    notes.includes("npm install @crowandraven/evalkeeper" + "@1.2.0\n"),
+  );
   assert.ok(
     notes.includes(
-      "[1.2.0](https://www.npmjs.com/package/@crowandraven/evalkeeper-prisma/v/1.2.0)",
+      "[1.2.0](https://www.npmjs.com/package/@crowandraven/evalkeeper/v/1.2.0)",
     ),
   );
   assert.ok(notes.endsWith("CHANGELOG.md#120---2026-01-02)\n"));

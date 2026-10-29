@@ -5,7 +5,17 @@ Notable changes, newest first. The format follows
 follow [semantic versioning](https://semver.org/): until 1.0, a minor
 version may change an interface, and its entry says how to update.
 
-## Unreleased
+## 0.11.0 - 2026-10-29
+
+Evalkeeper is now one package you add to an app, not pages you copy: the
+screens and their actions come from `/react` and `/next`, so they upgrade
+with the package. Its tables live in their own schema file, written by
+`npx @crowandraven/evalkeeper migration`, and `moveIn` copies an app's own
+eval tables into them. Each feature's page gains answer key health, and
+the docs are a site. **To update:** move to zod 4.6.6 or later, then
+follow each **To update** below; [How to
+upgrade](https://seanhudson.github.io/evalkeeper/upgrading/how-to-upgrade/)
+has the steps.
 
 ### Added
 
@@ -153,6 +163,14 @@ version may change an interface, and its entry says how to update.
   again (`npx @crowandraven/evalkeeper add pages --dry-run` first), which
   adds `lib/evalkeeper/evals.ts`; delete your copies of the components
   that moved, and add `RefreshWhile` to `lib/evalkeeper/appComponents.tsx`.
+
+### Removed
+
+- The `@crowandraven/evalkeeper-prisma` and `@crowandraven/evalkeeper-ai-sdk`
+  packages. They only re-exported the `/prisma` and `/ai-sdk` entry points
+  of `@crowandraven/evalkeeper`, and are deprecated on npm. **To update:**
+  import from `@crowandraven/evalkeeper/prisma` and
+  `@crowandraven/evalkeeper/ai-sdk`, and remove the old packages.
 
 ### Fixed
 

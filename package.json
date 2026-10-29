@@ -9,7 +9,7 @@
     "site"
   ],
   "scripts": {
-    "build": "npm run build -w packages/core -w packages/prisma -w packages/ai-sdk",
+    "build": "npm run build -w packages/core",
     "test": "npm run test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "scrub": "node scripts/scrub-check.mjs",

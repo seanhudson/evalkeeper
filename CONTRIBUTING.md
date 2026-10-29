@@ -57,11 +57,10 @@ Coverage limits never go down.
    (`scripts/release-notes.mjs`); rerun it from the Actions tab with a tag
    to rewrite an older release.
 4. Build from the tagged commit: `npm run build`.
-5. Publish in dependency order: core, then the two packages that only
-   re-export its `/prisma` and `/ai-sdk` entry points for older apps
-   (`npm publish -w packages/core`, then `-w packages/prisma`, then
-   `-w packages/ai-sdk`). npm stages each publish for the owner to
-   approve, so approve each one before publishing the next.
+5. Publish: `npm publish -w packages/core`. npm stages the publish for
+   the owner to approve. It's the only package: the old
+   `@crowandraven/evalkeeper-prisma` and `-ai-sdk` packages are deprecated
+   on npm in favor of its `/prisma` and `/ai-sdk` entry points.
 
 ## Ideas
 

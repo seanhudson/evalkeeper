@@ -6,6 +6,83 @@ you press it. It gets those numbers from one place you write: your
 one's price. Evalkeeper never looks prices up itself, so they're only as
 current as your catalog.
 
+## Add a provider and its models
+
+Say you use OpenAI today and want to see whether a Claude model does
+better on one feature. Adding the provider is code in your app, then one
+catalog entry per model:
+
+1. **Install the provider's package, and set its key.** With the AI SDK,
+   that's `@ai-sdk/anthropic` and `ANTHROPIC_API_KEY`, in the same
+   environment your app already uses. Evalkeeper never holds keys.
+2. **Let your AI code call it.** Wherever your code turns a model id
+   into a model, add the provider. The example app does it in one
+   function:
+
+   ```ts
+   // lib/ai.ts
+   export function languageModel(model: string): LanguageModel {
+     const provider = MODELS[model]?.provider;
+     if (provider === "anthropic") return anthropic(model);
+     if (provider === "openai") return openai(model);
+     throw new Error(`No provider for ${model}`);
+   }
+   ```
+
+3. **Add each model to your catalog,** with its price and where it came
+   from ([The catalog](#the-catalog) has every field).
+4. **Offer it.** Return it from the runner's `candidates(operation)`
+   for the features it can serve. Leave out models whose key isn't set:
+   the example's `availableModels()` does this.
+5. **Test it.** It appears on each feature's board, marked "Not tested".
+   Press its test button (the estimate shows first), or **Test every
+   model**.
+
+Nothing goes live until you choose it: the new model only competes on
+the board.
+
+## Retire a model
+
+Providers announce when they'll stop serving a model. Record it as soon
+as you hear:
+
+```ts
+"gpt-6-luna": { …, retiring: "2027-06" },
+```
+
+From then on:
+
+- The board marks it "Retires June 2027".
+- It's never suggested, as live or as fallback.
+- If it's live or the fallback, the suggestion names a replacement, and
+  the weekly check warns while it's within 60 days of retiring.
+
+Then switch away from it on each feature that uses it: test every model,
+and use the suggestion or **Make live** on another. Once nothing runs on
+it, take it out of `candidates` so nobody spends a test on it. Keep its
+catalog entry, so past tests and versions still show its name and
+price.
+
+To hide retiring models from boards unless a feature still runs on
+them, create the runner with `retiringOnBoard: "inUse"`.
+
+## Make costs show up on the pages
+
+Costs appear in four places: each model's cost per answer on the board,
+what a test spent on its page, the estimate on each test button, and
+the hub's costliest live model. They need three things:
+
+1. **A price for each model** in your catalog
+   ([The catalog](#the-catalog)).
+2. **Each answer's cost, reported from `run`.** Price the call from its
+   token counts and pass it to `ctx.onCost`
+   ([How each answer's cost is counted](#how-each-answers-cost-is-counted)).
+   A suite that never calls `onCost` shows no cost.
+3. **A cost per answer for estimates,** from the runner's
+   `estimateCallCost`
+   ([How a test's cost is estimated](#how-a-tests-cost-is-estimated)).
+   Without it, a test still runs, but its button shows no estimate.
+
 ## The catalog
 
 A `ModelCatalog` is an object keyed by the model id your code passes to

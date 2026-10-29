@@ -135,10 +135,12 @@ grade each question with `decisionCheck`. A decision is graded twice:
 Two models that pick right equally often can differ a lot here, and that
 difference matters when your code acts on the probability (route only
 above 80%, ask a person below). **Native** decision models return a
-probability for every option; **prompted** ones are a text model asked to
-decide, which gives a pick with no distribution for choices, so
-probability quality counts only their true-or-false answers. A catalog
-entry's `decisions` field says which.
+probability for every option. They include models built only for typed
+judgments, such as TypeSafe's System One models (Jev), and providers'
+own decision models through the AI SDK. **Prompted** ones are a text
+model asked to decide, which gives a pick with no distribution for
+choices, so probability quality counts only their true-or-false answers.
+A catalog entry's `decisions` field says which.
 
 ## Rules
 

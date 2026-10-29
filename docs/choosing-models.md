@@ -37,7 +37,12 @@ For each model:
   feature's priority: "About as accurate, 4× cheaper".
 
 Beside **Models**, **Favors cost**, **Favors speed**, or **Favors
-accuracy** says what the feature weighs once accuracy holds. The rows
+accuracy** says what the feature weighs once accuracy holds. It starts as
+the suite's `priority` in code. Press **Change** beside it to pick
+another, with an optional reason: it's saved as a new settings version,
+so it shows under **Versions** with who and why, and rolling back undoes
+it. The suggestion, the row order, and the feature's card on the hub all
+follow it. The rows
 come in the order the suggestion weighs them: the suggested model, then
 live, then the rest by fewest serious mistakes, then accuracy, then the
 priority. **Suggested** and **Suggested fallback** mark its picks.

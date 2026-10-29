@@ -41,6 +41,8 @@ export type EvalActions = {
   draftMore?: FormAction;
   /** Putting draft answers to use before review, as provisional. */
   useDraftsProvisionally?: FormAction;
+  /** Changing what a feature's suggestion favors, as a settings version. */
+  setPriority?: FormAction;
   runWeeklyNow: () => Promise<void>;
   /** Blind rating; only for an app with the rate page. */
   rateBlind?: FormAction;

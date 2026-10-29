@@ -67,8 +67,12 @@ test("use the suggestion, see it in the history, and roll it back", async ({
   // On the hub, the card puts the live version (v1 again, after the
   // rollback) beside the versions count.
   await page.goto("/evals");
-  const versions = page
-    .locator("summary")
-    .filter({ hasText: /v1 live since .* · 2 versions/ });
-  await expect(versions).toHaveCount(1);
+  const card = page
+    .getByRole("heading", { name: "Ticket triage", exact: true })
+    .locator("xpath=ancestor::*[.//summary][1]");
+  await expect(
+    card
+      .locator("summary")
+      .filter({ hasText: /v1 live since .* · 2 versions/ }),
+  ).toHaveCount(1);
 });

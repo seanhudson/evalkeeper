@@ -284,6 +284,28 @@ describe("the eval actions", () => {
     expect((await byId.settings.history("double_op"))[0]?.by).toBe("ada");
   });
 
+  it("change what a feature favors, as a settings version", async () => {
+    const { actions, settings } = setup();
+    await actions.setPriority(
+      form({ suite: "double", favor: "speed", reason: "People wait" }),
+    );
+    expect((await settings.current("double_op")).settings.favor).toBe("speed");
+    const [latest] = await settings.history("double_op");
+    expect(latest).toMatchObject({
+      kind: "CHANGE",
+      by: "Ada",
+      reason: "People wait",
+    });
+    // Back to the suite's own priority: no override is kept.
+    await actions.setPriority(form({ suite: "double", favor: "cost" }));
+    expect(
+      (await settings.current("double_op")).settings.favor ?? null,
+    ).toBeNull();
+    await expect(
+      actions.setPriority(form({ suite: "double", favor: "fun" })),
+    ).rejects.toThrow("Pick accuracy, speed, or cost");
+  });
+
   it("make a setting's row live at its own setting", async () => {
     const models = {
       bad: { label: "Bad", provider: "x", efforts: ["low", "high"] },

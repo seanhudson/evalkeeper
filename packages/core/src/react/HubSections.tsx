@@ -3,6 +3,7 @@ import {
   attention,
   isInjectionSuite,
   perAnswer,
+  priorityOf,
   seconds,
   suiteHealth,
   thumbsSummary,
@@ -165,16 +166,16 @@ export function SuiteList({ data }: { data: HubData }) {
         <div className="space-y-4">
           {cards.map(({ b, i }) => {
             const attacked = attacksOn(b.suite.key);
+            const [history, current] = histories[i] ?? [[], null];
             const h = suiteHealth(
               b.rows,
               b.suite.checks,
-              b.suite.priority,
+              priorityOf(b.suite, current?.settings),
               b.cases,
               b.provisional,
               app.models,
               { attacks: attacksFrom(attacked) },
             );
-            const [history, current] = histories[i] ?? [[], null];
             return (
               <SuiteCard
                 app={app}

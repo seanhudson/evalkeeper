@@ -26,6 +26,12 @@ version may change an interface, and its entry says how to update.
   these topics**), and retire these.
 - **Update attack cases** and an **Add an attack** link on the Attacks
   tab.
+- **Change what a feature favors** on its page: **Change** beside
+  "Favors cost" picks accuracy alone, speed, or cost, with an optional
+  reason, saved as a settings version (a new `favor` setting) that
+  **Versions** shows and rolling back undoes. The suggestion, row order,
+  and hub card follow it (`priorityOf`). It needs the `setPriority`
+  action.
 - `changedBy: "id"` in your wiring, for a settings history that keeps a
   user id rather than a name.
 - `rateBlind: false` on a suite, to leave out **Rate blind** where answers
@@ -49,8 +55,18 @@ version may change an interface, and its entry says how to update.
 - A new fallback, saved with its test as evidence, was recorded as a
   promotion. Only a new live model or reasoning setting is one now.
 
-**To update:** if your settings store keeps a user id as who made a
-change, set `changedBy: "id"` in your wiring. Nothing else needs a step.
+**To update:**
+
+- Evalkeeper's tables gain one column, `EvalSettingsVersion.favor`. Run
+  `npx @crowandraven/evalkeeper migration` to add it. Until you do,
+  everything works except **Change** on a priority.
+- On your own versions tables, add a `favor` column, or map it to `null`
+  (`favor: null` in the settings map, `without: ["favor"]` in its
+  contract test).
+- Add `setPriority` to `lib/evalkeeper/actions.ts` (`add pages --force
+--only actions` rewrites it) to show **Change**.
+- If your settings store keeps a user id as who made a change, set
+  `changedBy: "id"` in your wiring.
 
 ## 0.12.0 - 2026-10-29
 

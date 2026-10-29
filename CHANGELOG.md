@@ -9,6 +9,17 @@ version may change an interface, and its entry says how to update.
 
 ### Added
 
+- Answer key health on each feature's page: cases every current model
+  gets right, with a button to retire them all but a floor (then rescore
+  recent tests for free); cases models split on and near-duplicates to
+  check; drafts nobody reviewed in 30 days; and tags with a single case.
+  The weekly check now retires those old drafts on its own. The runner
+  has `answerKeyHealth`, `retireEasy`, and `retireStaleDrafts`, and the
+  core `answerKeyHealth` does the sorting. **To update:** apps with their
+  own `actions.ts` add two one-line wrappers, `retireEasy` and
+  `retireStaleDrafts` (`add pages --only actions --force` rewrites the
+  file); without them the panel shows without its buttons.
+
 - A docs site at <https://seanhudson.github.io/evalkeeper/>: what
   Evalkeeper is, the guides from `docs/`, the changelog, and search, in
   the screens' own colors with light and dark. The guides are still
@@ -142,6 +153,12 @@ version may change an interface, and its entry says how to update.
   again (`npx @crowandraven/evalkeeper add pages --dry-run` first), which
   adds `lib/evalkeeper/evals.ts`; delete your copies of the components
   that moved, and add `RefreshWhile` to `lib/evalkeeper/appComponents.tsx`.
+
+### Fixed
+
+- Rescoring after a case was retired left the retired case's answers in
+  the test's score, while marking the test current. Rescored tests now
+  score only the cases still in use.
 
 ## 0.10.0 - 2026-10-28
 

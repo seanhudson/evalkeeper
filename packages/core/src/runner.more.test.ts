@@ -325,6 +325,79 @@ describe("runner, beyond a basic test", () => {
     expect(await runner.compare("double", a.run.id, "missing")).toBeNull();
   });
 
+  it("retires easy cases beyond a floor, then rescores, and retires old drafts", async () => {
+    const store = memoryStore();
+    // Each case in its own group, so "biggest in its group" passes too.
+    for (let n = 1; n <= 20; n++)
+      await store.createCase(kase(n, { input: { n, group: `g${n}` } }));
+    await store.createCase(
+      kase(99, {
+        labels: [
+          {
+            kind: "EXPECTED",
+            status: "PENDING",
+            value: { n: 198 },
+            raterRole: "MODEL",
+            raterId: null,
+            note: null,
+          },
+        ],
+      }),
+    );
+    const draft = store.cases.find((c) => c.labels[0]?.status === "PENDING");
+    if (!draft) throw new Error("setup");
+    draft.createdAt = new Date(Date.now() - 40 * 86_400_000);
+    // Three models that get every case right: every case is easy.
+    const models = {
+      a: { label: "A", provider: "one" },
+      b: { label: "B", provider: "two" },
+      c: { label: "C", provider: "three" },
+    };
+    const runner = createRunner({
+      store,
+      suites: [double],
+      models,
+      promptVersion: () => "v1",
+      route: () => ({ model: "a", fallbackModel: null, reasoningEffort: null }),
+      candidates: () => ({ models: ["a", "b", "c"] }),
+    });
+    for (const model of ["a", "b", "c"]) {
+      const { run } = await runner.createRun({ suite: "double", model });
+      await runner.runEval(run.id);
+    }
+
+    const h = await runner.answerKeyHealth("double");
+    expect(h.inUse).toBe(20);
+    expect(h.easy).toHaveLength(20);
+    expect(h.easyToRetire).toHaveLength(18);
+    expect(h.staleDrafts.map((c) => c.id)).toEqual([draft.id]);
+
+    expect(await runner.retireEasy("double")).toBe(18);
+    expect(store.cases.filter((c) => c.status === "RETIRED")).toHaveLength(18);
+    // Rescored: the tests now count only the cases kept as a floor.
+    const [latest] = await store.listRuns("double", { status: "SUCCEEDED" });
+    expect(latest?.metrics?.byCheck.right?.n).toBe(2);
+    // The floor is a tenth of the cases in use, and never below one.
+    expect(await runner.retireEasy("double")).toBe(1);
+    expect(await runner.retireEasy("double")).toBe(0);
+
+    expect(await runner.retireStaleDrafts("double")).toBe(1);
+    expect(draft.status).toBe("RETIRED");
+    expect(await runner.retireStaleDrafts("double")).toBe(0);
+  });
+
+  it("leaves a retired case out of a rescored test's score", async () => {
+    const { store, runner } = await setup([2, 4]);
+    const { run } = await runner.createRun({ suite: "double", model: "good" });
+    await runner.runEval(run.id);
+    expect((await store.getRun(run.id))?.metrics?.byCheck.right?.n).toBe(2);
+    const c = store.cases[0];
+    if (!c) throw new Error("setup");
+    await store.setCaseStatus(c.id, "RETIRED");
+    await runner.rescoreRecent("double");
+    expect((await store.getRun(run.id))?.metrics?.byCheck.right?.n).toBe(1);
+  });
+
   it("rescores recent tests after answers change, for free", async () => {
     const { store, runner } = await setup([2]);
     const { run } = await runner.createRun({ suite: "double", model: "good" });

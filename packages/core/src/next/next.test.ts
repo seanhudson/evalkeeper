@@ -244,6 +244,22 @@ describe("the eval actions", () => {
     expect(store.cases[0]?.status).toBe("RETIRED");
   });
 
+  it("retire easy cases and old drafts from the health panel", async () => {
+    const { actions, runner } = setup();
+    const easy = vi.spyOn(runner, "retireEasy").mockResolvedValue(3);
+    const stale = vi.spyOn(runner, "retireStaleDrafts").mockResolvedValue(1);
+    try {
+      await actions.retireEasy(form({ suite: "double" }));
+      await actions.retireStaleDrafts(form({ suite: "double" }));
+      expect(easy).toHaveBeenCalledWith("double");
+      expect(stale).toHaveBeenCalledWith("double");
+      expect(revalidated.at(-1)).toBe("/evals/double");
+    } finally {
+      easy.mockRestore();
+      stale.mockRestore();
+    }
+  });
+
   it("rate blind only in an imported suite", async () => {
     const { actions, store } = setup();
     await addCases(actions);
@@ -291,6 +307,9 @@ describe("the eval actions", () => {
     const draft = vi
       .spyOn(runner, "draftFromActivity")
       .mockRejectedValue(new Error("No activity source"));
+    const stale = vi
+      .spyOn(runner, "retireStaleDrafts")
+      .mockRejectedValue(new Error("Database is down"));
     double.draftFromActivity = async () => [];
     try {
       await actions.runWeeklyNow();
@@ -301,6 +320,9 @@ describe("the eval actions", () => {
       error.mockRestore();
     }
     expect(draft).toHaveBeenCalledWith("double");
+    // Old drafts go before this week's are added; a failure is logged.
+    expect(stale).toHaveBeenCalledWith("double");
+    stale.mockRestore();
     expect(store.runs.length).toBe(1);
     expect(revalidated.at(-1)).toBe("/evals");
   });

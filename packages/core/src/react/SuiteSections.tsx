@@ -1,5 +1,6 @@
 import {
   FAVOR_TEXT,
+  answerKeyHealth,
   attacksFrom,
   checkBar,
   isInjectionSuite,
@@ -44,7 +45,7 @@ import { SettingsHistory } from "./SettingsHistory.js";
 export async function loadSuitePage(app: EvalAppConfig, key: string) {
   const operation = app.suiteByKey[key]?.operation;
   if (!operation) return null;
-  const [b, attackBoards, [history, liveSettings], inInstructions] =
+  const [b, attackBoards, [history, liveSettings], inInstructions, cases] =
     await Promise.all([
       app.runner.board(key),
       // Injection suites that attack this feature: their results count here.
@@ -60,6 +61,7 @@ export async function loadSuitePage(app: EvalAppConfig, key: string) {
           ]),
         ),
       app.runner.casesInInstructions(key),
+      app.store.listCases(key),
     ]);
   const { suite, rows } = b;
   const attacks = attacksFrom(attackBoards);
@@ -90,6 +92,8 @@ export async function loadSuitePage(app: EvalAppConfig, key: string) {
   // makes them from its confirmed answers.
   const showAttacks = attackBoards.some((a) => a.cases > 0);
   const live = rows.find((r) => r.live);
+  // What would keep the answer key useful, from the same tests.
+  const health = answerKeyHealth(cases, b.caseResults);
 
   return {
     app,
@@ -109,6 +113,7 @@ export async function loadSuitePage(app: EvalAppConfig, key: string) {
     estimates,
     showAttacks,
     live,
+    health,
   };
 }
 
@@ -759,6 +764,137 @@ function UnderAttack({
 }
 
 /**
+ * Keeping the answer key useful: easy cases to retire (a floor stays),
+ * cases models split on and near-duplicates to check, old drafts, and
+ * tags with a single case. Shows only what needs a look, and nothing on
+ * an injection suite, whose cases are made from its base suite's.
+ */
+export function AnswerKeyHealthSection({ data }: { data: SuitePageData }) {
+  const { app, key, suite, health: h, choosesHere } = data;
+  const thin = h.tags.filter(([, n]) => n === 1).map(([t]) => t);
+  const needs =
+    h.easyToRetire.length ||
+    h.split.length ||
+    h.duplicates.length ||
+    h.staleDrafts.length ||
+    thin.length;
+  if (!choosesHere || !needs) return null;
+  const title = (c: { input: unknown }) => {
+    const p = suite.input.safeParse(c.input);
+    return p.success ? suite.title(p.data) : "(case)";
+  };
+  const caseLink = (c: { id: string; input: unknown }) => (
+    <a href={`#case-${c.id}`} className={LINK}>
+      {title(c)}
+    </a>
+  );
+  const { retireEasy, retireStaleDrafts } = app.actions;
+  const cases = (n: number) => `${n} ${n === 1 ? "case" : "cases"}`;
+  const drafts = (n: number) => `${n} ${n === 1 ? "draft" : "drafts"}`;
+  return (
+    <section className="space-y-3" aria-labelledby="answer-key-health">
+      <h2 id="answer-key-health" className="text-lg font-semibold">
+        Answer key health
+        <InfoTip term="answerKeyHealth" />
+      </h2>
+      <Card className="space-y-5 text-sm">
+        {h.easyToRetire.length > 0 && (
+          <div className="readable space-y-2">
+            <p>
+              <span className="font-medium">Easy cases</span>
+              <InfoTip term="easyCases" />: every current model gets{" "}
+              {cases(h.easy.length)} fully right, so they no longer tell models
+              apart. Retire {h.easyToRetire.length} and keep{" "}
+              {h.easy.length - h.easyToRetire.length} as a floor
+              <InfoTip term="easyFloor" />, so a test still catches a model that
+              breaks the basics. Recent tests are rescored for free.
+            </p>
+            {retireEasy && (
+              <form action={retireEasy}>
+                <input type="hidden" name="suite" value={key} />
+                <Submit variant="quiet">
+                  Retire {h.easyToRetire.length} easy{" "}
+                  {h.easyToRetire.length === 1 ? "case" : "cases"}
+                </Submit>
+              </form>
+            )}
+          </div>
+        )}
+        {h.split.length > 0 && (
+          <div className="readable space-y-1">
+            <p>
+              <span className="font-medium">Split cases</span>
+              <InfoTip term="splitCases" />: models divide about evenly on{" "}
+              {cases(h.split.length)}. The answer may be unclear, so check it
+              first.
+            </p>
+            <ul className="list-disc space-y-0.5 pl-5">
+              {h.split.map((c) => (
+                <li key={c.id}>{caseLink(c)}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {h.duplicates.length > 0 && (
+          <div className="readable space-y-1">
+            <p>
+              <span className="font-medium">Near-duplicates</span>
+              <InfoTip term="nearDuplicates" />: these pairs share nearly all
+              their words. Keep the clearer one.
+            </p>
+            <ul className="list-disc space-y-0.5 pl-5">
+              {h.duplicates.map(([a, b]) => (
+                <li key={`${a.id}-${b.id}`}>
+                  {caseLink(a)} and {caseLink(b)}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {h.staleDrafts.length > 0 && (
+          <div className="readable space-y-2">
+            <p>
+              <span className="font-medium">Old drafts</span>
+              <InfoTip term="oldDrafts" />: {drafts(h.staleDrafts.length)}{" "}
+              nobody reviewed in 30 days. The weekly check retires them on its
+              own.
+            </p>
+            {retireStaleDrafts && (
+              <form action={retireStaleDrafts}>
+                <input type="hidden" name="suite" value={key} />
+                <Submit variant="quiet">
+                  Retire {h.staleDrafts.length} old{" "}
+                  {h.staleDrafts.length === 1 ? "draft" : "drafts"} now
+                </Submit>
+              </form>
+            )}
+          </div>
+        )}
+        {thin.length > 0 && (
+          <div className="space-y-2">
+            <p className="readable">
+              <span className="font-medium">Coverage</span>
+              <InfoTip term="tagCoverage" />: {thin.length}{" "}
+              {thin.length === 1 ? "tag has" : "tags have"} a single case. A new
+              case there tells you the most.
+            </p>
+            <ul className="flex flex-wrap gap-1.5">
+              {h.tags.map(([t, n]) => (
+                <li key={t}>
+                  <Chip tone={n === 1 ? "warn" : "neutral"}>
+                    {t} · {n}
+                  </Chip>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </Card>
+    </section>
+  );
+}
+
+/**
  * A suite's page as Evalkeeper arranges it, or null for a suite you don't
  * have. A page of your own loads the same data (`loadSuitePage`) and
  * arranges these sections another way.
@@ -782,6 +918,7 @@ export async function SuitePage({
       <ModelTable data={data} />
       <Versions data={data} />
       <ChecksSection data={data} />
+      <AnswerKeyHealthSection data={data} />
       <AnswerKeySection data={data} />
     </div>
   );

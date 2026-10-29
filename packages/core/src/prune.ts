@@ -1,3 +1,5 @@
+import { confirmedLabel, type LabelLike } from "./labels.js";
+import { pickQuickSet } from "./quickSet.js";
 import { stableJson } from "./stableJson.js";
 import { at } from "./util.js";
 
@@ -92,4 +94,79 @@ export function tagCounts(cases: { tags: string[] }[]): [string, number][] {
   for (const c of cases)
     for (const t of c.tags) counts.set(t, (counts.get(t) ?? 0) + 1);
   return [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+}
+
+/** A case as answer-key health reads it. */
+type HealthCase = {
+  id: string;
+  input: unknown;
+  tags: string[];
+  status: string;
+  createdAt: Date;
+  labels: readonly LabelLike[];
+};
+
+/**
+ * A suite's answer key, sorted for upkeep: what the feature's page shows
+ * under "Answer key health". Only what needs a look is non-empty.
+ */
+export type AnswerKeyHealth<C> = {
+  /** Cases in use: not retired, with a confirmed or provisional answer. */
+  inUse: number;
+  /** Cases in use every current model gets fully right. */
+  easy: C[];
+  /** Of the easy ones, those to retire; the rest stay as a floor. */
+  easyToRetire: C[];
+  /** Cases in use that models divide about evenly on. */
+  split: C[];
+  /** Pairs of cases in use whose inputs share nearly all their words. */
+  duplicates: [C, C][];
+  /** Drafts nobody has reviewed in STALE_DRAFT_DAYS. */
+  staleDrafts: C[];
+  /** How many cases in use carry each tag, most first. */
+  tags: [string, number][];
+};
+
+/**
+ * A suite's answer-key health, from its cases (retired ones are ignored)
+ * and how each case fared across the board's current tests. The floor of
+ * easy cases keeps the quick set's first, so the weekly check still
+ * catches a regression on the basics.
+ *
+ * @param cases - The suite's cases, with their answers.
+ * @param caseResults - Per case, how many current models tested it and
+ *   got it fully right (the board's `caseResults`).
+ * @param today - Now, for old drafts.
+ * @returns What needs a look: easy, split, and duplicate cases, old
+ *   drafts, and how the tags spread.
+ */
+export function answerKeyHealth<C extends HealthCase>(
+  cases: readonly C[],
+  caseResults: Readonly<Record<string, CaseResult>>,
+  today = new Date(),
+): AnswerKeyHealth<C> {
+  const live = cases.filter((c) => c.status !== "RETIRED");
+  const inUse = live.filter((c) => confirmedLabel(c.labels));
+  const drafts = live.filter((c) => !confirmedLabel(c.labels));
+  const quick = new Set(
+    pickQuickSet(inUse.map((c) => ({ ...c, confirmed: true }))).map(
+      (c) => c.id,
+    ),
+  );
+  const easy = inUse.filter((c) => isEasy(caseResults[c.id]));
+  const retire = new Set(
+    easyToRetire(
+      easy.map((c) => ({ ...c, smoke: quick.has(c.id) })),
+      inUse.length,
+    ).map((c) => c.id),
+  );
+  return {
+    inUse: inUse.length,
+    easy,
+    easyToRetire: easy.filter((c) => retire.has(c.id)),
+    split: inUse.filter((c) => isSplit(caseResults[c.id])),
+    duplicates: nearDuplicates(inUse),
+    staleDrafts: drafts.filter((c) => isStaleDraft(c.createdAt, today)),
+    tags: tagCounts(inUse),
+  };
 }

@@ -53,6 +53,14 @@ export async function retireCase(form: FormData) {
   return actions.retireCase(form);
 }
 
+export async function retireEasy(form: FormData) {
+  return actions.retireEasy(form);
+}
+
+export async function retireStaleDrafts(form: FormData) {
+  return actions.retireStaleDrafts(form);
+}
+
 export async function rateBlind(form: FormData) {
   return actions.rateBlind(form);
 }

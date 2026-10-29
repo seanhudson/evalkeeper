@@ -29,6 +29,10 @@ export type EvalActions = {
   addCase: FormAction;
   editAnswer: FormAction;
   retireCase: FormAction;
+  /** Retiring easy cases beyond the floor; the health panel's button. */
+  retireEasy?: FormAction;
+  /** Retiring drafts nobody reviewed; the health panel's button. */
+  retireStaleDrafts?: FormAction;
   runWeeklyNow: () => Promise<void>;
   /** Blind rating; only for an app with the rate page. */
   rateBlind?: FormAction;

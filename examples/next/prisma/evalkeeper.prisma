@@ -1,0 +1,198 @@
+// Evalkeeper 0.10.0's tables. Written by `npx @crowandraven/evalkeeper migration`,
+// which rewrites it on upgrade: don't edit it.
+// Relations to your app's own models are ids (who confirmed an answer,
+// who rated one), not foreign keys, so these need nothing from your
+// schema. They work on PostgreSQL, MySQL, and SQLite: no enums, scalar
+// lists, or database-specific types.
+
+/// A frozen input to an AI feature, with the answers people gave it.
+model EvalCase {
+  id        String   @id @default(uuid())
+  /// The suite's key (see your suites' `key`).
+  suite     String
+  /// The suite's input, frozen. Remove anything personal before saving.
+  input     Json
+  /// Short labels for what the case tests: a JSON array of strings.
+  tags      Json
+  /// DEV or TEST.
+  split     String   @default("DEV")
+  /// DRAFT, ACTIVE, or RETIRED.
+  status    String   @default("DRAFT")
+  /// Where it came from: OWNER, MODEL_DRAFT, FEEDBACK, …
+  source    String
+  /// What it was made from (an id in your app), to avoid adding it twice.
+  sourceRef String?
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  labels  EvalCaseLabel[]
+  outputs EvalOutput[]
+
+  @@index([suite, status])
+}
+
+/// An answer to a case. Tests grade against the newest CONFIRMED one.
+model EvalCaseLabel {
+  id        String   @id @default(uuid())
+  caseId    String
+  /// EXPECTED.
+  kind      String   @default("EXPECTED")
+  /// PENDING, CONFIRMED, PROVISIONAL, REJECTED, or SKIPPED. A model's
+  /// draft is PENDING until a person confirms it. SKIPPED isn't an answer:
+  /// a rater passed on the case while rating blind (value is {}).
+  status    String   @default("PENDING")
+  value     Json
+  /// Who gave it: OWNER, MODEL, a reviewer's role.
+  raterRole String
+  raterId   String?
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  case EvalCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([caseId])
+}
+
+/// One test: a suite's cases on one model, at one reasoning setting.
+model EvalRun {
+  id               String    @id @default(uuid())
+  suite            String
+  model            String
+  promptVersion    String
+  reasoningEffort  String?
+  /// The temperature tested; null: none sent.
+  temperature      Float?
+  /// The output-token cap tested; null: the call's own default.
+  maxOutputTokens  Int?
+  /// ALL, SMOKE, DEV, or TEST.
+  set              String    @default("ALL")
+  repeats          Int       @default(1)
+  datasetVersion   String?
+  graderVersion    String
+  /// RUNNING, SUCCEEDED, or FAILED.
+  status           String    @default("RUNNING")
+  metrics          Json?
+  error            String?
+  estimatedCostUsd Float?
+  /// Who started it; null for a scheduled check.
+  startedBy        String?
+  startedAt        DateTime  @default(now())
+  finishedAt       DateTime?
+
+  outputs EvalOutput[]
+
+  @@index([suite, startedAt])
+}
+
+/// One answer in a test, with its grades.
+model EvalOutput {
+  id          String   @id @default(uuid())
+  runId       String
+  caseId      String
+  repeat      Int      @default(1)
+  requestHash String
+  output      Json?
+  error       String?
+  scores      Json?
+  costUsd     Float    @default(0)
+  ms          Int      @default(0)
+  reused      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  run  EvalRun  @relation(fields: [runId], references: [id], onDelete: Cascade)
+  case EvalCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([runId])
+  @@index([requestHash, createdAt])
+}
+
+/// A judge model's answer, kept so the same question is never paid twice.
+model EvalJudgment {
+  key       String   @id
+  value     Json
+  model     String
+  createdAt DateTime @default(now())
+}
+
+/// A person's thumbs up or down on one AI answer in your product.
+model EvalFeedback {
+  id        String   @id @default(uuid())
+  /// The AI feature that wrote the answer.
+  operation String
+  /// What was rated, in your app: a message id, a summary id, …
+  targetId  String
+  /// Who rated it, in your app. One rating per person per answer.
+  raterId   String
+  /// UP or DOWN.
+  rating    String
+  /// What was wrong, in their words (a thumbs down).
+  reason    String?
+  /// The text they rated, when your app doesn't keep it elsewhere.
+  excerpt   String?
+  /// The input behind the answer, de-identified, kept only with consent.
+  input     Json?
+  output    Json?
+  /// OPEN, CASED, or DISMISSED.
+  status    String   @default("OPEN")
+  /// The case made from it.
+  caseId    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([raterId, operation, targetId])
+  @@index([operation, updatedAt])
+}
+
+// Versioned model settings (optional): add these three to record every
+// change to which model a feature runs on, with rollback. Skip them if
+// your app keeps its own routing.
+
+/// One feature's settings, numbered; never changed once made.
+model EvalSettingsVersion {
+  id              String   @id @default(uuid())
+  operation       String
+  number          Int
+  model           String
+  fallbackModel   String?
+  reasoningEffort String?
+  maxOutputTokens Int?
+  /// Null: none sent.
+  temperature     Float?
+  /// The instructions' hash when this version was made.
+  promptVersion   String?
+  createdAt       DateTime @default(now())
+
+  live      EvalSettingsLive[]
+  changesTo EvalSettingsChange[] @relation("changeTo")
+
+  @@unique([operation, number])
+}
+
+/// Which version each feature runs on now.
+model EvalSettingsLive {
+  operation String              @id
+  versionId String
+  updatedAt DateTime            @updatedAt
+  version   EvalSettingsVersion @relation(fields: [versionId], references: [id])
+}
+
+/// Every switch: who, when, why, and the evidence.
+model EvalSettingsChange {
+  id            String              @id @default(uuid())
+  operation     String
+  /// CHANGE, PROMOTE, ROLLBACK, DEPLOY, OUTSIDE, or INSTRUCTIONS.
+  kind          String
+  fromVersionId String?
+  toVersionId   String
+  reason        String?
+  /// Who made it; null for the system.
+  by            String?
+  evidence      Json?
+  createdAt     DateTime            @default(now())
+
+  to EvalSettingsVersion @relation("changeTo", fields: [toVersionId], references: [id])
+
+  @@index([operation, createdAt])
+}

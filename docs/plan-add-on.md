@@ -63,8 +63,8 @@ a fork:
 ## Data: one schema, owned by Evalkeeper
 
 - **The schema ships as its own file, never pasted.** With Prisma, it's
-  a file in the app's multi-file schema folder (`prisma/schema/
-evalkeeper.prisma`) that the CLI writes and rewrites on upgrade, with
+  a file beside the app's schema (`prisma/evalkeeper.prisma`, with Prisma
+  pointed at that folder) that the CLI writes and rewrites on upgrade, with
   a header saying not to edit it. Relations to the app's own models (a
   user who confirmed an answer) are ids, not foreign keys, so the file
   needs nothing from the app's schema.

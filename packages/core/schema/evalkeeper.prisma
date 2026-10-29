@@ -1,9 +1,7 @@
-// Evalkeeper's tables. Copy these models into your prisma/schema.prisma,
-// then write a migration from the schema file:
-//   npx prisma migrate diff --from-schema-datamodel <before> \
-//     --to-schema-datamodel prisma/schema.prisma --script
-// Works on PostgreSQL, MySQL, and SQLite: no enums, scalar lists, or
-// database-specific types, so the same models fit any of them.
+// Relations to your app's own models are ids (who confirmed an answer,
+// who rated one), not foreign keys, so these need nothing from your
+// schema. They work on PostgreSQL, MySQL, and SQLite: no enums, scalar
+// lists, or database-specific types.
 
 /// A frozen input to an AI feature, with the answers people gave it.
 model EvalCase {

@@ -229,10 +229,12 @@ piece and what it costs. The steps below are for starting fresh.
 npm install @crowandraven/evalkeeper
 ```
 
-**2. Add the tables.** Copy the models from
-[`packages/core/schema/evalkeeper.prisma`](packages/core/schema/evalkeeper.prisma)
-into your schema. They work on PostgreSQL, MySQL, and SQLite. Have eval
-tables already? Map onto them instead
+**2. Add the tables.** `npx @crowandraven/evalkeeper migration` writes
+Evalkeeper's models to their own file beside your Prisma schema
+([`evalkeeper.prisma`](packages/core/schema/evalkeeper.prisma)) and the
+migration SQL from the schema files, never from a database; run it again
+after each upgrade. They work on PostgreSQL, MySQL, and SQLite. Have
+eval tables already? Map onto them instead
 ([Bring your own](docs/adding-to-your-app.md#bring-your-own)).
 
 **3. Write a suite** for one AI feature: its input, what a good answer is,

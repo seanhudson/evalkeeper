@@ -9,6 +9,17 @@ version may change an interface, and its entry says how to update.
 
 ### Added
 
+- `npx @crowandraven/evalkeeper migration`: Evalkeeper's tables live in
+  their own file beside your Prisma schema (`evalkeeper.prisma`), which
+  the command writes and rewrites on upgrade, with the migration SQL from
+  the schema files before and after (your own `prisma migrate diff`; it
+  never reads or writes a database). Without `--write` it only shows the
+  change. Models pasted into your own schema move into the file; a
+  drifted copy has each column it would drop named, and nothing is
+  written until `--accept-drops`. **To update:** run it, then point
+  Prisma at your schema's folder if your schema is one file, apply the
+  SQL, and run `prisma generate`.
+
 - `@crowandraven/evalkeeper/next`, the glue for the Next.js App Router,
   so the files `add pages` writes hold no logic: `evalActions` (every
   action on the pages), `evalPages` (each page and its title, checking

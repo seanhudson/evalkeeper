@@ -1,6 +1,7 @@
-import { after, type NextRequest, NextResponse } from "next/server";
-import { isAuthorizedCron } from "@/lib/evalkeeper/cronAuth";
-import { runWeeklyCheck, startWeeklyCheck } from "@/lib/evalkeeper/weekly";
+import { weeklyCronRoute } from "@crowandraven/evalkeeper/next";
+import { wiring } from "@/lib/evalkeeper";
+
+// Written by `npx @crowandraven/evalkeeper add pages`: don't edit it.
 
 /** The checks run after the response, within this function's time limit. */
 export const maxDuration = 300;
@@ -10,15 +11,4 @@ export const maxDuration = 300;
  * runs each suite's quick set on its live model. Results show on the
  * evals hub. Call it with "Authorization: Bearer $CRON_SECRET".
  */
-export async function GET(request: NextRequest) {
-  if (
-    !isAuthorizedCron(
-      request.headers.get("authorization"),
-      process.env.CRON_SECRET,
-    )
-  )
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const ids = await startWeeklyCheck();
-  after(() => runWeeklyCheck(ids));
-  return NextResponse.json({ started: ids.length }, { status: 202 });
-}
+export const GET = weeklyCronRoute(wiring);

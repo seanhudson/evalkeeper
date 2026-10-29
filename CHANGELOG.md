@@ -9,6 +9,22 @@ version may change an interface, and its entry says how to update.
 
 ### Added
 
+- `@crowandraven/evalkeeper/next`, the glue for the Next.js App Router,
+  so the files `add pages` writes hold no logic: `evalActions` (every
+  action on the pages), `evalPages` (each page and its title, checking
+  `requireAdmin` and answering "not found"), `weeklyCheck`,
+  `weeklyCronRoute`, and `isAuthorizedCron`. `/next/components` has
+  `nextComponents` (Next.js's `Link`, and a `RefreshWhile` on its
+  router) for your provider. Next.js is an optional peer dependency.
+  `HubPage` and `SuitePage` in `/react` are the default arrangements,
+  and `runner.modelsFor` lists what an operation can be tested on.
+  **To update:** export a `wiring` object from `lib/evalkeeper/index.ts`
+  (the `EvalWiring` type, without `basePath`), run `add pages --force`
+  (with `--dry-run` first), and delete `lib/evalkeeper/weekly.ts`, `cronAuth.ts`,
+  `time.ts`, and `components/evalkeeper/RefreshWhile.tsx`, which the
+  package now holds. In `appComponents.tsx`, spread `nextComponents`
+  before your own.
+
 - One test of a model covers a feature's attacks too: `runner.createTest`
   brings the feature's attack cases in step with its confirmed answers
   (`injectionCases`), then makes a run for its cases and one for each

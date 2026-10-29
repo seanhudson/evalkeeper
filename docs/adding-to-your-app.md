@@ -276,21 +276,30 @@ npx @crowandraven/evalkeeper add pages --base admin/evals
 ```
 
 It reads your `tsconfig.json` import alias (`@/*`, `~/*`, and code under
-`src/` all work) and copies:
+`src/` all work) and writes a few short files. The screens, their
+actions, and the weekly check all come from the package, so these files
+hold no logic of their own, and they're what upgrades leave alone:
 
-- the pages, at the base you choose (`app/admin/evals/…`)
-- their components (`components/evalkeeper/…`), including
-  `evalkeeper.css` with the colors the pages use
-- their glue (`lib/evalkeeper/actions.ts`, `weekly.ts`, `cronAuth.ts`,
-  `time.ts`, and `paths.ts` with your base path)
-- the weekly check's cron route (`--no-cron` to leave it out)
-- a starter `lib/evalkeeper/index.ts` and `lib/evalkeeper/appComponents.tsx`,
-  only if you don't have them
+- a route file per page, at the base you choose (`app/admin/evals/…`),
+  each a few lines exporting one of `pages` (below)
+- `lib/evalkeeper/actions.ts`: the server actions, one line each. Next.js
+  takes server actions only from a `"use server"` module of your app, so
+  each calls Evalkeeper's (`evalActions` from
+  `@crowandraven/evalkeeper/next`)
+- `lib/evalkeeper/evals.ts`, which makes `evals` (what the screens read)
+  and `pages` from your wiring, and `lib/evalkeeper/paths.ts` with your
+  base path
+- the weekly check's cron route (`--no-cron` to leave it out), which
+  answers only `Authorization: Bearer $CRON_SECRET`
+- `components/evalkeeper/evalkeeper.css`, the colors the screens use
+- a starter `lib/evalkeeper/index.ts` (your wiring) and
+  `lib/evalkeeper/appComponents.tsx` (your components), only if you
+  don't have them
 
 Existing files stay as they are unless you pass `--force`, which still
 never touches your `lib/evalkeeper/index.ts` or `appComponents.tsx`. `--dry-run` shows the plan
-and writes nothing. `--only` copies just the pages and components you
-name, for an app that keeps its own (see "Bring your own" below).
+and writes nothing. `--only` writes just the files you name (see "Bring
+your own" below).
 
 Then:
 
@@ -300,11 +309,24 @@ Then:
    `@source "../node_modules/@crowandraven/evalkeeper/dist/react";`
    (both relative to that CSS file).
 2. Fill in `lib/evalkeeper/index.ts`: your Prisma client, models, suites,
-   and `requireAdmin`. Every page and action calls `requireAdmin` first,
-   and the starter's refuses everyone until you write yours.
-3. Make them look like your app with your own components, below,
-   rather than by editing the copied files: copies you edit stop
-   upgrading.
+   and `requireAdmin`, gathered into the `wiring` it exports. Every page
+   and action calls `requireAdmin` first, and the starter's refuses
+   everyone until you write yours.
+3. Make them look like your app with your own components, below.
+
+A route file is this short:
+
+```tsx
+// app/admin/evals/[suite]/page.tsx
+import { pages } from "@/lib/evalkeeper/evals";
+
+export const dynamic = "force-dynamic";
+export const generateMetadata = pages.suite.generateMetadata;
+export default pages.suite.Page;
+```
+
+Each page checks `requireAdmin`, reads the URL, and answers "not found"
+for a suite or test you don't have.
 
 ### Look like your app
 
@@ -318,14 +340,14 @@ Evalkeeper's:
 
 ```tsx
 "use client";
-import Link from "next/link";
 import { EvalComponentsProvider } from "@crowandraven/evalkeeper/react";
+import { nextComponents } from "@crowandraven/evalkeeper/next/components";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 export function AppComponents({ children }: { children: React.ReactNode }) {
   return (
-    <EvalComponentsProvider components={{ Link, Button, Card }}>
+    <EvalComponentsProvider components={{ ...nextComponents, Button, Card }}>
       {children}
     </EvalComponentsProvider>
   );
@@ -336,27 +358,61 @@ Each gets the props Evalkeeper's own would (`EvalComponents` has the
 types), Evalkeeper's `className` included, which yours can use or
 ignore. Your components must be client components. Controls must still
 render the native element, or pass `name` and the value to one, so forms
-submit. Pass your router's link as `Link` so moving between eval pages
-doesn't reload, and a `RefreshWhile` that refreshes the page while a
-test runs (the copied `components/evalkeeper/RefreshWhile.tsx` does it
-for Next.js).
+submit. `nextComponents` is Next.js's `Link`, so moving between eval
+pages doesn't reload, and a `RefreshWhile` on its router, so a page
+refreshes while a test runs; in another React app, pass your router's
+own.
 
 ### Arrange your own page
 
 Each page is a short arrangement of sections from
 `@crowandraven/evalkeeper/react` that hold all the logic. They read
-everything from one object, `evals` in `lib/evalkeeper/evals.ts`, made
-with `defineEvals` from your wiring and your actions. The suite page
-loads its data once with `loadSuitePage(evals, key)` and lists
-`SuiteHeader`, `ChosenOnBase`, `SuggestionCard`, `CasesInInstructions`,
-`ModelTable`, `Versions`, `ChecksSection`, and `AnswerKeySection`; the
-hub loads with `loadHub(evals)` and lists `HubIntro`, `HubStats`,
-`WeeklyCheck`, and `SuiteList`. The other pages are one view each
-(`RunView`, `CompareView`, `SideBySideView`, `RateView`, and
-`FeedbackView`): the copied page checks who's signed in, reads the URL,
-and answers "not found" when the view returns null. For another layout, or a section of your
-own beside them, write your page from the same pieces, as the copied
-pages do: the sections come from the package, so they keep upgrading.
+everything from one object, `evals` in `lib/evalkeeper/evals.ts`. The
+suite page (`SuitePage`) loads its data once with
+`loadSuitePage(evals, key)` and lists `SuiteHeader`, `ChosenOnBase`,
+`SuggestionCard`, `CasesInInstructions`, `ModelTable`, `Versions`,
+`ChecksSection`, and `AnswerKeySection`; the hub (`HubPage`) loads with
+`loadHub(evals)` and lists `HubIntro`, `HubStats`, `WeeklyCheck`, and
+`SuiteList`. The other pages are one view each (`RunView`,
+`CompareView`, `SideBySideView`, `RateView`, and `FeedbackView`).
+
+For another layout, or a section of your own beside them, replace the
+route file with your own arrangement. The sections come from the
+package, so your page keeps upgrading:
+
+```tsx
+// app/admin/evals/[suite]/page.tsx
+import { notFound } from "next/navigation";
+import {
+  ModelTable,
+  SuiteHeader,
+  RefreshWhile,
+  loadSuitePage,
+} from "@crowandraven/evalkeeper/react";
+import { requireAdmin } from "@/lib/evalkeeper";
+import { evals } from "@/lib/evalkeeper/evals";
+import { OurNotes } from "@/components/OurNotes";
+
+export const dynamic = "force-dynamic";
+
+export default async function SuitePage({
+  params,
+}: {
+  params: Promise<{ suite: string }>;
+}) {
+  await requireAdmin();
+  const data = await loadSuitePage(evals, (await params).suite);
+  if (!data) notFound();
+  return (
+    <div className="space-y-8">
+      <RefreshWhile active={data.testing} />
+      <SuiteHeader data={data} />
+      <OurNotes suite={data.key} />
+      <ModelTable data={data} />
+    </div>
+  );
+}
+```
 
 ## 8. Add thumbs to your AI answers (optional)
 
@@ -733,15 +789,16 @@ them to.
 
 ### Your own pages
 
-Copy only the pages and components you're replacing, and keep your own:
+Write only the pages you want, and keep your own:
 
 ```bash
-npx @crowandraven/evalkeeper add pages --base admin/evals --only suite,run,AnswerKey --dry-run
+npx @crowandraven/evalkeeper add pages --base admin/evals --only suite,run,actions,evals,paths --dry-run
 ```
 
 `--only` takes pages by name (hub, suite, run, rate, compare,
-side-by-side, feedback, cron), components and glue by name (AnswerKey,
-actions, evalkeeper.css, …), the groups `pages` and `components`, and
+side-by-side, feedback, cron), the other files by name (actions, evals,
+paths, appComponents, evalkeeper.css), the groups `pages` and
+`components`, and
 `index` for a starter wiring module (left out otherwise). A `--base`
 inside a route group (`"(app)/admin/evals"`) puts the pages in that
 folder and their links at `/admin/evals`. `--dry-run` lists what would be written, skipped,

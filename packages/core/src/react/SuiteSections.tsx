@@ -19,6 +19,7 @@ import {
   Link,
   BackLink,
   Card,
+  RefreshWhile,
   Chip,
   IconSubmit,
   InfoTip,
@@ -755,4 +756,33 @@ function UnderAttack({
     );
   // Not tested yet: the model's Test runs the attacks with its cases.
   return <span className="text-muted">—</span>;
+}
+
+/**
+ * A suite's page as Evalkeeper arranges it, or null for a suite you don't
+ * have. A page of your own loads the same data (`loadSuitePage`) and
+ * arranges these sections another way.
+ */
+export async function SuitePage({
+  app,
+  suite,
+}: {
+  app: EvalAppConfig;
+  suite: string;
+}) {
+  const data = await loadSuitePage(app, suite);
+  if (!data) return null;
+  return (
+    <div className="space-y-8">
+      <RefreshWhile active={data.testing} />
+      <SuiteHeader data={data} />
+      <ChosenOnBase data={data} />
+      <SuggestionCard data={data} />
+      <CasesInInstructions data={data} />
+      <ModelTable data={data} />
+      <Versions data={data} />
+      <ChecksSection data={data} />
+      <AnswerKeySection data={data} />
+    </div>
+  );
 }

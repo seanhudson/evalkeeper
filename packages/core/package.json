@@ -43,6 +43,14 @@
     "./react": {
       "types": "./dist/react/index.d.ts",
       "default": "./dist/react/index.js"
+    },
+    "./next": {
+      "types": "./dist/next/index.d.ts",
+      "default": "./dist/next/index.js"
+    },
+    "./next/components": {
+      "types": "./dist/next/components.d.ts",
+      "default": "./dist/next/components.js"
     }
   },
   "files": [
@@ -67,7 +75,8 @@
     "ai": ">=7",
     "react": ">=19",
     "react-dom": ">=19",
-    "lucide-react": ">=1"
+    "lucide-react": ">=1",
+    "next": ">=15"
   },
   "devDependencies": {
     "zod": "^3.25.76",
@@ -76,7 +85,8 @@
     "react-dom": "^19.3.0",
     "lucide-react": "^1.60.0",
     "@types/react": "^19",
-    "@types/react-dom": "^19"
+    "@types/react-dom": "^19",
+    "next": "^16.4.2"
   },
   "keywords": [
     "evals",
@@ -99,6 +109,9 @@
       "optional": true
     },
     "lucide-react": {
+      "optional": true
+    },
+    "next": {
       "optional": true
     }
   },

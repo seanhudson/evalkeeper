@@ -15,6 +15,7 @@ import {
 import type { ComponentType } from "react";
 import { ActionItemsEditor } from "../../components/ActionItemsEditor";
 import { createRunner, type Route } from "@crowandraven/evalkeeper/runner";
+import type { EvalWiring } from "@crowandraven/evalkeeper/next";
 import { prisma } from "../db";
 import { MODELS, availableModels } from "../models";
 import { useMatcher } from "../suites/actionItems";
@@ -133,7 +134,6 @@ async function estimateCallCost(
   return last?.metrics?.costPerAnswer ?? null;
 }
 
-// What the copied eval pages need from your app, in one place.
 export { MODELS, availableModels } from "../models";
 
 /** The models a feature can be tested on now: decision models for decision features. */
@@ -164,3 +164,19 @@ export const answerEditors: Partial<
 export async function requireAdmin(): Promise<{ id: string; name: string }> {
   return { id: "example-admin", name: "Example admin" };
 }
+
+/**
+ * Everything Evalkeeper's pages, actions, and weekly check need from your
+ * app, in one object. Where the pages live is in `./paths`.
+ */
+export const wiring = {
+  runner,
+  settings,
+  store,
+  feedbackStore,
+  models: MODELS,
+  suites: SUITES,
+  routeFor,
+  answerEditors,
+  requireAdmin,
+} satisfies Omit<EvalWiring, "basePath">;

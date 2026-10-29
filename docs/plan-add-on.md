@@ -78,22 +78,25 @@ a fork:
   from Evalkeeper (`settings.route`), as the guide already recommends.
 - **Moving in from an app's own tables.** For an app whose eval data
   lives in tables of its own, a guided move, run once:
-  1. `evalkeeper move-in --dry-run` reads the app's tables through its
+  1. `moveIn` with `dryRun`, from a short script of the app's (only
+     its code knows how its tables map), reads the app's tables through its
      current map (today's mapped store, kept for this alone) and says
      what it would copy, row by row and table by table, and what doesn't
      fit: a status Evalkeeper lacks, a column with no home, rows that
      don't parse (the read-only check that exists today).
   2. The app adds Evalkeeper's schema and migrates, on a copy of its
      data first.
-  3. `evalkeeper move-in` copies everything into Evalkeeper's tables,
+  3. `moveIn` for real copies everything into Evalkeeper's tables,
      keeping ids, who confirmed each answer and when, and every test's
      results, then checks the counts and that each table reads back the
      same. It's safe to run again: rows already moved are skipped.
   4. The app switches its stores to Evalkeeper's and keeps its old
      tables, unread, until a person decides to drop them.
 
-  Values with no home in Evalkeeper (a column only one app used) are
-  kept as JSON on the row they came from, so nothing is lost.
+  Values with no home in Evalkeeper (a column only one app used) stay in
+  the app's own tables, which the move never changes, so nothing is
+  lost. Carrying them across as JSON on each row is left until an app
+  needs them in Evalkeeper's screens.
 
 - **Mapped stores retire** once the move-in exists: they stay only to
   read an app's old tables during the move, and new apps are never
@@ -196,7 +199,7 @@ docs for the version it's on.
 3. **The entry points and glue.** `…/react` and `…/next`, and `…/prisma`
    and `…/ai-sdk` moved in from their packages. The example app moves
    off copied pages onto them.
-4. **One schema file and `evalkeeper migration`.** Then `move-in`, tried
+4. **One schema file and `evalkeeper migration`.** Then `moveIn`, tried
    on a copy of an app's real data before any production move.
 5. **`init` and `upgrade`.**
 6. **Docs,** written alongside steps 1 through 5 and published with each

@@ -6,7 +6,6 @@ import {
   prismaSettingsStore,
   prismaStore,
   type PrismaFeedbackMap,
-  type PrismaSettingsMap,
   type PrismaStoreMap,
 } from "@crowandraven/evalkeeper/prisma";
 import { checkStoreReads, type AnySuite } from "@crowandraven/evalkeeper";
@@ -26,21 +25,15 @@ import {
   thumbsSummary,
   whyNotACase,
 } from "@crowandraven/evalkeeper";
-import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
-import { PrismaClient } from "./byo/client/index.js";
+import { db, map, settingsMap } from "./byo/maps";
 
 // An app that had its own eval and versions tables before Evalkeeper
 // (test/byo/schema.prisma): other model and column names, Prisma enums,
 // Decimal costs, legacy columns, and a user id on each settings change.
 // The mapped stores must meet the same contracts as the stock ones.
 // The file the "test" script pushed the schema to (next to it).
-const db = new PrismaClient({
-  datasources: {
-    db: { url: `file:${path.join(import.meta.dirname, "byo", "byo.db")}` },
-  },
-});
 
 async function empty() {
   await db.attempt.deleteMany();
@@ -104,22 +97,6 @@ const voteMap = {
   ratings: { UP: "up", DOWN: "down" },
 } satisfies PrismaFeedbackMap;
 
-const map = {
-  models: {
-    evalCase: "goldCase",
-    evalCaseLabel: "goldAnswer",
-    evalRun: "trial",
-    evalOutput: "attempt",
-    evalJudgment: "judgeCache",
-  },
-  fields: {
-    evalCase: { labels: "answers" },
-    evalCaseLabel: { note: "rationale" },
-    evalRun: { set: "split", startedBy: "startedById" },
-    evalOutput: { runId: "trialId" },
-  },
-} satisfies PrismaStoreMap;
-
 // The same tables, for an app that hasn't added the two run settings.
 const withoutRunSettings = {
   ...map,
@@ -132,33 +109,6 @@ const withoutRunSettings = {
     },
   },
 } satisfies PrismaStoreMap;
-
-// Pages pass a person's handle as `by`; the table keeps their id.
-const settingsMap: PrismaSettingsMap = {
-  models: {
-    evalSettingsVersion: "routeVersion",
-    evalSettingsLive: "routeLive",
-    evalSettingsChange: "versionSwitch",
-  },
-  fields: {
-    evalSettingsVersion: { temperature: null },
-    evalSettingsChange: { by: "userId" },
-  },
-  // The kind column is an enum made before OUTSIDE and INSTRUCTIONS.
-  kinds: ["CHANGE", "PROMOTE", "ROLLBACK", "DEPLOY"],
-  by: {
-    toColumn: async (handle) =>
-      (
-        await db.person.upsert({
-          where: { handle },
-          create: { handle },
-          update: {},
-        })
-      ).id,
-    fromColumn: async (id) =>
-      (await db.person.findUnique({ where: { id } }))?.handle ?? null,
-  },
-};
 
 describeStoreContract(
   "prismaStore mapped onto an app's own tables",

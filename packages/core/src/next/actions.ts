@@ -6,16 +6,20 @@ import {
   attacksFrom,
   blindRating,
   caseFromFeedback,
+  draftMoreCases,
   formText,
+  importStarters,
   isInjectionSuite,
   leakNote,
   raterStatus,
   skipMark,
   suggest,
+  useDraftsProvisionally,
   withoutLeaks,
   type ReasoningEffort,
 } from "../index.js";
 import { evalsPath, type EvalActions } from "../react/app.js";
+import { injectionCases } from "../suites/injection.js";
 import { weeklyCheck } from "./weekly.js";
 import type { EvalWiring } from "./wiring.js";
 
@@ -386,6 +390,53 @@ export function evalActions(w: EvalWiring): Required<EvalActions> {
       const suite = suiteFrom(form);
       await runner.retireStaleDrafts(suite.key);
       revalidatePath(page(suite.key));
+    },
+
+    async addStarters(form) {
+      await w.requireAdmin();
+      const suite = suiteFrom(form);
+      await importStarters(store, suite);
+      revalidatePath(page(suite.key));
+    },
+
+    async makeAttackCases(form) {
+      await w.requireAdmin();
+      const suite = suiteFrom(form);
+      if (!isInjectionSuite(suite))
+        throw new Error("This suite has no attacks");
+      const r = await injectionCases(
+        store,
+        // Trust boundary: isInjectionSuite means injectionSuite made it.
+        suite as unknown as Parameters<typeof injectionCases>[1],
+      );
+      if (!r.baseCases)
+        throw new Error(
+          `Confirm some ${suite.base.label} answers first: attack cases copy them`,
+        );
+      everyPage();
+    },
+
+    async draftMore(form) {
+      await w.requireAdmin();
+      const suite = suiteFrom(form);
+      if (!suite.draftMore) throw new Error("This suite can't draft cases");
+      const focus = form.get("focus");
+      await draftMoreCases({
+        store,
+        suite,
+        focus:
+          typeof focus === "string" && focus.trim()
+            ? focus.trim().slice(0, 500)
+            : null,
+      });
+      revalidatePath(page(suite.key));
+    },
+
+    async useDraftsProvisionally(form) {
+      await w.requireAdmin();
+      const suite = suiteFrom(form);
+      await useDraftsProvisionally({ store, suite });
+      everyPage();
     },
 
     /**

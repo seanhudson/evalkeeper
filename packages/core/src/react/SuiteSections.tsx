@@ -4,6 +4,9 @@ import {
   attacksFrom,
   barStatus,
   checkBar,
+  draftAnswers,
+  draftsToTarget,
+  newStarters,
   isInjectionSuite,
   meanCalibrationError,
   money,
@@ -29,10 +32,11 @@ import {
   Select,
   Spinner,
   Submit,
+  TextInput,
   Tip,
 } from "./pieces.js";
 import { pct, LINK } from "./format.js";
-import { RotateCw } from "lucide-react";
+import { ChevronDown, RotateCw, ShieldAlert, Sparkles } from "lucide-react";
 import { evalsPath, type EvalAppConfig, attacksResisted } from "./app.js";
 import { SettingsHistory } from "./SettingsHistory.js";
 
@@ -63,7 +67,8 @@ export async function loadSuitePage(app: EvalAppConfig, key: string) {
           ]),
         ),
       app.runner.casesInInstructions(key),
-      app.store.listCases(key),
+      // Retired ones too: starters already added once aren't offered again.
+      app.store.listCases(key, { includeRetired: true }),
     ]);
   const { suite, rows } = b;
   const attacks = attacksFrom(attackBoards);
@@ -116,6 +121,7 @@ export async function loadSuitePage(app: EvalAppConfig, key: string) {
     showAttacks,
     live,
     health,
+    cases,
   };
 }
 
@@ -768,6 +774,147 @@ export function ChecksSection({ data }: { data: SuitePageData }) {
   );
 }
 
+/**
+ * Ways to fill the answer key, beside adding a case by hand: how to judge
+ * an answer, testing with draft answers before review, an injection
+ * suite's attack cases, starter cases not added yet, and more drafts from
+ * the suite's `draftMore`. Each shows only when it applies and your app
+ * passes its action.
+ */
+export function AnswerKeyToolsSection({ data }: { data: SuitePageData }) {
+  const { app, key, suite, cases } = data;
+  const { actions } = app;
+  const inUse = cases.filter((c) => c.status !== "RETIRED");
+  const drafts = draftAnswers(cases);
+  const fresh = newStarters(suite.starter, cases);
+  const guide =
+    suite.answerGuide ??
+    (suite.labelHelp ? { points: [{ text: suite.labelHelp }] } : null);
+  const injection = isInjectionSuite(suite) ? suite : null;
+  const parts = [
+    guide && (
+      <details
+        key="guide"
+        className="group rounded-lg border border-line bg-card"
+      >
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 text-sm font-medium">
+          How to judge an answer
+          <ChevronDown
+            aria-hidden
+            className="h-4 w-4 transition-transform group-open:rotate-180"
+          />
+        </summary>
+        <div className="readable space-y-2 px-4 pb-4 text-sm">
+          {guide.lead && <p className="font-medium">{guide.lead}</p>}
+          {(() => {
+            const items = guide.points.map((p, n) => (
+              <li key={n}>
+                {p.term && <strong>{p.term} </strong>}
+                {p.text}
+              </li>
+            ));
+            return guide.ordered ? (
+              <ol className="list-decimal space-y-1 pl-5">{items}</ol>
+            ) : (
+              <ul className="list-disc space-y-1 pl-5">{items}</ul>
+            );
+          })()}
+          {guide.note && <p className="text-muted">{guide.note}</p>}
+        </div>
+      </details>
+    ),
+    actions.useDraftsProvisionally && drafts.length > 0 && (
+      <Card key="provisional" className="space-y-3">
+        <p className="readable text-sm">
+          To test before you&apos;ve reviewed them, put the {drafts.length}{" "}
+          draft {drafts.length === 1 ? "answer" : "answers"} to use as
+          provisional. Scores then say they rest on unreviewed answers until you
+          confirm each.
+          <InfoTip term="provisional" />
+        </p>
+        <form action={actions.useDraftsProvisionally}>
+          <input type="hidden" name="suite" value={key} />
+          <Submit variant="quiet">Test with drafts, as provisional</Submit>
+        </form>
+      </Card>
+    ),
+    actions.makeAttackCases && injection && (
+      <Card key="attacks" className="space-y-3">
+        <p className="readable text-sm">
+          Each attack case is a confirmed {injection.base.label} case with an
+          attack planted where untrusted text goes, and keeps that case&apos;s
+          answer: an attack shouldn&apos;t change it. Run this again after you
+          confirm, change, or retire {injection.base.label} answers.
+        </p>
+        <form action={actions.makeAttackCases}>
+          <input type="hidden" name="suite" value={key} />
+          <Submit variant={inUse.length ? "quiet" : "primary"}>
+            <ShieldAlert aria-hidden className="mr-1.5 inline h-4 w-4" />
+            {inUse.length ? "Update attack cases" : "Make attack cases"}
+          </Submit>
+        </form>
+      </Card>
+    ),
+    actions.addStarters && fresh.length > 0 && (
+      <Card key="starters" className="space-y-3">
+        <p className="readable text-sm">
+          {inUse.length
+            ? `${fresh.length} more starter ${fresh.length === 1 ? "case is" : "cases are"} ready.`
+            : `No cases yet. Start with the suite's ${fresh.length} starter ${fresh.length === 1 ? "case" : "cases"}.`}{" "}
+          Each needs your review and counts only once you confirm it, unless the
+          suite&apos;s author already reviewed it.
+        </p>
+        <form action={actions.addStarters}>
+          <input type="hidden" name="suite" value={key} />
+          <Submit variant={inUse.length ? "quiet" : "primary"}>
+            <Sparkles aria-hidden className="mr-1.5 inline h-4 w-4" />
+            Add {fresh.length} starter {fresh.length === 1 ? "case" : "cases"}
+          </Submit>
+        </form>
+      </Card>
+    ),
+    actions.draftMore && suite.draftMore && inUse.length > 0 && (
+      <details
+        key="draft"
+        className="group rounded-lg border border-line bg-card"
+      >
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 text-sm font-medium">
+          <span className="flex items-center gap-1.5">
+            <Sparkles aria-hidden className="h-4 w-4" />
+            Draft {draftsToTarget(inUse.length)} more cases
+          </span>
+          <ChevronDown
+            aria-hidden
+            className="h-4 w-4 transition-transform group-open:rotate-180"
+          />
+        </summary>
+        <form action={actions.draftMore} className="space-y-3 px-4 pb-4">
+          <input type="hidden" name="suite" value={key} />
+          <div>
+            <label htmlFor="draft-focus" className="block text-sm font-medium">
+              Anything to focus on? (optional)
+            </label>
+            <TextInput
+              id="draft-focus"
+              name="focus"
+              maxLength={500}
+              placeholder="e.g. longer, messier notes; more than one owner"
+              className="mt-1 w-full rounded-md border border-line bg-card px-3 py-2 text-sm"
+            />
+            <p className="readable mt-1 text-xs text-muted">
+              A model looks at the cases you have and covers what&apos;s
+              missing. Drafts need your review and count only once you confirm
+              them.
+            </p>
+          </div>
+          <Submit>Draft cases</Submit>
+        </form>
+      </details>
+    ),
+  ].filter(Boolean);
+  if (!parts.length) return null;
+  return <div className="space-y-3">{parts}</div>;
+}
 /** The answer key: the cases in use and their answers, with ways to add and rate them. */
 export function AnswerKeySection({ data }: { data: SuitePageData }) {
   const { app, key, b, suite, rows, attackBoards } = data;
@@ -1082,6 +1229,7 @@ export async function SuitePage({
       <Versions data={data} />
       <ChecksSection data={data} />
       <AnswerKeyHealthSection data={data} />
+      <AnswerKeyToolsSection data={data} />
       <AnswerKeySection data={data} />
     </div>
   );

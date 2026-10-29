@@ -16,6 +16,22 @@ version may change an interface, and its entry says how to update.
 - **Where the mistakes are:** each check's pass rate for every model with
   a current test, beside its bar (`CheckBreakdownSection`). The checks
   section still shows the live model alone.
+- **Ways to fill the answer key** above it (`AnswerKeyToolsSection`):
+  **How to judge an answer** from a suite's new `answerGuide` (or its
+  `labelHelp`), **Test with drafts, as provisional**, **Make attack
+  cases** on an injection suite, **Add N starter cases** for starters not
+  added yet, and **Draft N more cases** from a suite's `draftMore`, with
+  an optional focus. Each needs its action: `addStarters`,
+  `makeAttackCases`, `draftMore`, and `useDraftsProvisionally`, all
+  optional, all in `evalActions`. `draftMoreCases` and
+  `useDraftsProvisionally` do the same in code.
+- **No eval yet** on the hub (`NoEvalYet`): the AI features no suite
+  tests, from a new optional `features` list in your wiring.
+
+**To update:** to show the new buttons, add the four actions to
+`lib/evalkeeper/actions.ts` (`npx @crowandraven/evalkeeper add pages
+--force --only actions` rewrites it), and pass `features` in your wiring
+for the hub's list. Without them, those parts stay hidden.
 
 ### Fixed
 

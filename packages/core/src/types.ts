@@ -260,6 +260,25 @@ export type Suite<Input, Output, Label> = {
   describe?(input: Input): string;
   /** Fixture suites: what the expected answer's fields mean. */
   labelHelp?: string;
+  /**
+   * How a person should judge an answer, where it takes more than each
+   * field's help: shown above the answer key as "How to judge an answer".
+   * Without it, `labelHelp` shows there. For people only: it never reaches
+   * the model, so it doesn't change the instructions hash.
+   */
+  answerGuide?: AnswerGuide;
+};
+
+/** How to judge a suite's answers: a lead-in, the points, and a note. */
+export type AnswerGuide = {
+  /** A short lead-in: "When you confirm a case, check:". */
+  lead?: string;
+  /** One point each; `term`, when given, comes first in bold. */
+  points: { term?: string; text: string }[];
+  /** Steps to follow in order (numbered), or points in any order. */
+  ordered?: boolean;
+  /** A closing note, shown quieter. */
+  note?: string;
 };
 
 /**

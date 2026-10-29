@@ -166,6 +166,17 @@ export async function requireAdmin(): Promise<{ id: string; name: string }> {
 }
 
 /**
+ * Every AI feature the app has, by operation. The hub lists those no suite
+ * tests yet. Reply drafts has none, so the list has something to show.
+ */
+const FEATURES = [
+  ...SUITES.flatMap((s) =>
+    isInjectionSuite(s) ? [] : [{ operation: s.operation, label: s.label }],
+  ),
+  { operation: "reply_drafts", label: "Reply drafts" },
+];
+
+/**
  * Everything Evalkeeper's pages, actions, and weekly check need from your
  * app, in one object. Where the pages live is in `./paths`.
  */
@@ -179,4 +190,5 @@ export const wiring = {
   routeFor,
   answerEditors,
   requireAdmin,
+  features: FEATURES,
 } satisfies Omit<EvalWiring, "basePath">;

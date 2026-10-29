@@ -429,6 +429,27 @@ function SuiteCard({
 }
 
 /**
+ * The AI features no suite tests yet, from your app's `features`: where
+ * an eval would tell you the most next. Shows nothing without them.
+ */
+export function NoEvalYet({ data }: { data: HubData }) {
+  const { app } = data;
+  const tested = new Set(app.suites.map((s) => s.operation));
+  const gaps = (app.features ?? []).filter((f) => !tested.has(f.operation));
+  if (!gaps.length) return null;
+  return (
+    <section aria-labelledby="no-eval-yet" className="space-y-2">
+      <h2 id="no-eval-yet" className="text-lg font-semibold">
+        No eval yet
+      </h2>
+      <p className="readable text-sm text-muted">
+        {new Intl.ListFormat("en-US").format(gaps.map((f) => f.label))}. Nothing
+        tells you yet whether {gaps.length === 1 ? "it" : "they"} got worse.
+      </p>
+    </section>
+  );
+}
+/**
  * The hub as Evalkeeper arranges it: where each suite stands and what
  * needs attention. A hub of your own loads the same data (`loadHub`) and
  * arranges these sections another way.
@@ -441,6 +462,7 @@ export async function HubPage({ app }: { app: EvalAppConfig }) {
       <HubStats data={data} />
       <WeeklyCheck app={app} weekly={data.weekly} />
       <SuiteList data={data} />
+      <NoEvalYet data={data} />
     </div>
   );
 }

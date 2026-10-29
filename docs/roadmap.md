@@ -17,9 +17,11 @@ Already planned, and the next to be built:
   check per model, buttons for starter cases and drafts, a suite's answer
   guide, AI features with no suite yet, and code as the fallback.
 - **AI gateway support.** Test models from many providers with one key,
-  through Vercel's AI Gateway or another gateway, with each model's price
-  read from the gateway instead of typed into your
-  [catalog](models.md).
+  through Vercel's AI Gateway or another gateway. A command checks your
+  [catalog](models.md)'s prices against the gateway's and writes the
+  differences for you to review; the weekly check warns when a price is
+  old or a model you use leaves the gateway's list, so you can look for
+  its retirement date.
 - **A live demo,** so you can press every button before installing
   anything.
 - **Docs for every release,** so you read the docs for the version

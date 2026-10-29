@@ -16,5 +16,3 @@ packages/core/templates/
 docs/api/
 examples/next/test/byo/client/
 
-# Copied from packages/core/schema when the package builds.
-packages/prisma/schema/

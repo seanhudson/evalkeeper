@@ -27,37 +27,16 @@ again, and drafts new cases from real use if you let it ([step 8 of the setup](a
 
 ## Ready-made suites
 
-**Ready-made suites** in `@crowandraven/evalkeeper/suites`, to use as
-they are or read as patterns:
+Three starter suites, so you don't start from an empty answer key.
+They're a place to start, not complete or expert-verified tests. You supply how to call your own feature; they bring the
+cases, the answers, and the checks.
 
-- **Prompt injection** (`injectionSuite`): wraps any suite whose feature
-  reads text it can't trust (a customer's message, an email, a web page)
-  and tests it against a library of attacks. [Write suites](suites.md#test-against-prompt-injection) has the setup.
-- **Crisis risk** (`crisisRiskSuite`) and **hopelessness**
-  (`hopelessnessSuite`): for apps that read chat messages. Each ships
-  about 90 made-up messages, already reviewed by the suite's author, so
-  they count as confirmed in every app. You pass your own detector as
-  `run`:
+- **Prompt injection:** 20 attacks on each of your feature's confirmed
+  cases, for any feature that reads text it can't trust.
+- **Crisis risk:** 91 starter chat messages, reviewed by their author, for
+  noticing suicide or self-harm risk without false alarms.
+- **Hopelessness:** 76 starter chat messages, reviewed by their author, for
+  noticing when someone sounds hopeless about their life.
 
-  ```ts
-  import { crisisRiskSuite } from "@crowandraven/evalkeeper/suites";
-
-  export const crisisRisk = crisisRiskSuite({
-    operation: "detect_crisis",
-    async run(input, ctx) {
-      const d = await detectCrisis(input.message, input.earlier, ctx.model);
-      ctx.onCost(d.costUsd);
-      return { flagged: d.flagged, risk: d.risk, via: d.via };
-    },
-    // Cases of your own, beside the shipped ones:
-    extraCases: [{ message: "this job search is killing me", group: "slang" }],
-  });
-  ```
-
-  Add it to your suites, then bring in its cases with
-  `importStarters(store, crisisRisk)` ([Write suites](suites.md#cases-you-already-have)). They show up in its answer
-  key marked "Author reviewed"; change any answer you disagree with, and
-  add cases in your users' own words. Pass `shippedReviews: false` to
-  confirm every case yourself. The cases are a starting point, not
-  clinically validated: review them with people who have crisis-line or
-  clinical experience before relying on them.
+[Ready-made suites](ready-made-suites.md) has each one in full: what it
+tests, its cases, its checks, and how to add it.

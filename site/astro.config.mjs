@@ -60,6 +60,10 @@ export default defineConfig({
         {
           label: "Going further",
           items: [
+            {
+              label: "Ready-made suites",
+              slug: "guides/ready-made-suites",
+            },
             { label: "Models and prices", slug: "guides/models" },
             { label: "Write suites", slug: "guides/suites" },
             { label: "Make the screens your own", slug: "guides/screens" },

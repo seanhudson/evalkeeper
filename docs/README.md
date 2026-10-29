@@ -29,6 +29,8 @@ lists which page goes where. Screenshots come from
 - [Keep the answer key useful](upkeep.md): the weekly check, and
   retiring cases every model gets right.
 - [Best practices](best-practices.md): habits that keep tests honest.
+- [Ready-made suites](ready-made-suites.md): prompt injection, crisis
+  risk, and hopelessness, ready to use.
 - [Models and prices](models.md): the catalog, and how costs are
   counted.
 - [Write suites](suites.md): importing cases, special fields, decision

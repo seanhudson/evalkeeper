@@ -33,6 +33,7 @@ export const PAGES = [
   { from: "docs/choosing-models.md", slug: "guides/choosing-models" },
   { from: "docs/thumbs.md", slug: "guides/thumbs" },
   { from: "docs/upkeep.md", slug: "guides/upkeep" },
+  { from: "docs/ready-made-suites.md", slug: "guides/ready-made-suites" },
   { from: "docs/models.md", slug: "guides/models" },
   { from: "docs/suites.md", slug: "guides/suites" },
   { from: "docs/screens.md", slug: "guides/screens" },

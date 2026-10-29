@@ -15,8 +15,8 @@ good answer, the checks, how to call the operation on a given model
 reviewed and versioned like the rest of your app. Two come ready made in
 `@crowandraven/evalkeeper/suites`, for apps that watch chat messages:
 `crisisRiskSuite` (suicide or self-harm risk) and `hopelessnessSuite`.
-Your app passes its own detector as `run`. Their cases are made-up
-examples written as a starting point, not clinically validated: review
+Your app passes its own detector as `run`. Their cases are starter
+examples, not complete and not clinically validated: review
 and adapt them with people who have crisis-line or clinical experience
 before relying on them.
 

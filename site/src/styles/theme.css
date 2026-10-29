@@ -291,3 +291,13 @@
   --sl-color-asides-border: var(--sl-color-accent);
   background-color: var(--sl-color-accent-low);
 }
+
+/* Three cards side by side when there's room. */
+.ek-three {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+}
+.sl-markdown-content .ek-three > * {
+  margin: 0;
+}

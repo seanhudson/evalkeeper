@@ -45,7 +45,9 @@ with optional parts. Install only the peers of the parts you use:
 
 Evalkeeper works with any provider your code can call,
 because it never calls one itself: each suite's `run` calls your own AI
-function with the model it's given. The AI SDK adapter is a shortcut,
+function with the model it's given. That includes models built only
+for typed judgments, such as TypeSafe's System One models (Jev), which a
+decision suite tests next to general models. The AI SDK adapter is a shortcut,
 not a requirement. If your app reaches models through a gateway, the
 suite calls through it like any other request.
 

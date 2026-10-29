@@ -290,6 +290,32 @@ Write the suite with `decisions: true`, then:
 
 `examples/next/lib/suites/ticketRouting.ts` is a full example.
 
+### Which decision models to test
+
+A decision feature can run on three kinds of model, and a decision
+suite puts them on one board:
+
+| Kind                         | Examples                                                                 | Catalog                 |
+| ---------------------------- | ------------------------------------------------------------------------ | ----------------------- |
+| Built for typed judgments    | TypeSafe's System One models, such as Jev, through `@ai-sdk/typesafe-ai` | `decisions: "native"`   |
+| A provider's decision model  | `openai.decisionModel("gpt-6-luna")` through the AI SDK                  | `decisions: "native"`   |
+| A text model asked to decide | Any chat model, prompted to pick                                         | `decisions: "prompted"` |
+
+Models built for judgments can be cheaper and faster per
+decision, so they're worth testing against the general models you'd
+otherwise use. The suite tells you whether they pick as well, and
+whether their probabilities can be trusted. The example app tests Jev
+next to GPT-6 Luna and a prompted Claude when their keys are set
+(`TYPESAFE_AI_API_KEY`, `OPENAI_API_KEY`, and `ANTHROPIC_API_KEY`).
+
+Add a judgment model like any other ([Add a provider and its
+models](models.md#add-a-provider-and-its-models)): its catalog entry
+gets `decisions: "native"`, and your code returns its decision model:
+
+```ts
+if (provider === "typesafe") return typeSafeAi.decisionModel(model);
+```
+
 ## Test against prompt injection
 
 If a feature reads text it can't trust (a customer's message, an email,

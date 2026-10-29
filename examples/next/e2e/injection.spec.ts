@@ -59,17 +59,21 @@ test("models are chosen on the base suite, not the injection suite", async ({
   ).toBeVisible();
 });
 
-test("the base suite tests each model under attack, beside its score", async ({
+test("one Test runs a model on the feature's cases and its attacks", async ({
   page,
 }) => {
   await page.goto("/evals/ticket_triage");
-  await expect(page.getByText("Under attack").first()).toBeVisible();
+  await expect(page.getByText("Attacks resisted").first()).toBeVisible();
   const row = page
     .getByRole("row")
     .filter({ has: page.getByText("Demo Quick", { exact: true }) });
-  await row.getByRole("button", { name: "Test attacks" }).click();
+  // No separate attack test: the model's Test runs both.
+  await expect(row.getByRole("button", { name: "Test attacks" })).toHaveCount(
+    0,
+  );
+  await row.getByRole("button", { name: "Test", exact: true }).click();
   // Demo Quick follows some hijacks: serious mistakes under attack.
-  await expect(row.getByRole("link", { name: /^[1-9]\d*$/ })).toBeVisible({
+  await expect(row.getByRole("link", { name: /^\d{1,2}%$/ })).toBeVisible({
     timeout: 30_000,
   });
 });
@@ -86,10 +90,30 @@ test("the hub shows attacks on the base feature's card, not a card of their own"
     .filter({
       has: page.getByRole("heading", { name: "Ticket triage", exact: true }),
     })
-    .filter({ hasText: "Under attack" })
+    .filter({ hasText: "Attacks resisted" })
     .last();
-  await expect(card.getByText(/\d+ attack cases/)).toBeVisible();
+  await expect(card.getByText(/of \d+ attacks/)).toBeVisible();
+});
+
+test("the answer key shows the feature's attack cases in a tab", async ({
+  page,
+}) => {
+  await page.goto("/evals/ticket_triage");
+  const attacks = page.getByRole("tab", { name: /^Attacks \(\d+\)$/ });
   await expect(
-    card.getByRole("link", { name: "Ticket triage: injection" }),
+    page.getByRole("tab", { name: /^Cases \(\d+\)$/ }),
+  ).toHaveAttribute("aria-selected", "true");
+  await attacks.click();
+  const panel = page.getByRole("tabpanel", { name: /^Attacks/ });
+  await expect(panel).toBeVisible();
+  // Each is an attack on a confirmed case, made by Evalkeeper: no adding.
+  await expect(
+    panel
+      .locator("summary")
+      .filter({ hasText: /^direct: / })
+      .first(),
   ).toBeVisible();
+  await expect(panel.getByRole("button", { name: "Add a case" })).toHaveCount(
+    0,
+  );
 });

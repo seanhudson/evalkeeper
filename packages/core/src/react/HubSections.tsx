@@ -1,5 +1,4 @@
 import {
-  attackMistakes,
   attacksFrom,
   attention,
   isInjectionSuite,
@@ -13,9 +12,15 @@ import {
   type SettingsVersion,
 } from "../index.js";
 import { Link, Card, InfoTip, StatusBadge } from "./pieces.js";
-import { pct } from "./format.js";
+import { pct, dayOf } from "./format.js";
 import { HistoryEntries } from "./SettingsHistory.js";
-import { daysAgo, evalsPath, loadWeekly, type EvalAppConfig } from "./app.js";
+import {
+  daysAgo,
+  evalsPath,
+  loadWeekly,
+  type EvalAppConfig,
+  attacksResisted,
+} from "./app.js";
 import type { Runner } from "../runner.js";
 import { ChevronDown } from "lucide-react";
 
@@ -251,7 +256,7 @@ function Stat({
 
 type Board = Awaited<ReturnType<Runner["board"]>>;
 
-const day = (d: Date) => d.toLocaleDateString();
+const day = dayOf;
 /** Green at 95% and up, amber from 80%, red below. */
 const scoreTone = (rate: number) =>
   rate >= 0.95 ? "text-good" : rate >= 0.8 ? "text-warn" : "text-bad";
@@ -322,43 +327,40 @@ function SuiteCard({
         )}
       </div>
 
-      {s && (
-        <p className="text-sm text-muted">
-          <span className="font-semibold text-ink">{label(s.model)}</span>
-          {s.fallbackModel ? (
+      {/* The models and how live does, read together. */}
+      <div className="space-y-1">
+        {s && (
+          <p className="text-sm text-muted">
+            <span className="font-semibold text-ink">{label(s.model)}</span>
+            {s.fallbackModel ? (
+              <>
+                {" "}
+                · fallback{" "}
+                <span className="font-semibold text-ink">
+                  {label(s.fallbackModel)}
+                </span>
+              </>
+            ) : (
+              " · no fallback"
+            )}
+            {s.reasoningEffort ? ` · reasoning ${s.reasoningEffort}` : ""}
+          </p>
+        )}
+
+        <p className="text-sm">
+          {t ? (
             <>
-              {" "}
-              · fallback{" "}
-              <span className="font-semibold text-ink">
-                {label(s.fallbackModel)}
+              Score{" "}
+              <span className={`font-semibold ${scoreTone(t.right / t.total)}`}>
+                {pct(t.right / t.total)}
               </span>
             </>
           ) : (
-            " · no fallback"
-          )}
-          {s.reasoningEffort ? ` · reasoning ${s.reasoningEffort}` : ""}
+            "Live model not tested yet"
+          )}{" "}
+          · {b.cases} cases · {h.testedModels} models tested
         </p>
-      )}
-
-      <p className="text-sm">
-        {t ? (
-          <>
-            Score{" "}
-            <span className={`font-semibold ${scoreTone(t.right / t.total)}`}>
-              {pct(t.right / t.total)}
-            </span>
-          </>
-        ) : (
-          "Live model not tested yet"
-        )}{" "}
-        · {b.cases} cases · {h.testedModels} models tested ·{" "}
-        <Link
-          href={evalsPath(app, b.suite.key)}
-          className="relative text-accent hover:underline"
-        >
-          Compare models
-        </Link>
-      </p>
+      </div>
 
       {h.details.length > 0 && (
         <ul className="readable list-disc space-y-1 pl-5 text-sm text-muted">
@@ -368,29 +370,29 @@ function SuiteCard({
         </ul>
       )}
 
-      {attacked.map((a) => {
-        const n = live ? attackMistakes(live.key, attacksFrom([a])) : null;
-        return (
-          <p key={a.suite.key} className="relative text-sm">
-            Under attack
-            <InfoTip term="underAttack" />:{" "}
-            {n === null ? (
-              <span className="text-muted">live model not tested</span>
-            ) : (
-              <span className={n ? "font-semibold text-bad" : "text-good"}>
-                {n} serious {n === 1 ? "mistake" : "mistakes"}
-              </span>
-            )}{" "}
-            · {a.cases} attack cases ·{" "}
-            <Link
-              href={evalsPath(app, a.suite.key)}
-              className="text-accent hover:underline"
-            >
-              {a.suite.label}
-            </Link>
-          </p>
-        );
-      })}
+      {/* Once the feature has attack cases (a test makes them). */}
+      {attacked
+        .filter((a) => a.cases > 0)
+        .map((a) => {
+          const r = live ? attacksResisted(live.key, [a]) : null;
+          return (
+            <p key={a.suite.key} className="relative text-sm">
+              Attacks resisted
+              <InfoTip term="attacksResisted" />:{" "}
+              {r === null ? (
+                <span className="text-muted">not tested yet</span>
+              ) : (
+                <Link
+                  href={evalsPath(app, a.suite.key)}
+                  className={`font-semibold hover:underline ${scoreTone(r.resisted / r.of)}`}
+                >
+                  {pct(r.resisted / r.of)}
+                </Link>
+              )}{" "}
+              of {a.cases} {a.cases === 1 ? "attack" : "attacks"}
+            </p>
+          );
+        })}
 
       {s && (
         <details className="group/history relative rounded-md bg-tint">

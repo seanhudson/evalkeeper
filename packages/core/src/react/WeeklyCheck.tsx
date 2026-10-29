@@ -8,7 +8,7 @@ import {
   Submit,
   Tip,
 } from "./pieces.js";
-import { pct } from "./format.js";
+import { pct, dayOf, LINK } from "./format.js";
 import { evalsPath, type EvalAppConfig } from "./app.js";
 
 /**
@@ -40,7 +40,7 @@ export function WeeklyCheck({
           {weekly.running > 0
             ? `Running now: ${weekly.running} quick set${weekly.running === 1 ? "" : "s"} left. `
             : weekly.lastAt
-              ? `Last run ${weekly.lastAt.toLocaleDateString("en-US", { month: "long", day: "numeric" })}, ${money(weekly.costUsd)}. `
+              ? `Last run ${dayOf(weekly.lastAt)}, ${money(weekly.costUsd)}. `
               : "Not run yet. "}
           Every Monday, each live model answers its suite&apos;s quick set
           again, so a quiet change by its provider shows up here. It also flags
@@ -66,7 +66,7 @@ export function WeeklyCheck({
                 <span>
                   <Link
                     href={evalsPath(app, d.suite)}
-                    className="font-medium underline"
+                    className={`font-medium ${LINK}`}
                   >
                     {d.label}
                   </Link>{" "}
@@ -85,7 +85,7 @@ export function WeeklyCheck({
                 <span>
                   <Link
                     href={evalsPath(app, f.suite)}
-                    className="font-medium underline"
+                    className={`font-medium ${LINK}`}
                   >
                     {f.label}
                   </Link>
@@ -103,7 +103,7 @@ export function WeeklyCheck({
                   {r.model}, the {r.role} model for{" "}
                   <Link
                     href={evalsPath(app, r.suite)}
-                    className="font-medium underline"
+                    className={`font-medium ${LINK}`}
                   >
                     {r.label}
                   </Link>
@@ -121,7 +121,7 @@ export function WeeklyCheck({
                 <Chip tone="warn">Thumbs down</Chip>
                 <span>
                   {t.operation}: {t.down} of {t.up + t.down} ratings this week.{" "}
-                  <Link href={evalsPath(app, "feedback")} className="underline">
+                  <Link href={evalsPath(app, "feedback")} className={LINK}>
                     Read the reasons
                   </Link>
                   .
@@ -150,7 +150,7 @@ export function WeeklyCheck({
                   {d.waiting > 0 && (
                     <Link
                       href={`${evalsPath(app, d.suite)}#answer-key`}
-                      className="underline"
+                      className={LINK}
                     >
                       Review them
                     </Link>

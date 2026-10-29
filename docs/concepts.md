@@ -30,8 +30,10 @@ answer is its base case's, marked "From base case," since an attack
 shouldn't change the right answer. Code that finds a feature's suite by
 operation skips injection suites (`isInjectionSuite`). Models aren't
 chosen on an injection suite: one feature has one live model, so its
-results show on the base suite's page as **under attack**, each model's
-serious mistakes on the attacks, and the suggestion there weighs them.
+results show on the base suite's page as **attacks resisted**, the share
+of each model's attack answers with no serious mistake, and the
+suggestion there weighs them. A model's Test runs the attacks with the
+feature's cases.
 
 **Case.** One frozen input, copied rather than referenced, so later
 changes to your app's data don't move the test. Cases are DRAFT, ACTIVE,

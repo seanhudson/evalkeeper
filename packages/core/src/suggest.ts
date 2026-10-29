@@ -116,7 +116,7 @@ export function attacksFrom(
 }
 
 /**
- * A model's serious mistakes under attack: its serious mistakes on every
+ * A model's serious mistakes on the attacks: its serious mistakes on every
  * injection suite, added up. Null when any of them has no current,
  * complete test of it, so it can't be compared yet; also null with no
  * injection suites.
@@ -261,12 +261,12 @@ export function suggest<R extends SuggestRow>(
         `No model has an up-to-date test against the attacks: test ${next.label} on them before relying on it.`,
       );
   } else {
-    // At least two fewer serious mistakes under attack, as accurate or more.
+    // At least two fewer serious mistakes on the attacks, as accurate or more.
     const attackReason = (r: R): string | null => {
       const ra = underAttack(r);
       const la = underAttack(live);
       return ra !== null && la !== null && ra <= la - 2 && rate(r) >= rate(live)
-        ? `${r.label} makes fewer serious mistakes under attack than ${live.label} (${ra} against ${la}), and scores at least as well (${pct(rate(r))} against ${pct(rate(live))}).`
+        ? `${r.label} makes fewer serious mistakes on the attacks than ${live.label} (${ra} against ${la}), and scores at least as well (${pct(rate(r))} against ${pct(rate(live))}).`
         : null;
     };
     const why = (r: R): string | null => {
@@ -336,8 +336,8 @@ export function suggest<R extends SuggestRow>(
       if (a !== null && reason !== attackReason(next))
         reasons.push(
           liveAttack === null
-            ? `Under attack, ${next.label} makes ${mistakes(a)}. ${live.label} has no up-to-date test against the attacks to compare with.`
-            : `Under attack, ${next.label} makes ${mistakes(a)}, against ${liveAttack} for ${live.label}.`,
+            ? `On the attacks, ${next.label} makes ${mistakes(a)}. ${live.label} has no up-to-date test against the attacks to compare with.`
+            : `On the attacks, ${next.label} makes ${mistakes(a)}, against ${liveAttack} for ${live.label}.`,
         );
     } else {
       next = live;
@@ -351,7 +351,7 @@ export function suggest<R extends SuggestRow>(
         reasons.push(
           a === null
             ? `${held.label} would otherwise qualify, but it has no up-to-date test against the attacks. Test it on ${at(attacks, 0).label}.`
-            : `${held.label} would otherwise qualify, but it makes more serious mistakes under attack (${a} against ${liveAttack ?? 0}).`,
+            : `${held.label} would otherwise qualify, but it makes more serious mistakes on the attacks (${a} against ${liveAttack ?? 0}).`,
         );
       }
       // The one to watch: scored higher, but not by enough to tell.
@@ -389,7 +389,7 @@ export function suggest<R extends SuggestRow>(
       ? ""
       : a === null
         ? "; not tested against the attacks"
-        : `; ${mistakes(a)} under attack`;
+        : `; ${mistakes(a)} on the attacks`;
     reasons.push(
       `Fallback: ${fallback.label} is the most accurate from another provider (${pct(rate(fallback))}, ${mistakes(serious(fallback))}${attacked}).`,
     );

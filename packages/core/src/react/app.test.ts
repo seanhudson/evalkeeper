@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import { memoryStore } from "../memoryStore.js";
 import type { AnySuite } from "../types.js";
 import type { FeedbackStore } from "../feedback.js";
+import type { BoardRow } from "../board.js";
 import {
+  attacksResisted,
   daysAgo,
   defineEvals,
   evalsPath,
@@ -60,5 +62,20 @@ describe("the screens' configuration", () => {
   it("loads where the weekly check stands", async () => {
     const weekly = await loadWeekly(app());
     expect(weekly).toMatchObject({ drift: [], failed: [] });
+  });
+
+  it("counts attacks resisted across a feature's attack suites", () => {
+    // Trust boundary: only what attacksResisted reads.
+    const row = (key: string, answers: number, ok: number, stale = false) =>
+      ({
+        key,
+        test: { answers, answersNoSerious: ok, stale, failedAnswers: 0 },
+      }) as unknown as BoardRow;
+    const boards = [{ rows: [row("m", 10, 9)] }, { rows: [row("m", 6, 6)] }];
+    expect(attacksResisted("m", boards)).toEqual({ resisted: 15, of: 16 });
+    // Untested on one, or out of date: not known yet.
+    expect(attacksResisted("other", boards)).toBeNull();
+    expect(attacksResisted("m", [{ rows: [row("m", 4, 4, true)] }])).toBeNull();
+    expect(attacksResisted("m", [])).toBeNull();
   });
 });

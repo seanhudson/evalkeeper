@@ -9,6 +9,14 @@ version may change an interface, and its entry says how to update.
 
 ### Added
 
+- One test of a model covers a feature's attacks too: `runner.createTest`
+  brings the feature's attack cases in step with its confirmed answers
+  (`injectionCases`), then makes a run for its cases and one for each
+  injection suite with cases; `runner.estimateTest` gives the whole
+  test's cost. The pages' Test and "Test every model" use them, and the
+  weekly check brings attack cases in step before its quick sets, so
+  nobody makes attack cases or tests attacks separately.
+
 - `@crowandraven/evalkeeper/react`: the pieces Evalkeeper's screens are
   drawn from (`Card`, `Chip`, `Link`, `BackLink`, `Score`, `Submit`,
   `IconSubmit`, `Spinner`, `Tip`, `InfoTip`, `Button`, `TextInput`,
@@ -25,6 +33,34 @@ version may change an interface, and its entry says how to update.
   global CSS so Tailwind styles the screens.
 
 ### Changed
+
+- Dates read the same everywhere, with the month as a word ("Oct 28,
+  2026", and "Oct 28, 2026, 3:04 PM" with a time), from `dayOf` and
+  `momentOf`; "10/28/2026" means different days in different countries.
+- Links that read as words look the same on every screen: the accent,
+  underlined on hover (`LINK`). Numbers that link keep their own color.
+- The example's "Try it" page is now "Rate an answer": one answer with
+  thumbs, instead of a ticket form. The guide says how to put thumbs on a
+  chat's replies.
+- The example app shows the ready-made crisis risk and hopelessness
+  suites, on a demo detector, with their cases imported Author reviewed.
+
+- "Under attack" is now **Attacks resisted**: the share of a model's
+  attack answers with no serious mistake (`BoardRow` tests gain
+  `answersNoSerious`; `attacksResisted` adds them up). The column shows
+  only once the feature has attack cases, with no "Test attacks" button,
+  and each model's one estimate covers both. The hub's card says
+  "Attacks resisted: 94% of 48 attacks" only then, and drops its
+  "Compare models" link, which went where the card does. The
+  suggestion's reasons say "on the attacks".
+- The answer key has its attack cases in an **Attacks** tab (`Tabs`),
+  read only (`AnswerKey`'s `readOnly`), beside its own cases.
+- "Make live" and "Make fallback" are in each model row's menu
+  (`ModelMenu`), so the table stays narrow; Test stays on the row.
+- Comparisons open only from an "Against live" verdict: the "Compare two
+  tests" link, a test's "Compare with another test", the picker, and
+  "Swap them" are gone, and the compare page without both tests is not
+  found.
 
 - One package: the Prisma stores and the AI SDK helpers are now entry
   points of `@crowandraven/evalkeeper`, at `/prisma` and `/ai-sdk`, with

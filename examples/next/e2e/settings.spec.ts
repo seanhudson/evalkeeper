@@ -12,9 +12,11 @@ test("use the suggestion, see it in the history, and roll it back", async ({
 }) => {
   await page.goto("/evals/ticket_triage");
   await page.getByRole("button", { name: "Test every model" }).click();
-  await expect(page.getByRole("status", { name: "Testing" })).toHaveCount(0, {
-    timeout: 60_000,
-  });
+  // Wait for the tests to start, then for every one (attacks included) to
+  // finish: right after the click, the page may not show them yet.
+  const testing = page.getByRole("status", { name: "Testing" });
+  await expect(testing.first()).toBeVisible({ timeout: 10_000 });
+  await expect(testing).toHaveCount(0, { timeout: 60_000 });
   await page.reload();
 
   // The suggestion replaces the retiring live model.

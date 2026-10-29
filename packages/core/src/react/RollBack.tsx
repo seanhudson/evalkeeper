@@ -50,7 +50,7 @@ export function RollBack({
           setReason(e.target.value);
         }}
         placeholder="Why roll back?"
-        className="rounded-md border border-line bg-card px-2 py-1 text-xs focus:border-accent focus:outline-none"
+        className="rounded-md border border-line bg-card px-3 py-1.5 text-sm focus:border-accent focus:outline-none"
       />
       {missing ? (
         <Tip

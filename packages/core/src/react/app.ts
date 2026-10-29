@@ -4,6 +4,7 @@ import type { FeedbackStore } from "../feedback.js";
 import { thumbsSummary } from "../feedback.js";
 import type { ModelCatalog } from "../models.js";
 import type { Route, Runner } from "../runner.js";
+import type { BoardRow } from "../board.js";
 import type { VersionedSettings } from "../settings.js";
 import type { AnswerEditorProps, AnySuite } from "../types.js";
 import { weeklySummary, type WeeklySummary } from "../weekly.js";
@@ -141,4 +142,28 @@ export async function loadWeekly(app: EvalApp): Promise<WeeklySummary> {
     thumbs: thumbsSummary(feedback, daysAgo(7)),
     cases,
   });
+}
+
+/**
+ * A model's attacks resisted: of the answers to a feature's attack cases,
+ * how many had no serious mistake, across its injection suites. Null
+ * until each has a current, complete test of the model.
+ *
+ * @param key - The model's row key (model and reasoning setting).
+ * @param boards - The feature's injection suites' boards.
+ */
+export function attacksResisted(
+  key: string,
+  boards: readonly { rows: readonly BoardRow[] }[],
+): { resisted: number; of: number } | null {
+  if (!boards.length) return null;
+  let resisted = 0;
+  let of = 0;
+  for (const b of boards) {
+    const t = b.rows.find((r) => r.key === key)?.test;
+    if (!t || t.stale || t.failedAnswers) return null;
+    resisted += t.answersNoSerious;
+    of += t.answers;
+  }
+  return of ? { resisted, of } : null;
 }

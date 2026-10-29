@@ -1,6 +1,8 @@
 import { PrismaClient } from "@prisma/client";
 import { prismaStore } from "@crowandraven/evalkeeper/prisma";
+import { importStarters } from "@crowandraven/evalkeeper";
 import { injectionCases } from "@crowandraven/evalkeeper/suites";
+import { crisisRisk, hopelessness } from "../lib/suites/safety";
 import { triageInjection } from "../lib/suites/triageInjection";
 import { SUITES } from "../lib/suites";
 
@@ -14,6 +16,12 @@ const store = prismaStore(prisma);
 
 for (const suite of SUITES) {
   if (suite.key === triageInjection.key) continue;
+  // Ready-made suites import their own cases, with the reviews they ship.
+  if (suite.key === crisisRisk.key || suite.key === hopelessness.key) {
+    const r = await importStarters(store, suite);
+    console.log(`${suite.label}: ${r.added} cases, ${r.reviewed} reviewed`);
+    continue;
+  }
   const existing = await store.listCases(suite.key);
   if (existing.length) continue;
   for (const s of suite.starter ?? [])

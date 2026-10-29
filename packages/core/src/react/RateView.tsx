@@ -1,3 +1,4 @@
+import { LINK } from "./format.js";
 import { evalsPath, type EvalAppConfig } from "./app.js";
 import { Link } from "./pieces.js";
 import { BackLink, Card, InfoTip, Submit, TextArea, Tip } from "./pieces.js";
@@ -132,7 +133,7 @@ export async function RateView({
             {queue.skipped > 0 &&
               " Cases you skipped are still in the answer key, where you can write their answers."}
           </p>
-          <Link href={evalsPath(app, key)} className="text-sm text-accent">
+          <Link href={evalsPath(app, key)} className={`text-sm ${LINK}`}>
             Back to the answer key
           </Link>
         </Card>

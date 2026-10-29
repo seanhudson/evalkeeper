@@ -24,6 +24,10 @@ export const GLOSSARY = {
   minor:
     "A fair difference of judgment. Minor checks should pass 75% of the time unless the check sets its own bar.",
   bar: "The pass rate this check should reach.",
+  reasoningSetting:
+    "Some models think before answering, and how much is a setting. Less is faster and cheaper; more can be more accurate. Each setting you test gets its own row.",
+  checkBreakdown:
+    "How often each check passed, for every model with a current test. Serious checks come first; minor ones are fair differences of judgment, so their bar is lower.",
   confirmed: "A person said this answer is right. Tests grade against it.",
   provisional:
     "Put to use before anyone reviewed it. Tests use it, and every score says it rests on unreviewed answers.",

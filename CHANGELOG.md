@@ -5,6 +5,27 @@ Notable changes, newest first. The format follows
 follow [semantic versioning](https://semver.org/): until 1.0, a minor
 version may change an interface, and its entry says how to update.
 
+## Unreleased
+
+### Added
+
+- **Test a reasoning setting** on a feature's page: test any model at a
+  setting your catalog lists in `efforts`, and it gets its own row
+  (`TestSettingSection`). The Test action takes the setting as `setting`
+  (a model and setting together) or `model` with `effort`.
+- **Where the mistakes are:** each check's pass rate for every model with
+  a current test, beside its bar (`CheckBreakdownSection`). The checks
+  section still shows the live model alone.
+
+### Fixed
+
+- A row for a model at another reasoning setting tested again at the
+  feature's own setting. It now tests at its own.
+- Making such a row live used the model's row at the feature's own
+  setting: it was refused when that row had no test, or made the model
+  live without the tested setting. It now makes the model live at the
+  row's setting.
+
 ## 0.11.1 - 2026-10-29
 
 ### Fixed

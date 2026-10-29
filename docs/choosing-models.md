@@ -37,6 +37,29 @@ For each model:
 A model marked **Out of date** was tested before the instructions, the
 cases, or the checks changed. Test it again before trusting its numbers.
 
+## Test a reasoning setting
+
+Some models think before answering, and how much is a setting. Less is
+faster and cheaper; more can be more accurate. Under the table, **Test a
+reasoning setting** lists each model with the settings your
+[catalog](models.md) gives it in `efforts`. Pick one and press **Test
+this setting**.
+
+The test gets its own row, such as "GPT-6.1 Sol · low reasoning", beside
+the model at the feature's own setting. Its Test button tests it again at
+that setting, and making it live sets the feature's reasoning to it.
+
+## See where the mistakes are
+
+**Where the mistakes are** shows how often each check passed, for every
+model with a current test, beside each check's bar. Green meets the bar,
+amber is within 10 points of it, and red is further below. Serious checks
+come first.
+
+Read it when two models score about the same: one may miss a serious
+check the other passes. It's also where a check that every model fails
+stands out, which usually means the check, not the models, needs a look.
+
 ## See one test's answers
 
 Open a model's score to see the test: every case, the model's answer,

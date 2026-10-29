@@ -131,10 +131,10 @@ Each page is a short arrangement of sections from
 `@crowandraven/evalkeeper/react`. The sections hold all the logic. They
 read everything from one object, `evals` in `lib/evalkeeper/evals.ts`.
 
-| Page                | Loads its data with               | Sections, in order                                                                                                                        |
-| ------------------- | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Suite (`SuitePage`) | `loadSuitePage(evals, key)`, once | `SuiteHeader`, `ChosenOnBase`, `SuggestionCard`, `CasesInInstructions`, `ModelTable`, `Versions`, `ChecksSection`, and `AnswerKeySection` |
-| Hub (`HubPage`)     | `loadHub(evals)`                  | `HubIntro`, `HubStats`, `WeeklyCheck`, and `SuiteList`                                                                                    |
+| Page                | Loads its data with               | Sections, in order                                                                                                                                                                                                 |
+| ------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Suite (`SuitePage`) | `loadSuitePage(evals, key)`, once | `SuiteHeader`, `ChosenOnBase`, `SuggestionCard`, `CasesInInstructions`, `ModelTable`, `TestSettingSection`, `CheckBreakdownSection`, `Versions`, `ChecksSection`, `AnswerKeyHealthSection`, and `AnswerKeySection` |
+| Hub (`HubPage`)     | `loadHub(evals)`                  | `HubIntro`, `HubStats`, `WeeklyCheck`, and `SuiteList`                                                                                                                                                             |
 
 The other pages are one view each:
 

@@ -13,6 +13,7 @@ import {
   skipMark,
   suggest,
   withoutLeaks,
+  type ReasoningEffort,
 } from "../index.js";
 import { evalsPath, type EvalActions } from "../react/app.js";
 import { weeklyCheck } from "./weekly.js";
@@ -92,12 +93,63 @@ export function evalActions(w: EvalWiring): Required<EvalActions> {
   }
 
   /** The current test of a model's row, for choosing it live or fallback. */
-  async function rowOf(suiteKey: string, model: string) {
+  /**
+   * A model's row: at the feature's own setting, or with `effort` at
+   * another ("default": the model's own default).
+   */
+  async function rowOf(suiteKey: string, model: string, effort?: string) {
     const board = await runner.board(suiteKey);
+    const wanted = effort === "default" ? null : effort;
     return {
       board,
-      row: board.rows.find((r) => r.model === model && !r.variant),
+      row: board.rows.find((r) =>
+        effort === undefined
+          ? r.model === model && !r.variant
+          : r.model === model && r.variant && r.effort === wanted,
+      ),
     };
+  }
+
+  /**
+   * The model and reasoning setting a Test form asks for: `setting` (a
+   * model and setting together, from one dropdown) or `model` with an
+   * optional `effort`. No setting: the feature's own. "default": the
+   * model's own default, sending none. Any other must be one the catalog
+   * lists for the model.
+   */
+  function testRequest(
+    form: FormData,
+    operation: string,
+  ): { model: string; reasoningEffort?: ReasoningEffort | null } {
+    let model: string;
+    let effort: string | undefined;
+    const setting = form.get("setting");
+    if (typeof setting === "string" && setting) {
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(setting);
+      } catch {
+        throw new Error("Unknown setting");
+      }
+      if (
+        !Array.isArray(parsed) ||
+        parsed.length !== 2 ||
+        !parsed.every((x) => typeof x === "string")
+      )
+        throw new Error("Unknown setting");
+      [model, effort] = parsed as [string, string];
+    } else {
+      model = formText(form, "model");
+      const e = form.get("effort");
+      effort = typeof e === "string" && e ? e : undefined;
+    }
+    if (!runner.modelsFor(operation).includes(model))
+      throw new Error("Unknown model");
+    if (effort === undefined) return { model };
+    if (effort === "default") return { model, reasoningEffort: null };
+    if (!w.models[model]?.efforts?.includes(effort))
+      throw new Error(`${model} doesn't take ${effort} reasoning`);
+    return { model, reasoningEffort: effort };
   }
 
   async function feedbackById(id: string) {
@@ -110,11 +162,12 @@ export function evalActions(w: EvalWiring): Required<EvalActions> {
     async testModel(form) {
       await w.requireAdmin();
       const suite = suiteFrom(form);
-      const model = formText(form, "model");
-      if (!runner.modelsFor(suite.operation).includes(model))
-        throw new Error("Unknown model");
+      const request = testRequest(form, suite.operation);
       // The feature's cases and its attack cases, in one test.
-      const { runs } = await runner.createTest({ suite: suite.key, model });
+      const { runs } = await runner.createTest({
+        suite: suite.key,
+        ...request,
+      });
       after(() => runAll(runs));
       revalidatePath(page(suite.key));
     },
@@ -132,14 +185,22 @@ export function evalActions(w: EvalWiring): Required<EvalActions> {
     async makeLive(form) {
       const admin = await w.requireAdmin();
       const suite = choosingSuite(form);
-      const { board, row } = await rowOf(suite.key, formText(form, "model"));
+      const effort = form.get("effort");
+      const { board, row } = await rowOf(
+        suite.key,
+        formText(form, "model"),
+        typeof effort === "string" && effort ? effort : undefined,
+      );
       if (!row?.test || row.test.stale)
         throw new Error("Test this model on the current cases first");
       const score = { right: row.test.right, total: row.test.total };
       const attacked = attackMistakes(row.key, await attacksOn(suite.key));
       await settings.update(
         suite.operation,
-        { model: row.model },
+        // A row at another setting goes live at that setting.
+        row.variant
+          ? { model: row.model, reasoningEffort: row.effort }
+          : { model: row.model },
         {
           by: admin.name,
           reason: `Made ${row.label} live: ${score.right}/${score.total}, ${VS[row.vsLive ?? ""] ?? "no comparison"}${attacked === null ? "" : `; ${attacked} serious ${attacked === 1 ? "mistake" : "mistakes"} under attack`}`,

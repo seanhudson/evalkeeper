@@ -139,7 +139,7 @@ design.
   tables full of reviewed answers, your own model router, your own
   settings history, and your own pages. Evalkeeper maps onto your tables
   and columns, calls your router, and copies only the pages you ask for.
-  See [Bring your own](docs/adding-to-your-app.md#bring-your-own).
+  See [Bring your own](docs/bring-your-own.md).
 - **Built for real platforms.** Answers time out, long tests continue in a
   fresh request instead of dying at the platform's limit, stuck tests are
   marked failed, and a provider out of credits stops a test instead of
@@ -220,7 +220,7 @@ migrate. `prismaStore(prisma, map)`, `prismaSettingsStore(prisma, map)`,
 and `prismaFeedbackStore(prisma, map)` run on your own tables (other names, Decimal costs, enums, missing
 columns), the runner calls your router through callbacks, and
 `add pages --only` copies just the pages you're replacing.
-[Bring your own](docs/adding-to-your-app.md#bring-your-own) covers each
+[Bring your own](docs/bring-your-own.md) covers each
 piece and what it costs. The steps below are for starting fresh.
 
 **1. Install.**
@@ -235,7 +235,7 @@ Evalkeeper's models to their own file beside your Prisma schema
 migration SQL from the schema files, never from a database; run it again
 after each upgrade. They work on PostgreSQL, MySQL, and SQLite. Have
 eval tables already? Map onto them instead
-([Bring your own](docs/adding-to-your-app.md#bring-your-own)).
+([Bring your own](docs/bring-your-own.md)).
 
 **3. Write a suite** for one AI feature: its input, what a good answer is,
 how to call the feature on a given model, and how to grade the output.
@@ -379,33 +379,25 @@ counted.
 
 ## Roadmap
 
-- Stores for Drizzle and plain Postgres.
-- Planned upgrades: Prisma 7 and zod 4.
-- **Judge agreement.** Run the meaning judge over confirmed answers and
-  report how often it agrees, so a judge-graded score shows whether it can
-  be trusted. (Phoenix, LangSmith's Align Evals)
-- **A CI gate.** An `evalkeeper check` command that runs the quick set and
-  exits non-zero on a WORSE comparison, so a prompt change merges only
-  behind a passing check. (Braintrust, Promptfoo, DeepEval)
-- **Drafts from live calls.** Sample a small share of an operation's real
-  calls as PENDING drafts and run the checks that need no answer on them,
-  so the answer key grows from real inputs. (Datadog, Braintrust, Phoenix)
-- **Pairwise review.** Show two runs' answers side by side and record which
-  is better, for open-ended output with no single right answer. (LangSmith)
-- **The commit on each run.** Record the git commit with every run, so a
-  score change traces to the change that caused it. (Braintrust)
-- **Canary leak checks.** Plant unique markers in the instructions and in
-  other users' data, and fail any answer that contains one, so leaked
-  instructions or data mixed between users show up. Opt-in per suite.
-  (Promptfoo)
+Next up: one command to add it and one to upgrade, answer-key health on
+each feature's page, AI gateway support, and a live demo. Later: stores
+for Drizzle and plain Postgres, a CI gate, judge agreement, and more.
+The [roadmap](docs/roadmap.md) has the whole list.
 
 ## Docs
 
-[Concepts](docs/concepts.md), [adding it to your app](docs/adding-to-your-app.md),
-[architecture](docs/architecture.md), and [lessons](docs/lessons.md). The
-[API reference](https://seanhudson.github.io/evalkeeper/) documents every
-export, with examples for the main ones (`npm run docs:api` builds it
-locally into `docs/api`).
+The [docs site](https://seanhudson.github.io/evalkeeper/) has the guides
+and the [API reference](https://seanhudson.github.io/evalkeeper/api/),
+which documents every export, with examples for the main ones. The
+guides are written here in `docs/` ([the list](docs/README.md)):
+[trying the example](docs/try-the-example.md),
+[concepts](docs/concepts.md),
+[adding it to your app](docs/adding-to-your-app.md), building your
+answer key, choosing models, thumbs, upkeep,
+[best practices](docs/best-practices.md),
+[bring your own](docs/bring-your-own.md), and
+[upgrading](docs/upgrading.md).
+`npm run docs:site` builds the whole site locally into `site/dist`.
 Changes are in the [changelog](CHANGELOG.md).
 
 ## Contributing

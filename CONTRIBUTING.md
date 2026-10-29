@@ -25,13 +25,14 @@ allowed for now and why), and CodeQL. Please don't skip the hooks with `--no-ver
 
 ## Tests
 
-| Command                                    | What it runs                                    |
-| ------------------------------------------ | ----------------------------------------------- |
-| `npm test`                                 | Unit, contract, and grader tests, with coverage |
-| `npm run e2e` (in `examples/next`)         | The pages in a real browser, on demo models     |
-| `npm run docs:api`                         | Builds the API reference into `docs/api`        |
-| `npm run check`                            | Everything CI checks except the browser tests   |
-| `npm run screenshots` (in `examples/next`) | Retakes the README screenshots, light and dark  |
+| Command                                    | What it runs                                                                              |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------- |
+| `npm test`                                 | Unit, contract, and grader tests, with coverage                                           |
+| `npm run e2e` (in `examples/next`)         | The pages in a real browser, on demo models                                               |
+| `npm run docs:api`                         | Builds the API reference into `docs/api`                                                  |
+| `npm run docs:site`                        | Builds the docs site, guides and API, into `site/dist`; `npm run dev -w site` previews it |
+| `npm run check`                            | Everything CI checks except the browser tests                                             |
+| `npm run screenshots` (in `examples/next`) | Retakes the README screenshots, light and dark                                            |
 
 Every change ships with its tests; AGENTS.md has the table of which kind.
 Coverage limits never go down.

@@ -1,14 +1,14 @@
 # Evalkeeper API reference
 
 Every export of Evalkeeper's packages, with what it's for. For how the
-pieces fit, start with the guides in the repository:
+pieces fit, start with the guides:
 
-- [README](https://github.com/seanhudson/evalkeeper#readme): what it does
-  and the quick start
-- [Concepts](https://github.com/seanhudson/evalkeeper/blob/main/docs/concepts.md):
+- [What Evalkeeper is](https://seanhudson.github.io/evalkeeper/), and the
+  quick start in the [README](https://github.com/seanhudson/evalkeeper#readme)
+- [Concepts](https://seanhudson.github.io/evalkeeper/start/concepts/):
   suites, cases, answers, checks, tests, and the rules behind suggestions
-- [Adding Evalkeeper to your app](https://github.com/seanhudson/evalkeeper/blob/main/docs/adding-to-your-app.md)
-- [Architecture](https://github.com/seanhudson/evalkeeper/blob/main/docs/architecture.md)
+- [Adding Evalkeeper to your app](https://seanhudson.github.io/evalkeeper/start/adding-to-your-app/)
+- [Architecture](https://seanhudson.github.io/evalkeeper/project/architecture/)
 
 ## Packages
 

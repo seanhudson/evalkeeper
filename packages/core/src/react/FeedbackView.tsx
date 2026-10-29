@@ -107,7 +107,7 @@ export async function FeedbackView({
             Nothing waiting. Ratings show up here once an AI feature has a
             thumbs up and down (step 8 of{" "}
             <a
-              href="https://github.com/seanhudson/evalkeeper/blob/main/docs/adding-to-your-app.md#8-add-thumbs-to-your-ai-answers-optional"
+              href="https://seanhudson.github.io/evalkeeper/guides/thumbs/#set-it-up"
               target="_blank"
               rel="noreferrer"
               className="underline"

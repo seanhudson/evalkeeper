@@ -1,0 +1,19 @@
+{
+  "name": "evalkeeper-site",
+  "private": true,
+  "description": "Evalkeeper's docs site: the guides in docs/ and the API reference, on GitHub Pages.",
+  "type": "module",
+  "scripts": {
+    "sync": "node ../scripts/docs-site.mjs",
+    "dev": "npm run sync && astro dev",
+    "build": "npm run sync && astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "^0.42.7",
+    "astro": "~7.3.8",
+    "mermaid": "^12.2.0",
+    "sharp": "^0.35.5",
+    "starlight-links-validator": "^0.27.0"
+  }
+}

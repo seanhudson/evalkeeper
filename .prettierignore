@@ -8,3 +8,11 @@ playwright-report
 packages/core/templates
 docs/api
 .claude
+site/dist
+site/.astro
+site/src/content/docs/start
+site/src/content/docs/upgrading
+site/src/content/docs/project
+site/public/screenshots
+site/public/api
+site/src/content/docs/guides

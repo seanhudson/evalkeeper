@@ -1,0 +1,22 @@
+---
+// A screenshot in light and dark: Starlight shows the one that matches
+// the reader's theme. `name` is the file in docs/screenshots without
+// -light.png or -dark.png.
+interface Props {
+  name: string;
+  alt: string;
+  lazy?: boolean;
+}
+const { name, alt, lazy = true } = Astro.props;
+const src = (scheme: string) =>
+  `${import.meta.env.BASE_URL}/screenshots/${name}-${scheme}.png`.replace(
+    "//",
+    "/",
+  );
+const loading = lazy ? "lazy" : "eager";
+---
+
+<div class="ek-shot">
+  <img class="dark:sl-hidden" src={src("light")} alt={alt} loading={loading} />
+  <img class="light:sl-hidden" src={src("dark")} alt={alt} loading={loading} />
+</div>

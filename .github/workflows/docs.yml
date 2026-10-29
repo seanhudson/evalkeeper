@@ -1,4 +1,4 @@
-name: API reference
+name: Docs site
 
 on:
   push:
@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   build:
-    name: Build the API reference
+    name: Build the docs site
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -25,11 +25,13 @@ jobs:
           cache: npm
       - run: npm ci
       # TypeDoc warnings are errors: an undocumented export fails here.
-      - run: npm run docs:api
+      # Then the guides from docs/ build around it, and a broken link
+      # between pages fails the build.
+      - run: npm run docs:site
       - uses: actions/upload-pages-artifact@v3
         if: github.ref == 'refs/heads/main'
         with:
-          path: docs/api
+          path: site/dist
 
   deploy:
     name: Publish to GitHub Pages

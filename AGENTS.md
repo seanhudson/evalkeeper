@@ -154,7 +154,7 @@ at a time, and stop after each step for the person to check it. Read
 **First, look at what the app already has.** Many apps had evals before
 Evalkeeper: their own eval tables (often holding answers people already
 reviewed), a model router, a settings history or admin page for models,
-or eval pages. If so, follow "Bring your own" in that guide instead of
+or eval pages. If so, follow [docs/bring-your-own.md](docs/bring-your-own.md) instead of
 the fresh-start steps for those pieces, and tell the person which pieces
 you found and which you'd map, keep, or replace.
 

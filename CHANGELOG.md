@@ -9,6 +9,14 @@ version may change an interface, and its entry says how to update.
 
 ### Added
 
+- A docs site at <https://seanhudson.github.io/evalkeeper/>: what
+  Evalkeeper is, the guides from `docs/`, the changelog, and search, in
+  the screens' own colors with light and dark. The guides are still
+  written in `docs/`, so each change updates its docs in the same pull
+  request, and a broken link between pages fails the build. **To
+  update:** the API reference moved to `/evalkeeper/api/`; update any
+  bookmarks to its pages.
+
 - `moveIn` in `@crowandraven/evalkeeper/prisma`: copies an app's eval
   data from tables of its own (read through its mapped stores) into
   Evalkeeper's, once, keeping every id, date, who confirmed each answer,
@@ -17,8 +25,8 @@ version may change an interface, and its entry says how to update.
   what already moved, values Evalkeeper reads differently, and anything
   that stops it. A real run copies only what isn't there yet, then reads
   every row back to check it's the same. The app's own tables are never
-  changed. `moveInSummary` puts a report in words. The guide's "Moving
-  into Evalkeeper's tables" has the steps.
+  changed. `moveInSummary` puts a report in words. "Moving into
+  Evalkeeper's tables" in the Bring your own guide has the steps.
 
 - `npx @crowandraven/evalkeeper migration`: Evalkeeper's tables live in
   their own file beside your Prisma schema (`evalkeeper.prisma`), which

@@ -16,6 +16,7 @@ export function ModelMenu({
   label,
   makeLive,
   makeFallback,
+  effort,
 }: {
   suite: string;
   model: string;
@@ -25,6 +26,11 @@ export function ModelMenu({
   makeLive: FormAction | null;
   /** Your makeFallback action, when it can be the fallback. */
   makeFallback: FormAction | null;
+  /**
+   * The row's reasoning setting, for a row at a setting other than the
+   * feature's (null: the model's own default); unset for the others.
+   */
+  effort?: string | null | undefined;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -54,6 +60,9 @@ export function ModelMenu({
     <form action={action}>
       <input type="hidden" name="suite" value={suite} />
       <input type="hidden" name="model" value={model} />
+      {effort !== undefined && (
+        <input type="hidden" name="effort" value={effort ?? "default"} />
+      )}
       <Button type="submit" role="menuitem" className={item}>
         {text}
       </Button>

@@ -2,6 +2,7 @@ import {
   FAVOR_TEXT,
   answerKeyHealth,
   attacksFrom,
+  barStatus,
   checkBar,
   isInjectionSuite,
   meanCalibrationError,
@@ -25,6 +26,7 @@ import {
   IconSubmit,
   InfoTip,
   Score,
+  Select,
   Spinner,
   Submit,
   Tip,
@@ -473,6 +475,14 @@ export function ModelTable({ data }: { data: SuitePageData }) {
                         <form action={app.actions.testModel}>
                           <input type="hidden" name="suite" value={key} />
                           <input type="hidden" name="model" value={r.model} />
+                          {/* A row at another setting tests at its own. */}
+                          {r.variant && (
+                            <input
+                              type="hidden"
+                              name="effort"
+                              value={r.effort ?? "default"}
+                            />
+                          )}
                           <Tip
                             control
                             id={`test-${r.key}`}
@@ -507,6 +517,7 @@ export function ModelTable({ data }: { data: SuitePageData }) {
                                 ? app.actions.makeFallback
                                 : null
                             }
+                            effort={r.variant ? r.effort : undefined}
                           />
                         )}
                       </div>
@@ -533,6 +544,156 @@ export function ModelTable({ data }: { data: SuitePageData }) {
   );
 }
 
+/**
+ * Testing a model at a reasoning setting other than the feature's: less
+ * reasoning is faster and cheaper, more can be more accurate. Each setting
+ * gets its own row in the model table. Shows only when a model the feature
+ * may use lists its settings in your catalog.
+ */
+export function TestSettingSection({ data }: { data: SuitePageData }) {
+  const { app, key, operation, choosesHere } = data;
+  const tunable = app.runner.modelsFor(operation).flatMap((m) => {
+    const efforts = app.models[m]?.efforts;
+    return efforts?.length
+      ? [{ model: m, label: app.models[m]?.label ?? m, efforts }]
+      : [];
+  });
+  if (!choosesHere || !tunable.length) return null;
+  return (
+    <form
+      action={app.actions.testModel}
+      className="flex flex-wrap items-end gap-2"
+    >
+      <input type="hidden" name="suite" value={key} />
+      <div>
+        <label htmlFor="test-setting" className="block text-sm font-medium">
+          Test a reasoning setting
+          <InfoTip term="reasoningSetting" id="test-setting" />
+        </label>
+        <Select
+          id="test-setting"
+          name="setting"
+          className="mt-1 rounded-md border border-line bg-card px-3 py-2 text-sm"
+        >
+          {tunable.map((t) => (
+            <optgroup key={t.model} label={t.label}>
+              {t.efforts.map((e) => (
+                <option key={e} value={JSON.stringify([t.model, e])}>
+                  {t.label} · {e} reasoning
+                </option>
+              ))}
+            </optgroup>
+          ))}
+        </Select>
+      </div>
+      <Submit variant="quiet">Test this setting</Submit>
+    </form>
+  );
+}
+
+const BAR_TONE = {
+  meets:
+    "bg-emerald-100 text-emerald-900 dark:bg-emerald-500/15 dark:text-emerald-200",
+  close: "bg-amber-100 text-amber-900 dark:bg-amber-500/15 dark:text-amber-200",
+  below: "bg-red-100 text-red-900 dark:bg-red-500/15 dark:text-red-200",
+} as const;
+
+/**
+ * Where the mistakes are: how often each check passed, for every model
+ * with a current test, beside each check's bar. Serious checks first. The
+ * checks section shows the live model alone; this shows which model fails
+ * which check.
+ */
+export function CheckBreakdownSection({ data }: { data: SuitePageData }) {
+  const { suite, rows } = data;
+  const tested = rows.filter((r) => r.test && !r.test.stale);
+  if (!tested.length) return null;
+  const checks = [...suite.checks].sort(
+    (a, b) => Number(a.severity === "minor") - Number(b.severity === "minor"),
+  );
+  return (
+    <section aria-labelledby="check-breakdown" className="space-y-3">
+      <h2 id="check-breakdown" className="text-lg font-semibold">
+        Where the mistakes are
+        <InfoTip term="checkBreakdown" />
+      </h2>
+      <Card className="space-y-3">
+        <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+          {(
+            [
+              ["meets", "Meets the bar"],
+              ["close", "Within 10 points"],
+              ["below", "Further below"],
+            ] as const
+          ).map(([k, text]) => (
+            <span key={k} className="flex items-center gap-1.5">
+              <span className={`inline-block h-3 w-3 rounded ${BAR_TONE[k]}`} />
+              {text}
+            </span>
+          ))}
+        </p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="text-xs text-muted">
+              <tr>
+                <th className="py-2 pr-4 font-normal">Check</th>
+                <th className="py-2 pr-4 font-normal">Bar</th>
+                {tested.map((r) => (
+                  <th key={r.key} className="py-2 pr-3 font-normal">
+                    {r.label}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {checks.map((c) => (
+                <tr key={c.key}>
+                  <td className="py-1.5 pr-4">
+                    <span className="mr-2">{c.label}</span>
+                    <Chip
+                      tone={c.severity === "serious" ? "serious" : "neutral"}
+                    >
+                      {c.severity}
+                    </Chip>
+                  </td>
+                  <td className="py-1.5 pr-4 tabular-nums text-muted">
+                    {pct(checkBar(c))}
+                  </td>
+                  {tested.map((r) => {
+                    const x = r.test?.byCheck[c.key];
+                    const rate = x?.n ? x.passed / x.n : null;
+                    return (
+                      <td key={r.key} className="py-1 pr-2">
+                        {rate === null ? (
+                          <span className="text-muted">–</span>
+                        ) : (
+                          <span
+                            className={`inline-block rounded px-2 py-0.5 tabular-nums ${BAR_TONE[barStatus(rate, checkBar(c))]}`}
+                          >
+                            {pct(rate)}
+                          </span>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+              <tr>
+                <td className="py-1.5 pr-4">Answers with no mistakes at all</td>
+                <td />
+                {tested.map((r) => (
+                  <td key={r.key} className="py-1.5 pr-3 tabular-nums">
+                    {r.test?.answersRight} of {r.test?.answers}
+                  </td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </section>
+  );
+}
 /** The feature's settings history, with rollback; not on an injection suite. */
 export function Versions({ data }: { data: SuitePageData }) {
   const { app, key, history, liveSettings, choosesHere } = data;
@@ -916,6 +1077,8 @@ export async function SuitePage({
       <SuggestionCard data={data} />
       <CasesInInstructions data={data} />
       <ModelTable data={data} />
+      <TestSettingSection data={data} />
+      <CheckBreakdownSection data={data} />
       <Versions data={data} />
       <ChecksSection data={data} />
       <AnswerKeyHealthSection data={data} />

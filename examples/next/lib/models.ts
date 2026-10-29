@@ -28,6 +28,8 @@ export const MODELS: ModelCatalog = {
     provider: "demo-b",
     inputPer1M: 0.5,
     outputPer1M: 2,
+    // Settings to try with "Test a reasoning setting"; the demo ignores them.
+    efforts: ["low", "high"],
     source: "made up, for the demo",
   },
   "demo-legacy": {

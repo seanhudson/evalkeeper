@@ -75,7 +75,10 @@ async function flush() {
   while (pending.length) await pending.shift()?.();
 }
 
-function setup(admin = async () => ({ id: "ada", name: "Ada" })) {
+function setup(
+  admin = async () => ({ id: "ada", name: "Ada" }),
+  models: EvalWiring["models"] = {},
+) {
   const store = memoryStore();
   const settings = createSettings({
     store,
@@ -89,7 +92,7 @@ function setup(admin = async () => ({ id: "ada", name: "Ada" })) {
   const runner = createRunner({
     store,
     suites: [double],
-    models: {},
+    models,
     promptVersion: () => "p1",
     route: (op) => settings.route(op),
     candidates: () => ({ models: ["good", "bad", "spare"] }),
@@ -99,7 +102,7 @@ function setup(admin = async () => ({ id: "ada", name: "Ada" })) {
     settings,
     store,
     feedbackStore: store,
-    models: {},
+    models,
     suites: [double],
     routeFor: (op) => settings.route(op),
     answerEditors: {},
@@ -170,6 +173,68 @@ describe("the eval actions", () => {
       (r) => r.model === "bad",
     );
     expect(row?.test?.right).toBe(1);
+  });
+
+  it("test a model at a reasoning setting the catalog lists", async () => {
+    const models = {
+      bad: { label: "Bad", provider: "x", efforts: ["low", "high"] },
+    };
+    const { actions, store } = setup(undefined, models);
+    await addCases(actions);
+    // One dropdown sends the model and setting together.
+    await actions.testModel(
+      form({ suite: "double", setting: JSON.stringify(["bad", "high"]) }),
+    );
+    // A row's own Test button sends them apart; "default" is the model's.
+    await actions.testModel(
+      form({ suite: "double", model: "bad", effort: "default" }),
+    );
+    await actions.testModel(form({ suite: "double", model: "bad" }));
+    expect(store.runs.map((r) => r.reasoningEffort)).toEqual([
+      "high",
+      null,
+      null,
+    ]);
+    await expect(
+      actions.testModel(
+        form({ suite: "double", setting: JSON.stringify(["bad", "max"]) }),
+      ),
+    ).rejects.toThrow("bad doesn't take max reasoning");
+    await expect(
+      actions.testModel(
+        form({ suite: "double", model: "good", effort: "low" }),
+      ),
+    ).rejects.toThrow("good doesn't take low reasoning");
+    await expect(
+      actions.testModel(form({ suite: "double", setting: "bad,high" })),
+    ).rejects.toThrow("Unknown setting");
+    await expect(
+      actions.testModel(
+        form({ suite: "double", setting: JSON.stringify(["nobody", "low"]) }),
+      ),
+    ).rejects.toThrow("Unknown model");
+  });
+
+  it("make a setting's row live at its own setting", async () => {
+    const models = {
+      bad: { label: "Bad", provider: "x", efforts: ["low", "high"] },
+    };
+    const { actions, settings } = setup(undefined, models);
+    await addCases(actions);
+    await actions.testModel(
+      form({ suite: "double", setting: JSON.stringify(["bad", "high"]) }),
+    );
+    await flush();
+    // Its row's menu sends the setting; the model alone has no test.
+    await expect(
+      actions.makeLive(form({ suite: "double", model: "bad" })),
+    ).rejects.toThrow("Test this model");
+    await actions.makeLive(
+      form({ suite: "double", model: "bad", effort: "high" }),
+    );
+    const route = await settings.route("double_op");
+    expect(route.model).toBe("bad");
+    expect(route.reasoningEffort).toBe("high");
   });
 
   it("make a tested model live, and refuse an untested one", async () => {

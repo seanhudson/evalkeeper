@@ -1,4 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
+import { PrismaClient } from "@prisma/client";
+import { prismaStore } from "@crowandraven/evalkeeper/prisma";
 
 /**
  * Screenshots for the README and docs (docs/screenshots), taken on the
@@ -24,22 +26,59 @@ async function testEveryModel(page: Page, suite: string) {
 test("fill the pages with tests, a rating, and a weekly check", async ({
   page,
 }) => {
+  test.setTimeout(600_000);
+  // A drafted case waiting for a person, for the review screenshot. The
+  // database is the screenshot run's own (e2e.db), rebuilt each run.
+  const prisma = new PrismaClient({ datasourceUrl: "file:./e2e.db" });
+  await prismaStore(prisma).createCase({
+    suite: "ticket_triage",
+    input: {
+      subject: "Invoice shows the wrong company name",
+      body: "Our invoices still say Acme Ltd. We renamed to Acme Group in May.",
+    },
+    tags: ["billing"],
+    split: "DEV",
+    status: "ACTIVE",
+    source: "MODEL_DRAFT",
+    sourceRef: null,
+    note: "Drafted from a ticket someone agreed to share.",
+    labels: [
+      {
+        kind: "EXPECTED",
+        status: "PENDING",
+        value: { category: "billing", urgency: "normal" },
+        raterRole: "MODEL",
+        raterId: null,
+        note: null,
+      },
+    ],
+  });
+  await prisma.$disconnect();
+
   await testEveryModel(page, "ticket_triage");
   await testEveryModel(page, "action_items");
   await testEveryModel(page, "ticket_routing");
+  // A model's Test runs its attack cases too, in the background: wait
+  // for every suite to finish, so later steps don't wait on the database.
+  for (const suite of [
+    "ticket_triage",
+    "ticket_triage_injection",
+    "action_items",
+    "ticket_routing",
+  ]) {
+    await page.goto(`/evals/${suite}`);
+    await expect(page.getByRole("status", { name: "Testing" })).toHaveCount(0, {
+      timeout: 120_000,
+    });
+  }
   // A promotion for the settings history.
   await page.goto("/evals/ticket_triage");
   await page.getByRole("button", { name: "Use these" }).click();
   await expect(page.getByText("Live now").first()).toBeVisible();
 
   await page.goto("/try");
-  await page.getByLabel("Subject").fill("Charged twice for March");
-  await page
-    .getByLabel("Message")
-    .fill("My card shows two charges of $49 this month. Please refund one.");
-  await page.getByRole("button", { name: "Triage it" }).click();
   const answer = page.getByRole("article", {
-    name: "Answer: Charged twice for March",
+    name: "Answer: Billed twice for March",
   });
   await answer.getByRole("button", { name: "Not a good answer" }).click();
   await answer
@@ -92,6 +131,59 @@ for (const scheme of SCHEMES) {
       window.scrollBy(0, -24);
     });
     await shot("history");
+
+    // Building the answer key: the "Add a case" form, and a drafted
+    // answer waiting for a person to confirm it.
+    await page.goto("/evals/ticket_triage");
+    await page.getByRole("button", { name: "Add a case" }).click();
+    await page.getByRole("heading", { name: "New case" }).evaluate((el) => {
+      el.scrollIntoView({ block: "start" });
+      window.scrollBy(0, -80);
+    });
+    await shot("add-case");
+
+    await page.goto("/evals/ticket_triage");
+    const draft = page
+      .locator("details")
+      .filter({ hasText: "Invoice shows the wrong company name" })
+      .first();
+    await draft.locator("summary").first().click();
+    await draft.evaluate((el) => {
+      el.scrollIntoView({ block: "start" });
+      window.scrollBy(0, -24);
+    });
+    await shot("confirm");
+
+    // Retiring a case: its menu in the answer key.
+    await page.goto("/evals/ticket_triage");
+    const easy = page
+      .locator("details")
+      .filter({ hasText: "Charged twice this month" })
+      .first();
+    await easy.locator("summary").first().click();
+    await easy.getByRole("button", { name: "Case actions" }).click();
+    await easy.evaluate((el) => {
+      el.scrollIntoView({ block: "start" });
+      window.scrollBy(0, -24);
+    });
+    // Off every tooltip.
+    await page.mouse.move(1, 1);
+    await shot("retire");
+
+    // One test, and two tests compared.
+    await page.goto("/evals/ticket_triage");
+    // The cheapest model, which gets some wrong.
+    await page.locator('main a[href*="/ticket_triage/runs/"]').last().click();
+    await expect(page).toHaveURL(/\/runs\//);
+    await shot("run");
+
+    await page.goto("/evals/ticket_triage");
+    await page
+      .locator('main a[href*="/compare?"]', { hasText: "Less accurate" })
+      .first()
+      .click();
+    await expect(page).toHaveURL(/\/compare\?/);
+    await shot("compare");
 
     await page.goto("/evals/ticket_routing");
     await page.getByRole("heading", { name: "Models" }).evaluate((el) => {

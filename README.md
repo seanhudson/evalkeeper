@@ -94,7 +94,7 @@ design.
   give probabilities natively and which are prompted.
 - **A crisis risk suite, ready made.** If your app watches chat messages
   for suicide or self-harm risk, `crisisRiskSuite` from
-  `@crowandraven/evalkeeper/suites` tests the detector on about 90 made-up
+  `@crowandraven/evalkeeper/suites` tests the detector on about 90 starter
   messages: ones that need a safety reply, such as "everyone would be
   fine without me," and ones that don't, such as "did suicide sprints at
   practice." Use it as it is, add your own cases, or read it as a pattern.
@@ -105,11 +105,11 @@ design.
 - **A hopelessness suite, ready made.** If your app listens for
   hopelessness in chat, `hopelessnessSuite` tests whether the latest
   message, and separately the earlier ones, voice hopelessness about the
-  person's own life, on about 75 made-up messages: "every day is the same
+  person's own life, on about 75 starter messages: "every day is the same
   grey nothing" counts, "nothing helps with this cough" doesn't, a joke
   covering real hopelessness still counts, and so does "yeah, same" after
-  hopeless messages. These are made-up examples written as a starting
-  point, not clinically validated: review and adapt them with people who
+  hopeless messages. These are starter examples, not complete and
+  not clinically validated: review and adapt them with people who
   have crisis-line or clinical experience before relying on them. See
   [Listening for hopelessness](#listening-for-hopelessness).
 - **Tests against prompt injection.** `injectionSuite` from
@@ -139,7 +139,7 @@ design.
   tables full of reviewed answers, your own model router, your own
   settings history, and your own pages. Evalkeeper maps onto your tables
   and columns, calls your router, and copies only the pages you ask for.
-  See [Bring your own](docs/adding-to-your-app.md#bring-your-own).
+  See [Bring your own](docs/bring-your-own.md).
 - **Built for real platforms.** Answers time out, long tests continue in a
   fresh request instead of dying at the platform's limit, stuck tests are
   marked failed, and a provider out of credits stops a test instead of
@@ -220,7 +220,7 @@ migrate. `prismaStore(prisma, map)`, `prismaSettingsStore(prisma, map)`,
 and `prismaFeedbackStore(prisma, map)` run on your own tables (other names, Decimal costs, enums, missing
 columns), the runner calls your router through callbacks, and
 `add pages --only` copies just the pages you're replacing.
-[Bring your own](docs/adding-to-your-app.md#bring-your-own) covers each
+[Bring your own](docs/bring-your-own.md) covers each
 piece and what it costs. The steps below are for starting fresh.
 
 **1. Install.**
@@ -235,7 +235,7 @@ Evalkeeper's models to their own file beside your Prisma schema
 migration SQL from the schema files, never from a database; run it again
 after each upgrade. They work on PostgreSQL, MySQL, and SQLite. Have
 eval tables already? Map onto them instead
-([Bring your own](docs/adding-to-your-app.md#bring-your-own)).
+([Bring your own](docs/bring-your-own.md)).
 
 **3. Write a suite** for one AI feature: its input, what a good answer is,
 how to call the feature on a given model, and how to grade the output.
@@ -379,33 +379,25 @@ counted.
 
 ## Roadmap
 
-- Stores for Drizzle and plain Postgres.
-- Planned upgrades: Prisma 7 and zod 4.
-- **Judge agreement.** Run the meaning judge over confirmed answers and
-  report how often it agrees, so a judge-graded score shows whether it can
-  be trusted. (Phoenix, LangSmith's Align Evals)
-- **A CI gate.** An `evalkeeper check` command that runs the quick set and
-  exits non-zero on a WORSE comparison, so a prompt change merges only
-  behind a passing check. (Braintrust, Promptfoo, DeepEval)
-- **Drafts from live calls.** Sample a small share of an operation's real
-  calls as PENDING drafts and run the checks that need no answer on them,
-  so the answer key grows from real inputs. (Datadog, Braintrust, Phoenix)
-- **Pairwise review.** Show two runs' answers side by side and record which
-  is better, for open-ended output with no single right answer. (LangSmith)
-- **The commit on each run.** Record the git commit with every run, so a
-  score change traces to the change that caused it. (Braintrust)
-- **Canary leak checks.** Plant unique markers in the instructions and in
-  other users' data, and fail any answer that contains one, so leaked
-  instructions or data mixed between users show up. Opt-in per suite.
-  (Promptfoo)
+Next up: one command to add it and one to upgrade, answer-key health on
+each feature's page, AI gateway support, and a live demo. Later: stores
+for Drizzle and plain Postgres, a CI gate, judge agreement, and more.
+The [roadmap](docs/roadmap.md) has the whole list.
 
 ## Docs
 
-[Concepts](docs/concepts.md), [adding it to your app](docs/adding-to-your-app.md),
-[architecture](docs/architecture.md), and [lessons](docs/lessons.md). The
-[API reference](https://seanhudson.github.io/evalkeeper/) documents every
-export, with examples for the main ones (`npm run docs:api` builds it
-locally into `docs/api`).
+The [docs site](https://seanhudson.github.io/evalkeeper/) has the guides
+and the [API reference](https://seanhudson.github.io/evalkeeper/api/),
+which documents every export, with examples for the main ones. The
+guides are written here in `docs/` ([the list](docs/README.md)):
+[trying the example](docs/try-the-example.md),
+[concepts](docs/concepts.md),
+[adding it to your app](docs/adding-to-your-app.md), building your
+answer key, choosing models, thumbs, upkeep,
+[best practices](docs/best-practices.md),
+[bring your own](docs/bring-your-own.md), and
+[upgrading](docs/upgrading.md).
+`npm run docs:site` builds the whole site locally into `site/dist`.
 Changes are in the [changelog](CHANGELOG.md).
 
 ## Contributing

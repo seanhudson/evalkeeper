@@ -1,0 +1,34 @@
+---
+// Starlight's head, plus drawing the Mermaid diagrams the docs carry
+// (scripts/docs-site.mjs turns each into a <pre class="mermaid">).
+import Default from "@astrojs/starlight/components/Head.astro";
+---
+
+<Default {...Astro.props}><slot /></Default>
+
+<script>
+  const blocks = [...document.querySelectorAll<HTMLElement>("pre.mermaid")];
+  if (blocks.length) {
+    for (const b of blocks) b.dataset.source = b.textContent ?? "";
+    const { default: mermaid } = await import("mermaid");
+    const draw = async () => {
+      const dark = document.documentElement.dataset.theme !== "light";
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: dark ? "dark" : "neutral",
+        fontFamily: "inherit",
+      });
+      for (const b of blocks) {
+        b.removeAttribute("data-processed");
+        b.textContent = b.dataset.source ?? "";
+      }
+      await mermaid.run({ nodes: blocks });
+    };
+    await draw();
+    // Redraw when the reader switches between light and dark.
+    new MutationObserver(() => void draw()).observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
+  }
+</script>

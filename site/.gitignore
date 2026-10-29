@@ -1,0 +1,8 @@
+.astro/
+# Written by scripts/docs-site.mjs from docs/ and CHANGELOG.md.
+src/content/docs/start/
+src/content/docs/upgrading/
+src/content/docs/project/
+public/screenshots/
+public/api/
+src/content/docs/guides/

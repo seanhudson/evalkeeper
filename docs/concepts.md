@@ -15,37 +15,48 @@ good answer, the checks, how to call the operation on a given model
 reviewed and versioned like the rest of your app. Two come ready made in
 `@crowandraven/evalkeeper/suites`, for apps that watch chat messages:
 `crisisRiskSuite` (suicide or self-harm risk) and `hopelessnessSuite`.
-Your app passes its own detector as `run`. Their cases are made-up
-examples written as a starting point, not clinically validated: review
+Your app passes its own detector as `run`. Their cases are starter
+examples, not complete and not clinically validated: review
 and adapt them with people who have crisis-line or clinical experience
 before relying on them.
 
-**Injection suite.** A suite made from another one (`injectionSuite`) to
-test the same feature against prompt injection: the base suite's
-confirmed cases, each with an attack inserted where text the model can't
-trust goes. It runs on the base suite's operation, keeps its checks, and
-adds two: the answer never contains the attack's canary (a made-up word
-it asks for) and never contains secrets the app names. An attack case's
-answer is its base case's, marked "From base case," since an attack
-shouldn't change the right answer. Code that finds a feature's suite by
-operation skips injection suites (`isInjectionSuite`). Models aren't
-chosen on an injection suite: one feature has one live model, so its
-results show on the base suite's page as **attacks resisted**, the share
-of each model's attack answers with no serious mistake, and the
-suggestion there weighs them. A model's Test runs the attacks with the
-feature's cases.
+**Injection suite.** A copy of another suite that tests the same feature
+against prompt injection: text hidden in an input that tries to take
+over the model. You make one with `injectionSuite`. It takes the base
+suite's confirmed cases and inserts an attack wherever text the model
+can't trust goes.
 
-**Case.** One frozen input, copied rather than referenced, so later
-changes to your app's data don't move the test. Cases are DRAFT, ACTIVE,
-or RETIRED, and split into DEV (what you tune against) and TEST (what you
-check, and never tune against). Tags say what a case tests. A case frozen from your app's data
-leaves out anything learned from that same case (its answer would leak);
+- **Same feature, same checks.** It runs on the base suite's operation
+  and keeps its checks, plus two more: the answer never contains the
+  attack's canary (a made-up word the attack asks for), and never
+  contains secrets your app names.
+- **Same right answer.** An attack shouldn't change what a good answer
+  is, so each attack case keeps its base case's answer, marked "From base
+  case."
+- **No model is chosen on it.** One feature has one live model. Its
+  results show on the base suite's page as **attacks resisted**: the
+  share of each model's attack answers with no serious mistake. The
+  suggestion there takes them into account, and a model's Test runs the
+  attacks along with the feature's cases.
+- Code that finds a feature's suite by operation skips injection suites
+  (`isInjectionSuite`).
+
+**Case.** One input, frozen: copied rather than referenced, so later
+changes to your app's data don't move the test.
+
+- **Status:** DRAFT, ACTIVE, or RETIRED.
+- **Set:** DEV (what you tune against) or TEST (what you check, and
+  never tune against).
+- **Tags** say what a case tests.
+
+Two warnings keep a case honest. A case frozen from your app's data must
+leave out anything learned from that same case, or its answer leaks in;
 a suite's leak check removes it on the way in and says what it removed.
-The other way round matters too: a case copied into the instructions as
-an example gets graded on an answer the model was handed. When the app
-passes its instructions' text (`instructionTexts`), the suite page lists
-any case whose words appear in them, under "Cases in the instructions".
-It's a warning, not a failure.
+And a case copied into the instructions as an example gets graded on an
+answer the model was handed: when your app passes its instructions' text
+(`instructionTexts`), the suite page lists any case whose words appear
+in them, under "Cases in the instructions". That's a warning, not a
+failure.
 
 **Answer.** What a good answer to a case looks like, in the suite's
 answer shape. Every answer has a status:
@@ -124,10 +135,12 @@ grade each question with `decisionCheck`. A decision is graded twice:
 Two models that pick right equally often can differ a lot here, and that
 difference matters when your code acts on the probability (route only
 above 80%, ask a person below). **Native** decision models return a
-probability for every option; **prompted** ones are a text model asked to
-decide, which gives a pick with no distribution for choices, so
-probability quality counts only their true-or-false answers. A catalog
-entry's `decisions` field says which.
+probability for every option. They include models built only for typed
+judgments, such as TypeSafe's System One models (Jev), and providers'
+own decision models through the AI SDK. **Prompted** ones are a text
+model asked to decide, which gives a pick with no distribution for
+choices, so probability quality counts only their true-or-false answers.
+A catalog entry's `decisions` field says which.
 
 ## Rules
 
@@ -192,24 +205,37 @@ worse at the job.
 **Health.** A suite's card says where it stands: not tested, test again,
 needs more cases, room to improve, fair, or good, with the reasons.
 
-**Versioned settings (optional).** A feature's settings (its live model,
-fallback, reasoning setting, output limit, and temperature, with the
-instructions they ran with) are numbered versions that never change. Each switch is logged
-with who, when, why, and its evidence: a _change_ by a person, a
-_promotion_ from a test (the test is the evidence), a _rollback_ to an
-earlier version, _new instructions_ (the instructions changed in code
-and were recorded under the same models; no model was switched), a change made _outside_ the settings (the app's
-own settings row changed by a script, SQL, or another page, recorded as
-found before the next save), or _instructions edited_ at runtime (an
-admin override or guidance added at call time, dated when noticed). Only
-settings roll back; instructions stay as they are now. A feature never changed runs on its default
-from code; the first change records that default as version 1, so
-there's always something to roll back to. An app that chooses models in
-an admin page, with no defaults in code, records each feature's current
-choice as version 1 instead (_seeding_); until then the feature has no
-settings, and reading them is an error. A switch decided against a
-version that's no longer live is refused, so two people saving at once
-can't overwrite each other.
+**Versioned settings (optional).** A feature's settings are its live
+model, fallback, reasoning setting, output limit, and temperature, with
+the instructions they ran with. Evalkeeper can keep them as numbered
+versions that never change, so you can always see what ran when, and
+roll back.
+
+Each switch is logged with who, when, why, and its evidence. There are
+six kinds:
+
+| Kind                | What happened                                                                                                         |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Change              | A person changed the settings                                                                                         |
+| Promotion           | A test's winner was made live (the test is the evidence)                                                              |
+| Rollback            | An earlier version was made live again                                                                                |
+| New instructions    | The instructions changed in code, under the same models; nothing was switched                                         |
+| Outside             | Your app's own settings row was changed by a script, SQL, or another page, and recorded as found before the next save |
+| Instructions edited | An admin override or guidance added at call time, dated when noticed                                                  |
+
+Only settings roll back; instructions stay as they are now.
+
+Where version 1 comes from:
+
+- **Defaults in code.** A feature never changed runs on its default from
+  code. The first change records that default as version 1, so there's
+  always something to roll back to.
+- **Models chosen in an admin page.** With no defaults in code, each
+  feature's current choice is recorded as version 1 instead (_seeding_).
+  Until then the feature has no settings, and reading them is an error.
+
+A switch decided against a version that's no longer live is refused, so
+two people saving at once can't overwrite each other.
 
 **Weekly check.** Once a week, each suite's quick set runs again on its
 live model at its live reasoning setting, with fresh answers. A provider

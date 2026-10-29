@@ -1,0 +1,389 @@
+---
+title: Evalkeeper
+description: Evalkeeper tests your AI features against real, team-verified examples. Catch regressions, compare models, and know which model works best for every feature in your TypeScript app.
+template: splash
+editUrl: false
+prev: false
+next: false
+hero:
+  title: Know when your AI features get worse before your users do.
+  tagline: Evalkeeper tests your AI features against real, team-verified examples. Catch regressions, compare models, and know which model works best for every feature in your TypeScript app.
+  actions:
+    - text: Add it to your app
+      link: /evalkeeper/start/adding-to-your-app/
+      icon: right-arrow
+    - text: Try the example
+      link: /evalkeeper/start/try-the-example/
+      variant: minimal
+    - text: GitHub
+      link: https://github.com/seanhudson/evalkeeper
+      icon: external
+      variant: minimal
+---
+
+import {
+  Aside,
+  CardGrid,
+  LinkButton,
+  LinkCard,
+  Steps,
+} from "@astrojs/starlight/components";
+import Check from "../../components/Check.astro";
+import Shot from "../../components/Shot.astro";
+
+<div class="ek-install">
+
+```bash frame="none"
+npm install @crowandraven/evalkeeper
+```
+
+</div>
+
+<div class="ek-agent">
+
+<Aside type="tip" title="Let your coding agent do it">
+
+Evalkeeper ships instructions written for coding agents. Paste this into
+yours, and it adds Evalkeeper to your app one step at a time, stopping
+after each so you can check it:
+
+```text wrap
+Add Evalkeeper to this app. Follow
+https://github.com/seanhudson/evalkeeper/blob/main/AGENTS.md#adding-evalkeeper-to-an-app
+one step at a time, and stop after each step so I can check it.
+```
+
+</Aside>
+
+</div>
+
+<Shot
+  name="board"
+  lazy={false}
+  alt="A feature's model board: each model's score, serious mistakes, time, and cost, the live and retiring models marked, and the suggested live and fallback models with their reasons."
+/>
+
+<section class="ek-section">
+
+<p class="ek-kicker">Why</p>
+
+## Without evals, your users find out first
+
+<div class="ek-lede">
+  An AI feature can get worse without a single line of your code changing.
+  Trying a few prompts by hand won't catch it, and it won't tell you whether a
+  cheaper model is good enough.
+</div>
+
+<div class="ek-panels">
+  <div>
+    <strong>The model changes under you</strong>
+    <p>
+      Providers retire models, update them under the same name, and change
+      prices. A feature that worked in March can quietly slip by June.
+    </p>
+  </div>
+  <div>
+    <strong>A fix in one place breaks another</strong>
+    <p>
+      In one app, a prompt rule cut small misses from 8 to 5 and raised made-up
+      details from 4 to 7. Nobody saw it until a test did.
+    </p>
+  </div>
+  <div>
+    <strong>The cheaper model might do</strong>
+    <p>
+      A model at half the price ships. Is it good enough for this feature? Ten
+      tries in a playground can't tell you.
+    </p>
+  </div>
+</div>
+
+</section>
+
+<section class="ek-section">
+
+<p class="ek-kicker">New to evals?</p>
+
+## An eval is a test for an AI feature
+
+<div class="ek-lede">
+  Like a unit test, but for answers that can vary. You collect real examples,
+  write down what a good answer is, and grade every model against them.
+  Evalkeeper does the bookkeeping, in pages inside your own admin.
+</div>
+
+<div class="ek-panels">
+  <div>
+    <span class="ek-step">1</span>
+    <strong>Collect real examples</strong>
+    <p>
+      Inputs your feature really sees: a support ticket, a meeting's notes. Each
+      one is a case.
+    </p>
+  </div>
+  <div>
+    <span class="ek-step">2</span>
+    <strong>Confirm the right answers</strong>
+    <p>
+      A model can draft them, but a person on your team confirms each one.
+      Together they're your answer key.
+    </p>
+  </div>
+  <div>
+    <span class="ek-step">3</span>
+    <strong>Test every model</strong>
+    <p>
+      Run each model on every case and grade its answers, with what each one
+      costs and how long it takes.
+    </p>
+  </div>
+  <div>
+    <span class="ek-step">4</span>
+    <strong>Choose on evidence</strong>
+    <p>
+      Make the best model live, keep a fallback, and see every change on the
+      record, with the test behind it.
+    </p>
+  </div>
+</div>
+
+</section>
+
+<section class="ek-section">
+
+<p class="ek-kicker">What you get</p>
+
+## Everything you need to decide, in your own admin
+
+<ul class="ek-checks">
+  <li>
+    <Check />
+    <div>
+      <strong>Seven screens, ready to use</strong>
+      <span>
+        A hub, a page per feature with its model board and answer key, a test's
+        answers, two tests compared, their answers side by side, blind rating,
+        and feedback.
+      </span>
+    </div>
+  </li>
+  <li>
+    <Check />
+    <div>
+      <strong>Answer keys your team owns</strong>
+      <span>
+        Nothing is graded against an answer until a person confirms it, and
+        scores on unreviewed answers say so.
+      </span>
+    </div>
+  </li>
+  <li>
+    <Check />
+    <div>
+      <strong>Every model, side by side</strong>
+      <span>
+        Score, serious mistakes, speed, and cost, and whether each is more
+        accurate than live or too close to tell.
+      </span>
+    </div>
+  </li>
+  <li>
+    <Check />
+    <div>
+      <strong>A suggestion with its reason</strong>
+      <span>
+        Which model to make live and which to keep as the fallback, in plain
+        words. Accuracy always comes first.
+      </span>
+    </div>
+  </li>
+  <li>
+    <Check />
+    <div>
+      <strong>Every switch on the record</strong>
+      <span>
+        Who changed which model, when, why, and the test behind it, with a
+        rollback that asks why.
+      </span>
+    </div>
+  </li>
+  <li>
+    <Check />
+    <div>
+      <strong>A weekly check for drift</strong>
+      <span>
+        Each feature's live model is tested again every week, next to models
+        about to retire and features people rate poorly.
+      </span>
+    </div>
+  </li>
+  <li>
+    <Check />
+    <div>
+      <strong>Thumbs that become test cases</strong>
+      <span>
+        Thumbs up and down on your AI answers, and one click to turn a thumbs
+        down into a case for review.
+      </span>
+    </div>
+  </li>
+  <li>
+    <Check />
+    <div>
+      <strong>Ready-made suites</strong>
+      <span>
+        Prompt injection attacks for any feature, and crisis risk and
+        hopelessness suites for apps that read chat messages.
+      </span>
+    </div>
+  </li>
+</ul>
+
+</section>
+
+<section class="ek-section">
+
+<p class="ek-kicker">Ready to use</p>
+
+## Start with tests that already exist
+
+<div class="ek-lede">
+  Some tests are the same in every app. Three starter suites come with the
+  package, with their cases and answers ready, so you can test on day one, then
+  build them out with your own cases. They're starters, not complete or
+  expert-verified tests.
+</div>
+
+<div class="ek-three">
+  <LinkCard
+    title="Prompt injection"
+    description="20 built-in attacks, plus garak, CyberSecEval, and promptfoo's, on your feature's own cases."
+    href="/evalkeeper/guides/ready-made-suites/#prompt-injection"
+  />
+  <LinkCard
+    title="Crisis risk"
+    description="91 starter chat messages: catch suicide and self-harm risk without false alarms."
+    href="/evalkeeper/guides/ready-made-suites/#crisis-risk"
+  />
+  <LinkCard
+    title="Hopelessness"
+    description="76 starter chat messages: hear when someone sounds hopeless about their life."
+    href="/evalkeeper/guides/ready-made-suites/#hopelessness"
+  />
+</div>
+
+</section>
+
+<section class="ek-section">
+
+<p class="ek-kicker">A look around</p>
+
+## The screens drop into your app
+
+<div class="ek-lede">
+  They come with the package and draw with your app's own components, so they
+  look like the rest of your admin.
+</div>
+
+<div class="ek-tour">
+  <figure>
+    <Shot
+      name="hub"
+      alt="The evals hub: stat cards for room to improve, the slowest and costliest live models, and thumbs down this week; the weekly check; and a card per feature."
+    />
+    <figcaption>
+      <strong>The hub.</strong> Where every feature stands, what needs a look,
+      and the weekly check.
+    </figcaption>
+  </figure>
+  <figure>
+    <Shot
+      name="answer-key"
+      alt="An open case in the answer key: the ticket's subject and message, its confirmed category and urgency, and which models got it right or wrong, and why."
+    />
+    <figcaption>
+      <strong>The answer key.</strong> Each case opens to its input, its
+      confirmed answer, and how every model did on it.
+    </figcaption>
+  </figure>
+  <figure>
+    <Shot
+      name="compare"
+      alt="Two tests compared: a verdict in plain words, each check's pass rate side by side, and the cases the two models graded differently."
+    />
+    <figcaption>
+      <strong>Two models compared.</strong> A verdict in plain words, and the
+      cases where they differ.
+    </figcaption>
+  </figure>
+  <figure>
+    <Shot
+      name="feedback"
+      alt="The feedback page: this week's thumbs per feature and a thumbs down waiting for a look, with its reason, input, and answer, and a button to make it a case."
+    />
+    <figcaption>
+      <strong>Feedback.</strong> Thumbs from people using your product, ready to
+      become cases.
+    </figcaption>
+  </figure>
+</div>
+
+</section>
+
+<section class="ek-section">
+
+<p class="ek-kicker">How it fits</p>
+
+## Four steps to your first test
+
+<div class="ek-lede">
+  A small library, not a platform. Your app keeps its own routing, auth, and
+  pages, and Evalkeeper fits around what you already have.
+</div>
+
+<Steps>
+
+1. **Name your AI calls.** Route each one through an operation, so a
+   feature's model can change without a deploy.
+
+2. **Add the tables.** `npx @crowandraven/evalkeeper migration` writes
+   Evalkeeper's models beside your Prisma schema, with the SQL. It never
+   touches a database.
+
+3. **Write a suite** for one feature: its input, what a good answer is, and
+   the checks that grade one.
+
+4. **Add the pages.** A few one-line route files, and the hub, the model
+   board, and the answer key are in your admin.
+
+</Steps>
+
+<CardGrid>
+  <LinkCard
+    title="Adding it to your app"
+    description="Every step, in order, with code."
+    href="/evalkeeper/start/adding-to-your-app/"
+  />
+  <LinkCard
+    title="Already have evals?"
+    description="Keep your tables, router, and pages, or move in."
+    href="/evalkeeper/guides/bring-your-own/"
+  />
+</CardGrid>
+
+</section>
+
+<div class="ek-cta">
+
+## See it working first
+
+The example app runs on demo models, so it needs no API keys and costs
+nothing. Start it on your machine, press **Test every model**, and look
+around.
+
+<LinkButton href="/evalkeeper/start/try-the-example/" icon="right-arrow">
+  Run the example
+</LinkButton>
+
+</div>

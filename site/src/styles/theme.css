@@ -1,0 +1,303 @@
+/*
+ * The site's own brand: deep teal on cool neutral grays, so the docs
+ * stand apart from the screenshots (which use the screens' blue and warm
+ * grays). Starlight's dark theme is :root; light is [data-theme="light"].
+ */
+
+:root {
+  --sl-font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --sl-content-width: 46rem;
+
+  --sl-color-accent-low: #0b2e2c;
+  --sl-color-accent: #2dd4bf;
+  --sl-color-accent-high: #b4f5ea;
+  --sl-color-white: #f1f5f6;
+  --sl-color-gray-1: #dfe6e8;
+  --sl-color-gray-2: #b7c2c6;
+  --sl-color-gray-3: #8b989d;
+  --sl-color-gray-4: #56636a;
+  --sl-color-gray-5: #29343a;
+  --sl-color-gray-6: #172025;
+  --sl-color-black: #0e1518;
+}
+
+:root[data-theme="light"] {
+  --sl-color-accent-low: #d5f3ee;
+  --sl-color-accent: #0f766e;
+  --sl-color-accent-high: #0b4f4a;
+  --sl-color-white: #0f1a1f;
+  --sl-color-gray-1: #1d2a30;
+  --sl-color-gray-2: #37464d;
+  --sl-color-gray-3: #5b6a71;
+  --sl-color-gray-4: #8b989d;
+  --sl-color-gray-5: #dce3e5;
+  --sl-color-gray-6: #eef3f4;
+  --sl-color-gray-7: #f6f9f9;
+  --sl-color-black: #ffffff;
+}
+
+/* Thin, quiet lines and focus, as in the screens. */
+:focus-visible {
+  outline: 1px solid var(--sl-color-accent);
+  outline-offset: 2px;
+}
+
+.sl-markdown-content pre.mermaid {
+  background: transparent;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  font-family: var(--sl-font);
+  text-align: center;
+}
+
+/* Buttons: softly squared, not pills. */
+.sl-link-button {
+  border-radius: 0.75rem;
+}
+
+/* The landing page. */
+
+.hero {
+  padding-block: clamp(2.5rem, 6vw, 5rem) 1.5rem;
+}
+/* One centered column: the screenshot below is the picture. */
+@media (min-width: 50rem) {
+  .hero {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+  .hero .stack {
+    text-align: center;
+  }
+  .hero .copy {
+    align-items: center;
+  }
+  .hero .actions {
+    justify-content: center;
+  }
+}
+.hero h1 {
+  max-width: 24ch;
+  text-wrap: balance;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+.hero .tagline {
+  max-width: 40rem;
+}
+
+.ek-install {
+  max-width: 26rem;
+  margin-inline: auto;
+}
+
+.ek-shot {
+  margin-block: 1.5rem 3rem;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 1rem;
+  overflow: hidden;
+  background: var(--sl-color-gray-6);
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.06),
+    0 24px 60px -24px rgb(0 0 0 / 0.35);
+  /* No display on the images: Starlight's light:sl-hidden and
+     dark:sl-hidden pick which of each pair shows. */
+  line-height: 0;
+}
+.ek-shot img {
+  width: 100%;
+  height: auto;
+}
+
+.sl-markdown-content .ek-section {
+  margin-top: clamp(3.5rem, 8vw, 6rem);
+}
+/* The eyebrow sits right on its headline. */
+.sl-markdown-content .ek-kicker {
+  margin: 0;
+  color: var(--sl-color-accent);
+  font-size: var(--sl-text-sm);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.sl-markdown-content .ek-kicker + :is(h2, .sl-heading-wrapper) {
+  margin-top: 0.25rem;
+}
+.sl-markdown-content .ek-section h2 {
+  letter-spacing: -0.02em;
+}
+.sl-markdown-content .ek-lede,
+.sl-markdown-content .ek-lede * {
+  max-width: 40rem;
+  color: var(--sl-color-gray-2);
+  font-size: var(--sl-text-lg);
+}
+
+/* Short panels side by side: the worries, and the steps of an eval. */
+.ek-panels {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+}
+.sl-markdown-content .ek-panels > div {
+  margin: 0;
+  padding: 1.25rem;
+  border-radius: 0.75rem;
+  background: var(--sl-color-gray-6);
+}
+.sl-markdown-content .ek-panels p {
+  margin: 0.375rem 0 0;
+  color: var(--sl-color-gray-2);
+}
+.ek-panels strong {
+  color: var(--sl-color-white);
+}
+.ek-step {
+  display: flex;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin-bottom: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  background: var(--sl-color-accent-low);
+  color: var(--sl-color-accent-high);
+  font-size: var(--sl-text-sm);
+  font-weight: 600;
+}
+
+/* What you get: one quiet check per line, two columns when there's room. */
+.sl-markdown-content ul.ek-checks {
+  display: grid;
+  gap: 1.25rem 2.5rem;
+  padding: 0;
+  list-style: none;
+}
+@media (min-width: 50rem) {
+  .sl-markdown-content ul.ek-checks {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.sl-markdown-content ul.ek-checks > li {
+  display: grid;
+  grid-template-columns: 1.25rem 1fr;
+  gap: 0.75rem;
+  margin: 0;
+}
+.ek-checks svg {
+  margin-top: 0.2rem;
+  color: var(--sl-color-accent);
+}
+/* Each line's title sits level with its icon, the text right under it. */
+.sl-markdown-content .ek-checks li > div,
+.sl-markdown-content .ek-checks li > div * {
+  margin: 0;
+}
+.ek-checks strong {
+  display: block;
+  color: var(--sl-color-white);
+}
+.sl-markdown-content .ek-checks li > div > span {
+  display: block;
+  margin-top: 0.125rem;
+  color: var(--sl-color-gray-2);
+}
+
+/* A look around: screenshots with what each is for. */
+.ek-tour {
+  display: grid;
+  gap: 2rem 1.5rem;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 50rem) {
+  .ek-tour {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.sl-markdown-content .ek-tour > figure {
+  margin: 0;
+}
+.ek-tour .ek-shot {
+  margin: 0 0 0.75rem;
+  border-radius: 0.75rem;
+}
+.ek-tour figcaption {
+  color: var(--sl-color-gray-2);
+  font-size: var(--sl-text-sm);
+}
+.ek-tour figcaption strong {
+  color: var(--sl-color-white);
+}
+
+.sl-markdown-content .ek-cta {
+  margin-top: clamp(3.5rem, 8vw, 6rem);
+  padding: clamp(1.75rem, 5vw, 3rem);
+  border-radius: 1rem;
+  background: var(--sl-color-accent-low);
+  text-align: center;
+}
+.sl-markdown-content .ek-cta h2 {
+  margin-top: 0;
+}
+.sl-markdown-content .ek-cta p {
+  max-width: 34rem;
+  margin-inline: auto;
+}
+
+/* Screenshots inside the guides. */
+.sl-markdown-content figure.ek-figure {
+  margin-block: 1.5rem;
+}
+.ek-figure .ek-shot {
+  margin: 0 0 0.5rem;
+  border-radius: 0.75rem;
+}
+.ek-figure figcaption {
+  color: var(--sl-color-gray-3);
+  font-size: var(--sl-text-sm);
+}
+
+/* Text follows its heading closely; the space goes above headings. */
+.sl-markdown-content :is(h2, h3, h4, .sl-heading-wrapper) + * {
+  margin-top: 0.5rem;
+}
+
+.sl-markdown-content .ek-install {
+  max-width: 34rem;
+}
+.sl-markdown-content .ek-install > div {
+  max-width: 26rem;
+  margin-inline: auto;
+}
+.sl-markdown-content .ek-agent {
+  max-width: 40rem;
+  margin: 1.5rem auto clamp(3rem, 6vw, 4.5rem);
+}
+
+/* Prose never runs the full width: about 65 characters a line. Tables,
+   code, and screenshots still use the whole column. */
+.sl-markdown-content :is(p, li, blockquote, dl) {
+  max-width: 65ch;
+}
+.sl-markdown-content :is(td, th) :is(p, li) {
+  max-width: none;
+}
+
+/* Tips in the brand's teal, not Starlight's purple. */
+.starlight-aside--tip {
+  --sl-color-asides-text-accent: var(--sl-color-accent-high);
+  --sl-color-asides-border: var(--sl-color-accent);
+  background-color: var(--sl-color-accent-low);
+}
+
+/* Three cards side by side when there's room. */
+.ek-three {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+}
+.sl-markdown-content .ek-three > * {
+  margin: 0;
+}

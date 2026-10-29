@@ -219,7 +219,7 @@ function NoSuites() {
       <p className="text-muted">
         Step by step:{" "}
         <a
-          href="https://github.com/seanhudson/evalkeeper/blob/main/docs/adding-to-your-app.md#5-write-your-first-suite"
+          href="https://seanhudson.github.io/evalkeeper/start/adding-to-your-app/#5-write-your-first-suite"
           target="_blank"
           rel="noreferrer"
           className="underline"

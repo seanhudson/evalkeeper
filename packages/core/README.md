@@ -10,8 +10,7 @@ The `evalkeeper` command copies the eval pages into your app:
 `npx @crowandraven/evalkeeper add pages --base admin/evals`. Already have
 pages, tables, or a model router of your own? Copy only what you're
 replacing with `--only <names>` (and `--dry-run` to see the plan), and see
-"Bring your own" in
-[Adding Evalkeeper to your app](https://github.com/seanhudson/evalkeeper/blob/main/docs/adding-to-your-app.md#bring-your-own).
+[Bring your own](https://seanhudson.github.io/evalkeeper/guides/bring-your-own/).
 A `--base` inside a Next.js route group (`"(app)/admin/evals"`) keeps the
 group in the folders and leaves it out of the links.
 

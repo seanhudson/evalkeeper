@@ -26,6 +26,12 @@ export default function RootLayout({
               <Link href="/try">Rate an answer</Link>
             </nav>
             <span className="ml-auto text-sm text-muted">Example app</span>
+            <a
+              href="https://github.com/seanhudson/evalkeeper"
+              className="text-sm text-muted hover:text-ink"
+            >
+              Evalkeeper on GitHub
+            </a>
           </div>
         </header>
         <main className="mx-auto max-w-7xl px-4 py-8">{children}</main>

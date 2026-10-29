@@ -54,8 +54,39 @@ suggested as live or as the fallback.
 
 ## 3. Add the tables
 
-Copy the models from `packages/core/schema/evalkeeper.prisma` into your
-Prisma schema and write a migration from the schema file. Then:
+Evalkeeper's tables live in their own file beside your Prisma schema,
+`evalkeeper.prisma`, which Evalkeeper writes and rewrites on upgrade; you
+never edit it. They work on PostgreSQL, MySQL, and SQLite, and relate to
+your own models by id only, so the file needs nothing from your schema.
+
+```bash
+npx @crowandraven/evalkeeper migration
+```
+
+shows what it would write and the migration SQL, worked out by your own
+`prisma migrate diff` from the schema files before and after. It never
+reads or writes a database. When it looks right:
+
+```bash
+npx @crowandraven/evalkeeper migration --write --out prisma/migrations/20261029000000_evalkeeper/migration.sql
+```
+
+writes `evalkeeper.prisma` and the SQL. Then:
+
+1. If your schema is one file, point Prisma at its folder so it reads
+   both: `schema: "prisma"` in `prisma.config.ts`, or
+   `"prisma": { "schema": "prisma" }` in `package.json`.
+2. Apply the SQL with your migration tool (`prisma migrate deploy` for a
+   file in your migrations folder), on a copy of your data first.
+3. Run `prisma generate`.
+
+Run the same command after each upgrade: it rewrites the file and writes
+only what changed. If you pasted Evalkeeper's models into your own schema
+before, it moves them into `evalkeeper.prisma`, and if your copy drifted
+it names every column it would drop, with its data, and writes nothing
+until you pass `--accept-drops`.
+
+Then:
 
 ```ts
 const store = prismaStore(prisma);

@@ -369,7 +369,7 @@ export function nextSteps(r: {
   const css = join(r.root, "components/evalkeeper/evalkeeper.css");
   return [
     "npm install @crowandraven/evalkeeper server-only lucide-react",
-    "Add Evalkeeper's models to your Prisma schema (node_modules/@crowandraven/evalkeeper/schema/evalkeeper.prisma), then write a migration from the schema file.",
+    "Add Evalkeeper's tables: npx @crowandraven/evalkeeper migration shows the schema file and SQL it would write; --write --out <file>.sql writes them.",
     `Import the colors into your global CSS, right after Tailwind: @import "${css}"; (a path relative to that CSS file). Then have Tailwind scan Evalkeeper's screens: @source "node_modules/@crowandraven/evalkeeper/dist/react"; (also relative to that file).`,
     !wiring || wiring.action === "skip"
       ? `Check ${wiring?.path ?? join(r.root, "lib/evalkeeper/index.ts")} exports \`wiring\`: your runner, settings, stores, models, suites, routeFor, answerEditors, and requireAdmin (the EvalWiring type from @crowandraven/evalkeeper/next).`

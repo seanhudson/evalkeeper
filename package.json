@@ -28,7 +28,7 @@
     "@types/node": "^22.20.5",
     "@vitest/coverage-v8": "^5.0.5",
     "eslint": "^10.13.0",
-    "eslint-plugin-jsdoc": "^65.4.0",
+    "eslint-plugin-jsdoc": "^65.4.2",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-tsdoc": "^0.5.4",
     "globals": "^17.13.0",
@@ -37,7 +37,7 @@
     "simple-git-hooks": "^2.14.0",
     "typedoc": "^0.28.20",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.72.0",
+    "typescript-eslint": "^8.72.1",
     "vitest": "^5.0.3"
   },
   "engines": {

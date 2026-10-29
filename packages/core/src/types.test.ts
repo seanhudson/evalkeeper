@@ -197,7 +197,7 @@ describe("JSON fields and answer editors (#62, #63)", () => {
       read(form({ facts: '[{"text":"a","category":"role"}]', note: "n" })),
     ).toEqual({ facts: [{ text: "a", category: "role" }], note: "n" });
     expect(() => read(form({ facts: '[{"text":"a"}]', note: "n" }))).toThrow(
-      "Answer doesn't fit at facts, item 1, category: Required",
+      "Answer doesn't fit at facts, item 1, category: Invalid input: expected string, received undefined",
     );
     expect(() =>
       inputFromFields(z.object({ note: z.string().min(2) }), [note])(

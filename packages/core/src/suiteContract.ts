@@ -5,19 +5,33 @@ import type { AnySuite, FormField } from "./types.js";
 /** A field help shorter than this says nothing a label doesn't. */
 const MIN_HELP = 10;
 
-/** A zod schema's definition, read by name so any copy of zod works. */
+/** A zod schema's definition, read by name so any copy of zod 4 works. */
 type Def = {
-  typeName?: string;
-  shape?: () => Record<string, unknown>;
-  schema?: z.ZodTypeAny;
-  innerType?: z.ZodTypeAny;
+  type?: string;
+  shape?: Record<string, unknown>;
+  /** What a wrapper (optional, nullable, default, …) wraps. */
+  innerType?: z.ZodType;
+  /** A pipe's two ends: a transform's schema is `in`, a preprocess's `out`. */
+  in?: z.ZodType;
+  out?: z.ZodType;
   /** A union's options (a plain union's, or a discriminated one's). */
-  options?: readonly z.ZodTypeAny[];
+  options?: readonly z.ZodType[];
 };
 
+/** Wrappers whose keys are their inner schema's. */
+const WRAPPERS = new Set([
+  "optional",
+  "nullable",
+  "default",
+  "prefault",
+  "catch",
+  "readonly",
+  "nonoptional",
+]);
+
 /**
- * The top-level keys of an object schema, through refinements, optional,
- * nullable, and default wrappers. For a union (`z.union` or
+ * The top-level keys of an object schema, through refinements,
+ * transforms, and optional, nullable, and default wrappers. For a union (`z.union` or
  * `z.discriminatedUnion`), every key that appears in any of its object
  * options, in the order they first appear, so one `fields` list covers
  * them all. Null for any other shape (a string, a list, a union with no
@@ -25,41 +39,34 @@ type Def = {
  *
  * @param schema - A suite's input or answer schema.
  */
-export function schemaKeys(schema: z.ZodTypeAny): string[] | null {
+export function schemaKeys(schema: z.ZodType): string[] | null {
   return keysOf(schema, 0);
 }
 
 /** Wrappers and unions deeper than this are read as an unknown shape. */
 const MAX_DEPTH = 10;
 
-function keysOf(schema: z.ZodTypeAny, depth: number): string[] | null {
-  let s: z.ZodTypeAny | undefined = schema;
+function keysOf(schema: z.ZodType, depth: number): string[] | null {
+  let s: z.ZodType | undefined = schema;
   for (let i = depth; s && i < MAX_DEPTH; i++) {
     // Trust boundary: zod's own definition object, read by its names.
-    const def = s._def as Def;
-    if (def.typeName === "ZodObject" && def.shape)
-      return Object.keys(def.shape());
-    if (
-      (def.typeName === "ZodUnion" ||
-        def.typeName === "ZodDiscriminatedUnion") &&
-      def.options
-    )
+    const def = s._zod.def as Def;
+    if (def.type === "object" && def.shape) return Object.keys(def.shape);
+    if (def.type === "union" && def.options)
       return unionKeys(def.options, i + 1);
-    s =
-      def.typeName === "ZodEffects"
-        ? def.schema
-        : def.typeName === "ZodOptional" ||
-            def.typeName === "ZodNullable" ||
-            def.typeName === "ZodDefault"
-          ? def.innerType
-          : undefined;
+    if (def.type === "pipe")
+      return (
+        keysOf(def.in as z.ZodType, i + 1) ??
+        keysOf(def.out as z.ZodType, i + 1)
+      );
+    s = def.type && WRAPPERS.has(def.type) ? def.innerType : undefined;
   }
   return null;
 }
 
 /** Every key of a union's object options; null when none is an object. */
 function unionKeys(
-  options: readonly z.ZodTypeAny[],
+  options: readonly z.ZodType[],
   depth: number,
 ): string[] | null {
   const keys = new Set<string>();

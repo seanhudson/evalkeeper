@@ -61,6 +61,14 @@ version may change an interface, and its entry says how to update.
 
 ### Changed
 
+- Evalkeeper needs zod 4.6.6 or later (a peer dependency), which fixes
+  GHSA-mrhx-c7xc-m3w5: zod before 4.6.6 can exhaust memory validating
+  oversized constrained collections, and there's no fixed 3.x. **To
+  update:** move your app to zod 4 (`npm install zod@^4.6.6`); your
+  suites' schemas mostly carry over, but zod's error messages read
+  differently ("Invalid input: expected string, received number"), and
+  some APIs changed (see zod's migration guide).
+
 - Dates read the same everywhere, with the month as a word ("Oct 28,
   2026", and "Oct 28, 2026, 3:04 PM" with a time), from `dayOf` and
   `momentOf`; "10/28/2026" means different days in different countries.

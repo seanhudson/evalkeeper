@@ -42,7 +42,7 @@
     "node": ">=20"
   },
   "overrides": {
-    "deepmerge-ts": "^8.0.2"
+    "zod": "^4.6.7"
   },
   "repository": {
     "type": "git",

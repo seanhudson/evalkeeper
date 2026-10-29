@@ -371,9 +371,9 @@ export function injectionSuitesOf(
 }
 
 /** Where a zod issue sits, in plain words: "facts, item 2, name". */
-function issuePath(path: readonly (string | number)[]): string {
+function issuePath(path: readonly PropertyKey[]): string {
   return path
-    .map((p) => (typeof p === "number" ? `item ${p + 1}` : p))
+    .map((p) => (typeof p === "number" ? `item ${p + 1}` : String(p)))
     .join(", ");
 }
 

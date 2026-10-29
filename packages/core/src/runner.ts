@@ -1004,6 +1004,9 @@ export function createRunner(opts: RunnerOptions) {
       );
     const outputsOf = (runId: string) => outputs.get(runId) ?? [];
     const checkKeys = suite.checks.map((c) => c.key);
+    const seriousKeys = new Set(
+      suite.checks.filter((c) => c.severity === "serious").map((c) => c.key),
+    );
 
     const seen = new Set<string>();
     let keys = [
@@ -1092,6 +1095,13 @@ export function createRunner(opts: RunnerOptions) {
                 total: m.units?.total ?? m.allPass.n,
                 answersRight: m.allPass.passed,
                 answers: m.allPass.n,
+                answersNoSerious: outputsOf(r.id).filter(
+                  (x) =>
+                    x.checks !== null &&
+                    !x.checks.some(
+                      (c) => c.pass === false && seriousKeys.has(c.key),
+                    ),
+                ).length,
                 byCheck: m.byCheck,
                 measures: m.measures ?? {},
                 avgMs: m.avgMs || null,

@@ -26,7 +26,7 @@ test("testing a model fills in its score", async ({ page }) => {
   await row.getByRole("button", { name: "Test", exact: true }).click();
   await expect(row.getByText(/\d+\/16/)).toBeVisible({ timeout: 30_000 });
   // The same test runs the attacks: its result under attack follows.
-  await expect(row.getByRole("link", { name: /^\d+$/ })).toBeVisible({
+  await expect(row.getByRole("link", { name: /^\d+%$/ })).toBeVisible({
     timeout: 30_000,
   });
   // Testing it again would reuse every answer, so the estimate says free.
@@ -62,7 +62,7 @@ test("a test's page shows each answer and why it was wrong", async ({
   await page.goto("/evals/ticket_triage");
   const row = modelRow(page, "Demo Quick");
   await row.getByRole("button", { name: "Test", exact: true }).click();
-  const score = row.getByRole("link", { name: /\d+%/ });
+  const score = row.getByRole("link", { name: /\d+\/16/ });
   await expect(score).toBeVisible({ timeout: 30_000 });
   await score.click();
   await expect(
@@ -85,12 +85,15 @@ test("making a model live moves the Live chip", async ({ page }) => {
   for (const label of ["Demo Quick", "Demo Careful"]) {
     const row = modelRow(page, label);
     await row.getByRole("button", { name: "Test", exact: true }).click();
-    await expect(row.getByRole("link", { name: /\d+%/ })).toBeVisible({
+    await expect(row.getByRole("link", { name: /\d+\/\d+/ })).toBeVisible({
       timeout: 30_000,
     });
   }
-  const careful = modelRow(page, "Demo Careful");
-  const makeLive = careful.getByRole("button", { name: "Make live" });
+  // Choosing a model is in its row's menu.
+  await modelRow(page, "Demo Careful")
+    .getByRole("button", { name: "Choose Demo Careful" })
+    .click();
+  const makeLive = page.getByRole("menuitem", { name: "Make live" });
   // Only offered when the comparison allows it.
   if (await makeLive.count()) {
     await makeLive.click();

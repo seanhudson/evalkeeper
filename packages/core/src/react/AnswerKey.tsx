@@ -53,6 +53,7 @@ const STATUS: Record<
  */
 export async function AnswerKey({
   app,
+  readOnly = false,
   suite,
   rows,
   heading,
@@ -66,6 +67,11 @@ export async function AnswerKey({
   tools?: React.ReactNode;
   /** Your screens' configuration. */
   app: EvalAppConfig;
+  /**
+   * Cases made by Evalkeeper (an injection suite's attack cases), shown
+   * without adding, editing, confirming, or retiring.
+   */
+  readOnly?: boolean;
 }) {
   const cases = await loadCases(app, suite.key);
   // Each model's latest test (at the operation's setting), by case.
@@ -95,6 +101,7 @@ export async function AnswerKey({
         heading={heading}
         tools={tools}
         form={
+          !readOnly &&
           fields &&
           (suite.labelFromForm || app.answerEditors[suite.key]) && (
             <form action={app.actions.addCase} className="space-y-4">
@@ -164,6 +171,7 @@ export async function AnswerKey({
         {cases.map((c) => (
           <CaseItem
             app={app}
+            readOnly={readOnly}
             key={c.id}
             suite={suite}
             c={c}
@@ -178,11 +186,13 @@ export async function AnswerKey({
 
 function CaseItem({
   app,
+  readOnly,
   suite,
   c,
   results,
 }: {
   app: EvalAppConfig;
+  readOnly: boolean;
   suite: AnySuite;
   c: CaseRecord;
   results: {
@@ -356,7 +366,7 @@ function CaseItem({
           </section>
         )}
 
-        {answer?.status === "PENDING" && (
+        {!readOnly && answer?.status === "PENDING" && (
           <ConfirmAnswer
             action={app.actions.confirmAnswer}
             suite={suite.key}
@@ -364,44 +374,46 @@ function CaseItem({
           />
         )}
 
-        <CaseMenu
-          suite={suite.key}
-          caseId={c.id}
-          retire={app.actions.retireCase}
-          startEditing={!answer}
-          editLabel={
-            suite.fields &&
-            (suite.labelFromForm || app.answerEditors[suite.key])
-              ? answer
-                ? "Edit answer"
-                : "Write the answer"
-              : null
-          }
-          edit={
-            suite.fields && (
-              <form
-                key={answer?.updatedAt.toISOString() ?? "none"}
-                action={app.actions.editAnswer}
-                className="space-y-4"
-              >
-                <input type="hidden" name="suite" value={suite.key} />
-                <input type="hidden" name="case" value={c.id} />
-                <AnswerInput
-                  fields={suite.fields.label}
-                  editor={app.answerEditors[suite.key]}
-                  input={c.input}
-                  values={answer?.value}
-                  prefix={`${c.id}-`}
-                />
-                <p className="readable text-xs text-muted">
-                  Saves a new confirmed answer and keeps the old one in the
-                  history. Tests are rescored for free.
-                </p>
-                <Submit>Save answer</Submit>
-              </form>
-            )
-          }
-        />
+        {!readOnly && (
+          <CaseMenu
+            suite={suite.key}
+            caseId={c.id}
+            retire={app.actions.retireCase}
+            startEditing={!answer}
+            editLabel={
+              suite.fields &&
+              (suite.labelFromForm || app.answerEditors[suite.key])
+                ? answer
+                  ? "Edit answer"
+                  : "Write the answer"
+                : null
+            }
+            edit={
+              suite.fields && (
+                <form
+                  key={answer?.updatedAt.toISOString() ?? "none"}
+                  action={app.actions.editAnswer}
+                  className="space-y-4"
+                >
+                  <input type="hidden" name="suite" value={suite.key} />
+                  <input type="hidden" name="case" value={c.id} />
+                  <AnswerInput
+                    fields={suite.fields.label}
+                    editor={app.answerEditors[suite.key]}
+                    input={c.input}
+                    values={answer?.value}
+                    prefix={`${c.id}-`}
+                  />
+                  <p className="readable text-xs text-muted">
+                    Saves a new confirmed answer and keeps the old one in the
+                    history. Tests are rescored for free.
+                  </p>
+                  <Submit>Save answer</Submit>
+                </form>
+              )
+            }
+          />
+        )}
       </div>
     </details>
   );

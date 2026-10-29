@@ -27,3 +27,5 @@ export * from "./CompareView.js";
 export * from "./SideBySideView.js";
 export * from "./RateView.js";
 export * from "./FeedbackView.js";
+export * from "./ModelMenu.js";
+export * from "./Tabs.js";

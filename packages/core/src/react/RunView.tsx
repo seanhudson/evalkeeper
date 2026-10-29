@@ -52,17 +52,6 @@ export async function RunView({
         <p className="text-sm text-muted">
           {momentOf(run.startedAt)} · {run.status.toLowerCase()}
           {metrics && ` · spent ${money(metrics.costUsd)}`}
-          {run.status === "SUCCEEDED" && (
-            <>
-              {" · "}
-              <Link
-                href={`${evalsPath(app, key, "compare")}?${new URLSearchParams({ b: runId })}`}
-                className={LINK}
-              >
-                Compare with another test
-              </Link>
-            </>
-          )}
         </p>
         {run.error && <p className="readable text-bad">{run.error}</p>}
       </div>

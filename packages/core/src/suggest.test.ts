@@ -463,7 +463,7 @@ describe("weighing attacks", () => {
       attacks: attacks(...attackRows),
     });
 
-  it("adds up serious mistakes under attack, null without a current test", () => {
+  it("adds up serious mistakes on the attacks, null without a current test", () => {
     const a = attacks(attacked("Luna", "gpt-6-luna", 3));
     expect(attackMistakes("Luna", a)).toBe(3);
     expect(attackMistakes("Sol", a)).toBeNull();
@@ -476,7 +476,7 @@ describe("weighing attacks", () => {
     expect(attackMistakes("Sol", attacks(failed))).toBeNull();
   });
 
-  it("won't switch to a model that makes more serious mistakes under attack", () => {
+  it("won't switch to a model that makes more serious mistakes on the attacks", () => {
     const rows = [
       row("Luna", "gpt-6-luna", { rule: 2, right: 22, live: true }),
       // Clearly cheaper, which would be a reason to switch...
@@ -492,7 +492,7 @@ describe("weighing attacks", () => {
     );
     expect(s?.live.key).toBe("Luna");
     expect(s?.reasons).toContain(
-      "Haiku would otherwise qualify, but it makes more serious mistakes under attack (4 against 1).",
+      "Haiku would otherwise qualify, but it makes more serious mistakes on the attacks (4 against 1).",
     );
     // ...and without the attacks, it switches.
     expect(suggest(rows, checks, { favor: "cost" })?.live.key).toBe("Haiku");
@@ -512,7 +512,7 @@ describe("weighing attacks", () => {
     );
   });
 
-  it("switches for at least two fewer serious mistakes under attack", () => {
+  it("switches for at least two fewer serious mistakes on the attacks", () => {
     const rows = [
       row("Luna", "gpt-6-luna", { rule: 1, right: 23, live: true }),
       row("Sol", "gpt-6.1-sol", { rule: 1, right: 23 }),
@@ -523,7 +523,7 @@ describe("weighing attacks", () => {
     ]);
     expect(s?.live.key).toBe("Sol");
     expect(s?.reasons[0]).toBe(
-      "Sol makes fewer serious mistakes under attack than Luna (1 against 3), and scores at least as well (92% against 92%).",
+      "Sol makes fewer serious mistakes on the attacks than Luna (1 against 3), and scores at least as well (92% against 92%).",
     );
     // One fewer isn't enough on its own.
     const close = withAttacks(rows, [
@@ -544,13 +544,13 @@ describe("weighing attacks", () => {
     ]);
     expect(s?.live.key).toBe("Sol");
     expect(s?.reasons).toContain(
-      "Under attack, Sol makes 1 serious mistake, against 2 for Luna.",
+      "On the attacks, Sol makes 1 serious mistake, against 2 for Luna.",
     );
     // Live with no test against the attacks: a tested model can still win.
     const untested = withAttacks(rows, [attacked("Sol", "gpt-6.1-sol", 1)]);
     expect(untested?.live.key).toBe("Sol");
     expect(untested?.reasons).toContain(
-      "Under attack, Sol makes 1 serious mistake. Luna has no up-to-date test against the attacks to compare with.",
+      "On the attacks, Sol makes 1 serious mistake. Luna has no up-to-date test against the attacks to compare with.",
     );
   });
 
@@ -583,7 +583,7 @@ describe("weighing attacks", () => {
     ]);
     expect(s?.fallback?.key).toBe("Luna");
     expect(s?.reasons).toContain(
-      "Fallback: Luna is the most accurate from another provider (96%, 0 serious mistakes; 1 serious mistake under attack).",
+      "Fallback: Luna is the most accurate from another provider (96%, 0 serious mistakes; 1 serious mistake on the attacks).",
     );
     const untested = withAttacks(rows, [
       attacked("Sonnet", "claude-sonnet-5-5", 0),

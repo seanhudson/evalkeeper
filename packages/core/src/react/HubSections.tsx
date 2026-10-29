@@ -1,5 +1,4 @@
 import {
-  attackMistakes,
   attacksFrom,
   attention,
   isInjectionSuite,
@@ -15,7 +14,13 @@ import {
 import { Link, Card, InfoTip, StatusBadge } from "./pieces.js";
 import { pct, dayOf } from "./format.js";
 import { HistoryEntries } from "./SettingsHistory.js";
-import { daysAgo, evalsPath, loadWeekly, type EvalAppConfig } from "./app.js";
+import {
+  daysAgo,
+  evalsPath,
+  loadWeekly,
+  type EvalAppConfig,
+  attacksResisted,
+} from "./app.js";
 import type { Runner } from "../runner.js";
 import { ChevronDown } from "lucide-react";
 
@@ -369,22 +374,22 @@ function SuiteCard({
       {attacked
         .filter((a) => a.cases > 0)
         .map((a) => {
-          const n = live ? attackMistakes(live.key, attacksFrom([a])) : null;
+          const r = live ? attacksResisted(live.key, [a]) : null;
           return (
             <p key={a.suite.key} className="relative text-sm">
-              Under attack
-              <InfoTip term="underAttack" />:{" "}
-              {n === null ? (
+              Attacks resisted
+              <InfoTip term="attacksResisted" />:{" "}
+              {r === null ? (
                 <span className="text-muted">not tested yet</span>
               ) : (
                 <Link
                   href={evalsPath(app, a.suite.key)}
-                  className={`hover:underline ${n ? "font-semibold text-bad" : "text-good"}`}
+                  className={`font-semibold hover:underline ${scoreTone(r.resisted / r.of)}`}
                 >
-                  {n} serious {n === 1 ? "mistake" : "mistakes"}
+                  {pct(r.resisted / r.of)}
                 </Link>
               )}{" "}
-              on {a.cases} {a.cases === 1 ? "attack" : "attacks"}
+              of {a.cases} {a.cases === 1 ? "attack" : "attacks"}
             </p>
           );
         })}

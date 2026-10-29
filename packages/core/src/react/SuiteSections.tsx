@@ -1,6 +1,5 @@
 import {
   FAVOR_TEXT,
-  attackMistakes,
   attacksFrom,
   checkBar,
   isInjectionSuite,
@@ -14,6 +13,8 @@ import {
   suggest,
 } from "../index.js";
 import { AnswerKey } from "./AnswerKey.js";
+import { ModelMenu } from "./ModelMenu.js";
+import { Tabs } from "./Tabs.js";
 import {
   Link,
   BackLink,
@@ -28,7 +29,7 @@ import {
 } from "./pieces.js";
 import { pct, LINK } from "./format.js";
 import { RotateCw } from "lucide-react";
-import { evalsPath, type EvalAppConfig } from "./app.js";
+import { evalsPath, type EvalAppConfig, attacksResisted } from "./app.js";
 import { SettingsHistory } from "./SettingsHistory.js";
 
 /**
@@ -156,9 +157,9 @@ export function ChosenOnBase({ data }: { data: SuitePageData }) {
           </h2>
           <p className="readable text-sm text-muted">
             This suite tests the same feature as {suite.base.label}, so one
-            choice of model serves both. Its results show there as Under attack,
-            and the suggestion there never picks a model with more serious
-            mistakes under attack than live.
+            choice of model serves both. Its results show there as Attacks
+            resisted, and the suggestion there never picks a model with more
+            serious mistakes on them than live.
           </p>
           <Link
             href={evalsPath(app, suite.base.key)}
@@ -265,12 +266,6 @@ export function ModelTable({ data }: { data: SuitePageData }) {
         <div className="flex items-center justify-between gap-4">
           <h2 className="text-lg font-semibold">Models</h2>
           <div className="flex items-center gap-4">
-            <Link
-              href={evalsPath(app, key, "compare")}
-              className={`text-sm ${LINK}`}
-            >
-              Compare two tests
-            </Link>
             <form action={app.actions.testAll}>
               <input type="hidden" name="suite" value={key} />
               <Submit variant="quiet">Test every model</Submit>
@@ -294,8 +289,8 @@ export function ModelTable({ data }: { data: SuitePageData }) {
                 </th>
                 {showAttacks && (
                   <th className="p-3 font-normal">
-                    <Tip term="underAttack" side="bottom">
-                      Under attack
+                    <Tip term="attacksResisted" side="bottom">
+                      Attacks resisted
                     </Tip>
                   </th>
                 )}
@@ -426,7 +421,7 @@ export function ModelTable({ data }: { data: SuitePageData }) {
                             attackSuite={a.suite.key}
                             attackLabel={a.suite.label}
                             row={a.rows.find((x) => x.key === r.key)}
-                            mistakes={attackMistakes(r.key, attacksFrom([a]))}
+                            resisted={attacksResisted(r.key, [a])}
                           />
                         ))}
                       </div>
@@ -469,20 +464,6 @@ export function ModelTable({ data }: { data: SuitePageData }) {
                   <td className="p-3">
                     <div className="flex flex-col items-end gap-0.5">
                       <div className="flex justify-end gap-2">
-                        {choosesHere && r.canMakeFallback && (
-                          <form action={app.actions.makeFallback}>
-                            <input type="hidden" name="suite" value={key} />
-                            <input type="hidden" name="model" value={r.model} />
-                            <Submit variant="quiet">Make fallback</Submit>
-                          </form>
-                        )}
-                        {choosesHere && !r.live && r.canMakeLive && (
-                          <form action={app.actions.makeLive}>
-                            <input type="hidden" name="suite" value={key} />
-                            <input type="hidden" name="model" value={r.model} />
-                            <Submit variant="quiet">Make live</Submit>
-                          </form>
-                        )}
                         <form action={app.actions.testModel}>
                           <input type="hidden" name="suite" value={key} />
                           <input type="hidden" name="model" value={r.model} />
@@ -505,6 +486,23 @@ export function ModelTable({ data }: { data: SuitePageData }) {
                             />
                           </Tip>
                         </form>
+                        {choosesHere && (
+                          <ModelMenu
+                            suite={key}
+                            model={r.model}
+                            label={r.label}
+                            makeLive={
+                              !r.live && r.canMakeLive
+                                ? app.actions.makeLive
+                                : null
+                            }
+                            makeFallback={
+                              r.canMakeFallback
+                                ? app.actions.makeFallback
+                                : null
+                            }
+                          />
+                        )}
                       </div>
                       <EstimateNote
                         id={r.key}
@@ -605,48 +603,80 @@ export function ChecksSection({ data }: { data: SuitePageData }) {
 
 /** The answer key: the cases in use and their answers, with ways to add and rate them. */
 export function AnswerKeySection({ data }: { data: SuitePageData }) {
-  const { app, key, b, suite, rows } = data;
+  const { app, key, b, suite, rows, attackBoards } = data;
+  // A feature's attack cases are a tab of its answer key.
+  const attacked = attackBoards.filter((a) => a.cases > 0);
+  const cases = (
+    <AnswerKey
+      app={app}
+      suite={suite}
+      rows={rows}
+      heading={
+        <h2 className="text-lg font-semibold">
+          Answer key ({b.cases} cases in use)
+          <InfoTip term="answerKey" />
+        </h2>
+      }
+      tools={
+        <>
+          {suite.caseKind === "imported" &&
+            (suite.labelFromForm || app.answerEditors[key]) && (
+              <Tip control term="rateBlind" side="bottom" align="end">
+                <Link
+                  href={evalsPath(app, key, "rate")}
+                  className="inline-flex items-center rounded-md border border-accent/40 bg-card px-3 py-1.5 text-sm text-accent hover:bg-accent/10"
+                >
+                  Rate blind
+                </Link>
+              </Tip>
+            )}
+          <form action={app.actions.rescore}>
+            <input type="hidden" name="suite" value={key} />
+            <Tip control term="rescore" side="bottom" align="end">
+              <IconSubmit
+                label="Rescore tests"
+                icon={<RotateCw aria-hidden className="h-4 w-4" />}
+              />
+            </Tip>
+          </form>
+        </>
+      }
+    />
+  );
   return (
-    <>
-      {/* The weekly check links here to review drafts. */}
-      <section id="answer-key" className="scroll-mt-4 space-y-3">
-        <AnswerKey
-          app={app}
-          suite={suite}
-          rows={rows}
-          heading={
-            <h2 className="text-lg font-semibold">
-              Answer key ({b.cases} cases in use)
-              <InfoTip term="answerKey" />
-            </h2>
-          }
-          tools={
-            <>
-              {suite.caseKind === "imported" &&
-                (suite.labelFromForm || app.answerEditors[key]) && (
-                  <Tip control term="rateBlind" side="bottom" align="end">
-                    <Link
-                      href={evalsPath(app, key, "rate")}
-                      className="inline-flex items-center rounded-md border border-accent/40 bg-card px-3 py-1.5 text-sm text-accent hover:bg-accent/10"
-                    >
-                      Rate blind
-                    </Link>
-                  </Tip>
-                )}
-              <form action={app.actions.rescore}>
-                <input type="hidden" name="suite" value={key} />
-                <Tip control term="rescore" side="bottom" align="end">
-                  <IconSubmit
-                    label="Rescore tests"
-                    icon={<RotateCw aria-hidden className="h-4 w-4" />}
-                  />
-                </Tip>
-              </form>
-            </>
-          }
+    // The weekly check links here to review drafts.
+    <section id="answer-key" className="scroll-mt-4 space-y-3">
+      {attacked.length === 0 ? (
+        cases
+      ) : (
+        <Tabs
+          label="The answer key's cases"
+          tabs={[
+            { id: "cases", title: `Cases (${b.cases})`, panel: cases },
+            ...attacked.map((a) => ({
+              id: a.suite.key,
+              title: `Attacks (${a.cases})`,
+              panel: (
+                <AnswerKey
+                  app={app}
+                  readOnly
+                  suite={a.suite}
+                  rows={a.rows}
+                  heading={
+                    <p className="readable text-sm text-muted">
+                      Each is a confirmed case with an attack planted where
+                      untrusted text goes, and keeps that case&apos;s answer. A
+                      model&apos;s Test runs them, and they follow the cases as
+                      answers change.
+                    </p>
+                  }
+                />
+              ),
+            })),
+          ]}
         />
-      </section>
-    </>
+      )}
+    </section>
   );
 }
 
@@ -688,7 +718,7 @@ function UnderAttack({
   attackSuite,
   attackLabel,
   row,
-  mistakes,
+  resisted,
 }: {
   app: EvalAppConfig;
   attackSuite: string;
@@ -700,7 +730,7 @@ function UnderAttack({
         test: { runId: string; stale: boolean; failedAnswers: number } | null;
       }
     | undefined;
-  mistakes: number | null;
+  resisted: { resisted: number; of: number } | null;
 }) {
   if (row?.testing)
     return (
@@ -715,7 +745,7 @@ function UnderAttack({
         title={attackLabel}
         className="tabular-nums"
       >
-        {mistakes ?? "—"}
+        {resisted ? pct(resisted.resisted / resisted.of) : "—"}
         {row.test.stale
           ? " · out of date"
           : row.test.failedAnswers

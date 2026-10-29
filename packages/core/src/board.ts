@@ -34,6 +34,11 @@ export type BoardRow = {
     /** Answers with every check passed. */
     answersRight: number;
     answers: number;
+    /**
+     * Answers with no serious check failed (an answer that failed to come
+     * back counts as one with). On an injection suite: attacks resisted.
+     */
+    answersNoSerious: number;
     /** Pass rate of each check, for the breakdown table. */
     byCheck: SuiteMetrics["byCheck"];
     /** Per check, probability measures (decision suites); empty otherwise. */

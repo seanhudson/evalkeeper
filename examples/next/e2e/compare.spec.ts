@@ -9,7 +9,8 @@ const modelRow = (page: Page, label: string) =>
 /** Tests a model on the suite page, unless it already has a score. */
 async function tested(page: Page, label: string) {
   const row = modelRow(page, label);
-  const score = row.getByRole("link", { name: /\d+%/ });
+  // The score links to the test; it reads "75% 12/16".
+  const score = row.getByRole("link", { name: /\d+\/16/ });
   if (!(await score.count()))
     await row.getByRole("button", { name: "Test", exact: true }).click();
   await expect(score).toBeVisible({ timeout: 30_000 });
@@ -26,16 +27,10 @@ test("the board links a model's verdict to its comparison with live", async ({
     .getByRole("link", { name: /accurate|Too few/ })
     .click();
 
+  // The one clicked, against the live model's test.
   await expect(
-    page.getByRole("heading", { name: /Compare two tests/ }),
+    page.getByRole("heading", { name: /Demo Quick against Demo Legacy/ }),
   ).toBeVisible();
-  // The live model's test is in place, the one clicked is the challenger.
-  await expect(
-    page.getByLabel(/In place/).locator("option:checked"),
-  ).toHaveText(/Demo Legacy/);
-  await expect(
-    page.getByLabel(/Challenger/).locator("option:checked"),
-  ).toHaveText(/Demo Quick/);
   await expect(page.getByRole("heading", { name: /Verdict/ })).toBeVisible();
   await expect(page.getByText(/16 shared cases/)).toBeVisible();
   await expect(
@@ -76,41 +71,12 @@ test("the board links a model's verdict to its comparison with live", async ({
   await expect(page.getByRole("heading", { name: /Verdict/ })).toBeVisible();
 });
 
-test("a test's page compares it with the live model's, and the picker swaps them", async ({
+test("a comparison needs the two tests its verdict compares", async ({
   page,
 }) => {
-  await page.goto("/evals/ticket_triage");
-  await tested(page, "Demo Legacy");
-  await tested(page, "Demo Quick");
-  await modelRow(page, "Demo Quick")
-    .getByRole("link", { name: /\d+%/ })
-    .click();
-  await page.getByRole("link", { name: "Compare with another test" }).click();
-
-  // Without a test in place, the live model's latest is picked.
-  await expect(
-    page.getByLabel(/In place/).locator("option:checked"),
-  ).toHaveText(/Demo Legacy/);
-  await expect(page.getByRole("heading", { name: /Verdict/ })).toBeVisible();
-
-  await page.getByRole("link", { name: "Swap them" }).click();
-  await expect(
-    page.getByLabel(/In place/).locator("option:checked"),
-  ).toHaveText(/Demo Quick/);
-  await expect(
-    page.getByText(
-      /^(Demo Legacy is (better|worse)|No clear difference: Demo Legacy)/,
-    ),
-  ).toBeVisible();
-
-  // Picking the same test twice can't be compared.
-  const quick = await page
-    .getByLabel(/In place/)
-    .locator("option:checked")
-    .getAttribute("value");
-  await page.getByLabel(/Challenger/).selectOption(quick ?? "");
-  await page.getByRole("button", { name: "Compare" }).click();
-  await expect(page.getByText(/can't be compared/)).toBeVisible();
+  // Comparisons open from a verdict, which names both tests.
+  const r = await page.goto("/evals/ticket_triage/compare");
+  expect(r?.status()).toBe(404);
 });
 
 test("the comparison's words explain themselves on keyboard focus", async ({

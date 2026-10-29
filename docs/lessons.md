@@ -151,8 +151,9 @@ page with its own suggestion and "Make live." Both pages changed the same
 feature's live model, and the injection page's suggestion weighed only
 attacks, so it could pick a model less accurate on the feature itself.
 _So:_ an injection suite's results show on its base suite's page as
-serious mistakes under attack, the suggestion there weighs both, and the
-injection page only tests and shows results.
+attacks resisted, the suggestion there weighs both, and one Test runs a
+model on the cases and the attacks together. A separate "Test attacks"
+step, and attack cases someone had to make, were the same split again.
 
 ## Settings
 

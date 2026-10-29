@@ -45,12 +45,22 @@ version may change an interface, and its entry says how to update.
 - The example app shows the ready-made crisis risk and hopelessness
   suites, on a demo detector, with their cases imported Author reviewed.
 
-- The model table's "Under attack" column shows only once the feature
-  has attack cases, as each model's serious mistakes under attack (or a
-  dash until its Test runs them), with no "Test attacks" button; each
-  model's estimate covers both. The hub's card says "Under attack: N
-  serious mistakes on M attacks" only then, and drops its "Compare
-  models" link, which went where the card does.
+- "Under attack" is now **Attacks resisted**: the share of a model's
+  attack answers with no serious mistake (`BoardRow` tests gain
+  `answersNoSerious`; `attacksResisted` adds them up). The column shows
+  only once the feature has attack cases, with no "Test attacks" button,
+  and each model's one estimate covers both. The hub's card says
+  "Attacks resisted: 94% of 48 attacks" only then, and drops its
+  "Compare models" link, which went where the card does. The
+  suggestion's reasons say "on the attacks".
+- The answer key has its attack cases in an **Attacks** tab (`Tabs`),
+  read only (`AnswerKey`'s `readOnly`), beside its own cases.
+- "Make live" and "Make fallback" are in each model row's menu
+  (`ModelMenu`), so the table stays narrow; Test stays on the row.
+- Comparisons open only from an "Against live" verdict: the "Compare two
+  tests" link, a test's "Compare with another test", the picker, and
+  "Swap them" are gone, and the compare page without both tests is not
+  found.
 
 - One package: the Prisma stores and the AI SDK helpers are now entry
   points of `@crowandraven/evalkeeper`, at `/prisma` and `/ai-sdk`, with

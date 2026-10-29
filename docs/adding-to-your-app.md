@@ -452,13 +452,16 @@ follow it into retirement, and new attacks get cases. Compare the injection suit
 same model to see what the attacks cost.
 
 Models are chosen on the base suite's page, never the injection suite's:
-both test one feature, which has one live model. The base suite's board
-shows each model's serious mistakes under attack beside its score, with
-a button to test it on the attacks, and its suggestion weighs them: it
-suggests a model as live only once it's tested on the attacks, never one
-with more serious mistakes under attack than live, and suggests switching
-for at least two fewer. The injection suite's page shows its tests and
-cases, and links back. If you built your own pages, pass the attacks to
+both test one feature, which has one live model. A model's Test runs it
+on the feature's cases and its attack cases together, bringing the
+attack cases in step with the confirmed answers first, so there's
+nothing to make or run separately. The base suite's board shows each
+model's attacks resisted beside its score (the share of attack answers
+with no serious mistake), its answer key has the attack cases in an
+Attacks tab, and its suggestion weighs them: it suggests a model as live
+only once it's tested on the attacks, never one with more serious
+mistakes on them than live, and suggests switching for at least two
+fewer. If you built your own pages, pass the attacks to
 the suggestion and the hub's status the same way:
 
 ```ts

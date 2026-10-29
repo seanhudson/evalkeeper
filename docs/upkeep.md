@@ -44,18 +44,21 @@ look:
 
 ![The answer key health panel: easy cases to retire with a floor kept, cases models split on, and tags with a single case.](screenshots/health-light.png "Answer key health on the ticket triage feature.")
 
-- **Easy cases:** cases every current model gets fully right. **Retire
-  N easy cases** retires them all but a floor, then rescores recent
-  tests for free, so their scores leave the retired cases out.
-- **Split cases:** cases models divide about evenly on. The answer may
-  be unclear, so check it first. Once it's right, it's the most useful
-  kind of case you have.
-- **Near-duplicates:** pairs of cases whose inputs share nearly all
-  their words. Keep the clearer one.
-- **Old drafts:** drafts nobody reviewed in 30 days. The weekly check
-  retires them on its own, or press **Retire N old drafts now**.
-- **Coverage:** tags with a single case. A new case there tells you the
-  most.
+It lists what to do, in order:
+
+1. **Check these answers.** Cases models split about evenly on, which
+   usually means the answer is wrong or the case has no clear answer:
+   fix the answer, or retire the case. Once it's right, it's the most
+   useful kind of case you have. Pairs of near-duplicates are here too:
+   keep the clearer one.
+2. **Add cases here.** Topics (tags) with only one case, so the score on
+   each rests on a single example. **Draft cases for these topics**
+   drafts some with those topics as the focus, for a suite with
+   `draftMore`. **Show all topics** lists every tag and its count.
+3. **Retire these.** Cases every current model gets fully right: **Retire
+   N easy cases** retires them all but a floor, then rescores recent
+   tests for free. And drafts nobody reviewed in 30 days, which the
+   weekly check retires on its own, or **Retire N old drafts now**.
 
 ### The floor
 

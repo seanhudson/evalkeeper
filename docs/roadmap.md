@@ -45,6 +45,9 @@ Ideas worth building, each borrowed from a tool that does it well:
   which is better, for writing with no single right answer. (LangSmith)
 - **The commit on each test,** so a score change traces to the change
   that caused it. (Braintrust)
+- **Attacks you add on the page.** Type an attack, pick its kind, and
+  Evalkeeper plants it in every confirmed case, beside the built-in and
+  imported ones.
 - **Canary leak checks.** Plant unique markers in the instructions and
   in other people's data, and fail any answer that contains one, so
   leaked instructions or data mixed between users show up. Opt-in per

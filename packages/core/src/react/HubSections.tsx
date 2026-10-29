@@ -11,7 +11,7 @@ import {
   type Settings,
   type SettingsVersion,
 } from "../index.js";
-import { Link, Card, InfoTip, StatusBadge } from "./pieces.js";
+import { Link, Card, InfoTip, HealthChips } from "./pieces.js";
 import { pct, dayOf } from "./format.js";
 import { HistoryEntries } from "./SettingsHistory.js";
 import {
@@ -134,7 +134,7 @@ export function HubStats({ data }: { data: HubData }) {
               : "—"
           }
         />
-        <Link href={evalsPath(app, "feedback")}>
+        <Link href={evalsPath(app, "feedback")} className="block h-full">
           <Stat
             title="Thumbs down this week"
             term="thumbs"
@@ -244,7 +244,8 @@ function Stat({
   detail: string;
 }) {
   return (
-    <Card className="space-y-1">
+    // Full height, so the four cards line up however much each says.
+    <Card className="h-full space-y-1">
       <p className="text-sm text-muted">
         {title}
         <InfoTip term={term} />
@@ -308,7 +309,7 @@ function SuiteCard({
                 {b.suite.label}
               </Link>
             </h2>
-            <StatusBadge status={h.status} />
+            <HealthChips flags={h.flags} />
           </div>
           <p className="readable text-sm text-muted">{b.suite.description}</p>
         </div>
@@ -351,7 +352,7 @@ function SuiteCard({
         <p className="text-sm">
           {t ? (
             <>
-              Score{" "}
+              Accuracy{" "}
               <span className={`font-semibold ${scoreTone(t.right / t.total)}`}>
                 {pct(t.right / t.total)}
               </span>

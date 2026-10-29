@@ -92,6 +92,10 @@ answer key links to **Rate blind**: one case at a time, its input only,
 never the app's answer. Give the right answer and a reason, or skip it.
 Each rating is that person's own confirmed answer.
 
+Leave it off with `rateBlind: false` on a suite whose answers are one
+person's own, such as a verdict on their own data, which nobody else can
+give, or when your app has no rate page.
+
 ## Answers that came with a suite
 
 The ready-made crisis risk and hopelessness suites ship cases their

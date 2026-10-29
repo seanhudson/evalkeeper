@@ -50,6 +50,10 @@ export function evalActions(w: EvalWiring): Required<EvalActions> {
   };
   const weekly = weeklyCheck(w);
 
+  /** Who a settings change records: the admin's name, or their id. */
+  const changer = (admin: { id: string; name: string }) =>
+    w.changedBy === "id" ? admin.id : admin.name;
+
   const suiteFrom = (form: FormData) =>
     runner.suiteOrThrow(formText(form, "suite"));
 
@@ -88,7 +92,7 @@ export function evalActions(w: EvalWiring): Required<EvalActions> {
    */
   async function caseToRate(form: FormData, raterId: string) {
     const suite = suiteFrom(form);
-    if (suite.caseKind !== "imported")
+    if (suite.caseKind !== "imported" || suite.rateBlind === false)
       throw new Error("This suite isn't rated blind");
     const c = await knownCase(suite.key, form);
     if (raterStatus(c, raterId))
@@ -206,7 +210,7 @@ export function evalActions(w: EvalWiring): Required<EvalActions> {
           ? { model: row.model, reasoningEffort: row.effort }
           : { model: row.model },
         {
-          by: admin.name,
+          by: changer(admin),
           reason: `Made ${row.label} live: ${score.right}/${score.total}, ${VS[row.vsLive ?? ""] ?? "no comparison"}${attacked === null ? "" : `; ${attacked} serious ${attacked === 1 ? "mistake" : "mistakes"} under attack`}`,
           // The evidence, so the history can show why.
           evidence: {
@@ -234,7 +238,7 @@ export function evalActions(w: EvalWiring): Required<EvalActions> {
         suite.operation,
         { fallbackModel: row.model },
         {
-          by: admin.name,
+          by: changer(admin),
           reason: `Made ${row.label} the fallback: ${test ? `${Math.round(test.right)}/${Math.round(test.total)}${failed}` : "not tested"}`,
           evidence: {
             runId: test?.runId ?? null,
@@ -262,7 +266,7 @@ export function evalActions(w: EvalWiring): Required<EvalActions> {
         suite.operation,
         { model: s.live.model, fallbackModel: s.fallback?.model ?? null },
         {
-          by: admin.name,
+          by: changer(admin),
           reason: s.reasons.join(" "),
           evidence: {
             suggestion: s.reasons,
@@ -281,7 +285,7 @@ export function evalActions(w: EvalWiring): Required<EvalActions> {
       const reason = formText(form, "reason");
       if (!reason) throw new Error("Say why you're rolling back");
       await settings.rollBack(suite.operation, formText(form, "version"), {
-        by: admin.name,
+        by: changer(admin),
         reason,
       });
       everyPage();

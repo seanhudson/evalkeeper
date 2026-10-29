@@ -10,7 +10,7 @@ import {
 import { useFormStatus } from "react-dom";
 import { ArrowLeft, Info, LoaderCircle } from "lucide-react";
 import { GLOSSARY, type GlossaryTerm } from "../glossary.js";
-import type { HealthStatus } from "../health.js";
+import type { HealthFlag, HealthStatus } from "../health.js";
 import { pct, QUIET_BUTTON } from "./format.js";
 
 /**
@@ -24,6 +24,7 @@ import { pct, QUIET_BUTTON } from "./format.js";
 const CHIP = {
   live: "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300",
   fallback: "bg-sky-100 text-sky-800 dark:bg-sky-500/15 dark:text-sky-200",
+  suggested: "bg-accent/10 text-accent",
   warn: "bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-200",
   serious: "bg-red-50 text-red-800 dark:bg-red-500/10 dark:text-red-200",
   neutral: "bg-tint text-muted",
@@ -187,6 +188,7 @@ const STATUS: Record<HealthStatus, { label: string; tone: ChipTone }> = {
   good: { label: "Good", tone: "live" },
   fair: { label: "Fair", tone: "warn" },
   improve: { label: "Needs work", tone: "serious" },
+  change: { label: "Change suggested", tone: "fallback" },
   few: { label: "Few cases", tone: "warn" },
   stale: { label: "Retest", tone: "warn" },
   untested: { label: "Untested", tone: "neutral" },
@@ -196,6 +198,65 @@ const STATUS: Record<HealthStatus, { label: string; tone: ChipTone }> = {
 export function StatusBadge({ status }: { status: HealthStatus }) {
   const s = STATUS[status];
   return <Chip tone={s.tone}>{s.label}</Chip>;
+}
+
+const many = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
+/** One chip per reason a suite stands where it does. */
+function flagChips(f: HealthFlag): { text: string; tone: ChipTone }[] {
+  switch (f.kind) {
+    case "untested":
+      return [{ text: "Untested", tone: "neutral" }];
+    case "stale":
+      return [{ text: "Retest", tone: "warn" }];
+    case "below":
+      return [
+        ...(f.serious
+          ? [
+              {
+                text: `${f.serious} serious under bar`,
+                tone: "serious" as const,
+              },
+            ]
+          : []),
+        ...(f.minor
+          ? [{ text: `${f.minor} minor under bar`, tone: "warn" as const }]
+          : []),
+      ];
+    case "suggestLive":
+      return [{ text: "New live model suggested", tone: "suggested" }];
+    case "suggestFallback":
+      return [{ text: "New fallback suggested", tone: "suggested" }];
+    case "retestLive":
+      return [{ text: "Retest live", tone: "warn" }];
+    case "provisional":
+      return [{ text: many(f.answers, "provisional answer"), tone: "warn" }];
+    case "fewCases":
+      return [{ text: "Too few cases", tone: "warn" }];
+    case "addCases":
+      return [
+        { text: `Add cases (${f.cases} of ${f.target})`, tone: "neutral" },
+      ];
+    case "good":
+      return [{ text: "Good", tone: "live" }];
+  }
+}
+
+/**
+ * A suite's health as chips naming each reason ("2 serious under bar",
+ * "New fallback suggested", "Add cases (33 of 50)"), so a card says why at
+ * a glance; its details say more.
+ */
+export function HealthChips({ flags }: { flags: readonly HealthFlag[] }) {
+  return (
+    <span className="inline-flex flex-wrap gap-1.5">
+      {flags.flatMap(flagChips).map((c) => (
+        <Chip key={c.text} tone={c.tone}>
+          {c.text}
+        </Chip>
+      ))}
+    </span>
+  );
 }
 
 /**

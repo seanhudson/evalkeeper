@@ -129,6 +129,23 @@ describe("versioned settings", () => {
     });
   });
 
+  it("records a new fallback as a change, even with evidence", async () => {
+    const { settings } = setup();
+    await settings.change("triage", DEFAULT, { by: "sam", reason: null });
+    await settings.update(
+      "triage",
+      { fallbackModel: "big" },
+      { by: "sam", reason: "Made big the fallback", evidence: { runId: "r1" } },
+    );
+    expect((await settings.history("triage"))[0]?.kind).toBe("CHANGE");
+    await settings.update(
+      "triage",
+      { reasoningEffort: "low" },
+      { by: "sam", reason: "A lower setting", evidence: { runId: "r2" } },
+    );
+    expect((await settings.history("triage"))[0]?.kind).toBe("PROMOTE");
+  });
+
   it("changes one setting and keeps the rest", async () => {
     const { settings } = setup();
     await settings.change(

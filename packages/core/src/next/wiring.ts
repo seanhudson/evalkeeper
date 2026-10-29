@@ -15,4 +15,10 @@ export type EvalWiring = Omit<EvalApp, "actions"> & {
    * is recorded as who made each change.
    */
   requireAdmin: () => Promise<EvalAdmin>;
+  /**
+   * What the settings history records as who made a change: the admin's
+   * `name` (the default) or `id`. Use "id" when your settings store keeps
+   * a user id there (a foreign key) and shows names from it.
+   */
+  changedBy?: "name" | "id";
 };

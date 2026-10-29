@@ -349,6 +349,10 @@ export const settingsStore = prismaSettingsStore(prisma, {
 - A live pointer per feature.
 - A change log with its kind: CHANGE, PROMOTE, ROLLBACK, DEPLOY,
   OUTSIDE, or INSTRUCTIONS. An enum is fine.
+- Who made each change. The actions record the admin's `name` from
+  `requireAdmin`. If your log keeps a user id there instead (a foreign
+  key to your users), set `changedBy: "id"` in your wiring, and have the
+  settings store's `by` map turn ids back into names for the history.
 
 ### An older kind enum
 

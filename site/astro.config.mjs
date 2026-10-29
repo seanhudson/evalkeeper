@@ -13,7 +13,7 @@ export default defineConfig({
     starlight({
       title: "Evalkeeper",
       description:
-        "Evals for the AI features in your TypeScript app: answer keys people confirm, tests per model, and model choices on evidence.",
+        "Evalkeeper is a free, open-source AI evaluation harness for TypeScript apps. Test LLM features on team-verified examples, catch regressions, and compare models.",
       logo: { src: "./src/assets/logo.svg" },
       favicon: "/favicon.svg",
       social: [

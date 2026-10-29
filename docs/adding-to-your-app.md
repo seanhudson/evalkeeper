@@ -351,7 +351,10 @@ loads its data once with `loadSuitePage(evals, key)` and lists
 `SuiteHeader`, `ChosenOnBase`, `SuggestionCard`, `CasesInInstructions`,
 `ModelTable`, `Versions`, `ChecksSection`, and `AnswerKeySection`; the
 hub loads with `loadHub(evals)` and lists `HubIntro`, `HubStats`,
-`WeeklyCheck`, and `SuiteList`. For another layout, or a section of your
+`WeeklyCheck`, and `SuiteList`. The other pages are one view each
+(`RunView`, `CompareView`, `SideBySideView`, `RateView`, and
+`FeedbackView`): the copied page checks who's signed in, reads the URL,
+and answers "not found" when the view returns null. For another layout, or a section of your
 own beside them, write your page from the same pieces, as the copied
 pages do: the sections come from the package, so they keep upgrading.
 

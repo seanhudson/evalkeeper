@@ -5,6 +5,14 @@ Notable changes, newest first. The format follows
 follow [semantic versioning](https://semver.org/): until 1.0, a minor
 version may change an interface, and its entry says how to update.
 
+## 0.11.1 - 2026-10-29
+
+### Fixed
+
+- `lucide-react` 0.500 or later is enough for the screens' icons. 0.11.0
+  asked for 1 or later, which stopped apps on lucide 0.x from installing
+  it, though every icon the screens use is older than that.
+
 ## 0.11.0 - 2026-10-29
 
 Evalkeeper is now one package you add to an app, not pages you copy: the

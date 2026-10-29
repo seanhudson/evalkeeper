@@ -183,6 +183,11 @@ answered.
 **Regrading marked old tests as current.** _So:_ regrading updates a test
 for changed answers, never for inputs that changed after it ran.
 
+**Retiring a case didn't take it out of the score.** Rescoring kept the
+retired case's answers, so a feature's score still counted tests the team
+had dropped. _So:_ rescoring scores only the cases in use, with a test
+that fails if a retired case comes back into it.
+
 **The comparison averaged per answer while the headline counted parts.**
 They disagreed about which model was better. _So:_ both use the same
 partial credit.
@@ -202,6 +207,14 @@ test's grader version before trusting its score.
 to one call left the other answering differently. _So:_ the exact call
 lives in the suite module, and any script imports it from there, so a fix
 to one is a fix to both.
+
+**Testing from a script took a workaround.** Testing a new model on
+four features from a script, instead of the pages, meant faking Next.js's
+`server-only` import, because an app's runner setup assumes it runs
+inside Next.js. The results also stayed in the database the script ran
+on: tests run locally never show on production's board. _So:_ for now,
+test on the board where the decision is made; a command that runs a
+test outside the app is on the roadmap with the CI gate.
 
 **Analysis outside the harness used the wrong tests.** A hand-written
 review picked up tests from before a fix. _So:_ take numbers from the same
@@ -264,6 +277,12 @@ exist. The same run also warned that files it had just copied were
 missing. _So:_ the folders keep the group, the links leave it out, and
 files the run writes count as present.
 
+**Reading a schema's internals broke on its next major version.** The
+app's field labels walked zod's private structure, which moved in zod 4,
+and Evalkeeper's suite contract reads it too. _So:_ each package reads
+zod's internals in one function, with tests that walk real schemas, so
+the next major breaks one function and its tests, not every page.
+
 ## Releasing
 
 **npm shows a package's README as of its last publish.** A release went
@@ -278,3 +297,10 @@ CI on unrelated work, and the choice was to merge red or rush the
 upgrade. _So:_ the audit runs through `scripts/audit.mjs`, which still
 fails on every other high or critical advisory, allows a named one with
 its reason, and says when it's no longer reported so it comes out.
+
+**A peer range that was too narrow broke the first real install.** The
+release asked for an icon library version the first app to install it
+didn't have, and npm refused the install, so a patch release had to
+follow. _So:_ peer ranges are as wide as the code allows, and before
+publishing, install the packed package into an app whose versions differ
+from the example's.

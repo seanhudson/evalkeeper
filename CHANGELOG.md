@@ -5,7 +5,12 @@ Notable changes, newest first. The format follows
 follow [semantic versioning](https://semver.org/): until 1.0, a minor
 version may change an interface, and its entry says how to update.
 
-## Unreleased
+## 0.12.0 - 2026-10-29
+
+The suite page now does what apps were building beside it: test a
+reasoning setting, see each check per model, fill the answer key from
+starters, drafts, and attacks, and see which AI features have no eval
+yet.
 
 ### Added
 

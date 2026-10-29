@@ -154,6 +154,16 @@ for (const scheme of SCHEMES) {
     });
     await shot("confirm");
 
+    // Where the mistakes are: each check for every tested model.
+    await page.goto("/evals/ticket_triage");
+    await page
+      .getByRole("heading", { name: "Where the mistakes are" })
+      .evaluate((el) => {
+        el.scrollIntoView({ block: "start" });
+        window.scrollBy(0, -24);
+      });
+    await shot("breakdown");
+
     // Answer-key health: easy cases to retire, once every model is tested.
     await page.goto("/evals/ticket_triage");
     await page

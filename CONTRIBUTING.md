@@ -50,8 +50,8 @@ Coverage limits never go down.
    shows each package's README as of its last publish, so docs merged
    afterward wait for the next release.
 2. Move the "Unreleased" entries in CHANGELOG.md under a new
-   `## X.Y.Z - date` heading, bump the three packages and the example to
-   that version, and commit.
+   `## X.Y.Z - date` heading, bump the package and the example to that
+   version, and commit.
 3. Tag it (`git tag vX.Y.Z`) and push the tag. The Release workflow writes
    the GitHub release from that changelog section
    (`scripts/release-notes.mjs`); rerun it from the Actions tab with a tag

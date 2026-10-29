@@ -56,6 +56,8 @@ model with a current test, beside each check's bar. Green meets the bar,
 amber is within 10 points of it, and red is further below. Serious checks
 come first.
 
+![Where the mistakes are: each check's pass rate for every tested model, green where it meets the bar, amber within 10 points, and red further below.](screenshots/breakdown-light.png "Ticket triage's checks across four models.")
+
 Read it when two models score about the same: one may miss a serious
 check the other passes. It's also where a check that every model fails
 stands out, which usually means the check, not the models, needs a look.

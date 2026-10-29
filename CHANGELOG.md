@@ -5,7 +5,12 @@ Notable changes, newest first. The format follows
 follow [semantic versioning](https://semver.org/): until 1.0, a minor
 version may change an interface, and its entry says how to update.
 
-## Unreleased
+## 0.13.0 - 2026-10-29
+
+Suite pages that say what to do: each card names its reasons, the board
+reads in the suggestion's order with accuracy, speed, and cost, the
+answer key health panel is a to-do list, and admins can change what a
+feature favors. Plus fixes for apps that keep their own settings tables.
 
 ### Added
 

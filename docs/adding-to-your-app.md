@@ -576,8 +576,64 @@ safe. Keep what a model reading untrusted text can do small.
 ## Bring your own
 
 An app that had evals before Evalkeeper (its own tables full of reviewed
-answers, its own router, versions, thumbs, or pages) keeps them. Each piece below
+answers, its own router, versions, thumbs, or pages) can keep them. Each piece below
 is chosen on its own.
+
+### Moving into Evalkeeper's tables
+
+Mapping Evalkeeper onto your own tables (below) works, but they drift:
+each release can add a column or a status yours can't hold, and you're a
+release behind without knowing it. Moving in copies your eval data into
+Evalkeeper's tables once, so upgrades are a version bump and
+`evalkeeper migration` from then on. Your stores, mapped onto your
+tables as below, read everything; `moveIn` writes it, keeping every id,
+date, who confirmed each answer, every test's answers and grades, your
+thumbs, and your settings history.
+
+1. **See what would move.** Add a short script, and run it with a dry
+   run against a copy of your data. It writes nothing:
+
+   ```ts
+   // scripts/move-in.ts: npx tsx scripts/move-in.ts [--for-real]
+   import { moveIn, moveInSummary } from "@crowandraven/evalkeeper/prisma";
+   import { prisma } from "@/lib/prisma";
+   import { SUITES } from "@/lib/suites";
+   import { map, oldStore, oldThumbs, oldSettings } from "./oldStores";
+
+   const report = await moveIn(
+     {
+       store: oldStore, // prismaStore(prisma, map): your tables, mapped
+       feedbackStore: oldThumbs,
+       settingsStore: oldSettings,
+       suites: SUITES.map((s) => s.key),
+       operations: [...new Set(SUITES.map((s) => s.operation))],
+       tables: { db: prisma, map }, // so the check sees raw values
+     },
+     prisma,
+     { dryRun: !process.argv.includes("--for-real") },
+   );
+   console.log(moveInSummary(report).join("\n"));
+   ```
+
+   It says, table by table, how many rows it would copy and how many
+   already moved, which values Evalkeeper reads differently (a status it
+   doesn't have, a cost that isn't a number), and anything that stops it:
+   a row pointing at one that isn't moving, or a settings history already
+   in Evalkeeper's tables (histories aren't merged).
+
+2. **Add Evalkeeper's tables**, with `evalkeeper migration`, and migrate
+   the copy.
+3. **Move, on the copy first:** run the script with `--for-real`. It
+   copies only what isn't there yet, so it's safe to run again, then
+   reads every row back and says whether it's the same. It won't move
+   while anything stops it, or while values read differently until you
+   pass `acceptReadProblems: true` (they move as Evalkeeper reads them).
+4. **Switch your stores** to Evalkeeper's (`prismaStore(prisma)` with no
+   map, and the same for thumbs and settings).
+
+Your own tables are never changed. Keep them, unread, until you decide to
+drop them; columns your map never read (a confidence score, a legacy
+flag) stay in them.
 
 ### Your own eval tables
 

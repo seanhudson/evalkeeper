@@ -9,6 +9,17 @@ version may change an interface, and its entry says how to update.
 
 ### Added
 
+- `moveIn` in `@crowandraven/evalkeeper/prisma`: copies an app's eval
+  data from tables of its own (read through its mapped stores) into
+  Evalkeeper's, once, keeping every id, date, who confirmed each answer,
+  every test's answers and grades, thumbs, and the settings history. A
+  dry run writes nothing and reports what it would copy table by table,
+  what already moved, values Evalkeeper reads differently, and anything
+  that stops it. A real run copies only what isn't there yet, then reads
+  every row back to check it's the same. The app's own tables are never
+  changed. `moveInSummary` puts a report in words. The guide's "Moving
+  into Evalkeeper's tables" has the steps.
+
 - `npx @crowandraven/evalkeeper migration`: Evalkeeper's tables live in
   their own file beside your Prisma schema (`evalkeeper.prisma`), which
   the command writes and rewrites on upgrade, with the migration SQL from

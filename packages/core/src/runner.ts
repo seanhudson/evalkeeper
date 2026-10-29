@@ -1248,12 +1248,21 @@ export function createRunner(opts: RunnerOptions) {
     );
   }
 
+  /**
+   * The models an operation can be tested on: its candidates' `models`,
+   * or none without the `candidates` option.
+   */
+  function modelsFor(operation: string): string[] {
+    return opts.candidates?.(operation).models ?? [];
+  }
+
   return {
     startDriftCheck,
     runDriftCheck,
     draftFromActivity,
     board,
     attackBoards,
+    modelsFor,
     createTest,
     estimateTest,
     suiteOrThrow,

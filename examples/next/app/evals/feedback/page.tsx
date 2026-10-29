@@ -1,14 +1,8 @@
-import type { Metadata } from "next";
-import { FeedbackView } from "@crowandraven/evalkeeper/react";
-import { requireAdmin } from "@/lib/evalkeeper";
-import { evals } from "@/lib/evalkeeper/evals";
+import { pages } from "@/lib/evalkeeper/evals";
+
+// Written by `npx @crowandraven/evalkeeper add pages`: don't edit it.
+// Thumbs up and down, and what to do with each.
 
 export const dynamic = "force-dynamic";
-
-export const metadata: Metadata = { title: "Feedback: Evals" };
-
-/** Thumbs up and down, and what to do with each. */
-export default async function FeedbackPage() {
-  await requireAdmin();
-  return FeedbackView({ app: evals });
-}
+export const generateMetadata = pages.feedback.generateMetadata;
+export default pages.feedback.Page;

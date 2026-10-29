@@ -23,6 +23,7 @@ import {
 } from "./app.js";
 import type { Runner } from "../runner.js";
 import { ChevronDown } from "lucide-react";
+import { WeeklyCheck } from "./WeeklyCheck.js";
 
 /**
  * Everything the evals hub shows, loaded together. Sections read from
@@ -424,5 +425,22 @@ function SuiteCard({
         </details>
       )}
     </Card>
+  );
+}
+
+/**
+ * The hub as Evalkeeper arranges it: where each suite stands and what
+ * needs attention. A hub of your own loads the same data (`loadHub`) and
+ * arranges these sections another way.
+ */
+export async function HubPage({ app }: { app: EvalAppConfig }) {
+  const data = await loadHub(app);
+  return (
+    <div className="space-y-8">
+      <HubIntro />
+      <HubStats data={data} />
+      <WeeklyCheck app={app} weekly={data.weekly} />
+      <SuiteList data={data} />
+    </div>
   );
 }

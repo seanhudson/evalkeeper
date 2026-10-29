@@ -1,4 +1,4 @@
-// Your app's Evalkeeper wiring: the one file the copied eval pages import.
+// Your app's Evalkeeper wiring: the one file the eval pages read from.
 // Written by `npx @crowandraven/evalkeeper add pages`; it's yours now. Fill in each TODO.
 import "server-only";
 import {
@@ -10,6 +10,7 @@ import {
 } from "@crowandraven/evalkeeper";
 import type { ComponentType } from "react";
 import { createRunner, type Route } from "@crowandraven/evalkeeper/runner";
+import type { EvalWiring } from "@crowandraven/evalkeeper/next";
 import {
   prismaFeedbackStore,
   prismaSettingsStore,
@@ -37,9 +38,6 @@ export function modelsFor(_operation: string): string[] {
 
 /** TODO: one suite per AI feature (see the README's "Write a suite"). */
 export const SUITES: AnySuite[] = [];
-export const SUITE_BY_KEY: Record<string, AnySuite> = Object.fromEntries(
-  SUITES.map((s) => [s.key, s]),
-);
 
 /**
  * Your own editors for answers plain fields can't edit well, keyed by
@@ -103,3 +101,19 @@ export async function requireAdmin(): Promise<{ id: string; name: string }> {
     "Evalkeeper: write requireAdmin in lib/evalkeeper/index.ts so only admins can use the eval pages.",
   );
 }
+
+/**
+ * Everything Evalkeeper's pages, actions, and weekly check need from your
+ * app, in one object. Where the pages live is in `./paths`.
+ */
+export const wiring = {
+  runner,
+  settings,
+  store,
+  feedbackStore,
+  models: MODELS,
+  suites: SUITES,
+  routeFor,
+  answerEditors,
+  requireAdmin,
+} satisfies Omit<EvalWiring, "basePath">;

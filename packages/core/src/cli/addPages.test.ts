@@ -161,8 +161,8 @@ describe("evalkeeper add pages", () => {
       "app/evals/[suite]/page.tsx",
       "app/evals/[suite]/rate/page.tsx",
       "app/evals/feedback/page.tsx",
-      "components/evalkeeper/RefreshWhile.tsx",
       "components/evalkeeper/evalkeeper.css",
+      "lib/evalkeeper/appComponents.tsx",
       "lib/evalkeeper/actions.ts",
       "lib/evalkeeper/evals.ts",
       "lib/evalkeeper/paths.ts",
@@ -187,7 +187,7 @@ describe("evalkeeper add pages", () => {
       join(dir, "src/app/admin/evals/page.tsx"),
       "utf8",
     );
-    expect(page).toMatch(/from "~\/lib\/evalkeeper"/);
+    expect(page).toMatch(/from "~\/lib\/evalkeeper\/evals"/);
     expect(page).not.toMatch(/from "@\//);
     expect(
       readFileSync(join(dir, "src/lib/evalkeeper/paths.ts"), "utf8"),
@@ -237,16 +237,14 @@ describe("evalkeeper add pages", () => {
 
   it("copies only the pages and components named, and says what they need", () => {
     const dir = app(AT);
-    const r = cli(dir, "add", "pages", "--only", "suite,RefreshWhile");
+    const r = cli(dir, "add", "pages", "--only", "suite,evalkeeper.css");
     expect(r.code).toBe(0);
     expect(existsSync(join(dir, "app/evals/[suite]/page.tsx"))).toBe(true);
-    expect(
-      existsSync(join(dir, "components/evalkeeper/RefreshWhile.tsx")),
-    ).toBe(true);
-    expect(existsSync(join(dir, "app/evals/page.tsx"))).toBe(false);
     expect(existsSync(join(dir, "components/evalkeeper/evalkeeper.css"))).toBe(
-      false,
+      true,
     );
+    expect(existsSync(join(dir, "app/evals/page.tsx"))).toBe(false);
+    expect(existsSync(join(dir, "lib/evalkeeper/actions.ts"))).toBe(false);
     // The wiring module is the app's; --only leaves it out unless named.
     expect(existsSync(join(dir, "lib/evalkeeper/index.ts"))).toBe(false);
     expect(r.out).toMatch(/which your app doesn't have/);
@@ -290,7 +288,7 @@ describe("evalkeeper add pages", () => {
       "add",
       "pages",
       "--only",
-      "compare,paths,evals,actions,weekly",
+      "compare,paths,evals,actions",
       "--dry-run",
     );
     expect(r.code).toBe(0);
@@ -318,13 +316,11 @@ describe("evalkeeper add pages", () => {
       "--only",
       "hub",
       "--only",
-      "RefreshWhile",
+      "evalkeeper.css",
       "--dry-run",
     );
     expect(dry.out).toMatch(/skip\s+app\/evals\/page\.tsx \(exists\)/);
-    expect(dry.out).toMatch(
-      /write\s+components\/evalkeeper\/RefreshWhile\.tsx/,
-    );
+    expect(dry.out).toMatch(/write\s+components\/evalkeeper\/evalkeeper\.css/);
     const forced = cli(
       dir,
       "add",
@@ -335,9 +331,9 @@ describe("evalkeeper add pages", () => {
       "--dry-run",
     );
     expect(forced.out).toMatch(/overwrite\s+app\/evals\/page\.tsx/);
-    expect(
-      existsSync(join(dir, "components/evalkeeper/RefreshWhile.tsx")),
-    ).toBe(false);
+    expect(existsSync(join(dir, "components/evalkeeper/evalkeeper.css"))).toBe(
+      false,
+    );
   });
 
   it("takes groups and the wiring by name, and refuses names it doesn't know", () => {
@@ -369,7 +365,7 @@ describe("evalkeeper add pages", () => {
     const bad = cli(dir, "add", "pages", "--only", "Nope");
     expect(bad.code).toBe(1);
     expect(bad.err).toMatch(/no page or component called "Nope"/);
-    expect(bad.err).toMatch(/RefreshWhile/);
+    expect(bad.err).toMatch(/evalkeeper\.css/);
     expect(pickOnly(["app/evals/page.tsx"], [" ", "HUB"])).toEqual([
       "app/evals/page.tsx",
     ]);

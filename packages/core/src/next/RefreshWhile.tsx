@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter } from "next/navigation.js";
 import { useEffect, useTransition } from "react";
 
 /**
@@ -8,7 +8,7 @@ import { useEffect, useTransition } from "react";
  * each refresh to land before scheduling the next. A refresh on a timer
  * cancels one still in flight, so when the page takes longer to render
  * than the interval (the board against a remote database), no refresh ever
- * lands and the page never updates (#25).
+ * lands and the page never updates.
  */
 export function RefreshWhile({
   active,

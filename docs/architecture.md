@@ -78,7 +78,8 @@ flowchart LR
 | Drafting cases from activity             | `activity.ts`, `runner.draftFromActivity`                                       | `activity.test.ts`, runner tests, browser tests                              |
 | Versioned settings and rollback          | `settings.ts`, a `SettingsStore` in every adapter                               | `settings.test.ts`, `describeSettingsStoreContract`, browser tests           |
 | The copy-in CLI                          | `packages/core/src/cli`, templates from `examples/next`                         | `cli/addPages.test.ts`, `examples/next/test/cli.test.ts` (typechecks a copy) |
-| A page or component                      | `examples/next/app/evals`, `examples/next/components/evalkeeper`                | End-to-end tests                                                             |
+| A screen, section, or piece              | `packages/core/src/react`                                                       | `react/*.test.ts(x)` for pieces and the app object; end-to-end tests         |
+| Next.js actions, pages, or cron route    | `packages/core/src/next`; the thin route files in `examples/next`               | `next/next.test.ts`, end-to-end tests                                        |
 
 ## Versions
 

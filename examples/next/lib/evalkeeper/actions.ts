@@ -77,6 +77,22 @@ export async function dismissFeedback(form: FormData) {
   return actions.dismissFeedback(form);
 }
 
+export async function addStarters(form: FormData) {
+  return actions.addStarters(form);
+}
+
+export async function makeAttackCases(form: FormData) {
+  return actions.makeAttackCases(form);
+}
+
+export async function draftMore(form: FormData) {
+  return actions.draftMore(form);
+}
+
+export async function useDraftsProvisionally(form: FormData) {
+  return actions.useDraftsProvisionally(form);
+}
+
 export async function runWeeklyNow() {
   return actions.runWeeklyNow();
 }

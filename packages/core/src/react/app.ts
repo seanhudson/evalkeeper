@@ -33,6 +33,14 @@ export type EvalActions = {
   retireEasy?: FormAction;
   /** Retiring drafts nobody reviewed; the health panel's button. */
   retireStaleDrafts?: FormAction;
+  /** Adding a suite's starter cases not in its answer key yet. */
+  addStarters?: FormAction;
+  /** Making or updating an injection suite's attack cases. */
+  makeAttackCases?: FormAction;
+  /** Having the suite's `draftMore` draft cases, with an optional focus. */
+  draftMore?: FormAction;
+  /** Putting draft answers to use before review, as provisional. */
+  useDraftsProvisionally?: FormAction;
   runWeeklyNow: () => Promise<void>;
   /** Blind rating; only for an app with the rate page. */
   rateBlind?: FormAction;
@@ -66,6 +74,11 @@ export type EvalApp = {
   actions: EvalActions;
   /** Where the eval pages live, as a URL path: "/evals", "/admin/evals". */
   basePath: string;
+  /**
+   * Every AI feature your app has, by the operation its suites name. The
+   * hub lists the ones no suite tests yet. Leave it out to skip that list.
+   */
+  features?: { operation: string; label: string }[];
 };
 
 /** An `EvalApp` with its suites by key, as the screens read it. */

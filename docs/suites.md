@@ -217,6 +217,51 @@ schema:
 | `lines` | As a list     |
 | `json`  | Parsed        |
 
+## How to judge an answer
+
+Each field's help says what it means. When judging an answer takes more,
+such as which of two fair answers counts or what to ignore, give the
+suite an `answerGuide`. It shows above the answer key as **How to judge
+an answer**:
+
+```ts
+answerGuide: {
+  lead: "When you confirm a case, check:",
+  ordered: true,
+  points: [
+    { term: "Category:", text: "the one queue that should answer it." },
+    { term: "Urgency:", text: "high when people can't work now." },
+  ],
+  note: "Judge what the customer needs, not how upset they sound.",
+},
+```
+
+It's for people only and never reaches the model, so it doesn't change
+the instructions hash. Without one, the page shows `labelHelp` there.
+
+## Draft more cases
+
+Give a suite `draftMore` and its page offers **Draft N more cases**. It
+gets the cases you have, how many to draft, and an optional focus from
+the person asking, and returns new cases with proposed answers. Call
+your own model through your router, as `run` does:
+
+```ts
+async draftMore({ existing, count, focus }) {
+  const drafts = await draftTriageCases(existing, count, focus);
+  return drafts.map((d) => ({
+    input: d.ticket,
+    label: d.answer,
+    tags: d.tags,
+    note: d.why,
+  }));
+},
+```
+
+Each draft is checked against the suite's schemas and arrives pending.
+A draft that doesn't fit is left out. In code, `draftMoreCases({ store,
+suite, focus })` does the same.
+
 ## Your own answer editor
 
 Some answers are hard to edit in plain fields, such as facts with a
@@ -353,11 +398,14 @@ Then wire it in:
 
 ### Make the attack cases
 
-Make its cases from the base suite's confirmed cases:
+Make its cases from the base suite's confirmed cases, with **Make
+attack cases** on the injection suite's page, or in code:
 
 ```ts
 await injectionCases(store, triageInjection);
 ```
+
+The weekly check also brings them up to date before it tests.
 
 It takes up to 3 of the base suite's confirmed cases per attack (change
 this with `perAttack`). Each attack case carries its base case's answer.

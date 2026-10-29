@@ -28,7 +28,24 @@ add with its answer is confirmed: you're the person who said it's right.
 ![The "Add a case" form on a feature's page: the ticket's subject and message, its category and urgency, and a button to add it.](screenshots/add-case-light.png "Adding a case to the ticket triage feature.")
 
 Each field has a label and a short help text from the suite, so a
-teammate confirming answers weeks later knows what each one means.
+teammate confirming answers weeks later knows what each one means. Where
+judging an answer takes more than that, the suite's `answerGuide` shows
+above the answer key as **How to judge an answer**.
+
+## Start from the suite's cases
+
+A suite can come with `starter` cases. When some aren't in the answer
+key yet, it offers **Add N starter cases**. They arrive pending, to
+confirm like any draft, unless the suite's author already reviewed them.
+A starter you retired isn't offered again.
+
+## Draft more with a model
+
+A suite with `draftMore` offers **Draft N more cases**, enough to bring
+the answer key toward 50. Add a focus if you like ("longer, messier
+notes"). A model looks at the cases you have and covers what's missing.
+Each draft arrives pending, split between `DEV` and `TEST` like any new
+case, and counts only once you confirm it.
 
 ## Confirm drafted answers
 
@@ -42,6 +59,7 @@ proposed but nobody has checked:
   users](thumbs.md)).
 - **An import** brought in test data you already had ([Cases you
   already have](suites.md#cases-you-already-have)).
+- **You asked for more** with **Draft N more cases**, above.
 
 A draft's answer is **Pending**: it's never graded against. Open the
 case, read the input and the proposed answer, and either press **Confirm
@@ -58,9 +76,11 @@ input never said.
 ## Answers you can use before you've checked them
 
 Sometimes the owner says "use them so we can test, I'll review later."
-Answers imported as **Provisional** are used by tests, and every score
-that rests on them says so. Confirm them on the answer key when you can.
-Nothing is ever confirmed on someone's behalf.
+**Provisional** answers are used by tests, and every score that rests on
+them says so. Import answers as provisional, or press **Test with
+drafts, as provisional** above the answer key to put every pending one
+to use. Confirm them on the answer key when you can. Nothing is ever
+confirmed on someone's behalf.
 
 ## Rate blind
 

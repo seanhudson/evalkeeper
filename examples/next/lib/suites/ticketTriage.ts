@@ -409,4 +409,19 @@ export const ticketTriage: Suite<Input, Output, Label> = {
   describe: (i) => `${i.subject}\n\n${i.body}`,
   labelHelp:
     "category: billing, account, bug, feature_request, or other. urgency: low, normal, or high.",
+  answerGuide: {
+    lead: "When you confirm a case, check:",
+    ordered: true,
+    points: [
+      {
+        term: "Category:",
+        text: "the one queue that should answer it. A bug that also mentions billing is still a bug.",
+      },
+      {
+        term: "Urgency:",
+        text: "high when people can't work or money is wrong now, low for questions and wishes, normal otherwise.",
+      },
+    ],
+    note: "Judge what the customer needs, not how upset they sound.",
+  },
 };

@@ -59,6 +59,32 @@ const double: Suite<In, Out, Out> = {
   async grade(_i, out, want) {
     return [{ key: "right", pass: want ? out.n === want.n : null }];
   },
+  starter: [
+    {
+      input: { n: 10 },
+      label: { n: 20 },
+      tags: [],
+      split: "DEV",
+      note: "Ten.",
+    },
+  ],
+  // One draft that fits, and one whose input doesn't.
+  async draftMore({ focus }) {
+    return [
+      {
+        input: { n: 100 },
+        label: { n: 200 },
+        tags: ["drafted"],
+        note: focus ?? "",
+      },
+      {
+        input: { n: "many" } as unknown as In,
+        label: { n: 0 },
+        tags: [],
+        note: "",
+      },
+    ];
+  },
   inputFromForm: (form) => ({ n: Number(form.get("n")) }),
   labelFromForm: (form) => JSON.parse(formText(form, "value")) as Out,
   title: (i) => String(i.n),
@@ -213,6 +239,32 @@ describe("the eval actions", () => {
         form({ suite: "double", setting: JSON.stringify(["nobody", "low"]) }),
       ),
     ).rejects.toThrow("Unknown model");
+  });
+
+  it("add starters, draft more, and test with drafts as provisional", async () => {
+    const { actions, store } = setup();
+    await addCases(actions);
+    await actions.addStarters(form({ suite: "double" }));
+    const ten = store.cases.find((c) => (c.input as In).n === 10);
+    expect(ten?.labels[0]?.status).toBe("PENDING");
+
+    await actions.draftMore(form({ suite: "double", focus: "  big ones " }));
+    const drafted = store.cases.filter((c) => c.source === "MODEL_DRAFT");
+    // The draft whose input doesn't fit the suite is left out.
+    expect(drafted.map((c) => c.input)).toEqual([{ n: 100 }]);
+    expect(drafted[0]?.status).toBe("DRAFT");
+    expect(drafted[0]?.note).toBe("big ones");
+    expect(drafted[0]?.labels[0]?.status).toBe("PENDING");
+
+    await actions.useDraftsProvisionally(form({ suite: "double" }));
+    for (const c of [ten, drafted[0]]) {
+      const now = store.cases.find((x) => x.id === c?.id);
+      expect(now?.labels[0]?.status).toBe("PROVISIONAL");
+      expect(now?.status).toBe("ACTIVE");
+    }
+    await expect(
+      actions.makeAttackCases(form({ suite: "double" })),
+    ).rejects.toThrow("This suite has no attacks");
   });
 
   it("make a setting's row live at its own setting", async () => {

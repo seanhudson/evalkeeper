@@ -250,7 +250,7 @@ describe("checkReads", () => {
       ["output", "o1", "costUsd"],
     ]);
     expect(triage?.problems[0]?.problem).toBe(
-      "doesn't fit the suite's schema (text: Expected string, received number)",
+      "doesn't fit the suite's schema (text: Invalid input: expected string, received number)",
     );
     const summary = readCheckSummary(report);
     expect(summary[0]).toBe(

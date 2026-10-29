@@ -39,8 +39,8 @@ export function instructionsHash(parts: InstructionParts): string {
 /** What an operation tells its model: the parts `instructionsHash` takes. */
 export type InstructionParts = {
   texts: string[];
-  schemas?: z.ZodTypeAny[];
-  tools?: Record<string, { description?: string; inputSchema: z.ZodTypeAny }>;
+  schemas?: z.ZodType[];
+  tools?: Record<string, { description?: string; inputSchema: z.ZodType }>;
 };
 
 /**
@@ -59,7 +59,7 @@ export type InstructionParts = {
  * ```
  */
 export function instructionParts(parts: InstructionParts): string[] {
-  const shape = (schema: z.ZodTypeAny) =>
+  const shape = (schema: z.ZodType) =>
     JSON.stringify(zodSchema(schema).jsonSchema);
   return [
     ...parts.texts,

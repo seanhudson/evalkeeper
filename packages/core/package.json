@@ -70,7 +70,7 @@
     "test": "vitest run --coverage"
   },
   "peerDependencies": {
-    "zod": "^3.25.0",
+    "zod": "^4.6.6",
     "vitest": ">=3",
     "ai": ">=7",
     "react": ">=19",
@@ -79,7 +79,7 @@
     "next": ">=15"
   },
   "devDependencies": {
-    "zod": "^3.25.76",
+    "zod": "^4.6.7",
     "ai": "^7.0.146",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",

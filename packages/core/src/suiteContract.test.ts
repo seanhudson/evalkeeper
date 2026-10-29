@@ -106,7 +106,7 @@ describe("schemaKeys", () => {
   });
 
   it("gives up on wrappers nested too deep to be a real schema", () => {
-    let s: z.ZodTypeAny = input;
+    let s: z.ZodType = input;
     for (let i = 0; i < 12; i++) s = z.union([s, z.string()]);
     expect(schemaKeys(s)).toBeNull();
   });

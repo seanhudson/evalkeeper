@@ -38,13 +38,19 @@ test.afterAll(async () => {
   await prisma.$disconnect();
 });
 
-test("a suite's guide says how to judge an answer", async ({ page }) => {
+test("the answer key's info says how to judge an answer", async ({ page }) => {
   await page.goto("/evals/ticket_triage");
-  await page.getByText("How to judge an answer").click();
-  await expect(page.getByText("When you confirm a case, check:")).toBeVisible();
+  await expect(page.getByText("How to judge an answer")).toBeHidden();
+  await page.getByRole("button", { name: "About the answer key" }).click();
+  const guide = page.getByRole("dialog", { name: "About the answer key" });
   await expect(
-    page.getByText("Judge what the customer needs, not how upset they sound."),
+    guide.getByText("When you confirm a case, check:"),
   ).toBeVisible();
+  await expect(
+    guide.getByText("Judge what the customer needs, not how upset they sound."),
+  ).toBeVisible();
+  await guide.getByRole("button", { name: "Close" }).click();
+  await expect(guide).toBeHidden();
 });
 
 test("test with a draft answer, as provisional", async ({ page }) => {

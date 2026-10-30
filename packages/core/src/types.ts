@@ -280,7 +280,8 @@ export type Suite<Input, Output, Label> = {
   rateBlind?: boolean;
   /**
    * How a person should judge an answer, where it takes more than each
-   * field's help: shown above the answer key as "How to judge an answer".
+   * field's help: opened from the info button beside the answer key's
+   * heading, as "How to judge an answer".
    * Without it, `labelHelp` shows there. For people only: it never reaches
    * the model, so it doesn't change the instructions hash.
    */

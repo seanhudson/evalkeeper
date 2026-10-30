@@ -83,6 +83,9 @@ test("labels and explains changes made outside the store", async ({ page }) => {
       .filter({ hasText: GLOSSARY.instructionsEdited }),
   ).toBeVisible();
 
+  await history
+    .getByRole("button", { name: /^Show \d+ earlier version/ })
+    .click();
   const outside = history.getByRole("article", {
     name: "Version 2: Changed outside",
   });

@@ -55,8 +55,8 @@ cases, or the checks changed. Test it again before trusting its numbers.
 ## Test a reasoning setting
 
 Some models think before answering, and how much is a setting. Less is
-faster and cheaper; more can be more accurate. Under the table, **Test a
-reasoning setting** lists each model with the settings your
+faster and cheaper; more can be more accurate. The table's last row,
+**Test a reasoning setting**, lists each model with the settings your
 [catalog](models.md) gives it in `efforts`. Pick one and press **Test
 this setting**.
 
@@ -118,7 +118,9 @@ live model from there, so the switch takes effect without a deploy.
 
 ## Roll back
 
-Every earlier version has a **Roll back** button. It asks why, so the
+**Versions** shows the newest version and the live one; **Show N earlier
+versions** opens the rest. Every earlier version has a **Roll back**
+button. It asks why, so the
 record says what went wrong, and saves the rollback as a version too.
 
 ## Test again when something changes

@@ -5,6 +5,7 @@ import {
   InfoTip,
   Link,
   RefreshWhile,
+  Spinner,
   Submit,
   Tip,
   LocalDate,
@@ -32,9 +33,19 @@ export function WeeklyCheck({
           Weekly check
           <InfoTip term="weeklyCheck" />
         </h2>
-        <form action={app.actions.runWeeklyNow}>
-          <Submit variant="quiet">Run it now</Submit>
-        </form>
+        {weekly.running > 0 ? (
+          <span
+            role="status"
+            className="inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-muted"
+          >
+            <Spinner />
+            Running
+          </span>
+        ) : (
+          <form action={app.actions.runWeeklyNow}>
+            <Submit variant="quiet">Run it now</Submit>
+          </form>
+        )}
       </div>
       <Card className="space-y-4">
         <p className="readable text-sm text-muted">

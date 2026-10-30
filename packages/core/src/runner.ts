@@ -813,13 +813,19 @@ export function createRunner(opts: RunnerOptions) {
    * set on its live model, at its live reasoning setting, marked as
    * started by the schedule. Record every suite's first, so a page can show
    * them running, then run each with `runEval(id, { fresh: true })`.
-   * Returns the test's id, or null when the suite has no cases in use.
+   * Returns the test's id, or null when the suite has no cases in use or
+   * its weekly check is already running.
    * Needs `route`.
    */
   async function startDriftCheck(suiteKey: string): Promise<string | null> {
     if (!opts.route) throw new Error("The drift check needs the route option");
     const suite = suiteOrThrow(suiteKey);
     if (!(await casesFor(suite.key, "SMOKE")).length) return null;
+    // One check at a time: pressing Run it now twice doesn't start two.
+    await stopStuckRuns(suite.key);
+    const running = await store.listRuns(suite.key, { status: "RUNNING" });
+    if (running.some((r) => r.startedBy === SCHEDULED && r.set === "SMOKE"))
+      return null;
     const route = await opts.route(suite.operation);
     const { run } = await createRun({
       suite: suite.key,

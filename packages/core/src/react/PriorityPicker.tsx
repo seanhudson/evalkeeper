@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { ChevronDown, X } from "lucide-react";
+import { useRef, useState } from "react";
+import { ChevronDown } from "lucide-react";
+import { CloseButton, useDismiss } from "./InfoPopover.js";
 import { Button, Select, Submit, TextInput } from "./pieces.js";
 import type { FormAction } from "./app.js";
 import type { SuitePriority } from "../types.js";
@@ -42,23 +43,7 @@ export function PriorityPicker({
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!open) return;
-    const close = (e: MouseEvent | KeyboardEvent) => {
-      if (
-        e instanceof KeyboardEvent
-          ? e.key === "Escape"
-          : !ref.current?.contains(e.target as Node)
-      )
-        setOpen(false);
-    };
-    document.addEventListener("mousedown", close);
-    document.addEventListener("keydown", close);
-    return () => {
-      document.removeEventListener("mousedown", close);
-      document.removeEventListener("keydown", close);
-    };
-  }, [open]);
+  useDismiss(open, setOpen, ref);
 
   return (
     <div ref={ref} className="relative text-sm font-normal">
@@ -82,17 +67,11 @@ export function PriorityPicker({
         >
           <div className="flex items-start justify-between gap-3">
             <p className="text-muted">{why}</p>
-            <Button
-              type="button"
-              aria-label="Close"
-              title="Close"
+            <CloseButton
               onClick={() => {
                 setOpen(false);
               }}
-              className="-mr-1 -mt-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted hover:bg-tint hover:text-ink"
-            >
-              <X aria-hidden className="h-4 w-4" />
-            </Button>
+            />
           </div>
           <form
             action={action}

@@ -9,7 +9,7 @@ test("an app's answer editor writes and edits a case's answer", async ({
 }) => {
   await page.goto("/evals/action_items");
   const notes = `E2E notes ${Date.now()}: Dana will share slides, and Sam will find a room.`;
-  await page.getByText("Add a case", { exact: true }).click();
+  await page.getByRole("button", { name: "Add a case", exact: true }).click();
   await page.getByLabel("Meeting notes").first().fill(notes);
 
   // The editor, not one item per line.

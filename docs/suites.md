@@ -221,8 +221,8 @@ schema:
 
 Each field's help says what it means. When judging an answer takes more,
 such as which of two fair answers counts or what to ignore, give the
-suite an `answerGuide`. It shows above the answer key as **How to judge
-an answer**:
+suite an `answerGuide`. The info button beside **Answer key** opens it
+as **How to judge an answer**:
 
 ```ts
 answerGuide: {

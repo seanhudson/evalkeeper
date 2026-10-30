@@ -17,7 +17,9 @@ quick set, and the hub's **Weekly check** reports:
 - **Drafted:** new draft cases from real use, waiting for a person.
 - **Didn't finish:** checks that stopped partway.
 
-**Run it now** runs it at once. Scheduling it is step 8 of the
+**Run it now** runs it at once; while it runs, the button shows a
+spinner and each feature's line reflects its newest check, so one that
+failed earlier and passed when run again no longer shows. Scheduling it is step 8 of the
 [setup](adding-to-your-app.md#8-schedule-the-weekly-check).
 
 When it flags a feature, open it, test every model, and read what
@@ -46,7 +48,7 @@ look:
 
 It lists what to do, in order:
 
-1. **Check these answers.** Cases models split about evenly on: some give
+1. **Answers worth a second look.** Cases models split about evenly on: some give
    the answer key's answer and some don't, and each case lists which. That
    usually means the answer is wrong or the case has no clear answer.
    Decide who's right, then press one of:
@@ -62,7 +64,7 @@ It lists what to do, in order:
    each rests on a single example. On a suite with `draftMore`, pick
    topics and press **Draft cases for the topics you picked** (two each;
    pick none for all). Otherwise, a topic opens **Add a case** with it
-   already tagged. **Show all topics** lists every tag and its count.
+   already tagged, and **Add a case** beside them opens it untagged. **Show all topics** lists every tag and its count.
 3. **Retire these.** Cases every current model gets fully right: **Retire
    N easy cases** retires them all but a floor, then rescores recent
    tests for free. And drafts nobody reviewed in 30 days, which the

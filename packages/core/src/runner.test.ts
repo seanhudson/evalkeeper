@@ -352,6 +352,18 @@ describe("temperature", () => {
     expect(id).not.toBeNull();
     expect((await store.getRun(id ?? ""))?.temperature).toBe(0.3);
   });
+
+  it("doesn't start a weekly check while one is running", async () => {
+    const { runner } = await setup(["a", "b", "c"], {
+      route: () => ({ model: "model-a", fallbackModel: null }),
+      candidates: () => ({ models: ["model-a"] }),
+    });
+    const first = await runner.startDriftCheck("upper");
+    expect(first).not.toBeNull();
+    expect(await runner.startDriftCheck("upper")).toBeNull();
+    await runner.runEval(first ?? "");
+    expect(await runner.startDriftCheck("upper")).not.toBeNull();
+  });
 });
 
 describe("baselines", () => {

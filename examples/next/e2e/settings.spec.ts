@@ -42,6 +42,10 @@ test("use the suggestion, see it in the history, and roll it back", async ({
   await expect(
     promoted.getByRole("link", { name: "The test behind it" }),
   ).toBeVisible();
+  // Earlier versions fold away under the newest.
+  await history
+    .getByRole("button", { name: /^Show \d+ earlier version/ })
+    .click();
   const first = history.getByRole("article", { name: "Version 1: Changed" });
   await expect(first.getByText(/default from code/)).toBeVisible();
 

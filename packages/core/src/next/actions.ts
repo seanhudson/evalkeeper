@@ -307,7 +307,9 @@ export function evalActions(w: EvalWiring): Required<EvalActions> {
       await w.requireAdmin();
       const suite = suiteFrom(form);
       await store.setLabelStatus(formText(form, "label"), "CONFIRMED");
-      after(() => runner.rescoreRecent(suite.key));
+      // Rescored before the page refreshes (free, about a second): an
+      // answer change marks tests out of date until then.
+      await runner.rescoreRecent(suite.key);
       revalidatePath(page(suite.key));
     },
 
@@ -375,7 +377,9 @@ export function evalActions(w: EvalWiring): Required<EvalActions> {
       });
       // A draft (from feedback) is in use once it has an answer.
       await store.setCaseStatus(c.id, "ACTIVE");
-      after(() => runner.rescoreRecent(suite.key));
+      // Rescored before the page refreshes (free, about a second): an
+      // answer change marks tests out of date until then.
+      await runner.rescoreRecent(suite.key);
       revalidatePath(page(suite.key));
     },
 
@@ -396,8 +400,9 @@ export function evalActions(w: EvalWiring): Required<EvalActions> {
         raterId: admin.id,
         note: "Checked when models split on it, and kept as right.",
       });
-      // Same answer, so rescoring keeps every test current, for free.
-      after(() => runner.rescoreRecent(suite.key));
+      // Rescored before the page refreshes (free, about a second): an
+      // answer change marks tests out of date until then.
+      await runner.rescoreRecent(suite.key);
       revalidatePath(page(suite.key));
     },
 
@@ -528,7 +533,9 @@ export function evalActions(w: EvalWiring): Required<EvalActions> {
       );
       // A draft is in use once it has an answer.
       if (c.status === "DRAFT") await store.setCaseStatus(c.id, "ACTIVE");
-      after(() => runner.rescoreRecent(suite.key));
+      // Rescored before the page refreshes (free, about a second): an
+      // answer change marks tests out of date until then.
+      await runner.rescoreRecent(suite.key);
       revalidatePath(page(suite.key), "layout");
     },
 

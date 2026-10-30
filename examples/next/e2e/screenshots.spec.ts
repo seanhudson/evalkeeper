@@ -126,6 +126,10 @@ for (const scheme of SCHEMES) {
     await shot("answer-key");
 
     await page.goto("/evals/ticket_triage");
+    // Earlier versions open, to show their roll back.
+    await page
+      .getByRole("button", { name: /^Show \d+ earlier version/ })
+      .click();
     await page.getByRole("heading", { name: "Versions" }).evaluate((el) => {
       el.scrollIntoView({ block: "start" });
       window.scrollBy(0, -24);

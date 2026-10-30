@@ -5,7 +5,14 @@ Notable changes, newest first. The format follows
 follow [semantic versioning](https://semver.org/): until 1.0, a minor
 version may change an interface, and its entry says how to update.
 
-## Unreleased
+## 0.15.0 - 2026-10-30
+
+A quieter suite page: the answer guide, reasoning settings, and earlier
+versions sit where they're needed instead of taking room. The weekly
+check shows each suite's latest result and can't be started twice.
+
+Update: remove `TestSettingSection` from a suite page you arrange
+yourself; the Models table holds it now.
 
 ### Fixed
 

@@ -1,4 +1,4 @@
-// Evalkeeper 0.14.0's tables. Written by `npx @crowandraven/evalkeeper migration`,
+// Evalkeeper 0.15.0's tables. Written by `npx @crowandraven/evalkeeper migration`,
 // which rewrites it on upgrade: don't edit it.
 // Relations to your app's own models are ids (who confirmed an answer,
 // who rated one), not foreign keys, so these need nothing from your

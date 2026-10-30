@@ -1,5 +1,7 @@
 "use client";
 
+import { QUIET_BUTTON } from "./format.js";
+
 import { Button } from "./pieces.js";
 import { useEffect, useRef, useState } from "react";
 import { EllipsisVertical } from "lucide-react";
@@ -16,6 +18,7 @@ export function CaseMenu({
   edit,
   retire,
   startEditing = false,
+  review,
 }: {
   suite: string;
   caseId: string;
@@ -27,6 +30,11 @@ export function CaseMenu({
   retire: (form: FormData) => Promise<void>;
   /** Open the form from the start, for a case with no answer yet. */
   startEditing?: boolean;
+  /**
+   * For an answer nobody has confirmed yet (pending or provisional): the
+   * confirm button, shown with **Edit answer** beside it, in plain sight.
+   */
+  review?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(startEditing);
@@ -101,6 +109,22 @@ export function CaseMenu({
           </div>
         )}
       </div>
+      {review && !editing && (
+        <div className="flex flex-wrap items-center gap-2">
+          {review}
+          {editLabel && (
+            <Button
+              type="button"
+              onClick={() => {
+                setEditing(true);
+              }}
+              className={`rounded-md px-3 py-1.5 text-sm ${QUIET_BUTTON}`}
+            >
+              {editLabel}
+            </Button>
+          )}
+        </div>
+      )}
       {editing && (
         <div className="space-y-3 rounded-md bg-tint p-3">
           <div className="flex items-center justify-between gap-2">

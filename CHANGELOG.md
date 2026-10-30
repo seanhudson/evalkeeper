@@ -5,6 +5,48 @@ Notable changes, newest first. The format follows
 follow [semantic versioning](https://semver.org/): until 1.0, a minor
 version may change an interface, and its entry says how to update.
 
+## Unreleased
+
+### Added
+
+- **Describe the cases you want:** **Add a case** has a **Describe them**
+  tab on a suite with `draftMore`: a request in your own words and how
+  many, drafted for you to confirm. `draftMoreCases` takes a `count`.
+- **Topics to fill:** in **Answer key health**, pick thin topics to draft
+  cases for, or, without `draftMore`, open **Add a case** with the topic
+  tagged (`#add-case=<topic>`).
+- **Split cases you can resolve:** each lists which models gave the
+  answer key's answer, with **The answer is right** (a new optional
+  `keepAnswer` action: the answer is confirmed again and leaves the list
+  until a newer test splits on it), **Fix the answer**, and **Retire it**.
+  `answerKeyHealth` takes when the newest test ran.
+- **Failed answers are easy to find:** a test's page lists answers that
+  never came back first, says why they failed ("Timed out after 60s
+  (3)"), and the board's note links there.
+
+### Changed
+
+- No suggestion while a test runs: the page says it's waiting, **Use
+  these** refuses, and hub cards hold their suggestion chips.
+- Pending and provisional answers show **Confirm this answer** and **Edit
+  answer** side by side. Provisional ones couldn't be confirmed before.
+- **Suggested** is a section heading like **Models**, and the header's
+  "Priority: …" line is gone: "Favors …" explains it on hover.
+- Dates show in the viewer's own time zone (`LocalDate`), not the
+  server's.
+- Answer key rows keep their chips on the right, and long titles wrap at
+  a readable width.
+- **Draft N more cases** moved into **Add a case**, as **Describe them**.
+
+### Fixed
+
+- A suggestion's reasons never compare a score with itself: two that
+  round alike show enough decimals to differ ("98.14% against 98.06%"),
+  and "clearly more accurate" says it's on the cases both answered.
+
+**To update:** add `keepAnswer` to `lib/evalkeeper/actions.ts` (`add pages
+--force --only actions`) to show **The answer is right**.
+
 ## 0.13.0 - 2026-10-29
 
 Suite pages that say what to do: each card names its reasons, the board

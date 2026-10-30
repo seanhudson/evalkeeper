@@ -115,6 +115,19 @@ describe("suiteHealth", () => {
     ]);
   });
 
+  it("holds a suggestion while any model's test is running", () => {
+    const cheap = row("Haiku", "claude-haiku-5-5");
+    if (cheap.test) cheap.test.costPerAnswer = 0.001;
+    const running = { ...row("Sol", "gpt-6.1-sol"), testing: true };
+    const h = suiteHealth(
+      [row("Luna", "gpt-6-luna", { live: true }), cheap, running],
+      checks,
+      { favor: "cost" },
+      60,
+    );
+    expect(h.flags).not.toContainEqual({ kind: "suggestLive" });
+  });
+
   it("shows room to improve when live misses a bar", () => {
     const rows = [
       row("Luna", "gpt-6-luna", { live: true, passed: 20 }),

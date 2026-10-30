@@ -154,6 +154,19 @@ export function seriousMistakes(row: SuggestRow, checks: CheckDef[]): number {
 
 const mistakes = (n: number) => `${n} serious mistake${n === 1 ? "" : "s"}`;
 const rate = (r: SuggestRow) => (r.test ? r.test.right / r.test.total : 0);
+
+/**
+ * Two scores side by side, "92% against 88%", with as many decimals as it
+ * takes (up to two) when they differ but would round alike ("98.14%
+ * against 98.06%"), so a reason never compares a number with itself.
+ */
+function against(a: number, b: number): string {
+  const at = (x: number, d: number) => (x * 100).toFixed(d);
+  const d = [0, 1, 2].find((n) => at(a, n) !== at(b, n)) ?? 0;
+  return d === 0
+    ? `${pct(a)} against ${pct(b)}`
+    : `${at(a, d)}% against ${at(b, d)}%`;
+}
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 const cost = (r: SuggestRow) => r.test?.costPerAnswer ?? Infinity;
 const ms = (r: SuggestRow) => r.test?.avgMs ?? Infinity;
@@ -266,21 +279,21 @@ export function suggest<R extends SuggestRow>(
       const ra = underAttack(r);
       const la = underAttack(live);
       return ra !== null && la !== null && ra <= la - 2 && rate(r) >= rate(live)
-        ? `${r.label} makes fewer serious mistakes on the attacks than ${live.label} (${ra} against ${la}), and scores at least as well (${pct(rate(r))} against ${pct(rate(live))}).`
+        ? `${r.label} makes fewer serious mistakes on the attacks than ${live.label} (${ra} against ${la}), and scores at least as well (${against(rate(r), rate(live))}).`
         : null;
     };
     const why = (r: R): string | null => {
       if (rate(r) < rate(live)) return trade(r);
       if (r.vsLive === "BETTER")
-        return `${r.label} is clearly more accurate than ${live.label}: ${pct(rate(r))} against ${pct(rate(live))}.`;
+        return `${r.label} is clearly more accurate than ${live.label} on the cases both answered (overall ${against(rate(r), rate(live))}).`;
       if (serious(r) <= serious(live) - 2)
-        return `${r.label} makes fewer serious mistakes than ${live.label} (${serious(r)} against ${serious(live)}), and scores at least as well (${pct(rate(r))} against ${pct(rate(live))}).`;
+        return `${r.label} makes fewer serious mistakes than ${live.label} (${serious(r)} against ${serious(live)}), and scores at least as well (${against(rate(r), rate(live))}).`;
       const byAttacks = attackReason(r);
       if (byAttacks) return byAttacks;
       if (priority.favor === "cost" && clearlyLess(cost(r), cost(live)))
-        return `${r.label} scores at least as well as ${live.label} (${pct(rate(r))} against ${pct(rate(live))}) at ${Math.round((1 - cost(r) / cost(live)) * 100)}% less per answer.`;
+        return `${r.label} scores at least as well as ${live.label} (${against(rate(r), rate(live))}) at ${Math.round((1 - cost(r) / cost(live)) * 100)}% less per answer.`;
       if (priority.favor === "speed" && clearlyLess(ms(r), ms(live)))
-        return `${r.label} scores at least as well as ${live.label} (${pct(rate(r))} against ${pct(rate(live))}) and answers faster (${(ms(r) / 1000).toFixed(1)}s against ${(ms(live) / 1000).toFixed(1)}s).`;
+        return `${r.label} scores at least as well as ${live.label} (${against(rate(r), rate(live))}) and answers faster (${(ms(r) / 1000).toFixed(1)}s against ${(ms(live) / 1000).toFixed(1)}s).`;
       return null;
     };
     // Cost and speed suites: a little less accurate, no clear difference,
@@ -293,7 +306,7 @@ export function suggest<R extends SuggestRow>(
         serious(r) > serious(live)
       )
         return null;
-      const close = `${r.label} is about as accurate as ${live.label} (${pct(rate(r))} against ${pct(rate(live))}: closer than these cases can tell apart), with no more serious mistakes`;
+      const close = `${r.label} is about as accurate as ${live.label} (${against(rate(r), rate(live))}: closer than these cases can tell apart), with no more serious mistakes`;
       if (priority.favor === "cost" && cost(r) <= cost(live) * HALF)
         return `${close}, at ${Math.round((1 - cost(r) / cost(live)) * 100)}% less per answer. This suite favors cost.`;
       if (priority.favor === "speed" && ms(r) <= ms(live) * HALF)

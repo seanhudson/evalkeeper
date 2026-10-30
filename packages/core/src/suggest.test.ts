@@ -593,3 +593,19 @@ describe("weighing attacks", () => {
     );
   });
 });
+
+describe("the reasons' numbers", () => {
+  it("never compare a score with itself", () => {
+    const live = row("Sol", "gpt-6.1-sol", { live: true });
+    const better = row("Terra", "gpt-6.1-terra");
+    if (live.test && better.test) {
+      live.test.right = 152;
+      live.test.total = 155;
+      better.test.right = 158;
+      better.test.total = 161;
+    }
+    better.vsLive = "BETTER";
+    const s = suggest([live, better], checks, { favor: "quality" });
+    expect(s?.reasons.join(" ")).toContain("98.14% against 98.06%");
+  });
+});

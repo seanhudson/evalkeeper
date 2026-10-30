@@ -39,13 +39,17 @@ key yet, it offers **Add N starter cases**. They arrive pending, to
 confirm like any draft, unless the suite's author already reviewed them.
 A starter you retired isn't offered again.
 
-## Draft more with a model
+## Describe the cases you want
 
-A suite with `draftMore` offers **Draft N more cases**, enough to bring
-the answer key toward 50. Add a focus if you like ("longer, messier
-notes"). A model looks at the cases you have and covers what's missing.
-Each draft arrives pending, split between `DEV` and `TEST` like any new
-case, and counts only once you confirm it.
+On a suite with `draftMore`, **Add a case** has a second tab, **Describe
+them**. Say what you want in your own words ("three guardrail cases where
+the person states a salary floor") and how many. A model writes them
+from that and the cases you have. Each arrives pending, split between
+`DEV` and `TEST` like any new case, and counts only once you confirm it.
+
+**Answer key health** helps too: pick topics that have only one case and
+press **Draft cases for the topics you picked**. On a suite without
+`draftMore`, a topic opens **Add a case** with it already tagged.
 
 ## Confirm drafted answers
 
@@ -79,8 +83,8 @@ Sometimes the owner says "use them so we can test, I'll review later."
 **Provisional** answers are used by tests, and every score that rests on
 them says so. Import answers as provisional, or press **Test with
 drafts, as provisional** above the answer key to put every pending one
-to use. Confirm them on the answer key when you can. Nothing is ever
-confirmed on someone's behalf.
+to use. Open one to **Confirm this answer** as it is or **Edit answer**
+first. Nothing is ever confirmed on someone's behalf.
 
 ## Rate blind
 

@@ -43,6 +43,8 @@ export type EvalActions = {
   useDraftsProvisionally?: FormAction;
   /** Changing what a feature's suggestion favors, as a settings version. */
   setPriority?: FormAction;
+  /** Keeping a split case's answer as right, after checking it. */
+  keepAnswer?: FormAction;
   runWeeklyNow: () => Promise<void>;
   /** Blind rating; only for an app with the rate page. */
   rateBlind?: FormAction;

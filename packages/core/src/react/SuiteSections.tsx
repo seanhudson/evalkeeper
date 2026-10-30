@@ -146,6 +146,15 @@ export type SuitePageData = NonNullable<
 /** A share as a whole percent, or a dash when there's nothing to show. */
 const asPct = (x: number | null) => (x === null ? "—" : pct(x));
 
+/**
+ * What a priority means for the suggestion, as a sentence: the
+ * explanation without its leading name ("cost: this runs…").
+ */
+const whyFavor = (favor: SuitePriority["favor"]) => {
+  const text = FAVOR_TEXT[favor].replace(/^\w+: /, "");
+  return `${text.charAt(0).toUpperCase()}${text.slice(1)}.`;
+};
+
 /** The choices when changing it: accuracy is always held. */
 const CHOICES = {
   quality: "Accuracy alone",
@@ -165,17 +174,13 @@ const VS: Record<string, string> = {
 
 /** The suite's name, what it tests, and its priority. */
 export function SuiteHeader({ data }: { data: SuitePageData }) {
-  const { app, suite, priority } = data;
+  const { app, suite } = data;
   return (
     <>
       <div className="space-y-2">
         <BackLink href={app.basePath}>Evals</BackLink>
         <h1 className="text-2xl font-semibold">{suite.label}</h1>
         <p className="readable text-muted">{suite.description}</p>
-        <p className="readable text-sm text-muted">
-          Priority: {FAVOR_TEXT[priority.favor]}.
-          <InfoTip term="priority" />
-        </p>
       </div>
     </>
   );
@@ -314,7 +319,8 @@ export function ModelTable({ data }: { data: SuitePageData }) {
         <div className="flex items-center justify-between gap-4">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-lg font-semibold">Models</h2>
-            <Tip term="favors" side="bottom" id="favors">
+            {/* Why this priority, in its words: the page says it once. */}
+            <Tip text={whyFavor(priority.favor)} side="bottom" id="favors">
               <Chip tone="neutral">Favors {FAVORS[priority.favor]}</Chip>
             </Tip>
             {choosesHere && app.actions.setPriority && (

@@ -237,15 +237,17 @@ function CaseItem({
       // Where ConfirmAnswer moves on to after confirming the case above.
       data-pending={answer?.status === "PENDING" ? "true" : undefined}
     >
-      <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2 p-3 text-sm">
-        <span className="font-medium">
+      {/* The chips keep their place on the right; a long title wraps
+          beside them (below them only on a phone). */}
+      <summary className="flex cursor-pointer list-none flex-wrap items-start justify-between gap-2 p-3 text-sm sm:flex-nowrap">
+        <span className="flex min-w-0 flex-1 items-start pt-0.5 font-medium">
           <ChevronRight
             aria-hidden
-            className="mr-1.5 inline-block h-4 w-4 align-[-3px] text-muted transition-transform group-open:rotate-90"
+            className="mr-1.5 mt-0.5 h-4 w-4 shrink-0 text-muted transition-transform group-open:rotate-90"
           />
-          {suite.title(input)}
+          <span className="readable min-w-0">{suite.title(input)}</span>
         </span>
-        <span className="flex items-center gap-1.5">
+        <span className="flex shrink-0 items-center gap-1.5">
           <Tip term={status.term} id={`status-${c.id}`}>
             <Chip tone={status.tone}>{status.text}</Chip>
           </Tip>

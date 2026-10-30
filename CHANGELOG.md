@@ -5,7 +5,12 @@ Notable changes, newest first. The format follows
 follow [semantic versioning](https://semver.org/): until 1.0, a minor
 version may change an interface, and its entry says how to update.
 
-## Unreleased
+## 0.14.0 - 2026-10-30
+
+An answer key you can act on: describe the cases you want, fill thin
+topics, and settle the cases models split on in one click. The weekly
+check finishes every suite on platforms with a request limit, failed
+answers say what to change, and **Favors …** is the toggle.
 
 ### Added
 

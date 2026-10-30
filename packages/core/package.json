@@ -83,10 +83,10 @@
     "ai": "^7.0.146",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
-    "lucide-react": "^1.60.0",
+    "lucide-react": "^1.61.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "next": "^16.4.2"
+    "next": "^16.4.3"
   },
   "keywords": [
     "evals",

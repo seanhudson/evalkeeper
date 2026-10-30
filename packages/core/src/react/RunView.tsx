@@ -1,6 +1,6 @@
 import { evalsPath, type EvalAppConfig } from "./app.js";
 import { Link, LocalDate } from "./pieces.js";
-import { allPassed, money, summarize } from "../index.js";
+import { allPassed, failureHints, money, summarize } from "../index.js";
 import { FieldValues } from "./Fields.js";
 import { ReadableOutput } from "./ReadableOutput.js";
 import { BackLink, Card } from "./pieces.js";
@@ -87,6 +87,11 @@ export async function RunView({
               </a>
             </p>
           )}
+          {failureHints(failed.map((o) => o.error)).map((hint) => (
+            <p key={hint} className="readable text-sm text-muted">
+              {hint}
+            </p>
+          ))}
           {summary.problems.length > 0 && (
             <ul className="readable list-disc pl-5 text-sm">
               {summary.problems.map((p) => (

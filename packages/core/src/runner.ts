@@ -60,8 +60,8 @@ export const STUCK_MS = 6 * 60_000;
 export const REUSE_DAYS = 7;
 
 /** A provider refusing calls for billing: every later call fails too. */
-export const OUT_OF_CREDITS =
-  /no credits remaining|credit balance is too low|insufficient_quota|exceeded your current quota|billing/i;
+export { OUT_OF_CREDITS } from "./failures.js";
+import { OUT_OF_CREDITS } from "./failures.js";
 
 /**
  * What the runner needs from your app: storage, suites, models, instruction hashes, and,

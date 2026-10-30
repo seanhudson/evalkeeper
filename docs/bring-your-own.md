@@ -352,8 +352,8 @@ export const settingsStore = prismaSettingsStore(prisma, {
 - What each version favors (`favor`: speed, cost, or quality, or null
   for the suite's own priority), if admins should change priorities on
   the page. Without a column, map it to `null` (`favor: null` in the
-  map's `evalSettingsVersion` fields): **Change** then fails with a
-  message naming the missing column.
+  map's `evalSettingsVersion` fields): saving a new priority then fails
+  with a message naming the missing column.
 - Who made each change. The actions record the admin's `name` from
   `requireAdmin`. If your log keeps a user id there instead (a foreign
   key to your users), set `changedBy: "id"` in your wiring, and have the

@@ -38,8 +38,8 @@ For each model:
 
 Beside **Models**, **Favors cost**, **Favors speed**, or **Favors
 accuracy** says what the feature weighs once accuracy holds. It starts as
-the suite's `priority` in code. Press **Change** beside it to pick
-another, with an optional reason: it's saved as a new settings version,
+the suite's `priority` in code. Press the chip to see what it means and
+pick another, with an optional reason: it's saved as a new settings version,
 so it shows under **Versions** with who and why, and rolling back undoes
 it. The suggestion, the row order, and the feature's card on the hub all
 follow it. The rows

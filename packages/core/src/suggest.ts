@@ -3,6 +3,7 @@ import type { Rate } from "./stats.js";
 import type { CheckDef, SuitePriority } from "./types.js";
 import type { Verdict } from "./compare.js";
 import { at } from "./util.js";
+import { failureHints, failureKind } from "./failures.js";
 
 /**
  * Which model to make live and which the fallback, from a suite's current
@@ -247,8 +248,13 @@ export function suggest<R extends SuggestRow>(
     next = liveFailed;
     const n = liveFailed.test.failedAnswers ?? 0;
     const why = liveFailed.test.failureReason;
+    const kind = failureKind(why ?? null);
+    // Timeouts and answers cut short fail the same way again: say what
+    // to change instead of only "test again".
     reasons.push(
-      `Test ${liveFailed.label} again: ${n} of its answers failed on its last test${why ? ` (${why})` : ""}, so it can't be compared yet.`,
+      kind === "timeout" || kind === "cutShort"
+        ? `${n} of ${liveFailed.label}'s answers failed on its last test (${why}), so it can't be compared yet. ${failureHints([why ?? null]).join(" ")}`
+        : `Test ${liveFailed.label} again: ${n} of its answers failed on its last test${why ? ` (${why})` : ""}, so it can't be compared yet.`,
     );
   } else if (!live) {
     if (!liveable.length) return null;

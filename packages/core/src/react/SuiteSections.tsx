@@ -24,6 +24,7 @@ import {
 } from "../index.js";
 import { AnswerKey } from "./AnswerKey.js";
 import { ModelMenu } from "./ModelMenu.js";
+import { PriorityPicker } from "./PriorityPicker.js";
 import { Tabs } from "./Tabs.js";
 import {
   Link,
@@ -37,17 +38,11 @@ import {
   Select,
   Spinner,
   Submit,
-  TextInput,
   Tip,
 } from "./pieces.js";
 import { pct, LINK, QUIET_BUTTON } from "./format.js";
 import { ChevronDown, RotateCw, ShieldAlert, Sparkles } from "lucide-react";
-import {
-  evalsPath,
-  type EvalAppConfig,
-  type FormAction,
-  attacksResisted,
-} from "./app.js";
+import { evalsPath, type EvalAppConfig, attacksResisted } from "./app.js";
 import { SettingsHistory } from "./SettingsHistory.js";
 
 /**
@@ -180,13 +175,6 @@ const whyFavor = (favor: SuitePriority["favor"]) => {
   const text = FAVOR_TEXT[favor].replace(/^\w+: /, "");
   return `${text.charAt(0).toUpperCase()}${text.slice(1)}.`;
 };
-
-/** The choices when changing it: accuracy is always held. */
-const CHOICES = {
-  quality: "Accuracy alone",
-  speed: "Speed",
-  cost: "Cost",
-} as const;
 
 /** The suite's priority, as the page names it. */
 const FAVORS = { cost: "cost", speed: "speed", quality: "accuracy" } as const;
@@ -361,16 +349,19 @@ export function ModelTable({ data }: { data: SuitePageData }) {
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-lg font-semibold">Models</h2>
             {/* Why this priority, in its words: the page says it once. */}
-            <Tip text={whyFavor(priority.favor)} side="bottom" id="favors">
-              <Chip tone="neutral">Favors {FAVORS[priority.favor]}</Chip>
-            </Tip>
-            {choosesHere && app.actions.setPriority && (
-              <PriorityControl
+            {choosesHere && app.actions.setPriority ? (
+              <PriorityPicker
                 action={app.actions.setPriority}
                 suite={key}
                 favor={priority.favor}
                 own={suite.priority.favor}
+                label={`Favors ${FAVORS[priority.favor]}`}
+                why={whyFavor(priority.favor)}
               />
+            ) : (
+              <Tip text={whyFavor(priority.favor)} side="bottom" id="favors">
+                <Chip tone="neutral">Favors {FAVORS[priority.favor]}</Chip>
+              </Tip>
             )}
           </div>
           <div className="flex items-center gap-4">
@@ -1061,69 +1052,6 @@ export function AnswerKeySection({ data }: { data: SuitePageData }) {
         />
       )}
     </section>
-  );
-}
-
-/** "Free: all 16 reused" or "~$0.03, 4 of 16 reused", under a model's buttons. */
-/**
- * Changing what a feature's suggestion favors: accuracy, speed, or cost.
- * It's saved as a new settings version, with an optional reason, so it
- * shows under Versions and can be rolled back.
- */
-function PriorityControl({
-  action,
-  suite,
-  favor,
-  own,
-}: {
-  action: FormAction;
-  suite: string;
-  favor: SuitePriority["favor"];
-  /** The suite's own priority, from its code. */
-  own: SuitePriority["favor"];
-}) {
-  return (
-    <details className="group relative text-sm font-normal">
-      <summary className="cursor-pointer list-none text-accent hover:underline">
-        Change
-      </summary>
-      <form
-        action={action}
-        className="absolute left-0 z-20 mt-2 w-72 space-y-3 rounded-md border border-line bg-card p-4 shadow-lg"
-      >
-        <input type="hidden" name="suite" value={suite} />
-        <div>
-          <label htmlFor="favor" className="block font-medium">
-            Once accuracy holds, favor
-          </label>
-          <Select
-            id="favor"
-            name="favor"
-            defaultValue={favor}
-            className="mt-1 w-full rounded-md border border-line bg-card px-3 py-2"
-          >
-            {(["quality", "speed", "cost"] as const).map((f) => (
-              <option key={f} value={f}>
-                {CHOICES[f]}
-                {f === own ? " (the suite's own)" : ""}
-              </option>
-            ))}
-          </Select>
-        </div>
-        <div>
-          <label htmlFor="favor-reason" className="block font-medium">
-            Why? <span className="font-normal text-muted">(optional)</span>
-          </label>
-          <TextInput
-            id="favor-reason"
-            name="reason"
-            maxLength={300}
-            className="mt-1 w-full rounded-md border border-line bg-card px-3 py-2"
-          />
-        </div>
-        <Submit>Save as a new version</Submit>
-      </form>
-    </details>
   );
 }
 

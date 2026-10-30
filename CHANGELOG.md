@@ -26,6 +26,14 @@ version may change an interface, and its entry says how to update.
 
 ### Changed
 
+- **Favors …** is the button that changes it (#111): it opens what the
+  priority means and the form, which closes with its X, Escape, or a
+  click outside. The separate **Change** link is gone.
+- Failed answers say what to do: an answer that timed out or ran out of
+  room (its output limit) usually fails the same way again, so the
+  test's page and the suggestion say to lower the reasoning setting,
+  raise the limit, or allow more time, not only to test again.
+  `failureKind` and `failureHints` are exported.
 - No suggestion while a test runs: the page says it's waiting, **Use
   these** refuses, and hub cards hold their suggestion chips.
 - Pending and provisional answers show **Confirm this answer** and **Edit

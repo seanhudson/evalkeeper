@@ -485,11 +485,14 @@ export function ModelTable({ data }: { data: SuitePageData }) {
                           <Score right={r.test.right} total={r.test.total} />
                         </Link>
                         {!r.test.stale && r.test.failedAnswers > 0 && (
-                          <span className="text-xs text-muted">
+                          <Link
+                            href={`${evalsPath(app, key, "runs", r.test.runId)}#failed`}
+                            className="text-xs text-muted hover:underline"
+                          >
                             {r.test.failedAnswers}{" "}
                             {r.test.failedAnswers === 1 ? "answer" : "answers"}{" "}
-                            failed: test again
-                          </span>
+                            failed: see why
+                          </Link>
                         )}
                       </div>
                     ) : (

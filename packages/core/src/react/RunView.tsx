@@ -32,6 +32,21 @@ export async function RunView({
   };
   const metrics = run.metrics;
   const summary = metrics ? summarize(metrics, suite.checks) : null;
+  // Answers that never came back first, then wrong ones, then right ones,
+  // so what needs a look is at the top.
+  const rank = (o: (typeof outputs)[number]) =>
+    o.error ? 0 : allPassed(o.scores ?? null) ? 2 : 1;
+  const ordered = [...outputs].sort((a, b) => rank(a) - rank(b));
+  const failed = outputs.filter((o) => o.error);
+  // Why they failed, counted: "timed out after 60s (3)".
+  const reasons = [
+    ...failed
+      .reduce((m, o) => {
+        const why = (o.error ?? "").split("\n")[0]?.slice(0, 120) ?? "";
+        return m.set(why, (m.get(why) ?? 0) + 1);
+      }, new Map<string, number>())
+      .entries(),
+  ];
   const label = (k: string) =>
     suite.checks.find((c) => c.key === k)?.label ?? k;
   type Check = {
@@ -62,6 +77,16 @@ export async function RunView({
             {pct(summary.total ? summary.right / summary.total : 0)})
           </p>
           <p className="readable text-sm text-muted">{summary.trust}</p>
+          {failed.length > 0 && (
+            <p className="readable text-sm text-bad">
+              {failed.length} {failed.length === 1 ? "answer" : "answers"}{" "}
+              didn&apos;t come back:{" "}
+              {reasons.map(([why, n]) => `${why} (${n})`).join("; ")}.{" "}
+              <a href="#failed" className={LINK}>
+                See {failed.length === 1 ? "it" : "them"}
+              </a>
+            </p>
+          )}
           {summary.problems.length > 0 && (
             <ul className="readable list-disc pl-5 text-sm">
               {summary.problems.map((p) => (
@@ -74,11 +99,16 @@ export async function RunView({
         </Card>
       )}
       <Card className="space-y-3">
-        {outputs.map((o) => {
+        {ordered.map((o, i) => {
           const checks = (o.scores as Check[] | null) ?? null;
           const ok = allPassed(checks);
           return (
-            <div key={o.id} className="rounded-md bg-tint p-3 text-sm">
+            <div
+              key={o.id}
+              // The summary's "See them" lands on the first failed answer.
+              id={o.error && i === 0 ? "failed" : undefined}
+              className="scroll-mt-4 rounded-md bg-tint p-3 text-sm"
+            >
               <div className="flex justify-between gap-4">
                 <span className="font-medium">{titleOf(o.caseId)}</span>
                 <span

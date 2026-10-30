@@ -127,7 +127,8 @@ export function suiteHealth(
   if (below.length > 3) details.push(`${below.length - 3} more under the bar.`);
 
   const s = suggest(rows, checks, priority, models, opts);
-  const change = s && !s.same;
+  // Not while a test runs: the suggestion would weigh half a board.
+  const change = s && !s.same && !rows.some((r) => r.testing);
   if (change)
     details.push(
       s.retestLive

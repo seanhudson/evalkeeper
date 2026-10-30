@@ -8,7 +8,8 @@ export const MAX_LEGS = 6;
 
 /**
  * Whether a leg that ran out of time should hand off: only when it made
- * progress (so a stuck case can't loop) and legs remain.
+ * progress (so a stuck case can't loop), or began after its time was up
+ * (a test queued behind others), and legs remain.
  */
 export function shouldContinue(opts: {
   /** Answers left for a later leg. */
@@ -17,9 +18,14 @@ export function shouldContinue(opts: {
   done: number;
   leg: number;
   outOfCredits: boolean;
+  /** The leg began with no time left, so it tried nothing. */
+  late?: boolean;
 }): boolean {
   return (
-    opts.left > 0 && opts.done > 0 && !opts.outOfCredits && opts.leg < MAX_LEGS
+    opts.left > 0 &&
+    (opts.done > 0 || !!opts.late) &&
+    !opts.outOfCredits &&
+    opts.leg < MAX_LEGS
   );
 }
 

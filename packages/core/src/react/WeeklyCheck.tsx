@@ -7,8 +7,9 @@ import {
   RefreshWhile,
   Submit,
   Tip,
+  LocalDate,
 } from "./pieces.js";
-import { pct, dayOf, LINK } from "./format.js";
+import { pct, LINK } from "./format.js";
 import { evalsPath, type EvalAppConfig } from "./app.js";
 
 /**
@@ -37,11 +38,16 @@ export function WeeklyCheck({
       </div>
       <Card className="space-y-4">
         <p className="readable text-sm text-muted">
-          {weekly.running > 0
-            ? `Running now: ${weekly.running} quick set${weekly.running === 1 ? "" : "s"} left. `
-            : weekly.lastAt
-              ? `Last run ${dayOf(weekly.lastAt)}, ${money(weekly.costUsd)}. `
-              : "Not run yet. "}
+          {weekly.running > 0 ? (
+            `Running now: ${weekly.running} quick set${weekly.running === 1 ? "" : "s"} left. `
+          ) : weekly.lastAt ? (
+            <>
+              Last run <LocalDate date={weekly.lastAt} />,{" "}
+              {money(weekly.costUsd)}.{" "}
+            </>
+          ) : (
+            "Not run yet. "
+          )}
           Every Monday, each live model answers its suite&apos;s quick set
           again, so a quiet change by its provider shows up here. It also flags
           models retiring soon and features people rate poorly. Suites that can

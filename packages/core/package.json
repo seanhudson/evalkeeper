@@ -70,23 +70,23 @@
     "test": "vitest run --coverage"
   },
   "peerDependencies": {
-    "zod": "^4.6.6",
-    "vitest": ">=3",
     "ai": ">=7",
+    "lucide-react": ">=0.500.0",
+    "next": ">=15",
     "react": ">=19",
     "react-dom": ">=19",
-    "lucide-react": ">=0.500.0",
-    "next": ">=15"
+    "vitest": ">=3",
+    "zod": "^4.6.6"
   },
   "devDependencies": {
-    "zod": "^4.6.7",
-    "ai": "^7.0.146",
-    "react": "^19.3.0",
-    "react-dom": "^19.3.0",
-    "lucide-react": "^1.60.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "next": "^16.4.2"
+    "ai": "^7.0.146",
+    "lucide-react": "^1.60.0",
+    "next": "^16.4.3",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "zod": "^4.6.7"
   },
   "keywords": [
     "evals",

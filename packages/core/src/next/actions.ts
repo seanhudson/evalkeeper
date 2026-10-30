@@ -6,6 +6,7 @@ import {
   attacksFrom,
   blindRating,
   caseFromFeedback,
+  confirmedLabel,
   draftMoreCases,
   formText,
   importStarters,
@@ -259,6 +260,8 @@ export function evalActions(w: EvalWiring): Required<EvalActions> {
         runner.board(suite.key),
         attacksOn(suite.key),
       ]);
+      if (board.rows.some((r) => r.testing))
+        throw new Error("Wait for the tests running now to finish");
       const { settings: live } = await settings.current(suite.operation);
       const s = suggest(
         board.rows,
@@ -304,7 +307,9 @@ export function evalActions(w: EvalWiring): Required<EvalActions> {
       await w.requireAdmin();
       const suite = suiteFrom(form);
       await store.setLabelStatus(formText(form, "label"), "CONFIRMED");
-      after(() => runner.rescoreRecent(suite.key));
+      // Rescored before the page refreshes (free, about a second): an
+      // answer change marks tests out of date until then.
+      await runner.rescoreRecent(suite.key);
       revalidatePath(page(suite.key));
     },
 
@@ -372,11 +377,35 @@ export function evalActions(w: EvalWiring): Required<EvalActions> {
       });
       // A draft (from feedback) is in use once it has an answer.
       await store.setCaseStatus(c.id, "ACTIVE");
-      after(() => runner.rescoreRecent(suite.key));
+      // Rescored before the page refreshes (free, about a second): an
+      // answer change marks tests out of date until then.
+      await runner.rescoreRecent(suite.key);
       revalidatePath(page(suite.key));
     },
 
     /** Takes a case out of use; its stored answers stay. */
+    async keepAnswer(form) {
+      const admin = await w.requireAdmin();
+      const suite = suiteFrom(form);
+      const c = await knownCase(suite.key, form);
+      const answer = confirmedLabel(c.labels);
+      if (!answer) throw new Error("This case has no answer in use");
+      // A fresh confirmation of the same answer, by whoever checked it: the
+      // split list leaves it out until a newer test splits on it again.
+      await store.addLabel(c.id, {
+        kind: "EXPECTED",
+        status: "CONFIRMED",
+        value: answer.value,
+        raterRole: "REVIEWER",
+        raterId: admin.id,
+        note: "Checked when models split on it, and kept as right.",
+      });
+      // Rescored before the page refreshes (free, about a second): an
+      // answer change marks tests out of date until then.
+      await runner.rescoreRecent(suite.key);
+      revalidatePath(page(suite.key));
+    },
+
     async retireCase(form) {
       await w.requireAdmin();
       const suite = suiteFrom(form);
@@ -432,14 +461,27 @@ export function evalActions(w: EvalWiring): Required<EvalActions> {
       await w.requireAdmin();
       const suite = suiteFrom(form);
       if (!suite.draftMore) throw new Error("This suite can't draft cases");
-      const focus = form.get("focus");
+      const text = (name: string) => {
+        const v = form.get(name);
+        return typeof v === "string" ? v.trim() : "";
+      };
+      // Topics picked from Answer key health's thin ones, each worth two.
+      const topics = form
+        .getAll("topic")
+        .filter((t): t is string => typeof t === "string" && t.trim() !== "");
+      const asked = Number(text("count"));
+      const focus =
+        text("focus") ||
+        (topics.length ? `Cases on these topics: ${topics.join(", ")}` : "");
       await draftMoreCases({
         store,
         suite,
-        focus:
-          typeof focus === "string" && focus.trim()
-            ? focus.trim().slice(0, 500)
-            : null,
+        focus: focus ? focus.slice(0, 500) : null,
+        ...(Number.isFinite(asked) && asked > 0
+          ? { count: asked }
+          : topics.length
+            ? { count: topics.length * 2 }
+            : {}),
       });
       revalidatePath(page(suite.key));
     },
@@ -491,7 +533,9 @@ export function evalActions(w: EvalWiring): Required<EvalActions> {
       );
       // A draft is in use once it has an answer.
       if (c.status === "DRAFT") await store.setCaseStatus(c.id, "ACTIVE");
-      after(() => runner.rescoreRecent(suite.key));
+      // Rescored before the page refreshes (free, about a second): an
+      // answer change marks tests out of date until then.
+      await runner.rescoreRecent(suite.key);
       revalidatePath(page(suite.key), "layout");
     },
 
@@ -525,10 +569,11 @@ export function evalActions(w: EvalWiring): Required<EvalActions> {
     },
 
     async runWeeklyNow() {
+      const startedAt = Date.now();
       await w.requireAdmin();
       // Recorded before the page re-renders, so it shows them running.
       const ids = await weekly.start();
-      after(() => weekly.run(ids));
+      after(() => weekly.run(ids, startedAt));
       revalidatePath(w.basePath);
     },
   };

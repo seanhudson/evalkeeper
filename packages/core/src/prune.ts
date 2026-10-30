@@ -127,6 +127,12 @@ export type AnswerKeyHealth<C> = {
   tags: [string, number][];
 };
 
+/** Whether a person confirmed the case's answer after `at`. */
+function checkedSince(labels: readonly LabelLike[], since: Date): boolean {
+  const answer = confirmedLabel(labels);
+  return !!answer && answer.status === "CONFIRMED" && answer.updatedAt > since;
+}
+
 /**
  * A suite's answer-key health, from its cases (retired ones are ignored)
  * and how each case fared across the board's current tests. The floor of
@@ -137,6 +143,9 @@ export type AnswerKeyHealth<C> = {
  * @param caseResults - Per case, how many current models tested it and
  *   got it fully right (the board's `caseResults`).
  * @param today - Now, for old drafts.
+ * @param testedAt - When the newest current test ran. A split case whose
+ *   answer a person confirmed after it ("the answer is right") isn't
+ *   listed again until a newer test splits on it.
  * @returns What needs a look: easy, split, and duplicate cases, old
  *   drafts, and how the tags spread.
  */
@@ -144,6 +153,7 @@ export function answerKeyHealth<C extends HealthCase>(
   cases: readonly C[],
   caseResults: Readonly<Record<string, CaseResult>>,
   today = new Date(),
+  testedAt: Date | null = null,
 ): AnswerKeyHealth<C> {
   const live = cases.filter((c) => c.status !== "RETIRED");
   const inUse = live.filter((c) => confirmedLabel(c.labels));
@@ -164,7 +174,11 @@ export function answerKeyHealth<C extends HealthCase>(
     inUse: inUse.length,
     easy,
     easyToRetire: easy.filter((c) => retire.has(c.id)),
-    split: inUse.filter((c) => isSplit(caseResults[c.id])),
+    split: inUse.filter(
+      (c) =>
+        isSplit(caseResults[c.id]) &&
+        !(testedAt && checkedSince(c.labels, testedAt)),
+    ),
     duplicates: nearDuplicates(inUse),
     staleDrafts: drafts.filter((c) => isStaleDraft(c.createdAt, today)),
     tags: tagCounts(inUse),

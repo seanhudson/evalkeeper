@@ -5,6 +5,68 @@ Notable changes, newest first. The format follows
 follow [semantic versioning](https://semver.org/): until 1.0, a minor
 version may change an interface, and its entry says how to update.
 
+## Unreleased
+
+### Added
+
+- **Describe the cases you want:** **Add a case** has a **Describe them**
+  tab on a suite with `draftMore`: a request in your own words and how
+  many, drafted for you to confirm. `draftMoreCases` takes a `count`.
+- **Topics to fill:** in **Answer key health**, pick thin topics to draft
+  cases for, or, without `draftMore`, open **Add a case** with the topic
+  tagged (`#add-case=<topic>`).
+- **Split cases you can resolve:** each lists which models gave the
+  answer key's answer, with **The answer is right** (a new optional
+  `keepAnswer` action: the answer is confirmed again and leaves the list
+  until a newer test splits on it), **Fix the answer**, and **Retire it**.
+  `answerKeyHealth` takes when the newest test ran.
+- **Failed answers are easy to find:** a test's page lists answers that
+  never came back first, says why they failed ("Timed out after 60s
+  (3)"), and the board's note links there.
+
+### Changed
+
+- **Favors …** is the button that changes it (#111): it opens what the
+  priority means and the form, which closes with its X, Escape, or a
+  click outside. The separate **Change** link is gone.
+- Failed answers say what to do: an answer that timed out or ran out of
+  room (its output limit) usually fails the same way again, so the
+  test's page and the suggestion say to lower the reasoning setting,
+  raise the limit, or allow more time, not only to test again.
+  `failureKind` and `failureHints` are exported.
+- No suggestion while a test runs: the page says it's waiting, **Use
+  these** refuses, and hub cards hold their suggestion chips.
+- Pending and provisional answers show **Confirm this answer** and **Edit
+  answer** side by side. Provisional ones couldn't be confirmed before.
+- **Suggested** is a section heading like **Models**, and the header's
+  "Priority: …" line is gone: "Favors …" explains it on hover.
+- Dates show in the viewer's own time zone (`LocalDate`), not the
+  server's.
+- Answer key rows keep their chips on the right, and long titles wrap at
+  a readable width.
+- **Draft N more cases** moved into **Add a case**, as **Describe them**.
+
+### Fixed
+
+- A suggestion's reasons never compare a score with itself: two that
+  round alike show enough decimals to differ ("98.14% against 98.06%"),
+  and "clearly more accurate" says it's on the cases both answered.
+- The weekly check finishes every suite on a platform with a request
+  limit. Suites ran one after another, each timing itself from its own
+  start, so the request was cut off midway and the suites still waiting
+  were marked "stopped before it finished". Now three suites run at once
+  on one clock from the request's start, and a suite that can't start in
+  time carries on in a fresh request (`continueRun`). `weekly.run` takes
+  when the request began, and `runEval` a `requestStartedAt`.
+- After an answer changes (confirmed, edited, kept, or rated), the page
+  shows fresh results: the free rescore runs before it refreshes, not
+  after, so tests no longer read "out of date" until a reload.
+
+**To update:** add `keepAnswer` to `lib/evalkeeper/actions.ts` (`add pages
+--force --only actions`) to show **The answer is right**. A weekly route
+of your own passes when the request began: `const startedAt = Date.now()`
+first, then `after(() => weekly.run(ids, startedAt))`.
+
 ## 0.13.0 - 2026-10-29
 
 Suite pages that say what to do: each card names its reasons, the board

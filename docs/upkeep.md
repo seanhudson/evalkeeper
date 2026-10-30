@@ -46,15 +46,23 @@ look:
 
 It lists what to do, in order:
 
-1. **Check these answers.** Cases models split about evenly on, which
-   usually means the answer is wrong or the case has no clear answer:
-   fix the answer, or retire the case. Once it's right, it's the most
-   useful kind of case you have. Pairs of near-duplicates are here too:
-   keep the clearer one.
+1. **Check these answers.** Cases models split about evenly on: some give
+   the answer key's answer and some don't, and each case lists which. That
+   usually means the answer is wrong or the case has no clear answer.
+   Decide who's right, then press one of:
+   - **The answer is right:** it's confirmed again, and leaves the list
+     until a newer test splits on it.
+   - **Fix the answer:** opens the case to edit it.
+   - **Retire it:** for a case with no right answer.
+
+   Once it's right, a split case is the most useful kind you have. Pairs
+   of near-duplicates are here too: keep the clearer one.
+
 2. **Add cases here.** Topics (tags) with only one case, so the score on
-   each rests on a single example. **Draft cases for these topics**
-   drafts some with those topics as the focus, for a suite with
-   `draftMore`. **Show all topics** lists every tag and its count.
+   each rests on a single example. On a suite with `draftMore`, pick
+   topics and press **Draft cases for the topics you picked** (two each;
+   pick none for all). Otherwise, a topic opens **Add a case** with it
+   already tagged. **Show all topics** lists every tag and its count.
 3. **Retire these.** Cases every current model gets fully right: **Retire
    N easy cases** retires them all but a floor, then rescores recent
    tests for free. And drafts nobody reviewed in 30 days, which the

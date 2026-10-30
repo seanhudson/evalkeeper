@@ -58,6 +58,14 @@ test("test with a draft answer, as provisional", async ({ page }) => {
   await expect(
     page.getByRole("button", { name: "Test with drafts, as provisional" }),
   ).toHaveCount(0);
+
+  // A provisional answer can be confirmed as it is, or changed.
+  await draft.locator("summary").first().click();
+  await expect(
+    draft.getByRole("button", { name: "Edit answer" }),
+  ).toBeVisible();
+  await draft.getByRole("button", { name: "Confirm this answer" }).click();
+  await expect(draft.getByText("Confirmed", { exact: true })).toBeVisible();
 });
 
 test("the hub lists AI features with no eval yet", async ({ page }) => {

@@ -139,6 +139,32 @@ describe("pruning", () => {
       ]);
     });
 
+    it("leaves out a split case someone checked after the newest test", () => {
+      const tested = new Date("2026-10-20");
+      const split = { passed: 2, models: 4 };
+      const cases = [
+        kase("1"),
+        kase("2", {
+          labels: [{ status: "CONFIRMED", updatedAt: new Date("2026-10-21") }],
+        }),
+      ];
+      const h = answerKeyHealth(
+        cases,
+        { "1": split, "2": split },
+        today,
+        tested,
+      );
+      expect(h.split.map((c) => c.id)).toEqual(["1"]);
+      // A newer test that splits on it again brings it back.
+      const later = answerKeyHealth(
+        cases,
+        { "1": split, "2": split },
+        today,
+        new Date("2026-10-22"),
+      );
+      expect(later.split.map((c) => c.id)).toEqual(["1", "2"]);
+    });
+
     it("needs nothing when every case still tells models apart", () => {
       const h = answerKeyHealth([kase("1"), kase("2")], {}, today);
       expect(h).toMatchObject({

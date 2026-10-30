@@ -97,6 +97,10 @@ export async function setPriority(form: FormData) {
   return actions.setPriority(form);
 }
 
+export async function keepAnswer(form: FormData) {
+  return actions.keepAnswer(form);
+}
+
 export async function runWeeklyNow() {
   return actions.runWeeklyNow();
 }

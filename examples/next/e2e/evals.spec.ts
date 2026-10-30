@@ -24,7 +24,8 @@ test("testing a model fills in its score", async ({ page }) => {
   // One estimate, for the feature's cases and its attacks, in the menu.
   await row.getByRole("button", { name: /^Choose / }).click();
   const test = page.getByRole("menuitem", { name: /^Test/ });
-  await expect(test).toContainText(/~\$|under 1¢/);
+  // A price, or "free" when an earlier test's answers can all be reused.
+  await expect(test).toContainText(/~\$|under 1¢|free, all \d+ reused/);
   await test.click();
   await expect(row.getByText(/\d+\/16/)).toBeVisible({ timeout: 30_000 });
   // The same test runs the attacks: its result under attack follows.

@@ -1,6 +1,15 @@
+import type { ReactNode } from "react";
 import { evalsPath, type EvalAppConfig } from "./app.js";
-import { BackLink, Card, Chip, InfoTip, Link, Tip } from "./pieces.js";
-import { pct, momentOf, LINK } from "./format.js";
+import {
+  BackLink,
+  Card,
+  Chip,
+  InfoTip,
+  Link,
+  Tip,
+  LocalDate,
+} from "./pieces.js";
+import { pct, LINK } from "./format.js";
 import {
   checkBar,
   perAnswer,
@@ -17,11 +26,17 @@ const one = (v: string | string[] | undefined) =>
   typeof v === "string" && v ? v : null;
 
 /** A test's name: its model, reasoning setting, set, and when it ran. */
-function testName(models: ModelCatalog, r: RunRecord): string {
+function testName(models: ModelCatalog, r: RunRecord): ReactNode {
   const model = models[r.model]?.label ?? r.model;
   const effort = r.reasoningEffort ? `, ${r.reasoningEffort} reasoning` : "";
   const set = r.set === "ALL" ? "" : `, ${r.set.toLowerCase()} set`;
-  return `${model}${effort}${set} · ${momentOf(r.startedAt)}`;
+  return (
+    <>
+      {model}
+      {effort}
+      {set} · <LocalDate date={r.startedAt} time />
+    </>
+  );
 }
 
 /** A pass rate as "80% (8/10)", or a dash when the check never applied. */

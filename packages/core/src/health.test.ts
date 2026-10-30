@@ -115,6 +115,19 @@ describe("suiteHealth", () => {
     ]);
   });
 
+  it("holds a suggestion while any model's test is running", () => {
+    const cheap = row("Haiku", "claude-haiku-5-5");
+    if (cheap.test) cheap.test.costPerAnswer = 0.001;
+    const running = { ...row("Sol", "gpt-6.1-sol"), testing: true };
+    const h = suiteHealth(
+      [row("Luna", "gpt-6-luna", { live: true }), cheap, running],
+      checks,
+      { favor: "cost" },
+      60,
+    );
+    expect(h.flags).not.toContainEqual({ kind: "suggestLive" });
+  });
+
   it("shows room to improve when live misses a bar", () => {
     const rows = [
       row("Luna", "gpt-6-luna", { live: true, passed: 20 }),
@@ -166,11 +179,11 @@ describe("suiteHealth", () => {
   it("asks to test live again when its test has failed answers (#34)", () => {
     const live = row("Luna", "gpt-6-luna", { live: true, right: 22 });
     live.test!.failedAnswers = 2;
-    live.test!.failureReason = "No answer within 180s";
+    live.test!.failureReason = "Rate limited";
     const rows = [live, row("Sonnet", "claude-sonnet-5-5", { right: 24 })];
     const h = suiteHealth(rows, checks, quality, 60);
     expect(h.details.join(" ")).toMatch(
-      /Test Luna again: 2 of its answers failed on its last test \(No answer within 180s\)/,
+      /Test Luna again: 2 of its answers failed on its last test \(Rate limited\)/,
     );
     expect(h.details.join(" ")).not.toMatch(/suggested over/);
   });

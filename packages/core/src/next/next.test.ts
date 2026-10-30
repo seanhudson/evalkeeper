@@ -32,6 +32,8 @@ import type { Suite } from "../types.js";
 import type { EvalWiring } from "./wiring.js";
 
 type In = { n: number };
+/** What the suite's draftMore was asked for, newest last. */
+const asked: { focus: string | null; count: number }[] = [];
 type Out = { n: number };
 
 // Doubles a number; "bad" gets odd numbers wrong.
@@ -69,7 +71,8 @@ const double: Suite<In, Out, Out> = {
     },
   ],
   // One draft that fits, and one whose input doesn't.
-  async draftMore({ focus }) {
+  async draftMore({ focus, count }) {
+    asked.push({ focus, count });
     return [
       {
         input: { n: 100 },
@@ -304,6 +307,38 @@ describe("the eval actions", () => {
     await expect(
       actions.setPriority(form({ suite: "double", favor: "fun" })),
     ).rejects.toThrow("Pick accuracy, speed, or cost");
+  });
+
+  it("draft from a request with a count, or for the topics picked", async () => {
+    const { actions } = setup();
+    await addCases(actions);
+    await actions.draftMore(
+      form({ suite: "double", focus: "three guardrail cases", count: "3" }),
+    );
+    expect(asked.at(-1)).toEqual({ focus: "three guardrail cases", count: 3 });
+    const picked = new FormData();
+    picked.set("suite", "double");
+    picked.append("topic", "billing");
+    picked.append("topic", "login");
+    await actions.draftMore(picked);
+    expect(asked.at(-1)).toEqual({
+      focus: "Cases on these topics: billing, login",
+      count: 4,
+    });
+  });
+
+  it("keep a split case's answer as right, with a fresh confirmation", async () => {
+    const { actions, store } = setup();
+    await addCases(actions);
+    const c = store.cases[0];
+    await actions.keepAnswer(form({ suite: "double", case: c?.id ?? "" }));
+    const labels = store.cases.find((x) => x.id === c?.id)?.labels ?? [];
+    expect(labels).toHaveLength(2);
+    expect(labels.at(-1)).toMatchObject({
+      status: "CONFIRMED",
+      value: labels[0]?.value,
+      raterId: "ada",
+    });
   });
 
   it("make a setting's row live at its own setting", async () => {

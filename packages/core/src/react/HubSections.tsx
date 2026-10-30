@@ -12,8 +12,8 @@ import {
   type Settings,
   type SettingsVersion,
 } from "../index.js";
-import { Link, Card, InfoTip, HealthChips } from "./pieces.js";
-import { pct, dayOf } from "./format.js";
+import { Link, Card, InfoTip, HealthChips, LocalDate } from "./pieces.js";
+import { pct } from "./format.js";
 import { HistoryEntries } from "./SettingsHistory.js";
 import {
   daysAgo,
@@ -259,7 +259,6 @@ function Stat({
 
 type Board = Awaited<ReturnType<Runner["board"]>>;
 
-const day = dayOf;
 /** Green at 95% and up, amber from 80%, red below. */
 const scoreTone = (rate: number) =>
   rate >= 0.95 ? "text-good" : rate >= 0.8 ? "text-warn" : "text-bad";
@@ -405,8 +404,14 @@ function SuiteCard({
               <span className="font-medium text-ink">
                 v{version?.number ?? 1}
               </span>{" "}
-              {since ? `live since ${day(since)}` : "defaults from code"} ·{" "}
-              {versions} version{versions === 1 ? "" : "s"}
+              {since ? (
+                <>
+                  live since <LocalDate date={since} />
+                </>
+              ) : (
+                "defaults from code"
+              )}{" "}
+              · {versions} version{versions === 1 ? "" : "s"}
               <ChevronDown
                 aria-hidden
                 className="h-4 w-4 transition-transform group-open/history:rotate-180"

@@ -15,6 +15,7 @@ export * from "./suggest.js";
 export * from "./health.js";
 export * from "./attention.js";
 export * from "./common.js";
+export { failureHints, failureKind, type FailureKind } from "./failures.js";
 export * from "./legs.js";
 export * from "./timeout.js";
 export * from "./prune.js";

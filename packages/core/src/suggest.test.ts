@@ -376,7 +376,7 @@ describe("a live model whose test has failed answers (#34)", () => {
   it("says to test live again instead of switching", () => {
     const s = suggest(
       [
-        liveWithFailures(1, "No answer within 180s"),
+        liveWithFailures(1, "Rate limited"),
         row("Sonnet", "claude-sonnet-5-5", { right: 20, rule: 1 }),
       ],
       checks,
@@ -386,10 +386,23 @@ describe("a live model whose test has failed answers (#34)", () => {
     expect(s.retestLive).toBe(true);
     expect(s.same).toBe(false);
     expect(s.reasons[0]).toBe(
-      "Test Luna again: 1 of its answers failed on its last test (No answer within 180s), so it can't be compared yet.",
+      "Test Luna again: 1 of its answers failed on its last test (Rate limited), so it can't be compared yet.",
     );
     // The fallback is still suggested from the complete tests.
     expect(s.fallback?.key).toBe("Sonnet");
+  });
+
+  it("says what to change when answers time out or are cut short", () => {
+    const timedOut = suggest(
+      [liveWithFailures(1, "No answer within 180s")],
+      checks,
+    )!;
+    expect(timedOut.retestLive).toBe(true);
+    expect(timedOut.reasons[0]).toMatch(
+      /^1 of Luna's answers failed on its last test \(No answer within 180s\), so it can't be compared yet\. An answer that times out usually times out again\./,
+    );
+    const cut = suggest([liveWithFailures(4, "No output generated.")], checks)!;
+    expect(cut.reasons[0]).toMatch(/Raise the output limit/);
   });
 
   it("says so even when no other model has a complete test", () => {
@@ -591,5 +604,21 @@ describe("weighing attacks", () => {
     expect(untested?.reasons.at(-1)).toMatch(
       /; not tested against the attacks\)\.$/,
     );
+  });
+});
+
+describe("the reasons' numbers", () => {
+  it("never compare a score with itself", () => {
+    const live = row("Sol", "gpt-6.1-sol", { live: true });
+    const better = row("Terra", "gpt-6.1-terra");
+    if (live.test && better.test) {
+      live.test.right = 152;
+      live.test.total = 155;
+      better.test.right = 158;
+      better.test.total = 161;
+    }
+    better.vsLive = "BETTER";
+    const s = suggest([live, better], checks, { favor: "quality" });
+    expect(s?.reasons.join(" ")).toContain("98.14% against 98.06%");
   });
 });

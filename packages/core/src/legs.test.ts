@@ -11,6 +11,12 @@ describe("shouldContinue", () => {
     expect(shouldContinue({ ...base, done: 0 })).toBe(false);
     expect(shouldContinue({ ...base, outOfCredits: true })).toBe(false);
   });
+  it("hands off a leg that began with no time left", () => {
+    expect(shouldContinue({ ...base, done: 0, late: true })).toBe(true);
+    expect(
+      shouldContinue({ ...base, done: 0, late: true, leg: MAX_LEGS }),
+    ).toBe(false);
+  });
   it("stops at the last leg", () => {
     expect(shouldContinue({ ...base, leg: MAX_LEGS })).toBe(false);
   });

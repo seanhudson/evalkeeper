@@ -1,11 +1,11 @@
 import {
   FAVOR_TEXT,
+  allPassed,
   answerKeyHealth,
   attacksFrom,
   barStatus,
   checkBar,
   draftAnswers,
-  draftsToTarget,
   newStarters,
   orderRows,
   pctBeside,
@@ -24,6 +24,7 @@ import {
 } from "../index.js";
 import { AnswerKey } from "./AnswerKey.js";
 import { ModelMenu } from "./ModelMenu.js";
+import { PriorityPicker } from "./PriorityPicker.js";
 import { Tabs } from "./Tabs.js";
 import {
   Link,
@@ -37,17 +38,11 @@ import {
   Select,
   Spinner,
   Submit,
-  TextInput,
   Tip,
 } from "./pieces.js";
-import { pct, LINK } from "./format.js";
+import { pct, LINK, QUIET_BUTTON } from "./format.js";
 import { ChevronDown, RotateCw, ShieldAlert, Sparkles } from "lucide-react";
-import {
-  evalsPath,
-  type EvalAppConfig,
-  type FormAction,
-  attacksResisted,
-} from "./app.js";
+import { evalsPath, type EvalAppConfig, attacksResisted } from "./app.js";
 import { SettingsHistory } from "./SettingsHistory.js";
 
 /**
@@ -86,12 +81,14 @@ export async function loadSuitePage(app: EvalAppConfig, key: string) {
   const choosesHere = !isInjectionSuite(suite);
   // The suite's priority, or the one an admin chose in its settings.
   const priority = priorityOf(suite, liveSettings.settings);
-  const s = choosesHere
-    ? suggest(rows, suite.checks, priority, app.models, { attacks })
-    : null;
   const testing =
     rows.some((r) => r.testing) ||
     attackBoards.some((a) => a.rows.some((r) => r.testing));
+  // No suggestion while a test runs: it would weigh half a board.
+  const s =
+    choosesHere && !testing
+      ? suggest(rows, suite.checks, priority, app.models, { attacks })
+      : null;
   // What testing each model would cost now, attack cases included,
   // counting answers it would reuse.
   const estimates = new Map(
@@ -112,7 +109,30 @@ export async function loadSuitePage(app: EvalAppConfig, key: string) {
   const showAttacks = attackBoards.some((a) => a.cases > 0);
   const live = rows.find((r) => r.live);
   // What would keep the answer key useful, from the same tests.
-  const health = answerKeyHealth(cases, b.caseResults);
+  const current = rows.filter((r) => r.test && !r.test.stale && !r.baseline);
+  const testedAt = current.reduce<Date | null>(
+    (m, r) => (r.test && (!m || r.test.at > m) ? r.test.at : m),
+    null,
+  );
+  const health = answerKeyHealth(cases, b.caseResults, new Date(), testedAt);
+  // For each split case, which models got it fully right and which didn't,
+  // so a person sees the disagreement before deciding.
+  const split = new Set(health.split.map((c) => c.id));
+  const splitBy: Record<string, { right: string[]; wrong: string[] }> = {};
+  if (split.size)
+    await Promise.all(
+      current
+        .filter((r) => !r.variant)
+        .map(async (r) => {
+          if (!r.test) return;
+          for (const o of await app.store.listOutputs(r.test.runId)) {
+            if (!split.has(o.caseId) || o.error) continue;
+            const side = allPassed(o.scores) ? "right" : "wrong";
+            const entry = (splitBy[o.caseId] ??= { right: [], wrong: [] });
+            if (!entry[side].includes(r.label)) entry[side].push(r.label);
+          }
+        }),
+    );
 
   return {
     app,
@@ -135,6 +155,7 @@ export async function loadSuitePage(app: EvalAppConfig, key: string) {
     health,
     cases,
     priority,
+    splitBy,
   };
 }
 
@@ -146,12 +167,14 @@ export type SuitePageData = NonNullable<
 /** A share as a whole percent, or a dash when there's nothing to show. */
 const asPct = (x: number | null) => (x === null ? "—" : pct(x));
 
-/** The choices when changing it: accuracy is always held. */
-const CHOICES = {
-  quality: "Accuracy alone",
-  speed: "Speed",
-  cost: "Cost",
-} as const;
+/**
+ * What a priority means for the suggestion, as a sentence: the
+ * explanation without its leading name ("cost: this runs…").
+ */
+const whyFavor = (favor: SuitePriority["favor"]) => {
+  const text = FAVOR_TEXT[favor].replace(/^\w+: /, "");
+  return `${text.charAt(0).toUpperCase()}${text.slice(1)}.`;
+};
 
 /** The suite's priority, as the page names it. */
 const FAVORS = { cost: "cost", speed: "speed", quality: "accuracy" } as const;
@@ -165,17 +188,13 @@ const VS: Record<string, string> = {
 
 /** The suite's name, what it tests, and its priority. */
 export function SuiteHeader({ data }: { data: SuitePageData }) {
-  const { app, suite, priority } = data;
+  const { app, suite } = data;
   return (
     <>
       <div className="space-y-2">
         <BackLink href={app.basePath}>Evals</BackLink>
         <h1 className="text-2xl font-semibold">{suite.label}</h1>
         <p className="readable text-muted">{suite.description}</p>
-        <p className="readable text-sm text-muted">
-          Priority: {FAVOR_TEXT[priority.favor]}.
-          <InfoTip term="priority" />
-        </p>
       </div>
     </>
   );
@@ -212,15 +231,31 @@ export function ChosenOnBase({ data }: { data: SuitePageData }) {
 
 /** Which models to make live and the fallback, and why; shown when nothing would change too. */
 export function SuggestionCard({ data }: { data: SuitePageData }) {
-  const { app, key, s } = data;
+  const { app, key, s, choosesHere, testing } = data;
+  if (choosesHere && testing)
+    return (
+      <section className="space-y-3" aria-labelledby="suggestion">
+        <h2 id="suggestion" className="text-lg font-semibold">
+          Suggested
+          <InfoTip term="suggestion" />
+        </h2>
+        <Card>
+          <p className="readable text-sm text-muted">
+            Waiting for the tests running now to finish. The suggestion weighs
+            every model&apos;s finished test, so it follows then.
+          </p>
+        </Card>
+      </section>
+    );
   return (
     <>
       {/* Shown when nothing would change too, so a higher score that
-          isn't enough to switch for comes with its reason. */}
+          isn't enough to switch for comes with its reason. A section like
+          Models: the heading outside, Use these beside it. */}
       {s && (
-        <Card className="space-y-3">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <h2 className="font-semibold">
+        <section className="space-y-3" aria-labelledby="suggestion">
+          <div className="flex items-center justify-between gap-4">
+            <h2 id="suggestion" className="text-lg font-semibold">
               {s.same ? "No change suggested" : "Suggested"}
               <InfoTip term="suggestion" />
             </h2>
@@ -233,23 +268,25 @@ export function SuggestionCard({ data }: { data: SuitePageData }) {
                 </form>
               )}
           </div>
-          {!s.same && (
-            <p>
-              Live: <strong>{s.live.label}</strong>
-              {s.fallback && (
-                <>
-                  {" "}
-                  · Fallback: <strong>{s.fallback.label}</strong>
-                </>
-              )}
-            </p>
-          )}
-          <ul className="readable list-disc space-y-1 pl-5 text-sm text-muted">
-            {s.reasons.map((r) => (
-              <li key={r}>{r}</li>
-            ))}
-          </ul>
-        </Card>
+          <Card className="space-y-3">
+            {!s.same && (
+              <p>
+                Live: <strong>{s.live.label}</strong>
+                {s.fallback && (
+                  <>
+                    {" "}
+                    · Fallback: <strong>{s.fallback.label}</strong>
+                  </>
+                )}
+              </p>
+            )}
+            <ul className="readable list-disc space-y-1 pl-5 text-sm text-muted">
+              {s.reasons.map((r) => (
+                <li key={r}>{r}</li>
+              ))}
+            </ul>
+          </Card>
+        </section>
       )}
     </>
   );
@@ -311,16 +348,20 @@ export function ModelTable({ data }: { data: SuitePageData }) {
         <div className="flex items-center justify-between gap-4">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-lg font-semibold">Models</h2>
-            <Tip term="favors" side="bottom" id="favors">
-              <Chip tone="neutral">Favors {FAVORS[priority.favor]}</Chip>
-            </Tip>
-            {choosesHere && app.actions.setPriority && (
-              <PriorityControl
+            {/* Why this priority, in its words: the page says it once. */}
+            {choosesHere && app.actions.setPriority ? (
+              <PriorityPicker
                 action={app.actions.setPriority}
                 suite={key}
                 favor={priority.favor}
                 own={suite.priority.favor}
+                label={`Favors ${FAVORS[priority.favor]}`}
+                why={whyFavor(priority.favor)}
               />
+            ) : (
+              <Tip text={whyFavor(priority.favor)} side="bottom" id="favors">
+                <Chip tone="neutral">Favors {FAVORS[priority.favor]}</Chip>
+              </Tip>
             )}
           </div>
           <div className="flex items-center gap-4">
@@ -476,11 +517,14 @@ export function ModelTable({ data }: { data: SuitePageData }) {
                           <Score right={r.test.right} total={r.test.total} />
                         </Link>
                         {!r.test.stale && r.test.failedAnswers > 0 && (
-                          <span className="text-xs text-muted">
+                          <Link
+                            href={`${evalsPath(app, key, "runs", r.test.runId)}#failed`}
+                            className="text-xs text-muted hover:underline"
+                          >
                             {r.test.failedAnswers}{" "}
                             {r.test.failedAnswers === 1 ? "answer" : "answers"}{" "}
-                            failed: test again
-                          </span>
+                            failed: see why
+                          </Link>
                         )}
                       </div>
                     ) : (
@@ -907,44 +951,6 @@ export function AnswerKeyToolsSection({ data }: { data: SuitePageData }) {
         </form>
       </Card>
     ),
-    actions.draftMore && suite.draftMore && inUse.length > 0 && (
-      <details
-        key="draft"
-        className="group rounded-lg border border-line bg-card"
-      >
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 text-sm font-medium">
-          <span className="flex items-center gap-1.5">
-            <Sparkles aria-hidden className="h-4 w-4" />
-            Draft {draftsToTarget(inUse.length)} more cases
-          </span>
-          <ChevronDown
-            aria-hidden
-            className="h-4 w-4 transition-transform group-open:rotate-180"
-          />
-        </summary>
-        <form action={actions.draftMore} className="space-y-3 px-4 pb-4">
-          <input type="hidden" name="suite" value={key} />
-          <div>
-            <label htmlFor="draft-focus" className="block text-sm font-medium">
-              Anything to focus on? (optional)
-            </label>
-            <TextInput
-              id="draft-focus"
-              name="focus"
-              maxLength={500}
-              placeholder="e.g. longer, messier notes; more than one owner"
-              className="mt-1 w-full rounded-md border border-line bg-card px-3 py-2 text-sm"
-            />
-            <p className="readable mt-1 text-xs text-muted">
-              A model looks at the cases you have and covers what&apos;s
-              missing. Drafts need your review and count only once you confirm
-              them.
-            </p>
-          </div>
-          <Submit>Draft cases</Submit>
-        </form>
-      </details>
-    ),
   ].filter(Boolean);
   if (!parts.length) return null;
   return <div className="space-y-3">{parts}</div>;
@@ -1049,69 +1055,6 @@ export function AnswerKeySection({ data }: { data: SuitePageData }) {
   );
 }
 
-/** "Free: all 16 reused" or "~$0.03, 4 of 16 reused", under a model's buttons. */
-/**
- * Changing what a feature's suggestion favors: accuracy, speed, or cost.
- * It's saved as a new settings version, with an optional reason, so it
- * shows under Versions and can be rolled back.
- */
-function PriorityControl({
-  action,
-  suite,
-  favor,
-  own,
-}: {
-  action: FormAction;
-  suite: string;
-  favor: SuitePriority["favor"];
-  /** The suite's own priority, from its code. */
-  own: SuitePriority["favor"];
-}) {
-  return (
-    <details className="group relative text-sm font-normal">
-      <summary className="cursor-pointer list-none text-accent hover:underline">
-        Change
-      </summary>
-      <form
-        action={action}
-        className="absolute left-0 z-20 mt-2 w-72 space-y-3 rounded-md border border-line bg-card p-4 shadow-lg"
-      >
-        <input type="hidden" name="suite" value={suite} />
-        <div>
-          <label htmlFor="favor" className="block font-medium">
-            Once accuracy holds, favor
-          </label>
-          <Select
-            id="favor"
-            name="favor"
-            defaultValue={favor}
-            className="mt-1 w-full rounded-md border border-line bg-card px-3 py-2"
-          >
-            {(["quality", "speed", "cost"] as const).map((f) => (
-              <option key={f} value={f}>
-                {CHOICES[f]}
-                {f === own ? " (the suite's own)" : ""}
-              </option>
-            ))}
-          </Select>
-        </div>
-        <div>
-          <label htmlFor="favor-reason" className="block font-medium">
-            Why? <span className="font-normal text-muted">(optional)</span>
-          </label>
-          <TextInput
-            id="favor-reason"
-            name="reason"
-            maxLength={300}
-            className="mt-1 w-full rounded-md border border-line bg-card px-3 py-2"
-          />
-        </div>
-        <Submit>Save as a new version</Submit>
-      </form>
-    </details>
-  );
-}
-
 /**
  * What testing a model costs now, as the menu says it: "free, all 34
  * reused", "~$0.10, 15 of 34 reused". Null before any cases.
@@ -1195,7 +1138,7 @@ function UnderAttack({
  * an injection suite, whose cases are made from its base suite's.
  */
 export function AnswerKeyHealthSection({ data }: { data: SuitePageData }) {
-  const { app, key, suite, health: h, choosesHere } = data;
+  const { app, key, suite, health: h, choosesHere, splitBy } = data;
   const thin = h.tags.filter(([, n]) => n === 1).map(([t]) => t);
   const needs =
     h.easyToRetire.length ||
@@ -1213,7 +1156,7 @@ export function AnswerKeyHealthSection({ data }: { data: SuitePageData }) {
       {title(c)}
     </a>
   );
-  const { retireEasy, retireStaleDrafts } = app.actions;
+  const { retireEasy, retireStaleDrafts, keepAnswer } = app.actions;
   const cases = (n: number) => `${n} ${n === 1 ? "case" : "cases"}`;
   const drafts = (n: number) => `${n} ${n === 1 ? "draft" : "drafts"}`;
   const { draftMore } = app.actions;
@@ -1231,18 +1174,59 @@ export function AnswerKeyHealthSection({ data }: { data: SuitePageData }) {
           <div className="readable space-y-3">
             <h3 className="font-medium">Check these answers</h3>
             {h.split.length > 0 && (
-              <div className="space-y-1">
+              <div className="space-y-2">
                 <p>
-                  Models split about evenly on {cases(h.split.length)}. That
-                  usually means the answer key is wrong or the case has no clear
-                  answer. Open each one: fix the answer, or retire the case if
-                  there&apos;s no right one.
+                  Models split about evenly on {cases(h.split.length)}: some
+                  give the answer key&apos;s answer, some don&apos;t. For each,
+                  decide who&apos;s right. Keep the answer if it&apos;s right,
+                  fix it if the models were, or retire the case if there&apos;s
+                  no right answer.
                   <InfoTip term="splitCases" />
                 </p>
-                <ul className="list-disc space-y-0.5 pl-5">
-                  {h.split.map((c) => (
-                    <li key={c.id}>{caseLink(c)}</li>
-                  ))}
+                <ul className="space-y-2">
+                  {h.split.map((c) => {
+                    const by = splitBy[c.id];
+                    const names = (xs: string[]) =>
+                      new Intl.ListFormat("en-US").format(xs);
+                    return (
+                      <li
+                        key={c.id}
+                        className="space-y-2 rounded-md bg-tint p-3"
+                      >
+                        <div className="font-medium">{caseLink(c)}</div>
+                        {by && (
+                          <p className="text-xs text-muted">
+                            {by.right.length > 0 &&
+                              `Gave the answer key's answer: ${names(by.right)}. `}
+                            {by.wrong.length > 0 &&
+                              `Didn't: ${names(by.wrong)}.`}
+                          </p>
+                        )}
+                        <div className="flex flex-wrap items-center gap-2">
+                          {keepAnswer && (
+                            <form action={keepAnswer}>
+                              <input type="hidden" name="suite" value={key} />
+                              <input type="hidden" name="case" value={c.id} />
+                              <Submit variant="quiet">
+                                The answer is right
+                              </Submit>
+                            </form>
+                          )}
+                          <a
+                            href={`#case-${c.id}`}
+                            className={`inline-flex items-center rounded-md px-3 py-1.5 text-sm ${QUIET_BUTTON}`}
+                          >
+                            Fix the answer
+                          </a>
+                          <form action={app.actions.retireCase}>
+                            <input type="hidden" name="suite" value={key} />
+                            <input type="hidden" name="case" value={c.id} />
+                            <Submit variant="quiet">Retire it</Submit>
+                          </form>
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             )}
@@ -1274,26 +1258,50 @@ export function AnswerKeyHealthSection({ data }: { data: SuitePageData }) {
               or two to each.
               <InfoTip term="tagCoverage" />
             </p>
-            <ul className="flex flex-wrap gap-1.5">
-              {thin.map((t) => (
-                <li key={t}>
-                  <Chip tone="warn">{t}</Chip>
-                </li>
-              ))}
-            </ul>
-            {draftMore && suite.draftMore && (
-              <form action={draftMore}>
+            {draftMore && suite.draftMore ? (
+              <form action={draftMore} className="space-y-2">
                 <input type="hidden" name="suite" value={key} />
-                <input
-                  type="hidden"
-                  name="focus"
-                  value={`Cases on these topics: ${thin.join(", ")}`.slice(
-                    0,
-                    500,
-                  )}
-                />
-                <Submit variant="quiet">Draft cases for these topics</Submit>
+                <ul className="flex flex-wrap gap-1.5">
+                  {thin.map((t) => (
+                    <li key={t}>
+                      <label className="inline-flex cursor-pointer items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800 has-[:checked]:bg-amber-300 dark:bg-amber-500/15 dark:text-amber-200 dark:has-[:checked]:bg-amber-500/40">
+                        <input
+                          type="checkbox"
+                          name="topic"
+                          value={t}
+                          className="h-3 w-3 accent-amber-700"
+                        />
+                        {t}
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+                <Submit variant="quiet">
+                  Draft cases for the topics you picked
+                </Submit>
+                <p className="readable text-xs text-muted">
+                  Two drafts a topic, to confirm like any draft. Pick none to
+                  cover them all.
+                </p>
               </form>
+            ) : (
+              <>
+                <ul className="flex flex-wrap gap-1.5">
+                  {thin.map((t) => (
+                    <li key={t}>
+                      <a
+                        href={`#add-case=${encodeURIComponent(t)}`}
+                        className="inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800 hover:underline dark:bg-amber-500/15 dark:text-amber-200"
+                      >
+                        {t}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+                <p className="readable text-xs text-muted">
+                  Pick a topic to add a case with it already tagged.
+                </p>
+              </>
             )}
             <details className="group">
               <summary className="cursor-pointer text-muted">

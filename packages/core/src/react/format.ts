@@ -20,21 +20,23 @@ export const QUIET_BUTTON =
  * A day, with the month as a word so no reader mistakes it:
  * "Oct 28, 2026" (10/28 is the 10th of the 28th month in most of the world).
  */
-export const dayOf = (d: Date): string =>
+export const dayOf = (d: Date, timeZone?: string): string =>
   d.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
+    ...(timeZone ? { timeZone } : {}),
   });
 
 /** A day and time, the same way: "Oct 28, 2026, 3:04 PM". */
-export const momentOf = (d: Date): string =>
+export const momentOf = (d: Date, timeZone?: string): string =>
   d.toLocaleString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
     hour: "numeric",
     minute: "2-digit",
+    ...(timeZone ? { timeZone } : {}),
   });
 
 /**

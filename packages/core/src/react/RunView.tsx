@@ -1,10 +1,10 @@
 import { evalsPath, type EvalAppConfig } from "./app.js";
-import { Link } from "./pieces.js";
+import { Link, LocalDate } from "./pieces.js";
 import { allPassed, money, summarize } from "../index.js";
 import { FieldValues } from "./Fields.js";
 import { ReadableOutput } from "./ReadableOutput.js";
 import { BackLink, Card } from "./pieces.js";
-import { pct, momentOf, LINK } from "./format.js";
+import { pct, LINK } from "./format.js";
 
 /** One test: every answer, with what each check found. */
 
@@ -50,7 +50,7 @@ export async function RunView({
           {app.models[run.model]?.label ?? run.model} on {suite.label}
         </h1>
         <p className="text-sm text-muted">
-          {momentOf(run.startedAt)} · {run.status.toLowerCase()}
+          <LocalDate date={run.startedAt} time /> · {run.status.toLowerCase()}
           {metrics && ` · spent ${money(metrics.costUsd)}`}
         </p>
         {run.error && <p className="readable text-bad">{run.error}</p>}

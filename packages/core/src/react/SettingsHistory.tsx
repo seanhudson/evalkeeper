@@ -1,4 +1,4 @@
-import { momentOf, LINK } from "./format.js";
+import { LINK } from "./format.js";
 import {
   GLOSSARY,
   describeChange,
@@ -7,7 +7,7 @@ import {
   type Settings,
 } from "../index.js";
 import { RollBack } from "./RollBack.js";
-import { Link, Chip, InfoTip, Tip } from "./pieces.js";
+import { Link, Chip, InfoTip, Tip, LocalDate } from "./pieces.js";
 import { evalsPath, type EvalAppConfig } from "./app.js";
 
 const KIND: Record<
@@ -162,7 +162,7 @@ export function HistoryEntries({
                   (e.kind === "OUTSIDE"
                     ? "Found by the system"
                     : "System")}{" "}
-                · {momentOf(e.createdAt)}
+                · <LocalDate date={e.createdAt} time />
               </span>
             </div>
             <ul className="readable list-disc pl-5">

@@ -4,6 +4,7 @@ import {
   createContext,
   createElement,
   useContext,
+  useSyncExternalStore,
   type ComponentType,
   type ReactNode,
 } from "react";
@@ -11,7 +12,7 @@ import { useFormStatus } from "react-dom";
 import { ArrowLeft, Info, LoaderCircle } from "lucide-react";
 import { GLOSSARY, type GlossaryTerm } from "../glossary.js";
 import type { HealthFlag, HealthStatus } from "../health.js";
-import { pct, QUIET_BUTTON } from "./format.js";
+import { dayOf, momentOf, pct, QUIET_BUTTON } from "./format.js";
 
 /**
  * The pieces Evalkeeper's screens are built from. Each draws Evalkeeper's
@@ -470,4 +471,36 @@ export function Select(props: SelectProps) {
 export function RefreshWhile(props: RefreshWhileProps) {
   const C = useSwapped("RefreshWhile");
   return C ? createElement(C, props) : null;
+}
+
+/** A store that never changes, for useSyncExternalStore. */
+const noChange = () => () => {};
+
+/**
+ * A date in the viewer's own time zone: "Oct 29, 2026", or with the time.
+ * A server formats in its own zone (UTC on most hosts), which can show
+ * tomorrow's date in someone's evening, so this renders UTC first and the
+ * viewer's zone once the page loads, inside a <time> with the instant.
+ */
+export function LocalDate({
+  date,
+  time = false,
+}: {
+  date: Date | string;
+  /** Include the time of day. */
+  time?: boolean;
+}) {
+  const d = new Date(date);
+  // False on the server and while hydrating, true once in the browser.
+  const here = useSyncExternalStore(
+    noChange,
+    () => true,
+    () => false,
+  );
+  const zone = here ? undefined : "UTC";
+  return (
+    <time dateTime={d.toISOString()}>
+      {time ? momentOf(d, zone) : dayOf(d, zone)}
+    </time>
+  );
 }

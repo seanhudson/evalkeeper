@@ -158,7 +158,6 @@ describe("weeklySummary", () => {
           error: "Out of credits",
           metrics: null,
         }),
-        run({ status: "RUNNING", metrics: null }),
         run({ metrics: metrics(0.9, 0.25) }),
         // An older batch doesn't count.
         run({
@@ -174,8 +173,38 @@ describe("weeklySummary", () => {
     expect(s.failed).toEqual([
       { suite: "summary", label: "Summary", error: "Out of credits" },
     ]);
-    expect(s.running).toBe(1);
+    expect(s.running).toBe(0);
     expect(s.costUsd).toBeCloseTo(0.25);
+  });
+
+  it("shows each suite's newest check: a failure checked again is gone", () => {
+    const hours = (h: number) => new Date(+today - h * 3_600_000);
+    const s = weeklySummary({
+      runs: [
+        // This morning's check failed; Run it now checked both again.
+        run({
+          suite: "summary",
+          status: "FAILED",
+          error: "Stopped",
+          metrics: null,
+          startedAt: hours(10),
+        }),
+        run({ metrics: metrics(0.9, 1), startedAt: hours(10) }),
+        run({
+          suite: "summary",
+          metrics: metrics(0.9, 0.5),
+          startedAt: hours(1),
+        }),
+        run({ status: "RUNNING", metrics: null, startedAt: hours(1) }),
+      ],
+      suites: SUITES,
+      routes,
+      models: MODELS,
+      today,
+    });
+    expect(s.failed).toEqual([]);
+    expect(s.running).toBe(1);
+    expect(s.costUsd).toBeCloseTo(0.5);
   });
 
   it("warns about live and fallback models retiring within 60 days", () => {

@@ -25,6 +25,9 @@ import {
 import { AnswerKey } from "./AnswerKey.js";
 import { ModelMenu } from "./ModelMenu.js";
 import { PriorityPicker } from "./PriorityPicker.js";
+import { InfoPopover } from "./InfoPopover.js";
+import { GLOSSARY } from "../glossary.js";
+import type { AnswerGuide } from "../types.js";
 import { Tabs } from "./Tabs.js";
 import {
   Link,
@@ -41,7 +44,7 @@ import {
   Tip,
 } from "./pieces.js";
 import { pct, LINK, QUIET_BUTTON } from "./format.js";
-import { ChevronDown, RotateCw, ShieldAlert, Sparkles } from "lucide-react";
+import { Plus, RotateCw, ShieldAlert, Sparkles } from "lucide-react";
 import { evalsPath, type EvalAppConfig, attacksResisted } from "./app.js";
 import { SettingsHistory } from "./SettingsHistory.js";
 
@@ -342,6 +345,8 @@ export function ModelTable({ data }: { data: SuitePageData }) {
   const ordered = orderRows(rows, suite.checks, priority, {
     live: suggestedLive,
   });
+  const tunable = tunableModels(data);
+  const columns = 7 + (showAttacks ? 1 : 0) + (suite.decisions ? 2 : 0);
   return (
     <>
       <section className="space-y-3">
@@ -617,6 +622,15 @@ export function ModelTable({ data }: { data: SuitePageData }) {
                 </tr>
               ))}
             </tbody>
+            {tunable.length > 0 && (
+              <tfoot>
+                <tr>
+                  <td colSpan={columns} className="p-2">
+                    <TestSettingForm data={data} tunable={tunable} />
+                  </td>
+                </tr>
+              </tfoot>
+            )}
           </table>
         </Card>
       </section>
@@ -625,50 +639,69 @@ export function ModelTable({ data }: { data: SuitePageData }) {
 }
 
 /**
- * Testing a model at a reasoning setting other than the feature's: less
- * reasoning is faster and cheaper, more can be more accurate. Each setting
- * gets its own row in the model table. Shows only when a model the feature
- * may use lists its settings in your catalog.
+ * The models a feature may use that list reasoning settings in your
+ * catalog, each with its settings; empty when there's nothing to test.
  */
-export function TestSettingSection({ data }: { data: SuitePageData }) {
-  const { app, key, operation, choosesHere } = data;
-  const tunable = app.runner.modelsFor(operation).flatMap((m) => {
+function tunableModels(data: SuitePageData) {
+  const { app, operation, choosesHere } = data;
+  if (!choosesHere) return [];
+  return app.runner.modelsFor(operation).flatMap((m) => {
     const efforts = app.models[m]?.efforts;
     return efforts?.length
       ? [{ model: m, label: app.models[m]?.label ?? m, efforts }]
       : [];
   });
-  if (!choosesHere || !tunable.length) return null;
+}
+
+/**
+ * Testing a model at a reasoning setting other than the feature's: less
+ * reasoning is faster and cheaper, more can be more accurate. Each setting
+ * gets its own row in the model table. The table's last row, inset.
+ */
+function TestSettingForm({
+  data,
+  tunable,
+}: {
+  data: SuitePageData;
+  tunable: ReturnType<typeof tunableModels>;
+}) {
+  const { app, key } = data;
   return (
     <form
       action={app.actions.testModel}
-      className="flex flex-wrap items-end gap-2"
+      className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md bg-tint px-3 py-2.5"
     >
       <input type="hidden" name="suite" value={key} />
-      <div>
-        <label htmlFor="test-setting" className="block text-sm font-medium">
-          Test a reasoning setting
-          <InfoTip term="reasoningSetting" id="test-setting" />
-        </label>
-        <Select
-          id="test-setting"
-          name="setting"
-          className="mt-1 rounded-md border border-line bg-card px-3 py-2 text-sm"
-        >
-          {tunable.map((t) => (
-            <optgroup key={t.model} label={t.label}>
-              {t.efforts.map((e) => (
-                <option key={e} value={JSON.stringify([t.model, e])}>
-                  {t.label} · {e} reasoning
-                </option>
-              ))}
-            </optgroup>
-          ))}
-        </Select>
-      </div>
+      <label htmlFor="test-setting" className="text-sm font-medium">
+        Test a reasoning setting
+        <InfoTip term="reasoningSetting" id="test-setting" />
+      </label>
+      <Select
+        id="test-setting"
+        name="setting"
+        className="rounded-md border border-line bg-card px-3 py-1.5 text-sm"
+      >
+        {tunable.map((t) => (
+          <optgroup key={t.model} label={t.label}>
+            {t.efforts.map((e) => (
+              <option key={e} value={JSON.stringify([t.model, e])}>
+                {t.label} · {e} reasoning
+              </option>
+            ))}
+          </optgroup>
+        ))}
+      </Select>
       <Submit variant="quiet">Test this setting</Submit>
     </form>
   );
+}
+
+/**
+ * @deprecated The model table's last row holds this now; it renders
+ * nothing. Remove it from your page.
+ */
+export function TestSettingSection(_props: { data: SuitePageData }) {
+  return null;
 }
 
 const BAR_TONE = {
@@ -853,8 +886,8 @@ export function ChecksSection({ data }: { data: SuitePageData }) {
 }
 
 /**
- * Ways to fill the answer key, beside adding a case by hand: how to judge
- * an answer, testing with draft answers before review, an injection
+ * Ways to fill the answer key, beside adding a case by hand: testing with
+ * draft answers before review, an injection
  * suite's attack cases, starter cases not added yet, and more drafts from
  * the suite's `draftMore`. Each shows only when it applies and your app
  * passes its action.
@@ -865,42 +898,8 @@ export function AnswerKeyToolsSection({ data }: { data: SuitePageData }) {
   const inUse = cases.filter((c) => c.status !== "RETIRED");
   const drafts = draftAnswers(cases);
   const fresh = newStarters(suite.starter, cases);
-  const guide =
-    suite.answerGuide ??
-    (suite.labelHelp ? { points: [{ text: suite.labelHelp }] } : null);
   const injection = isInjectionSuite(suite) ? suite : null;
   const parts = [
-    guide && (
-      <details
-        key="guide"
-        className="group rounded-lg border border-line bg-card"
-      >
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 text-sm font-medium">
-          How to judge an answer
-          <ChevronDown
-            aria-hidden
-            className="h-4 w-4 transition-transform group-open:rotate-180"
-          />
-        </summary>
-        <div className="readable space-y-2 px-4 pb-4 text-sm">
-          {guide.lead && <p className="font-medium">{guide.lead}</p>}
-          {(() => {
-            const items = guide.points.map((p, n) => (
-              <li key={n}>
-                {p.term && <strong>{p.term} </strong>}
-                {p.text}
-              </li>
-            ));
-            return guide.ordered ? (
-              <ol className="list-decimal space-y-1 pl-5">{items}</ol>
-            ) : (
-              <ul className="list-disc space-y-1 pl-5">{items}</ul>
-            );
-          })()}
-          {guide.note && <p className="text-muted">{guide.note}</p>}
-        </div>
-      </details>
-    ),
     actions.useDraftsProvisionally && drafts.length > 0 && (
       <Card key="provisional" className="space-y-3">
         <p className="readable text-sm">
@@ -955,21 +954,59 @@ export function AnswerKeyToolsSection({ data }: { data: SuitePageData }) {
   if (!parts.length) return null;
   return <div className="space-y-3">{parts}</div>;
 }
+/** A suite's answer guide: its lead-in, points (numbered when in order), and note. */
+function AnswerGuideText({ guide }: { guide: AnswerGuide }) {
+  const items = guide.points.map((p, n) => (
+    <li key={n}>
+      {p.term && <strong>{p.term} </strong>}
+      {p.text}
+    </li>
+  ));
+  return (
+    <div className="space-y-2">
+      {guide.lead && <p>{guide.lead}</p>}
+      {guide.ordered ? (
+        <ol className="list-decimal space-y-1 pl-5">{items}</ol>
+      ) : (
+        <ul className="list-disc space-y-1 pl-5">{items}</ul>
+      )}
+      {guide.note && <p className="text-muted">{guide.note}</p>}
+    </div>
+  );
+}
+
 /** The answer key: the cases in use and their answers, with ways to add and rate them. */
 export function AnswerKeySection({ data }: { data: SuitePageData }) {
   const { app, key, b, suite, rows, attackBoards } = data;
   // A feature's attack cases are a tab of its answer key.
   const attacked = attackBoards.filter((a) => a.cases > 0);
+  const guide =
+    suite.answerGuide ??
+    (suite.labelHelp ? { points: [{ text: suite.labelHelp }] } : null);
   const cases = (
     <AnswerKey
       app={app}
       suite={suite}
       rows={rows}
       heading={
-        <h2 className="text-lg font-semibold">
-          Answer key ({b.cases} cases in use)
-          <InfoTip term="answerKey" />
-        </h2>
+        guide ? (
+          // The guide's list can't sit inside the heading; its button sits beside it.
+          <div className="flex items-center">
+            <h2 className="text-lg font-semibold">
+              Answer key ({b.cases} cases in use)
+            </h2>
+            <InfoPopover label="About the answer key">
+              <p className="text-muted">{GLOSSARY.answerKey}</p>
+              <p className="font-medium">How to judge an answer</p>
+              <AnswerGuideText guide={guide} />
+            </InfoPopover>
+          </div>
+        ) : (
+          <h2 className="text-lg font-semibold">
+            Answer key ({b.cases} cases in use)
+            <InfoTip term="answerKey" />
+          </h2>
+        )
       }
       tools={
         <>
@@ -1171,16 +1208,17 @@ export function AnswerKeyHealthSection({ data }: { data: SuitePageData }) {
       {/* What to do, in order: fix doubtful answers, fill thin spots, prune. */}
       <Card className="space-y-6 text-sm">
         {check && (
-          <div className="readable space-y-3">
-            <h3 className="font-medium">Check these answers</h3>
+          <div className="space-y-3">
+            <h3 className="font-medium">Answers worth a second look</h3>
             {h.split.length > 0 && (
               <div className="space-y-2">
-                <p>
+                <p className="readable">
                   Models split about evenly on {cases(h.split.length)}: some
-                  give the answer key&apos;s answer, some don&apos;t. For each,
-                  decide who&apos;s right. Keep the answer if it&apos;s right,
-                  fix it if the models were, or retire the case if there&apos;s
-                  no right answer.
+                  give the answer key&apos;s answer, some don&apos;t. That often
+                  means the answer is wrong or the case is unclear, and either
+                  one makes every score less trustworthy. For each, decide
+                  who&apos;s right: keep the answer, fix it, or retire the case
+                  if there&apos;s no right answer.
                   <InfoTip term="splitCases" />
                 </p>
                 <ul className="space-y-2">
@@ -1195,7 +1233,7 @@ export function AnswerKeyHealthSection({ data }: { data: SuitePageData }) {
                       >
                         <div className="font-medium">{caseLink(c)}</div>
                         {by && (
-                          <p className="text-xs text-muted">
+                          <p className="readable text-xs text-muted">
                             {by.right.length > 0 &&
                               `Gave the answer key's answer: ${names(by.right)}. `}
                             {by.wrong.length > 0 &&
@@ -1231,7 +1269,7 @@ export function AnswerKeyHealthSection({ data }: { data: SuitePageData }) {
               </div>
             )}
             {h.duplicates.length > 0 && (
-              <div className="space-y-1">
+              <div className="readable space-y-1">
                 <p>
                   These pairs share nearly all their words, so each counts
                   twice. Keep the clearer one and retire the other.
@@ -1285,23 +1323,36 @@ export function AnswerKeyHealthSection({ data }: { data: SuitePageData }) {
                 </p>
               </form>
             ) : (
-              <>
-                <ul className="flex flex-wrap gap-1.5">
-                  {thin.map((t) => (
-                    <li key={t}>
-                      <a
-                        href={`#add-case=${encodeURIComponent(t)}`}
-                        className="inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800 hover:underline dark:bg-amber-500/15 dark:text-amber-200"
-                      >
-                        {t}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-                <p className="readable text-xs text-muted">
-                  Pick a topic to add a case with it already tagged.
+              <div className="space-y-2">
+                <p className="readable text-muted">
+                  Pick a topic to open Add a case with it already tagged.
                 </p>
-              </>
+                <div className="flex flex-wrap items-center gap-3">
+                  <ul className="flex flex-wrap gap-1.5">
+                    {thin.map((t) => (
+                      <li key={t}>
+                        <a
+                          href={`#add-case=${encodeURIComponent(t)}`}
+                          className="inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800 hover:underline dark:bg-amber-500/15 dark:text-amber-200"
+                        >
+                          {t}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                  <a
+                    href="#add-case="
+                    className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm ${QUIET_BUTTON}`}
+                  >
+                    <Plus aria-hidden className="h-4 w-4" />
+                    Add a case
+                  </a>
+                </div>
+                <p className="readable text-xs text-muted">
+                  A suite with <code>draftMore</code> drafts whole cases for the
+                  topics you pick instead.
+                </p>
+              </div>
             )}
             <details className="group">
               <summary className="cursor-pointer text-muted">
@@ -1391,7 +1442,6 @@ export async function SuitePage({
       <SuggestionCard data={data} />
       <CasesInInstructions data={data} />
       <ModelTable data={data} />
-      <TestSettingSection data={data} />
       <CheckBreakdownSection data={data} />
       <Versions data={data} />
       <ChecksSection data={data} />

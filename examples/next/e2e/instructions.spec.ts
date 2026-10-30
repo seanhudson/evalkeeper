@@ -15,7 +15,7 @@ test("the suite page warns about a case whose words are in the instructions", as
 
   // A ticket that repeats the instructions' own words.
   const subject = `Copied case ${Date.now()}`;
-  await page.getByText("Add a case", { exact: true }).click();
+  await page.getByRole("button", { name: "Add a case", exact: true }).click();
   await page.getByLabel("Subject").first().fill(subject);
   await page
     .getByLabel("Message")

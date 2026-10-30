@@ -5,6 +5,32 @@ Notable changes, newest first. The format follows
 follow [semantic versioning](https://semver.org/): until 1.0, a minor
 version may change an interface, and its entry says how to update.
 
+## Unreleased
+
+### Fixed
+
+- The weekly check shows each suite's newest check. A suite that failed
+  earlier in the day and passed when run again no longer shows as
+  **Didn't finish**.
+- **Run it now** can't start a second check while one runs. While it
+  runs, a spinning **Running** status takes the button's place.
+
+### Changed
+
+- **How to judge an answer** moved into the info button beside **Answer
+  key**, a popup with a close button, instead of a card above it.
+- **Test a reasoning setting** is the Models table's last row, inset on
+  a tint. `TestSettingSection` now renders nothing: remove it from a page
+  you arrange yourself.
+- **Versions** shows the newest and live versions; **Show N earlier
+  versions** opens the rest.
+- Answer key health: **Check these answers** is now **Answers worth a
+  second look**, says why a split case matters, and its cards span the
+  panel with the text kept to a readable width.
+- **Add cases here**, on a suite that can't draft, says first that a
+  topic opens **Add a case** with it tagged, and puts an **Add a case**
+  button beside the topics.
+
 ## 0.14.0 - 2026-10-30
 
 An answer key you can act on: describe the cases you want, fill thin

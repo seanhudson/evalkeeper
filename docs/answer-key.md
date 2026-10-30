@@ -29,8 +29,9 @@ add with its answer is confirmed: you're the person who said it's right.
 
 Each field has a label and a short help text from the suite, so a
 teammate confirming answers weeks later knows what each one means. Where
-judging an answer takes more than that, the suite's `answerGuide` shows
-above the answer key as **How to judge an answer**.
+judging an answer takes more than that, the suite's `answerGuide` is a
+press away: the info button beside **Answer key** opens it as **How to
+judge an answer**.
 
 ## Start from the suite's cases
 

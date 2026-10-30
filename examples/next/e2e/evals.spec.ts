@@ -127,7 +127,7 @@ test("the answer key: open a case, add one, edit its answer, and retire it", asy
 
   // Add a case.
   const subject = `E2E case ${Date.now()}`;
-  await page.getByText("Add a case", { exact: true }).click();
+  await page.getByRole("button", { name: "Add a case", exact: true }).click();
   await page.getByLabel("Subject").first().fill(subject);
   await page
     .getByLabel("Message")

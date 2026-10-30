@@ -38,6 +38,9 @@ test("change a feature's priority, and roll it back", async ({ page }) => {
   await expect(top.getByText(/^Favors: .+ → /)).toBeVisible();
   await expect(top.getByText("People wait on it")).toBeVisible();
 
+  await history
+    .getByRole("button", { name: /^Show \d+ earlier version/ })
+    .click();
   const previous = history.getByRole("article").nth(1);
   await previous.getByPlaceholder("Why roll back?").fill("Back as it was");
   await previous.getByRole("button", { name: /^Roll back to v\d+$/ }).click();

@@ -101,9 +101,14 @@ export function weeklySummary(args: {
     .filter((r) => r.startedBy === SCHEDULED && r.set === "SMOKE")
     .sort((a, b) => +b.startedAt - +a.startedAt);
   const lastAt = scheduled[0]?.startedAt ?? null;
-  // The last weekly batch: everything started within a day of the newest.
+  // The last weekly batch: each suite's newest check started within a day
+  // of the newest, so a suite checked again (Run it now) shows its latest.
   const batch = lastAt
-    ? scheduled.filter((r) => +lastAt - +r.startedAt < DAY)
+    ? scheduled.filter(
+        (r, i) =>
+          +lastAt - +r.startedAt < DAY &&
+          scheduled.findIndex((x) => x.suite === r.suite) === i,
+      )
     : [];
 
   const drift: WeeklySummary["drift"] = [];

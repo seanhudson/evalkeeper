@@ -108,7 +108,7 @@ export type RunnerOptions = {
    */
   continueRun?: (
     runId: string,
-    opts: Required<RunEvalOptions>,
+    opts: Required<Omit<RunEvalOptions, "requestStartedAt">>,
   ) => Promise<boolean>;
   /**
    * Which model each operation runs on now, its fallback, and its
@@ -157,6 +157,11 @@ export type RunEvalOptions = {
   leg?: number;
   /** What earlier legs' judge spent. */
   judgeCostUsd?: number;
+  /**
+   * When the request running this leg started, if earlier than this call
+   * (tests queued one after another): the time limit counts from then.
+   */
+  requestStartedAt?: number;
 };
 
 const sha = (text: string, n = 8) =>
@@ -584,8 +589,9 @@ export function createRunner(opts: RunnerOptions) {
       let outOfCredits = null as string | null;
       const timeout = suite.answerTimeoutMs ?? ANSWER_TIMEOUT_MS;
       const deadline = opts.requestLimitMs
-        ? Date.now() + opts.requestLimitMs - timeout
+        ? (o.requestStartedAt ?? Date.now()) + opts.requestLimitMs - timeout
         : Infinity;
+      const late = Date.now() > deadline;
       let skipped = 0;
 
       await mapLimit(todo, suite.concurrency ?? 6, async ({ c, repeat }) => {
@@ -678,6 +684,7 @@ export function createRunner(opts: RunnerOptions) {
             done: todo.length - skipped,
             leg,
             outOfCredits: !!outOfCredits,
+            late,
           }) &&
           opts.continueRun &&
           (await opts.continueRun(runId, next).catch(() => false))

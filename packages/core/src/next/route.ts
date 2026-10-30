@@ -26,10 +26,11 @@ export function weeklyCronRoute(
 ) {
   const weekly = weeklyCheck(w);
   return async function GET(request: Request): Promise<Response> {
+    const startedAt = Date.now();
     if (!isAuthorizedCron(request.headers.get("authorization"), secret()))
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     const ids = await weekly.start();
-    after(() => weekly.run(ids));
+    after(() => weekly.run(ids, startedAt));
     return Response.json({ started: ids.length }, { status: 202 });
   };
 }

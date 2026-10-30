@@ -43,9 +43,21 @@ version may change an interface, and its entry says how to update.
 - A suggestion's reasons never compare a score with itself: two that
   round alike show enough decimals to differ ("98.14% against 98.06%"),
   and "clearly more accurate" says it's on the cases both answered.
+- The weekly check finishes every suite on a platform with a request
+  limit. Suites ran one after another, each timing itself from its own
+  start, so the request was cut off midway and the suites still waiting
+  were marked "stopped before it finished". Now three suites run at once
+  on one clock from the request's start, and a suite that can't start in
+  time carries on in a fresh request (`continueRun`). `weekly.run` takes
+  when the request began, and `runEval` a `requestStartedAt`.
+- After an answer changes (confirmed, edited, kept, or rated), the page
+  shows fresh results: the free rescore runs before it refreshes, not
+  after, so tests no longer read "out of date" until a reload.
 
 **To update:** add `keepAnswer` to `lib/evalkeeper/actions.ts` (`add pages
---force --only actions`) to show **The answer is right**.
+--force --only actions`) to show **The answer is right**. A weekly route
+of your own passes when the request began: `const startedAt = Date.now()`
+first, then `after(() => weekly.run(ids, startedAt))`.
 
 ## 0.13.0 - 2026-10-29
 

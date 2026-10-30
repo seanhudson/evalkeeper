@@ -131,6 +131,27 @@ describe("runner", () => {
     delete upper.concurrency;
   });
 
+  it("hands off a test queued past the request's time, unasked", async () => {
+    calls = 0;
+    const handed: number[] = [];
+    const { store, runner } = await setup(["a", "b"], {
+      requestLimitMs: 60_020,
+      continueRun: async (_id: string, o: { leg: number }) => {
+        handed.push(o.leg);
+        return true;
+      },
+    });
+    const { run } = await runner.createRun({
+      suite: "upper",
+      model: "model-a",
+    });
+    // The request began two minutes ago; earlier tests used its time.
+    await runner.runEval(run.id, { requestStartedAt: Date.now() - 120_000 });
+    expect(calls).toBe(0);
+    expect(handed).toEqual([2]);
+    expect((await store.getRun(run.id))!.status).toBe("RUNNING");
+  });
+
   it("stops when the provider is out of credits", async () => {
     const { store, runner } = await setup(["credits", "b", "c"]);
     upper.concurrency = 1;

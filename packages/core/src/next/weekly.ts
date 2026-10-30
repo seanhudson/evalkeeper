@@ -1,6 +1,10 @@
 import { isInjectionSuite } from "../types.js";
 import { injectionCases } from "../suites/injection.js";
 import type { EvalWiring } from "./wiring.js";
+import { mapLimit } from "../runner.js";
+
+/** Suites the weekly check answers at once. */
+const SUITES_AT_ONCE = 3;
 
 /** The weekly check, in the two halves a request can split it into. */
 export type WeeklyCheck = {
@@ -10,8 +14,13 @@ export type WeeklyCheck = {
    * running. Returns the tests' ids for `run`.
    */
   start: () => Promise<string[]>;
-  /** Drafts cases from the week's activity, then answers the tests. */
-  run: (ids: string[]) => Promise<void>;
+  /**
+   * Drafts cases from the week's activity, then answers the tests, a few
+   * suites at a time. `startedAt` is when the request began (default:
+   * now): the runner's time limit counts from then, and tests it can't
+   * reach in time carry on in fresh requests.
+   */
+  run: (ids: string[], startedAt?: number) => Promise<void>;
 };
 
 /**
@@ -55,7 +64,7 @@ export function weeklyCheck(
       }
       return ids;
     },
-    async run(ids) {
+    async run(ids, startedAt = Date.now()) {
       // Drafts nobody reviewed in a month go, so the review queue stays
       // short; the weekly job's other half adds this week's.
       for (const suite of w.suites)
@@ -64,7 +73,9 @@ export function weeklyCheck(
         });
       await draft();
       // runEval never throws: a suite that fails says why on its own test.
-      for (const id of ids) await w.runner.runEval(id, { fresh: true });
+      await mapLimit(ids, SUITES_AT_ONCE, (id) =>
+        w.runner.runEval(id, { fresh: true, requestStartedAt: startedAt }),
+      );
     },
   };
 }

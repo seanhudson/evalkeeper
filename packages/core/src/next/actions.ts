@@ -569,10 +569,11 @@ export function evalActions(w: EvalWiring): Required<EvalActions> {
     },
 
     async runWeeklyNow() {
+      const startedAt = Date.now();
       await w.requireAdmin();
       // Recorded before the page re-renders, so it shows them running.
       const ids = await weekly.start();
-      after(() => weekly.run(ids));
+      after(() => weekly.run(ids, startedAt));
       revalidatePath(w.basePath);
     },
   };

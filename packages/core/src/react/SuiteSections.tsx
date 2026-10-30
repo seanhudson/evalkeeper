@@ -216,11 +216,12 @@ export function SuggestionCard({ data }: { data: SuitePageData }) {
   return (
     <>
       {/* Shown when nothing would change too, so a higher score that
-          isn't enough to switch for comes with its reason. */}
+          isn't enough to switch for comes with its reason. A section like
+          Models: the heading outside, Use these beside it. */}
       {s && (
-        <Card className="space-y-3">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <h2 className="font-semibold">
+        <section className="space-y-3" aria-labelledby="suggestion">
+          <div className="flex items-center justify-between gap-4">
+            <h2 id="suggestion" className="text-lg font-semibold">
               {s.same ? "No change suggested" : "Suggested"}
               <InfoTip term="suggestion" />
             </h2>
@@ -233,23 +234,25 @@ export function SuggestionCard({ data }: { data: SuitePageData }) {
                 </form>
               )}
           </div>
-          {!s.same && (
-            <p>
-              Live: <strong>{s.live.label}</strong>
-              {s.fallback && (
-                <>
-                  {" "}
-                  · Fallback: <strong>{s.fallback.label}</strong>
-                </>
-              )}
-            </p>
-          )}
-          <ul className="readable list-disc space-y-1 pl-5 text-sm text-muted">
-            {s.reasons.map((r) => (
-              <li key={r}>{r}</li>
-            ))}
-          </ul>
-        </Card>
+          <Card className="space-y-3">
+            {!s.same && (
+              <p>
+                Live: <strong>{s.live.label}</strong>
+                {s.fallback && (
+                  <>
+                    {" "}
+                    · Fallback: <strong>{s.fallback.label}</strong>
+                  </>
+                )}
+              </p>
+            )}
+            <ul className="readable list-disc space-y-1 pl-5 text-sm text-muted">
+              {s.reasons.map((r) => (
+                <li key={r}>{r}</li>
+              ))}
+            </ul>
+          </Card>
+        </section>
       )}
     </>
   );

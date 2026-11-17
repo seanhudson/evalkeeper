@@ -9,10 +9,12 @@ import { fileURLToPath } from "node:url";
 
 /** Advisories allowed for now, by GHSA id, with why. */
 export const ALLOWED = {
-  // zod below 4.6.6 can exhaust memory validating oversized constrained
-  // collections. Every zod 3 version is affected and the fix is zod 4, a
-  // planned major. Comes out with the zod 4 upgrade.
-  "GHSA-mrhx-c7xc-m3w5": "zod 3: fixed only in zod 4 (planned upgrade)",
+  // picomatch: a ReDoS in repeated single-branch extglobs, published
+  // 2026-11-17 with every version listed as affected and no fix yet. It
+  // reaches here only through tooling (Vitest, an optional peer; Astro for
+  // the docs site; lint and build), which match this repo's own patterns,
+  // never untrusted input. Comes out when picomatch ships a fix.
+  "GHSA-fc5q-39xc-vjpf": "picomatch: no fix yet; tooling on our own globs",
 };
 
 const BLOCKING = new Set(["high", "critical"]);

@@ -63,6 +63,11 @@ const double: Suite<In, Out, Want> = {
   title: (i) => String(i.n),
 };
 
+/** The suite without its check that compares answers with each other. */
+const single = Object.fromEntries(
+  Object.entries(double).filter(([k]) => k !== "gradeTogether"),
+) as typeof double;
+
 const kase = (n: number, over: Partial<NewCase> = {}): NewCase => ({
   suite: "double",
   input: { n, group: n < 3 ? "small" : "big" },
@@ -347,7 +352,8 @@ describe("runner, beyond a basic test", () => {
     const draft = store.cases.find((c) => c.labels[0]?.status === "PENDING");
     if (!draft) throw new Error("setup");
     draft.createdAt = new Date(Date.now() - 40 * 86_400_000);
-    // Three models that get every case right: every case is easy.
+    // Three models that get every case right: every case is easy. (The
+    // suite without its ranking: a compared case is never easy.)
     const models = {
       a: { label: "A", provider: "one" },
       b: { label: "B", provider: "two" },
@@ -355,7 +361,7 @@ describe("runner, beyond a basic test", () => {
     };
     const runner = createRunner({
       store,
-      suites: [double],
+      suites: [single],
       models,
       promptVersion: () => "v1",
       route: () => ({ model: "a", fallbackModel: null, reasoningEffort: null }),
@@ -384,6 +390,47 @@ describe("runner, beyond a basic test", () => {
     expect(await runner.retireStaleDrafts("double")).toBe(1);
     expect(draft.status).toBe("RETIRED");
     expect(await runner.retireStaleDrafts("double")).toBe(0);
+  });
+
+  it("never retires as easy a case a ranking compares with others", async () => {
+    const store = memoryStore();
+    for (let n = 1; n <= 20; n++)
+      await store.createCase(kase(n, { input: { n, group: `g${n}` } }));
+    // Only the even cases are compared with others (a ranking of them).
+    const ranking = {
+      ...double,
+      gradeTogether: (answers: { input: { n: number } }[]) =>
+        answers.map((a) => [
+          { key: "biggest", pass: a.input.n % 2 === 0 ? true : null },
+        ]),
+    } as typeof double;
+    const runner = createRunner({
+      store,
+      suites: [ranking],
+      models: {
+        a: { label: "A", provider: "one" },
+        b: { label: "B", provider: "two" },
+        c: { label: "C", provider: "three" },
+      },
+      promptVersion: () => "v1",
+      route: () => ({ model: "a", fallbackModel: null, reasoningEffort: null }),
+      candidates: () => ({ models: ["a", "b", "c"] }),
+    });
+    for (const model of ["a", "b", "c"]) {
+      const { run } = await runner.createRun({ suite: "double", model });
+      await runner.runEval(run.id);
+    }
+    const h = await runner.answerKeyHealth("double");
+    // Every model gets all 20 right, but only the 10 odd ones are easy.
+    expect(h.easy.map((c) => (c.input as { n: number }).n % 2)).toEqual(
+      Array(10).fill(1),
+    );
+    await runner.retireEasy("double");
+    const retired = store.cases.filter((c) => c.status === "RETIRED");
+    expect(retired.length).toBeGreaterThan(0);
+    expect(retired.every((c) => (c.input as { n: number }).n % 2 === 1)).toBe(
+      true,
+    );
   });
 
   it("leaves a retired case out of a rescored test's score", async () => {

@@ -34,6 +34,12 @@ export type CheckResult = {
    * `brier`, `logLoss`, `confidence`, and `correct` (see decisionCheck).
    */
   measures?: Record<string, number> | undefined;
+  /**
+   * Set by Evalkeeper on checks from a suite's `gradeTogether`: they grade
+   * this answer against others (a ranking), so the case matters to other
+   * cases' results too, and is never retired as easy.
+   */
+  together?: boolean | undefined;
 };
 
 /**

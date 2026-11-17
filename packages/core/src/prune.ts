@@ -23,14 +23,27 @@ export const STALE_DRAFT_DAYS = 30;
 export const DUPLICATE_SIMILARITY = 0.9;
 
 /** How one case did across the models tested on it. */
-export type CaseResult = { passed: number; models: number };
+export type CaseResult = {
+  passed: number;
+  models: number;
+  /**
+   * Compared with other cases by a suite's `gradeTogether` (a ranking):
+   * other cases' results depend on it, so it's never easy to retire.
+   */
+  ranked?: boolean | undefined;
+};
 
 /**
- * A case every tested model got right (with enough models): it no longer tells them apart.
+ * A case every tested model got right (with enough models): it no longer
+ * tells them apart. Not one a ranking compares with others: retiring it
+ * would take away the comparisons it anchors.
  */
 export function isEasy(r: CaseResult | undefined): boolean {
   return (
-    r !== undefined && r.models >= EASY_MIN_MODELS && r.passed === r.models
+    r !== undefined &&
+    !r.ranked &&
+    r.models >= EASY_MIN_MODELS &&
+    r.passed === r.models
   );
 }
 

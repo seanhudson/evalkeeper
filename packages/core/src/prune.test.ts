@@ -14,6 +14,8 @@ describe("pruning", () => {
   it("calls a case easy only when enough models all get it right", () => {
     expect(isEasy({ passed: 3, models: 3 })).toBe(true);
     expect(isEasy({ passed: 2, models: 2 })).toBe(false);
+    // A case a ranking compares with others anchors their results.
+    expect(isEasy({ passed: 3, models: 3, ranked: true })).toBe(false);
     expect(isEasy({ passed: 6, models: 7 })).toBe(false);
   });
 

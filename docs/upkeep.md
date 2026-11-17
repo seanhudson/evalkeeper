@@ -78,6 +78,12 @@ cases in use, and at least one. The quick set's cases are kept first,
 since the weekly check runs those. A case counts as easy only once three or more current models all
 get it right; one model getting it right isn't evidence.
 
+A case a ranking compares with others (a suite's `gradeTogether`, like
+"a role you'd apply to scores above one you'd skip") is never easy, even
+when every model gets it right. Other cases' results depend on it:
+retiring the clear-cut ones would leave only the close calls, and the
+ranking score would drop without any model getting worse.
+
 ### Retire one case by hand
 
 Retire a case for another reason too: its input no longer happens in

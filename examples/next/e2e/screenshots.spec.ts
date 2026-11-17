@@ -174,7 +174,8 @@ for (const scheme of SCHEMES) {
       });
     await shot("breakdown");
 
-    // Answer-key health: easy cases to retire, once every model is tested.
+    // Answer-key health: split cases and thin tags (16 cases: under the
+    // floor of 50, so no easy cases are offered for retiring).
     await page.goto("/evals/ticket_triage");
     await page
       .getByRole("heading", { name: "Answer key health" })

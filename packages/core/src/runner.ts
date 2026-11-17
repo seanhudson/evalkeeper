@@ -16,7 +16,13 @@ import {
 import type { BoardRow } from "./board.js";
 import { allPassed } from "./stats.js";
 import { pickQuickSet } from "./quickSet.js";
-import { answerKeyHealth, type CaseResult } from "./prune.js";
+import {
+  EASY_FLOOR_CASES,
+  EASY_MIN_MODELS,
+  answerKeyHealth,
+  withRounds,
+  type CaseResult,
+} from "./prune.js";
 import { stableJson } from "./stableJson.js";
 import { suiteMetrics, type ScoredOutput } from "./stats.js";
 import type {
@@ -799,7 +805,57 @@ export function createRunner(opts: RunnerOptions) {
       board(suiteKey),
       store.listCases(suiteKey),
     ]);
-    return answerKeyHealth(cases, b.caseResults, today);
+    const rounds = await easyRounds(suiteKey, cases);
+    return answerKeyHealth(cases, withRounds(b.caseResults, rounds), today);
+  }
+
+  /**
+   * Per case, the rounds of testing it passed (EASY_MIN_ROUNDS): days on
+   * which at least EASY_MIN_MODELS models were tested on it and every one
+   * got it fully right (all repeats), counted only after its answer last
+   * changed. Empty when the suite has EASY_FLOOR_CASES cases in use or
+   * fewer: nothing can be retired then, so the history isn't read.
+   */
+  async function easyRounds(
+    suiteKey: string,
+    cases?: readonly CaseRecord[],
+  ): Promise<Record<string, number>> {
+    const all = cases ?? (await store.listCases(suiteKey));
+    const inUse = all.filter(
+      (c) => c.status !== "RETIRED" && confirmedLabel(c.labels),
+    );
+    if (inUse.length <= EASY_FLOOR_CASES) return {};
+    const since = new Map(
+      inUse.map((c) => {
+        const l = confirmedLabel(c.labels);
+        return [c.id, Math.max(+c.updatedAt, l ? +l.updatedAt : 0)];
+      }),
+    );
+    const runs = (await store.listRuns(suiteKey, { status: "SUCCEEDED" })).map(
+      (r) => ({ ...r, day: r.startedAt.toISOString().slice(0, 10) }),
+    );
+    const outputs = await outputsByRun(runs.map((r) => r.id));
+    // case → day → model → right on every answer that day
+    const seen = new Map<string, Map<string, Map<string, boolean>>>();
+    for (const r of runs) {
+      for (const o of outputs.get(r.id) ?? []) {
+        const after = since.get(o.caseId);
+        if (after === undefined || +r.startedAt <= after) continue;
+        const days =
+          seen.get(o.caseId) ?? new Map<string, Map<string, boolean>>();
+        const models = days.get(r.day) ?? new Map<string, boolean>();
+        const right = !o.error && allPassed(o.scores ?? []);
+        models.set(r.model, (models.get(r.model) ?? true) && right);
+        days.set(r.day, models);
+        seen.set(o.caseId, days);
+      }
+    }
+    const rounds: Record<string, number> = {};
+    for (const [caseId, days] of seen)
+      rounds[caseId] = [...days.values()].filter(
+        (m) => m.size >= EASY_MIN_MODELS && [...m.values()].every(Boolean),
+      ).length;
+    return rounds;
   }
 
   /**
@@ -1229,13 +1285,23 @@ export function createRunner(opts: RunnerOptions) {
     for (const row of rows) {
       if (row.variant || !row.test || row.test.stale || row.test.failedAnswers)
         continue;
+      // Each model once per case: right only if every repeat was right.
+      const byCase = new Map<string, { right: boolean; ranked: boolean }>();
       for (const x of outputsOf(row.test.runId)) {
-        const c = (caseResults[x.caseId] ??= { passed: 0, models: 0 });
+        const had = byCase.get(x.caseId) ?? { right: true, ranked: false };
+        byCase.set(x.caseId, {
+          right: had.right && allPassed(x.checks),
+          // Compared with other cases (a ranking): others' results need it.
+          ranked:
+            had.ranked ||
+            Boolean(x.checks?.some((k) => k.together && k.pass !== null)),
+        });
+      }
+      for (const [caseId, r] of byCase) {
+        const c = (caseResults[caseId] ??= { passed: 0, models: 0 });
         c.models++;
-        if (allPassed(x.checks)) c.passed++;
-        // Compared with other cases (a ranking): others' results need it.
-        if (x.checks?.some((k) => k.together && k.pass !== null))
-          c.ranked = true;
+        if (r.right) c.passed++;
+        if (r.ranked) c.ranked = true;
       }
     }
     return {
@@ -1361,6 +1427,7 @@ export function createRunner(opts: RunnerOptions) {
     rescoreRecent,
     answerKeyHealth: answerKeyHealthOf,
     retireEasy,
+    easyRounds,
     retireStaleDrafts,
     stopStuckRuns,
     compare,

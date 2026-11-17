@@ -5,7 +5,25 @@ Notable changes, newest first. The format follows
 follow [semantic versioning](https://semver.org/): until 1.0, a minor
 version may change an interface, and its entry says how to update.
 
-## 0.17.2 - 2026-11-17
+## 0.18.0 - 2026-11-17
+
+Retiring easy cases is slow and rare by design: the answer key is for
+adding cases that tell models apart.
+
+Update: `EASY_FLOOR` (a share, 0.1) is replaced by `EASY_FLOOR_CASES`
+(50) and `EASY_MIN_ROUNDS` (4). `easyToRetire(easy, inUse)` now returns
+none at 50 cases or fewer. Pass `rounds` in `CaseResult` (or use
+`withRounds` with the runner's `easyRounds`) for `answerKeyHealth` to
+suggest any.
+
+### Changed
+
+- **A floor of 50.** Easy cases are suggested for retiring only when a
+  suite has more than 50 cases in use, and never take it below 50.
+- **Four rounds.** A case qualifies only after four rounds of testing:
+  days on which three or more models were tested on it and all got it
+  fully right, counted since its answer last changed. `runner.easyRounds`
+  counts them, reading test history only past the floor.
 
 ### Fixed
 
@@ -16,6 +34,10 @@ version may change an interface, and its entry says how to update.
   score dropped with no model getting worse. Checks from
   `gradeTogether` are now marked `together`, per-case results say
   `ranked`, and retiring regrades first so older tests get the mark.
+- A model tested with repeats counted once per repeat toward "every
+  model gets it right" and "models split": one model with three repeats
+  met the three-model bar alone. Each model counts once now, right only
+  if every repeat was.
 
 ## 0.17.1 - 2026-11-17
 

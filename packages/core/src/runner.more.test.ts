@@ -63,6 +63,49 @@ const double: Suite<In, Out, Want> = {
   title: (i) => String(i.n),
 };
 
+/** Answers (and cases) last changed `days` ago, before any test round. */
+function answersFrom(store: ReturnType<typeof memoryStore>, days: number) {
+  const at = new Date(Date.now() - days * 86_400_000);
+  for (const c of store.cases) {
+    c.updatedAt = at;
+    for (const l of c.labels) l.updatedAt = at;
+  }
+}
+
+/** A runner with three models that get every case right. */
+function threeModels(
+  store: ReturnType<typeof memoryStore>,
+  suite: typeof double,
+) {
+  return createRunner({
+    store,
+    suites: [suite],
+    models: {
+      a: { label: "A", provider: "one" },
+      b: { label: "B", provider: "two" },
+      c: { label: "C", provider: "three" },
+    },
+    promptVersion: () => "v1",
+    route: () => ({ model: "a", fallbackModel: null, reasoningEffort: null }),
+    candidates: () => ({ models: ["a", "b", "c"] }),
+  });
+}
+
+/** A round of tests of all three models on each of these days ago. */
+async function testRounds(
+  runner: ReturnType<typeof threeModels>,
+  store: ReturnType<typeof memoryStore>,
+  daysAgo: number[],
+) {
+  for (const days of daysAgo)
+    for (const model of ["a", "b", "c"]) {
+      const { run } = await runner.createRun({ suite: "double", model });
+      await runner.runEval(run.id);
+      const r = store.runs.find((x) => x.id === run.id);
+      if (r) r.startedAt = new Date(Date.now() - days * 86_400_000);
+    }
+}
+
 /** The suite without its check that compares answers with each other. */
 const single = Object.fromEntries(
   Object.entries(double).filter(([k]) => k !== "gradeTogether"),
@@ -330,11 +373,12 @@ describe("runner, beyond a basic test", () => {
     expect(await runner.compare("double", a.run.id, "missing")).toBeNull();
   });
 
-  it("retires easy cases beyond a floor, then rescores, and retires old drafts", async () => {
+  it("retires easy cases past the floor of 50, after 4 rounds, and old drafts", async () => {
     const store = memoryStore();
     // Each case in its own group, so "biggest in its group" passes too.
-    for (let n = 1; n <= 20; n++)
+    for (let n = 1; n <= 53; n++)
       await store.createCase(kase(n, { input: { n, group: `g${n}` } }));
+    answersFrom(store, 30);
     await store.createCase(
       kase(99, {
         labels: [
@@ -354,37 +398,25 @@ describe("runner, beyond a basic test", () => {
     draft.createdAt = new Date(Date.now() - 40 * 86_400_000);
     // Three models that get every case right: every case is easy. (The
     // suite without its ranking: a compared case is never easy.)
-    const models = {
-      a: { label: "A", provider: "one" },
-      b: { label: "B", provider: "two" },
-      c: { label: "C", provider: "three" },
-    };
-    const runner = createRunner({
-      store,
-      suites: [single],
-      models,
-      promptVersion: () => "v1",
-      route: () => ({ model: "a", fallbackModel: null, reasoningEffort: null }),
-      candidates: () => ({ models: ["a", "b", "c"] }),
-    });
-    for (const model of ["a", "b", "c"]) {
-      const { run } = await runner.createRun({ suite: "double", model });
-      await runner.runEval(run.id);
-    }
+    const runner = threeModels(store, single);
 
-    const h = await runner.answerKeyHealth("double");
-    expect(h.inUse).toBe(20);
-    expect(h.easy).toHaveLength(20);
-    expect(h.easyToRetire).toHaveLength(18);
+    // Three rounds: easy, but not proven yet.
+    await testRounds(runner, store, [4, 3, 2]);
+    let h = await runner.answerKeyHealth("double");
+    expect(h.inUse).toBe(53);
+    expect(h.easy).toHaveLength(53);
+    expect(h.easyToRetire).toHaveLength(0);
     expect(h.staleDrafts.map((c) => c.id)).toEqual([draft.id]);
 
-    expect(await runner.retireEasy("double")).toBe(18);
-    expect(store.cases.filter((c) => c.status === "RETIRED")).toHaveLength(18);
-    // Rescored: the tests now count only the cases kept as a floor.
+    // The fourth: proven, and 3 can go before the suite reaches 50.
+    await testRounds(runner, store, [1]);
+    h = await runner.answerKeyHealth("double");
+    expect(h.easyToRetire).toHaveLength(3);
+    expect(await runner.retireEasy("double")).toBe(3);
+    expect(store.cases.filter((c) => c.status === "RETIRED")).toHaveLength(3);
+    // Rescored: the tests now count only the 50 kept.
     const [latest] = await store.listRuns("double", { status: "SUCCEEDED" });
-    expect(latest?.metrics?.byCheck.right?.n).toBe(2);
-    // The floor is a tenth of the cases in use, and never below one.
-    expect(await runner.retireEasy("double")).toBe(1);
+    expect(latest?.metrics?.byCheck.right?.n).toBe(50);
     expect(await runner.retireEasy("double")).toBe(0);
 
     expect(await runner.retireStaleDrafts("double")).toBe(1);
@@ -392,10 +424,28 @@ describe("runner, beyond a basic test", () => {
     expect(await runner.retireStaleDrafts("double")).toBe(0);
   });
 
+  it("counts a round only after a case's answer last changed", async () => {
+    const store = memoryStore();
+    for (let n = 1; n <= 52; n++)
+      await store.createCase(kase(n, { input: { n, group: `g${n}` } }));
+    answersFrom(store, 30);
+    const runner = threeModels(store, single);
+    await testRounds(runner, store, [4, 3, 2, 1]);
+    // One answer changed yesterday afternoon: its earlier rounds don't count.
+    const c = store.cases[0];
+    const l = c?.labels[0];
+    if (!c || !l) throw new Error("setup");
+    l.updatedAt = new Date(Date.now() - 1.5 * 86_400_000);
+    const rounds = await runner.easyRounds("double");
+    expect(rounds[c.id]).toBe(1);
+    expect(rounds[store.cases[1]?.id ?? ""]).toBe(4);
+  });
+
   it("never retires as easy a case a ranking compares with others", async () => {
     const store = memoryStore();
-    for (let n = 1; n <= 20; n++)
+    for (let n = 1; n <= 60; n++)
       await store.createCase(kase(n, { input: { n, group: `g${n}` } }));
+    answersFrom(store, 30);
     // Only the even cases are compared with others (a ranking of them).
     const ranking = {
       ...double,
@@ -404,30 +454,16 @@ describe("runner, beyond a basic test", () => {
           { key: "biggest", pass: a.input.n % 2 === 0 ? true : null },
         ]),
     } as typeof double;
-    const runner = createRunner({
-      store,
-      suites: [ranking],
-      models: {
-        a: { label: "A", provider: "one" },
-        b: { label: "B", provider: "two" },
-        c: { label: "C", provider: "three" },
-      },
-      promptVersion: () => "v1",
-      route: () => ({ model: "a", fallbackModel: null, reasoningEffort: null }),
-      candidates: () => ({ models: ["a", "b", "c"] }),
-    });
-    for (const model of ["a", "b", "c"]) {
-      const { run } = await runner.createRun({ suite: "double", model });
-      await runner.runEval(run.id);
-    }
+    const runner = threeModels(store, ranking);
+    await testRounds(runner, store, [4, 3, 2, 1]);
     const h = await runner.answerKeyHealth("double");
-    // Every model gets all 20 right, but only the 10 odd ones are easy.
+    // Every model gets all 60 right, but only the 30 odd ones are easy.
     expect(h.easy.map((c) => (c.input as { n: number }).n % 2)).toEqual(
-      Array(10).fill(1),
+      Array(30).fill(1),
     );
-    await runner.retireEasy("double");
+    // Room for 10 before the floor of 50, all odd.
+    expect(await runner.retireEasy("double")).toBe(10);
     const retired = store.cases.filter((c) => c.status === "RETIRED");
-    expect(retired.length).toBeGreaterThan(0);
     expect(retired.every((c) => (c.input as { n: number }).n % 2 === 1)).toBe(
       true,
     );

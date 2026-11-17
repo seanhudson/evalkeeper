@@ -990,6 +990,10 @@ export function AnswerKeySection({ data }: { data: SuitePageData }) {
   const { app, key, b, suite, rows, attackBoards } = data;
   // A feature's attack cases are a tab of its answer key.
   const attacked = attackBoards.filter((a) => a.cases > 0);
+  // Attack tests set up but not made yet: nothing else on this page says so.
+  const unmade = app.actions.makeAttackCases
+    ? attackBoards.filter((a) => a.cases === 0)
+    : [];
   const guide =
     suite.answerGuide ??
     (suite.labelHelp ? { points: [{ text: suite.labelHelp }] } : null);
@@ -1048,6 +1052,32 @@ export function AnswerKeySection({ data }: { data: SuitePageData }) {
   return (
     // The weekly check links here to review drafts.
     <section id="answer-key" className="scroll-mt-4 space-y-3">
+      {unmade.length > 0 && b.cases > 0 && (
+        <Card className="space-y-3">
+          <p className="readable text-sm">
+            <ShieldAlert
+              aria-hidden
+              className="mr-1.5 inline h-4 w-4 text-warn"
+            />
+            This feature has attack tests set up, but no attack cases yet. Each
+            is one of its confirmed cases with an attack planted where text it
+            can&apos;t trust goes, so a test shows whether a model follows it.
+            <InfoTip term="attacksResisted" />
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {unmade.map((a) => (
+              <form key={a.suite.key} action={app.actions.makeAttackCases}>
+                <input type="hidden" name="suite" value={a.suite.key} />
+                <Submit variant="quiet">
+                  {unmade.length > 1
+                    ? `Make attack cases: ${a.suite.label}`
+                    : "Make attack cases"}
+                </Submit>
+              </form>
+            ))}
+          </div>
+        </Card>
+      )}
       {attacked.length === 0 ? (
         cases
       ) : (

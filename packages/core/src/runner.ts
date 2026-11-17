@@ -760,13 +760,30 @@ export function createRunner(opts: RunnerOptions) {
     });
   }
 
-  /** Regrades a suite's recent finished tests, e.g. after answers change. */
+  /**
+   * Regrades a suite's finished tests after answers change: the latest of
+   * every model and setting the board shows, however many tests ran since,
+   * plus the `limit` most recent. Any answer change puts every test out of
+   * date until it's regraded, and a test left out of date drops out of the
+   * board, its scores, and the answer key's health ("models split").
+   */
   async function rescoreRecent(suiteKey: string, limit = 10) {
-    for (const r of await store.listRuns(suiteKey, {
-      status: "SUCCEEDED",
-      limit,
-    }))
-      await rescoreRun(r.id);
+    const runs = await store.listRuns(suiteKey, { status: "SUCCEEDED" });
+    const latest = new Map<string, string>();
+    for (const r of runs) {
+      const key = [
+        r.model,
+        r.reasoningEffort ?? "",
+        r.temperature ?? "",
+        r.maxOutputTokens ?? "",
+      ].join("|");
+      if (!latest.has(key)) latest.set(key, r.id);
+    }
+    const ids = new Set([
+      ...runs.slice(0, limit).map((r) => r.id),
+      ...latest.values(),
+    ]);
+    for (const id of ids) await rescoreRun(id);
   }
 
   /**

@@ -414,6 +414,27 @@ describe("runner, beyond a basic test", () => {
     expect(after?.datasetVersion).not.toBe(before);
   });
 
+  it("rescores every model's latest test, not only the newest ten", async () => {
+    const { store, runner } = await setup([2]);
+    const { run: first } = await runner.createRun({
+      suite: "double",
+      model: "good",
+    });
+    await runner.runEval(first.id);
+    // Ten newer tests of another model push the first past the newest ten.
+    for (let i = 0; i < 10; i++) {
+      const { run } = await runner.createRun({ suite: "double", model: "bad" });
+      await runner.runEval(run.id);
+    }
+    const c = store.cases[0];
+    const l = c?.labels[0];
+    if (!c || !l) throw new Error("setup");
+    l.updatedAt = new Date(Date.now() + 1000);
+    const current = (await store.getRun(first.id))?.datasetVersion;
+    await runner.rescoreRecent("double");
+    expect((await store.getRun(first.id))?.datasetVersion).not.toBe(current);
+  });
+
   it("gives the same board and estimates with or without the batch store methods", async () => {
     const results = [];
     for (const batch of [true, false]) {

@@ -33,6 +33,10 @@ suggest any.
 
 ### Fixed
 
+- CI's audit allows the new picomatch advisory (no fixed version exists;
+  it reaches only tooling that reads this repo's own file patterns) and
+  drops the zod 3 entry, which the zod 4 override resolved. Nothing in
+  the published package changes.
 - **Retire easy cases** no longer retires a case that a suite's
   `gradeTogether` compares with others (a ranking). Every model getting
   it right doesn't make it useless: other cases' results depend on it,

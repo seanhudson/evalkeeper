@@ -5,7 +5,13 @@ Notable changes, newest first. The format follows
 follow [semantic versioning](https://semver.org/): until 1.0, a minor
 version may change an interface, and its entry says how to update.
 
-## Unreleased
+## 0.16.0 - 2026-11-16
+
+The evals hub says where each suite stands in one word and color, with
+what needs you first.
+
+Update: nothing required. `HealthChips` still works on pages of your own;
+the hub uses `StandingBadge` and `HealthReasons` now.
 
 ### Changed
 

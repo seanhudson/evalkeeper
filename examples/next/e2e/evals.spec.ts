@@ -74,7 +74,7 @@ test("testing a model fills in its score", async ({ page }) => {
     .first();
   await kase.locator("summary").first().click();
   await expect(
-    kase.getByText(/^“\w[\w ]*, (low|normal|high) urgency”$/).first(),
+    kase.getByText(/^\w[\w ]*, (low|normal|high) urgency$/).first(),
   ).toBeVisible();
 });
 

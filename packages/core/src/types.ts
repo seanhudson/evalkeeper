@@ -301,10 +301,11 @@ export type Suite<Input, Output, Label> = {
   lookAt?(input: Input, answer: Label | null): LookAt[];
   /**
    * One model's answer as a short line, shown beside that model's latest
-   * test in the answer key ("Get a full-time admin job in local
-   * government", or "Left as typed"), so a person can compare what
+   * test in the answer key ("“Get a full-time admin job in local
+   * government”", or "Left as typed"), so a person can compare what
    * models wrote with the input and the answer. Shown below the answer,
-   * so a person reads the answer first. For people only.
+   * so a person reads the answer first. Shown as given: quote the
+   * model's own words yourself. For people only.
    *
    * @param output - What the model returned, as stored.
    * @returns The line, or null to show none for this output.

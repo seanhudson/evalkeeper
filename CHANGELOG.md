@@ -7,6 +7,17 @@ version may change an interface, and its entry says how to update.
 
 ## 0.17.1 - 2026-11-17
 
+### Added
+
+- `Suite.outputLine(output)`: one model's answer as a short line, shown
+  beside that model's latest test in the answer key, so a person can
+  compare what models wrote with the input and the answer.
+
+### Changed
+
+- The answer key's refresh button has the same green outline as **Add a
+  case**.
+
 ### Fixed
 
 - A yes-or-no value reads "Yes" or "No" instead of "true" or "false",

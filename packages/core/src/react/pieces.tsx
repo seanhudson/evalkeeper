@@ -431,7 +431,7 @@ export function IconSubmit(props: IconSubmitProps) {
       type="submit"
       aria-label={props.label}
       disabled={pending}
-      className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-line bg-card text-ink hover:bg-tint disabled:opacity-60"
+      className={`inline-flex h-8 w-8 items-center justify-center rounded-md disabled:opacity-60 ${QUIET_BUTTON}`}
     >
       {pending ? <Spinner /> : props.icon}
     </button>

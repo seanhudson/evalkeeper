@@ -90,9 +90,18 @@ it appears in the input. When models' latest tests disagree with the
 answer, the list says so on its own: that's the surest sign a case needs
 a closer look.
 
-Pick these by rule from the case (a dealbreaker beside what it rules
+Pick the look-at notes by rule from the case (a dealbreaker beside what it rules
 on), never from the drafted answer's own reasoning: that steers a person
 toward agreeing with the draft, which defeats the point of checking it.
+
+A suite's `outputLine` shows what each model wrote, beside its latest
+test, below the answer: "Get a full-time admin job in local
+government", or "Left as typed". It makes an answer easy to check
+against something concrete:
+
+```ts
+outputLine: (o) => o.headline ?? "Left as typed",
+```
 
 ![A drafted case open in the answer key: the ticket, the model's proposed category and urgency marked pending, and a button to confirm the answer.](screenshots/confirm-light.png "A drafted answer waiting for a person.")
 

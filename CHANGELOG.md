@@ -20,6 +20,11 @@ version may change an interface, and its entry says how to update.
 
 ### Fixed
 
+- After **The answer is right** or **Confirm this answer**, the rest of
+  the "Models split" list could vanish: saving an answer puts every
+  test out of date until it's regraded, and only the ten newest tests
+  were, so models whose latest test was older dropped out. Every model's
+  and setting's latest test is regraded now.
 - A yes-or-no value reads "Yes" or "No" instead of "true" or "false",
   and a field's `optionLabels` can name them ("true" → "Yes, as they
   typed it").

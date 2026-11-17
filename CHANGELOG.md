@@ -10,8 +10,9 @@ version may change an interface, and its entry says how to update.
 ### Added
 
 - `Suite.outputLine(output)`: one model's answer as a short line, shown
-  beside that model's latest test in the answer key, so a person can
-  compare what models wrote with the input and the answer.
+  beside that model's latest test in the answer key, after the answer
+  and the input, so a person can compare what models wrote with them.
+  It's shown as given: quote a model's own words yourself.
 
 ### Changed
 
@@ -20,6 +21,9 @@ version may change an interface, and its entry says how to update.
 
 ### Fixed
 
+- A model tested with repeats showed once per repeat under "Each model's
+  latest test", with React warning about duplicate keys. It shows once,
+  with the first repeat it got wrong, if any.
 - After **The answer is right** or **Confirm this answer**, the rest of
   the "Models split" list could vanish: saving an answer puts every
   test out of date until it's regraded, and only the ten newest tests

@@ -95,11 +95,17 @@ export async function AnswerKey({
     ? await app.store.listOutputsFor(runIds)
     : (await Promise.all(runIds.map((id) => app.store.listOutputs(id)))).flat();
   const byCase = new Map<string, { model: string; output: OutputRecord }[]>();
+  // One line per model: a test with repeats answered each case several
+  // times, so a case shows the first repeat the model got wrong, if any.
+  const right = (o: OutputRecord) => !o.error && allPassed(o.scores);
   for (const o of outputs) {
-    byCase.set(o.caseId, [
-      ...(byCase.get(o.caseId) ?? []),
-      { model: modelByRun.get(o.runId) ?? o.runId, output: o },
-    ]);
+    const model = modelByRun.get(o.runId) ?? o.runId;
+    const list = byCase.get(o.caseId) ?? [];
+    const i = list.findIndex((x) => x.model === model);
+    const had = list[i];
+    if (!had) list.push({ model, output: o });
+    else if (right(had.output) && !right(o)) list[i] = { model, output: o };
+    byCase.set(o.caseId, list);
   }
   const fields = suite.fields;
 
@@ -367,7 +373,7 @@ function CaseItem({
                 ))}
                 {!output.error && lineOf(output.output) && (
                   <span className="readable block">
-                    &ldquo;{lineOf(output.output)}&rdquo;
+                    {lineOf(output.output)}
                   </span>
                 )}
               </span>
@@ -515,7 +521,6 @@ function CaseItem({
           </section>
         )}
 
-        {checking && modelResults}
         {checking ? (
           <section className="space-y-2">
             <h4 className="text-xs font-semibold uppercase tracking-wide text-muted">
@@ -635,6 +640,8 @@ function CaseItem({
             )}
           </>
         )}
+        {/* After the input, to compare what models wrote with it. */}
+        {checking && modelResults}
       </div>
     </details>
   );

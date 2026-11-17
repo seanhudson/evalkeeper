@@ -95,12 +95,12 @@ on), never from the drafted answer's own reasoning: that steers a person
 toward agreeing with the draft, which defeats the point of checking it.
 
 A suite's `outputLine` shows what each model wrote, beside its latest
-test, below the answer: "Get a full-time admin job in local
-government", or "Left as typed". It makes an answer easy to check
-against something concrete:
+test, below the answer and the input: “Get a full-time admin job in
+local government”, or Left as typed. It's shown as given, so quote a
+model's own words yourself:
 
 ```ts
-outputLine: (o) => o.headline ?? "Left as typed",
+outputLine: (o) => (o.headline ? `“${o.headline}”` : "Left as typed"),
 ```
 
 ![A drafted case open in the answer key: the ticket, the model's proposed category and urgency marked pending, and a button to confirm the answer.](screenshots/confirm-light.png "A drafted answer waiting for a person.")

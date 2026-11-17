@@ -99,7 +99,9 @@ are left out and listed, so you can see what was skipped.
 **What you see:** on your feature's own page, an **Attacks resisted**
 column (the share of attack answers with no serious mistake), and an
 Attacks tab in its answer key. The suggestion never picks a model with
-more serious mistakes under attack than live.
+more serious mistakes under attack than live. Until the attack cases are
+made, the feature's page says so above its answer key, with **Make
+attack cases**; testing a model makes them too.
 
 **Add it:**
 

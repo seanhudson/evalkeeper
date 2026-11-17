@@ -16,6 +16,12 @@ none at 50 cases or fewer. Pass `rounds` in `CaseResult` (or use
 `withRounds` with the runner's `easyRounds`) for `answerKeyHealth` to
 suggest any.
 
+### Added
+
+- A feature with attack tests set up but no attack cases says so on its
+  own page, above its answer key, with **Make attack cases**. Before,
+  only the attack suite's own page offered it.
+
 ### Changed
 
 - **A floor of 50.** Easy cases are suggested for retiring only when a

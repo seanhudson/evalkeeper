@@ -5,6 +5,18 @@ Notable changes, newest first. The format follows
 follow [semantic versioning](https://semver.org/): until 1.0, a minor
 version may change an interface, and its entry says how to update.
 
+## Unreleased
+
+### Changed
+
+- typescript-eslint uses minimatch 11.0.1 or later, which fixes a denial
+  of service in glob patterns (a moderate advisory). eslint-plugin-tsdoc
+  still asks for an older typescript-eslint, so an `overrides` entry pins
+  minimatch under it until it ships the fix; the entry comes out then.
+  typedoc keeps minimatch 10 for now, since it breaks on 11: it only
+  reads this repo's own patterns, to build the API docs. Nothing in the
+  published package changes.
+
 ## 0.16.0 - 2026-11-16
 
 The evals hub says where each suite stands in one word and color, with

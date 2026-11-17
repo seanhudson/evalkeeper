@@ -104,6 +104,12 @@ for (const scheme of SCHEMES) {
 
     await page.goto("/evals");
     await shot("hub");
+    // The suites, grouped by standing, at the top of the screen.
+    await page.locator("#suites").evaluate((el) => {
+      el.scrollIntoView();
+      window.scrollBy(0, -24);
+    });
+    await shot("hub-suites");
 
     await page.goto("/evals/ticket_triage");
     await page

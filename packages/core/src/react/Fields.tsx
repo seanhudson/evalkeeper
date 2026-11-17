@@ -1,7 +1,7 @@
 import { InfoTip, Select, TextArea, TextInput } from "./pieces.js";
+import { ReadableValue } from "./Readable.js";
 import {
   ANSWER_JSON_FIELD,
-  asText,
   fieldValue,
   type AnswerEditorProps,
   type FormField,
@@ -42,7 +42,7 @@ export function Fields({
               >
                 {f.options?.map((o) => (
                   <option key={o} value={o}>
-                    {o.replace(/_/g, " ")}
+                    {f.optionLabels?.[o] ?? o.replace(/_/g, " ")}
                   </option>
                 ))}
               </Select>
@@ -73,19 +73,26 @@ export function Fields({
   );
 }
 
-/** A stored input or answer, read with the suite's field labels. */
+/**
+ * A stored input or answer, read with the suite's field labels: objects as
+ * labeled rows, long text folded, never raw data. `marks` are highlighted
+ * (a suite's `lookAt`).
+ */
 export function FieldValues({
   fields,
   values,
   prefix = "",
+  marks,
 }: {
   fields: FormField[];
   values: unknown;
   /** Keeps tooltip ids unique when a page shows several. */
   prefix?: string;
+  /** Text to highlight wherever it appears. */
+  marks?: string[] | undefined;
 }) {
   return (
-    <dl className="space-y-2">
+    <dl className="space-y-3">
       {fields.map((f) => {
         const v = (values as Record<string, unknown> | null)?.[f.name];
         return (
@@ -94,23 +101,15 @@ export function FieldValues({
               {f.label}
               <InfoTip text={f.help} id={`${prefix}${f.name}-read`} />
             </dt>
-            <dd className="readable break-words whitespace-pre-wrap">
-              {f.kind === "json" && v !== undefined && v !== null ? (
-                <pre className="text-xs whitespace-pre-wrap">
-                  {JSON.stringify(v, null, 2)}
-                </pre>
-              ) : Array.isArray(v) ? (
-                v.length ? (
-                  <ul className="list-disc pl-5">
-                    {v.map((x, i) => (
-                      <li key={i}>{asText(x)}</li>
-                    ))}
-                  </ul>
-                ) : (
-                  <span className="text-muted">None</span>
-                )
+            <dd className="mt-0.5 break-words">
+              {f.kind === "select" &&
+              typeof v === "string" &&
+              f.optionLabels?.[v] ? (
+                f.optionLabels[v]
+              ) : f.kind === "json" && typeof v === "string" ? (
+                <ReadableValue value={parseJson(v)} marks={marks} />
               ) : (
-                (asText(v) || "—").replace(/_/g, " ")
+                <ReadableValue value={v} marks={marks} />
               )}
             </dd>
           </div>
@@ -118,6 +117,15 @@ export function FieldValues({
       })}
     </dl>
   );
+}
+
+/** A JSON field stored as text, parsed when it parses. */
+function parseJson(text: string): unknown {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
 }
 
 /**

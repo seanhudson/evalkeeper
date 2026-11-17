@@ -7,7 +7,39 @@ version may change an interface, and its entry says how to update.
 
 ## Unreleased
 
+Reviewing a case is quicker to read and to act on.
+
+Update: nothing required. To point reviewers at what matters, give a
+suite a `lookAt`; to show Evalkeeper's messages as your app's toasts,
+pass `notify` to `EvalComponentsProvider`.
+
+### Added
+
+- `Suite.lookAt(input, answer)`: notes on what to check for a case, with
+  text to highlight in its input. The answer key shows them under
+  **Look at**, and adds a note on its own when models' latest tests
+  disagree with the answer.
+- `notify` in `EvalComponents`: your app's toast for quick actions.
+  `useNotify()` reads it.
+- `FormField.optionLabels`: how each option of a choice reads to a
+  person ("YES" shows as "Would apply").
+- `CaseStatusChip`, `ReadableValue`, `Marked`, and `Folded`, for pages
+  of your own.
+
 ### Changed
+
+- An unconfirmed case opens with **Check this answer**: the proposed
+  answer, what to look at, and **Confirm this answer** and **Edit
+  answer** together, with the input below.
+- Stored inputs and answers read like a page, never raw JSON: objects as
+  labeled rows, lists of records as blocks, links as links, long text
+  folded with its headings and lists, and all-caps values in sentence
+  case ("VERIFIED" reads "Verified").
+- **Confirm this answer** marks the case Confirmed at once, before the
+  save finishes. A failed save opens the case again and says so.
+- On the evals hub, each reason under a suite's name has an icon and its
+  standing's color (red for serious, amber for what to improve), so it
+  isn't missed.
 
 - typescript-eslint uses minimatch 11.0.1 or later, which fixes a denial
   of service in glob patterns (a moderate advisory). eslint-plugin-tsdoc

@@ -20,12 +20,13 @@ import {
   FROM_BASE_CASE,
   isShippedReview,
 } from "../index.js";
-import { Check, ChevronRight, CircleAlert, X } from "lucide-react";
+import { Check, ChevronRight, CircleAlert, Eye, X } from "lucide-react";
 import type { EvalAppConfig } from "./app.js";
 import { AnswerInput, FieldValues, Fields } from "./Fields.js";
 import { AddCaseHeader, OpenLinkedCase } from "./AddCase.js";
 import { CaseMenu } from "./CaseMenu.js";
-import { ConfirmAnswer } from "./ConfirmAnswer.js";
+import { CaseStatusChip, ConfirmAnswer } from "./ConfirmAnswer.js";
+import { ReadableValue } from "./Readable.js";
 
 /** A suite's cases in use, with each case's answers newest first. */
 async function loadCases(
@@ -38,11 +39,17 @@ async function loadCases(
   }));
 }
 
+const CONFIRMED_STATUS = {
+  text: "Confirmed",
+  tone: "live",
+  term: "confirmed",
+} as const satisfies { text: string; tone: ChipTone; term: GlossaryTerm };
+
 const STATUS: Record<
   string,
   { text: string; tone: ChipTone; term: GlossaryTerm }
 > = {
-  CONFIRMED: { text: "Confirmed", tone: "live", term: "confirmed" },
+  CONFIRMED: CONFIRMED_STATUS,
   PROVISIONAL: { text: "Provisional", tone: "warn", term: "provisional" },
   PENDING: { text: "Pending", tone: "warn", term: "pending" },
 };
@@ -283,6 +290,31 @@ function CaseItem({
   const label = (key: string) =>
     suite.checks.find((x) => x.key === key)?.label ?? key;
   const tags = Array.isArray(c.tags) ? c.tags : [];
+  // An answer nobody has confirmed: shown first, to check.
+  const checking =
+    !readOnly &&
+    (answer?.status === "PENDING" || answer?.status === "PROVISIONAL");
+  const looks: string[] = [];
+  let marks: string[] = [];
+  try {
+    const found = suite.lookAt?.(input, answer?.value ?? null) ?? [];
+    looks.push(...found.map((l) => l.note));
+    marks = found.flatMap((l) => l.marks ?? []);
+  } catch {
+    // A suite's pointers are a help, never a reason the case can't show.
+  }
+  // Models disagreeing with the answer is the surest sign to look closer.
+  if (answer && results.length > 1 && right < results.length)
+    looks.push(
+      right === 0
+        ? "no model's latest test agrees with this answer"
+        : `models split: ${right} of ${results.length} agree with this answer`,
+    );
+  const inputFallback = suite.describe ? (
+    <pre className="whitespace-pre-wrap text-xs">{suite.describe(input)}</pre>
+  ) : (
+    <ReadableValue value={c.input} marks={marks} />
+  );
 
   return (
     <details
@@ -302,9 +334,12 @@ function CaseItem({
           <span className="readable min-w-0">{suite.title(input)}</span>
         </span>
         <span className="flex shrink-0 items-center gap-1.5">
-          <Tip term={status.term} id={`status-${c.id}`}>
-            <Chip tone={status.tone}>{status.text}</Chip>
-          </Tip>
+          <CaseStatusChip
+            labelId={answer?.id ?? null}
+            status={status}
+            confirmed={CONFIRMED_STATUS}
+            id={`status-${c.id}`}
+          />
           {shipped && (
             <Tip term={shipped.term} id={`reviewed-${c.id}`}>
               <Chip tone="neutral">{shipped.text}</Chip>
@@ -331,49 +366,92 @@ function CaseItem({
       </summary>
 
       <div className="relative space-y-5 px-3 pb-4 text-sm">
-        <div className="grid gap-5 md:grid-cols-2">
-          <section className="space-y-2">
-            <h4 className="text-xs font-semibold uppercase tracking-wide text-muted">
-              Input
-            </h4>
-            {suite.fields ? (
-              <FieldValues
-                fields={suite.fields.input}
-                values={c.input}
-                prefix={`${c.id}-in-`}
+        {checking && (
+          // What to check first, with its buttons: the answer, and what
+          // it turns on. Clear of the case menu's button on the right.
+          <section
+            aria-label="Check this answer"
+            className="space-y-3 rounded-md border border-good/25 bg-good/5 p-3 pr-12"
+          >
+            <div className="space-y-1">
+              <h4 className="text-xs font-medium text-good">
+                Check this answer
+              </h4>
+              {suite.fields ? (
+                <FieldValues
+                  fields={suite.fields.label}
+                  values={answer.value}
+                  prefix={`${c.id}-ans-`}
+                />
+              ) : (
+                <ReadableValue value={answer.value} />
+              )}
+              {shipped && answer.note && (
+                <p className="readable text-xs text-muted">{answer.note}</p>
+              )}
+            </div>
+            {looks.length > 0 && (
+              <div className="readable text-sm">
+                <p className="flex items-center gap-1.5 text-xs font-medium">
+                  <Eye
+                    aria-hidden
+                    className="h-3.5 w-3.5 shrink-0 text-muted"
+                  />
+                  Look at
+                </p>
+                <ul className="mt-1 list-disc space-y-0.5 pl-5">
+                  {looks.map((l) => (
+                    <li key={l}>{l.charAt(0).toUpperCase() + l.slice(1)}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {
+              <CaseMenu
+                suite={suite.key}
+                caseId={c.id}
+                retire={app.actions.retireCase}
+                review={
+                  <ConfirmAnswer
+                    action={app.actions.confirmAnswer}
+                    suite={suite.key}
+                    labelId={answer.id}
+                  />
+                }
+                editLabel={
+                  suite.fields &&
+                  (suite.labelFromForm || app.answerEditors[suite.key])
+                    ? "Edit answer"
+                    : null
+                }
+                edit={
+                  suite.fields && (
+                    <form
+                      key={answer.updatedAt.toISOString()}
+                      action={app.actions.editAnswer}
+                      className="space-y-4"
+                    >
+                      <input type="hidden" name="suite" value={suite.key} />
+                      <input type="hidden" name="case" value={c.id} />
+                      <AnswerInput
+                        fields={suite.fields.label}
+                        editor={app.answerEditors[suite.key]}
+                        input={c.input}
+                        values={answer.value}
+                        prefix={`${c.id}-`}
+                      />
+                      <p className="readable text-xs text-muted">
+                        Saves a new confirmed answer and keeps the old one in
+                        the history. Tests are rescored for free.
+                      </p>
+                      <Submit>Save answer</Submit>
+                    </form>
+                  )
+                }
               />
-            ) : (
-              <pre className="whitespace-pre-wrap text-xs">
-                {suite.describe?.(input) ?? JSON.stringify(c.input, null, 2)}
-              </pre>
-            )}
+            }
           </section>
-          <section className="space-y-2">
-            <h4 className="text-xs font-semibold uppercase tracking-wide text-muted">
-              Answer
-            </h4>
-            {answer && suite.fields ? (
-              <FieldValues
-                fields={suite.fields.label}
-                values={answer.value}
-                prefix={`${c.id}-ans-`}
-              />
-            ) : (
-              <pre className="whitespace-pre-wrap text-xs">
-                {JSON.stringify(answer?.value ?? null, null, 2)}
-              </pre>
-            )}
-            {shipped && answer?.note && (
-              <p className="readable text-xs text-muted">{answer.note}</p>
-            )}
-            {(tags.length > 0 || c.note) && (
-              <p className="readable text-xs text-muted">
-                {tags.length > 0 && `Tags: ${tags.join(", ")}. `}
-                {c.note}
-              </p>
-            )}
-          </section>
-        </div>
+        )}
 
         {results.length > 0 && (
           <section className="space-y-2">
@@ -422,57 +500,123 @@ function CaseItem({
           </section>
         )}
 
-        {!readOnly && (
-          <CaseMenu
-            suite={suite.key}
-            caseId={c.id}
-            retire={app.actions.retireCase}
-            startEditing={!answer}
-            // Pending or provisional: confirm it as it is, or change it.
-            review={
-              answer &&
-              (answer.status === "PENDING" ||
-                answer.status === "PROVISIONAL") && (
-                <ConfirmAnswer
-                  action={app.actions.confirmAnswer}
-                  suite={suite.key}
-                  labelId={answer.id}
-                />
-              )
-            }
-            editLabel={
-              suite.fields &&
-              (suite.labelFromForm || app.answerEditors[suite.key])
-                ? answer
-                  ? "Edit answer"
-                  : "Write the answer"
-                : null
-            }
-            edit={
-              suite.fields && (
-                <form
-                  key={answer?.updatedAt.toISOString() ?? "none"}
-                  action={app.actions.editAnswer}
-                  className="space-y-4"
-                >
-                  <input type="hidden" name="suite" value={suite.key} />
-                  <input type="hidden" name="case" value={c.id} />
-                  <AnswerInput
-                    fields={suite.fields.label}
-                    editor={app.answerEditors[suite.key]}
-                    input={c.input}
-                    values={answer?.value}
-                    prefix={`${c.id}-`}
+        {checking ? (
+          <section className="space-y-2">
+            <h4 className="text-xs font-semibold uppercase tracking-wide text-muted">
+              Input
+            </h4>
+            {suite.fields ? (
+              <FieldValues
+                fields={suite.fields.input}
+                values={c.input}
+                prefix={`${c.id}-in-`}
+                marks={marks}
+              />
+            ) : (
+              inputFallback
+            )}
+            {(tags.length > 0 || c.note) && (
+              <p className="readable text-xs text-muted">
+                {tags.length > 0 && `Tags: ${tags.join(", ")}. `}
+                {c.note}
+              </p>
+            )}
+          </section>
+        ) : (
+          <>
+            <div className="grid gap-5 md:grid-cols-2">
+              <section className="space-y-2">
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-muted">
+                  Input
+                </h4>
+                {suite.fields ? (
+                  <FieldValues
+                    fields={suite.fields.input}
+                    values={c.input}
+                    prefix={`${c.id}-in-`}
+                    marks={marks}
                   />
+                ) : (
+                  inputFallback
+                )}
+              </section>
+              <section className="space-y-2">
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-muted">
+                  Answer
+                </h4>
+                {answer && suite.fields ? (
+                  <FieldValues
+                    fields={suite.fields.label}
+                    values={answer.value}
+                    prefix={`${c.id}-ans-`}
+                  />
+                ) : (
+                  <ReadableValue value={answer?.value ?? null} />
+                )}
+                {shipped && answer?.note && (
+                  <p className="readable text-xs text-muted">{answer.note}</p>
+                )}
+                {(tags.length > 0 || c.note) && (
                   <p className="readable text-xs text-muted">
-                    Saves a new confirmed answer and keeps the old one in the
-                    history. Tests are rescored for free.
+                    {tags.length > 0 && `Tags: ${tags.join(", ")}. `}
+                    {c.note}
                   </p>
-                  <Submit>Save answer</Submit>
-                </form>
-              )
-            }
-          />
+                )}
+              </section>
+            </div>
+            {!readOnly && (
+              <CaseMenu
+                suite={suite.key}
+                caseId={c.id}
+                retire={app.actions.retireCase}
+                startEditing={!answer}
+                // Pending or provisional: confirm it as it is, or change it.
+                review={
+                  answer &&
+                  (answer.status === "PENDING" ||
+                    answer.status === "PROVISIONAL") && (
+                    <ConfirmAnswer
+                      action={app.actions.confirmAnswer}
+                      suite={suite.key}
+                      labelId={answer.id}
+                    />
+                  )
+                }
+                editLabel={
+                  suite.fields &&
+                  (suite.labelFromForm || app.answerEditors[suite.key])
+                    ? answer
+                      ? "Edit answer"
+                      : "Write the answer"
+                    : null
+                }
+                edit={
+                  suite.fields && (
+                    <form
+                      key={answer?.updatedAt.toISOString() ?? "none"}
+                      action={app.actions.editAnswer}
+                      className="space-y-4"
+                    >
+                      <input type="hidden" name="suite" value={suite.key} />
+                      <input type="hidden" name="case" value={c.id} />
+                      <AnswerInput
+                        fields={suite.fields.label}
+                        editor={app.answerEditors[suite.key]}
+                        input={c.input}
+                        values={answer?.value}
+                        prefix={`${c.id}-`}
+                      />
+                      <p className="readable text-xs text-muted">
+                        Saves a new confirmed answer and keeps the old one in
+                        the history. Tests are rescored for free.
+                      </p>
+                      <Submit>Save answer</Submit>
+                    </form>
+                  )
+                }
+              />
+            )}
+          </>
         )}
       </div>
     </details>

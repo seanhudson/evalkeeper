@@ -286,6 +286,27 @@ export type Suite<Input, Output, Label> = {
    * the model, so it doesn't change the instructions hash.
    */
   answerGuide?: AnswerGuide;
+  /**
+   * What a person should look at to check this case's answer: shown with
+   * the answer to confirm ("Look at: pay is below their floor"), each
+   * note's `marks` highlighted wherever they appear in the input. Pick
+   * them by rule from the case (a dealbreaker beside what it rules on),
+   * never from the draft answer's own reasoning: that steers a person to
+   * agree with it. When models' tests disagree, the answer key says so on
+   * its own. For people only: it never reaches the model.
+   *
+   * @param input - The case's input, already checked against `input`.
+   * @param answer - The answer being checked, or null without one.
+   */
+  lookAt?(input: Input, answer: Label | null): LookAt[];
+};
+
+/** One thing to look at when checking an answer (`Suite.lookAt`). */
+export type LookAt = {
+  /** A short note: "pay is below their $70K floor". */
+  note: string;
+  /** Text to highlight in the case's input: "$55,000–$61,000". */
+  marks?: string[];
 };
 
 /** How to judge a suite's answers: a lead-in, the points, and a note. */
@@ -333,6 +354,8 @@ export type FormField = {
   kind: "text" | "textarea" | "select" | "lines" | "json";
   /** For "select". */
   options?: readonly string[];
+  /** For "select": how each option reads to a person ("YES" → "Would apply"). */
+  optionLabels?: Readonly<Record<string, string>>;
   required?: boolean;
 };
 

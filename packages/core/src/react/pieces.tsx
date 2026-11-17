@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { useFormStatus } from "react-dom";
-import { ArrowLeft, Info, LoaderCircle } from "lucide-react";
+import { ArrowLeft, CircleAlert, Info, LoaderCircle } from "lucide-react";
 import { GLOSSARY, type GlossaryTerm } from "../glossary.js";
 import {
   STANDING_LABEL,
@@ -120,7 +120,21 @@ export type EvalComponents = {
   TextArea: ComponentType<TextAreaProps>;
   Select: ComponentType<SelectProps>;
   RefreshWhile: ComponentType<RefreshWhileProps>;
+  /**
+   * Your app's toast, for what happened after a quick action (an answer
+   * confirmed, or a save that failed). Without it, the screens say so in
+   * place, and say nothing on success.
+   */
+  notify: Notify;
 };
+
+/** Shows a short message as your app does (`EvalComponents.notify`). */
+export type Notify = (type: "success" | "error", message: string) => void;
+
+/** Your app's toast, if it gave one (`EvalComponents.notify`). */
+export function useNotify(): Notify | undefined {
+  return useContext(Swapped).notify;
+}
 
 const Swapped = createContext<Partial<EvalComponents>>({});
 
@@ -271,12 +285,38 @@ export function StandingBadge({ standing }: { standing: HealthStanding }) {
  * footnote instead.
  */
 export function HealthReasons({ flags }: { flags: readonly HealthFlag[] }) {
-  const line = flags
+  const reasons = flags
     .filter((f) => f.kind !== "provisional" && f.kind !== "good")
-    .flatMap(flagChips)
-    .map((c) => c.text)
-    .join(" · ");
-  return line ? <p className="text-sm font-medium text-ink">{line}</p> : null;
+    .flatMap(flagChips);
+  if (!reasons.length) return null;
+  // Each in its standing's color with an icon, so it reads at a glance
+  // without another row of chips.
+  return (
+    <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium">
+      {reasons.map((r) => {
+        const urgent = r.tone === "serious" || r.tone === "warn";
+        return (
+          <li
+            key={r.text}
+            className={`inline-flex items-center gap-1.5 ${
+              r.tone === "serious"
+                ? "text-bad"
+                : r.tone === "warn"
+                  ? "text-warn"
+                  : "text-ink"
+            }`}
+          >
+            {urgent ? (
+              <CircleAlert aria-hidden className="h-4 w-4 shrink-0" />
+            ) : (
+              <Info aria-hidden className="h-4 w-4 shrink-0 text-muted" />
+            )}
+            {r.text}
+          </li>
+        );
+      })}
+    </ul>
+  );
 }
 
 /**

@@ -21,6 +21,9 @@ import {
   seconds,
   seriousMistakes,
   suggest,
+  withRounds,
+  EASY_FLOOR_CASES,
+  EASY_MIN_ROUNDS,
 } from "../index.js";
 import { AnswerKey } from "./AnswerKey.js";
 import { ModelMenu } from "./ModelMenu.js";
@@ -117,7 +120,14 @@ export async function loadSuitePage(app: EvalAppConfig, key: string) {
     (m, r) => (r.test && (!m || r.test.at > m) ? r.test.at : m),
     null,
   );
-  const health = answerKeyHealth(cases, b.caseResults, new Date(), testedAt);
+  // Rounds each case passed (read only past the floor of cases).
+  const rounds = await app.runner.easyRounds(key, cases);
+  const health = answerKeyHealth(
+    cases,
+    withRounds(b.caseResults, rounds),
+    new Date(),
+    testedAt,
+  );
   // For each split case, which models got it fully right and which didn't,
   // so a person sees the disagreement before deciding.
   const split = new Set(health.split.map((c) => c.id));
@@ -1169,7 +1179,7 @@ function UnderAttack({
 }
 
 /**
- * Keeping the answer key useful: easy cases to retire (a floor stays),
+ * Keeping the answer key useful: easy cases to retire (past a floor of 50),
  * cases models split on and near-duplicates to check, old drafts, and
  * tags with a single case. Shows only what needs a look, and nothing on
  * an injection suite, whose cases are made from its base suite's.
@@ -1376,12 +1386,11 @@ export function AnswerKeyHealthSection({ data }: { data: SuitePageData }) {
             {h.easyToRetire.length > 0 && (
               <div className="space-y-2">
                 <p>
-                  Every current model gets {cases(h.easy.length)} fully right,
-                  so they no longer tell models apart. Retire{" "}
-                  {h.easyToRetire.length} and keep{" "}
-                  {h.easy.length - h.easyToRetire.length} as a floor, so a test
-                  still catches a model that breaks the basics. Recent tests are
-                  rescored for free.
+                  Every model got {cases(h.easyToRetire.length)} fully right in{" "}
+                  {EASY_MIN_ROUNDS} or more rounds of testing, so they no longer
+                  tell models apart. Retiring them keeps{" "}
+                  {h.inUse - h.easyToRetire.length} cases, at or above the floor
+                  of {EASY_FLOOR_CASES}. Recent tests are rescored for free.
                   <InfoTip term="easyCases" />
                 </p>
                 {retireEasy && (

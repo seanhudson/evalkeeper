@@ -15,8 +15,18 @@ import { at } from "./util.js";
 export const EASY_MIN_MODELS = 3;
 /** Split: this many models or more, with 40–60% fully right. */
 export const SPLIT_MIN_MODELS = 4;
-/** Easy cases kept as a regression floor, as a share of cases in use. */
-export const EASY_FLOOR = 0.1;
+/**
+ * Retiring easy cases never takes a suite below this many cases in use,
+ * and isn't suggested at or under it: a small answer key keeps every case.
+ */
+export const EASY_FLOOR_CASES = 50;
+/**
+ * Rounds of testing a case must pass before it can be retired as easy: days
+ * on which at least EASY_MIN_MODELS models were tested on it and all got it
+ * fully right, counted from its answer's last change. One good round can be
+ * luck; a case right about nine times in ten rarely passes four.
+ */
+export const EASY_MIN_ROUNDS = 4;
 /** Drafts unreviewed this long retire. */
 export const STALE_DRAFT_DAYS = 30;
 /** Inputs this similar (shared words) are near-duplicates. */
@@ -31,6 +41,13 @@ export type CaseResult = {
    * other cases' results depend on it, so it's never easy to retire.
    */
   ranked?: boolean | undefined;
+  /**
+   * Rounds the case passed (EASY_MIN_ROUNDS): days at least
+   * EASY_MIN_MODELS models were tested on it and all got it fully right,
+   * since its answer last changed. Counted only when the suite is over
+   * EASY_FLOOR_CASES, since nothing can be retired otherwise.
+   */
+  rounds?: number | undefined;
 };
 
 /**
@@ -61,11 +78,13 @@ export function isSplit(r: CaseResult | undefined): boolean {
 export function easyToRetire<
   C extends { id: string; smoke: boolean; createdAt: Date },
 >(easy: C[], inUse: number): C[] {
-  const keep = Math.max(1, Math.ceil(inUse * EASY_FLOOR));
+  // Never below the floor: with 52 in use, at most 2 go.
+  const room = Math.max(0, inUse - EASY_FLOOR_CASES);
+  // The quick set's and the oldest stay longest; newer ones go first.
   const ordered = [...easy].sort(
     (a, b) => Number(b.smoke) - Number(a.smoke) || +a.createdAt - +b.createdAt,
   );
-  return ordered.slice(keep);
+  return ordered.slice(Math.max(0, ordered.length - room));
 }
 
 const words = (input: unknown) =>
@@ -128,7 +147,10 @@ export type AnswerKeyHealth<C> = {
   inUse: number;
   /** Cases in use every current model gets fully right. */
   easy: C[];
-  /** Of the easy ones, those to retire; the rest stay as a floor. */
+  /**
+   * Of the easy ones, those to retire: passed EASY_MIN_ROUNDS rounds, and
+   * only as many as keep the suite at EASY_FLOOR_CASES or more.
+   */
   easyToRetire: C[];
   /** Cases in use that models divide about evenly on. */
   split: C[];
@@ -140,6 +162,19 @@ export type AnswerKeyHealth<C> = {
   tags: [string, number][];
 };
 
+/** The board's per-case results with the rounds each case passed. */
+export function withRounds(
+  caseResults: Readonly<Record<string, CaseResult>>,
+  rounds: Readonly<Record<string, number>>,
+): Record<string, CaseResult> {
+  return Object.fromEntries(
+    Object.entries(caseResults).map(([id, r]) => [
+      id,
+      { ...r, rounds: rounds[id] ?? 0 },
+    ]),
+  );
+}
+
 /** Whether a person confirmed the case's answer after `at`. */
 function checkedSince(labels: readonly LabelLike[], since: Date): boolean {
   const answer = confirmedLabel(labels);
@@ -148,13 +183,14 @@ function checkedSince(labels: readonly LabelLike[], since: Date): boolean {
 
 /**
  * A suite's answer-key health, from its cases (retired ones are ignored)
- * and how each case fared across the board's current tests. The floor of
- * easy cases keeps the quick set's first, so the weekly check still
- * catches a regression on the basics.
+ * and how each case fared across the board's current tests. Easy cases are
+ * suggested for retiring only past EASY_FLOOR_CASES, and only once they've
+ * passed EASY_MIN_ROUNDS rounds; the quick set's stay longest.
  *
  * @param cases - The suite's cases, with their answers.
  * @param caseResults - Per case, how many current models tested it and
- *   got it fully right (the board's `caseResults`).
+ *   got it fully right, and the rounds it passed (the board's
+ *   `caseResults`, with `rounds` from the runner's `easyRounds`).
  * @param today - Now, for old drafts.
  * @param testedAt - When the newest current test ran. A split case whose
  *   answer a person confirmed after it ("the answer is right") isn't
@@ -177,9 +213,12 @@ export function answerKeyHealth<C extends HealthCase>(
     ),
   );
   const easy = inUse.filter((c) => isEasy(caseResults[c.id]));
+  const proven = easy.filter(
+    (c) => (caseResults[c.id]?.rounds ?? 0) >= EASY_MIN_ROUNDS,
+  );
   const retire = new Set(
     easyToRetire(
-      easy.map((c) => ({ ...c, smoke: quick.has(c.id) })),
+      proven.map((c) => ({ ...c, smoke: quick.has(c.id) })),
       inUse.length,
     ).map((c) => c.id),
   );

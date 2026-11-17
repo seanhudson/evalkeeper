@@ -44,7 +44,7 @@ Once three or more models have current tests, each feature's page shows
 **Answer key health** above the answer key, when something needs a
 look:
 
-![The answer key health panel: easy cases to retire with a floor kept, cases models split on, and tags with a single case.](screenshots/health-light.png "Answer key health on the ticket triage feature.")
+![The answer key health panel: cases models split on, and tags with a single case.](screenshots/health-light.png "Answer key health on the ticket triage feature.")
 
 It lists what to do, in order:
 
@@ -65,18 +65,26 @@ It lists what to do, in order:
    topics and press **Draft cases for the topics you picked** (two each;
    pick none for all). Otherwise, a topic opens **Add a case** with it
    already tagged, and **Add a case** beside them opens it untagged. **Show all topics** lists every tag and its count.
-3. **Retire these.** Cases every current model gets fully right: **Retire
-   N easy cases** retires them all but a floor, then rescores recent
-   tests for free. And drafts nobody reviewed in 30 days, which the
+3. **Retire these.** Cases every model got fully right in four rounds of
+   testing, on a suite past 50 cases: **Retire N easy cases** retires as
+   many as keep it at 50 or more, then rescores recent tests for free. And drafts nobody reviewed in 30 days, which the
    weekly check retires on its own, or **Retire N old drafts now**.
 
-### The floor
+### When a case counts as easy
 
-Retiring every easy case would leave nothing to catch a model that
-breaks the basics. So some easy cases stay: as many as a tenth of the
-cases in use, and at least one. The quick set's cases are kept first,
-since the weekly check runs those. A case counts as easy only once three or more current models all
-get it right; one model getting it right isn't evidence.
+The point of the answer key is to keep adding cases that tell models
+apart, so retiring is slow and rare by design:
+
+- **A floor of 50.** Nothing is suggested while a suite has 50 cases in
+  use or fewer, and retiring never takes it below 50. With 52, at most 2
+  go; the quick set's and the oldest stay longest.
+- **Four rounds.** A case qualifies only after four rounds of testing:
+  days on which three or more models were tested on it and every one got
+  it fully right, each model counted once and right only if every repeat
+  was. One good round can be luck: a case models get right nine times in
+  ten passes four rounds only about a quarter of the time.
+- **Since its answer last changed.** Edit or reconfirm an answer and its
+  rounds start over: passes against an old answer don't count.
 
 A case a ranking compares with others (a suite's `gradeTogether`, like
 "a role you'd apply to scores above one you'd skip") is never easy, even

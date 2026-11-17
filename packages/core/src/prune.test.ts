@@ -25,7 +25,7 @@ describe("pruning", () => {
     expect(isSplit({ passed: 1, models: 2 })).toBe(false);
   });
 
-  it("keeps a floor of easy cases, smoke cases first", () => {
+  it("never takes a suite below 50 cases; newer ones go first", () => {
     const d = (i: number) => new Date(2026, 0, i);
     const easy = [
       { id: "a", smoke: false, createdAt: d(1) },
@@ -33,8 +33,17 @@ describe("pruning", () => {
       { id: "c", smoke: false, createdAt: d(2) },
       { id: "d", smoke: false, createdAt: d(3) },
     ];
-    // 20 in use: keep 2 (b for smoke, then a, the oldest).
-    expect(easyToRetire(easy, 20).map((c) => c.id)).toEqual(["c", "d"]);
+    // 50 in use or fewer: nothing goes.
+    expect(easyToRetire(easy, 20)).toEqual([]);
+    expect(easyToRetire(easy, 50)).toEqual([]);
+    // 52: two go, the newest first; the quick set's stay longest.
+    expect(easyToRetire(easy, 52).map((c) => c.id)).toEqual(["c", "d"]);
+    expect(easyToRetire(easy, 99).map((c) => c.id)).toEqual([
+      "b",
+      "a",
+      "c",
+      "d",
+    ]);
   });
 
   it("finds near-duplicate inputs", () => {
@@ -115,7 +124,7 @@ describe("pruning", () => {
         }),
         kase("17", { status: "RETIRED" }),
       ];
-      const easy = { passed: 3, models: 3 };
+      const easy = { passed: 3, models: 3, rounds: 4 };
       const results: Record<string, CaseResult> = {
         "1": easy,
         "2": easy,
@@ -128,8 +137,8 @@ describe("pruning", () => {
       const h = answerKeyHealth(cases, results, today);
       expect(h.inUse).toBe(14);
       expect(h.easy.map((c) => c.id)).toEqual(["1", "2", "3", "4"]);
-      // 14 in use keeps 2 easy cases as a floor, quick-set cases first.
-      expect(h.easyToRetire).toHaveLength(2);
+      // 14 in use is under the floor of 50: nothing to retire.
+      expect(h.easyToRetire).toHaveLength(0);
       expect(h.split.map((c) => c.id)).toEqual(["5"]);
       expect(h.duplicates.map(([a, b]) => [a.id, b.id])).toEqual([
         ["13", "14"],
@@ -139,6 +148,23 @@ describe("pruning", () => {
         ["login", 10],
         ["billing", 2],
       ]);
+    });
+
+    it("suggests retiring only past 50 cases, after 4 rounds", () => {
+      const cases = Array.from({ length: 53 }, (_, i) => kase(String(i + 1)));
+      const results: Record<string, CaseResult> = {
+        "1": { passed: 3, models: 3, rounds: 4 },
+        "2": { passed: 3, models: 3, rounds: 5 },
+        "3": { passed: 3, models: 3, rounds: 3 },
+        "4": { passed: 3, models: 3, rounds: 4 },
+        "5": { passed: 3, models: 3, rounds: 4, ranked: true },
+      };
+      const h = answerKeyHealth(cases, results, today);
+      expect(h.easy.map((c) => c.id)).toEqual(["1", "2", "3", "4"]);
+      // 3 in rounds (not "3", only 3 rounds; not "5", ranked), and room for 3.
+      expect(h.easyToRetire.map((c) => c.id).sort()).toEqual(["1", "2", "4"]);
+      const fewer = answerKeyHealth(cases.slice(0, 51), results, today);
+      expect(fewer.easyToRetire).toHaveLength(1);
     });
 
     it("leaves out a split case someone checked after the newest test", () => {

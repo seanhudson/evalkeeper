@@ -3,10 +3,9 @@ import { PrismaClient } from "@prisma/client";
 import { prismaStore } from "@crowandraven/evalkeeper/prisma";
 
 // Answer-key health on a feature's page: an old draft nobody reviewed is
-// retired from the panel, and easy cases are offered for retirement once
-// every model has been tested. The easy cases aren't retired here, so the
-// other tests keep the example's answer key. The draft is made-up and
-// removed afterwards.
+// retired from the panel, and a suite under 50 cases keeps every case
+// even when every model gets them right. The draft is made-up and removed
+// afterwards.
 
 const prisma = new PrismaClient({ datasourceUrl: "file:./e2e.db" });
 const MARK = "e2e old draft";
@@ -57,7 +56,7 @@ test("retires an old draft from the answer-key health panel", async ({
   await expect(draft).toHaveCount(0);
 });
 
-test("offers to retire easy cases once every model is tested", async ({
+test("keeps every case of a suite under 50, even when all models get them right", async ({
   page,
 }) => {
   await page.goto("/evals/ticket_triage");
@@ -66,11 +65,8 @@ test("offers to retire easy cases once every model is tested", async ({
     timeout: 60_000,
   });
   await page.reload();
-  const health = page.locator('section[aria-labelledby="answer-key-health"]');
+  // 16 cases: under the floor of 50, so nothing is offered for retiring.
   await expect(
-    health.getByText(/fully right, so they no longer tell/),
-  ).toBeVisible();
-  await expect(
-    health.getByRole("button", { name: /^Retire \d+ easy cases?$/ }),
-  ).toBeVisible();
+    page.getByRole("button", { name: /^Retire \d+ easy cases?$/ }),
+  ).toHaveCount(0);
 });

@@ -130,9 +130,9 @@ export const GLOSSARY = {
   answerKeyHealth:
     "What would keep this answer key useful: cases that no longer tell models apart, cases to check, near-duplicates, old drafts, and thin tags.",
   easyCases:
-    "Cases every current model gets fully right, with at least 3 models tested. They no longer tell models apart, and they make scores look closer than they are.",
+    "Cases 3 or more models got fully right in 4 rounds of testing (days), since the answer last changed. Suggested for retiring only past 50 cases; never a case a ranking compares.",
   easyFloor:
-    "Easy cases kept so a test still catches a model that breaks the basics: about a tenth of the cases in use, quick set first.",
+    "A suite keeps at least 50 cases: easy ones are never retired below that, and none are suggested at or under it.",
   splitCases:
     "Cases models divide about evenly on. Often the answer is unclear, so check it. Once it's right, it's the most useful kind of case.",
   nearDuplicates:

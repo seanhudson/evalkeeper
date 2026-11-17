@@ -26,6 +26,10 @@ updates:
       # Matches the oldest Node the packages support (20) and CI's newest (22).
       - dependency-name: "@types/node"
         update-types: [version-update:semver-major]
+      # TypeScript 7 waits on typescript-eslint (below 6.1) and typedoc (up
+      # to 6.0). Remove once both support it.
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
   - package-ecosystem: github-actions
     directory: /
     schedule:

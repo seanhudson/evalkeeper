@@ -17,7 +17,7 @@
     "@ai-sdk/anthropic": "^4.0.89",
     "@ai-sdk/openai": "^4.0.103",
     "@ai-sdk/typesafe-ai": "^3.0.40",
-    "@crowandraven/evalkeeper": "0.17.0",
+    "@crowandraven/evalkeeper": "0.17.1",
     "@prisma/client": "^6.19.3",
     "ai": "^7.0.173",
     "lucide-react": "^1.73.0",

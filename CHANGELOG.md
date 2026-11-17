@@ -5,6 +5,18 @@ Notable changes, newest first. The format follows
 follow [semantic versioning](https://semver.org/): until 1.0, a minor
 version may change an interface, and its entry says how to update.
 
+## 0.17.2 - 2026-11-17
+
+### Fixed
+
+- **Retire easy cases** no longer retires a case that a suite's
+  `gradeTogether` compares with others (a ranking). Every model getting
+  it right doesn't make it useless: other cases' results depend on it,
+  and retiring the clear-cut ones left only close calls, so a ranking
+  score dropped with no model getting worse. Checks from
+  `gradeTogether` are now marked `together`, per-case results say
+  `ranked`, and retiring regrades first so older tests get the mark.
+
 ## 0.17.1 - 2026-11-17
 
 ### Added

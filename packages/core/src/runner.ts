@@ -16,7 +16,7 @@ import {
 import type { BoardRow } from "./board.js";
 import { allPassed } from "./stats.js";
 import { pickQuickSet } from "./quickSet.js";
-import { answerKeyHealth } from "./prune.js";
+import { answerKeyHealth, type CaseResult } from "./prune.js";
 import { stableJson } from "./stableJson.js";
 import { suiteMetrics, type ScoredOutput } from "./stats.js";
 import type {
@@ -520,7 +520,10 @@ export function createRunner(opts: RunnerOptions) {
           label: parsed?.success ? parsed.data : null,
         };
       });
-      const extra = suite.gradeTogether(answers);
+      // Marked, so the case is known to matter to others (never easy).
+      const extra = suite
+        .gradeTogether(answers)
+        .map((cs) => cs.map((c) => ({ ...c, together: true })));
       await mapLimit(
         group.map((o, i) => ({ o, add: extra[i] ?? [] })),
         6,
@@ -805,6 +808,9 @@ export function createRunner(opts: RunnerOptions) {
    * Returns how many it retired.
    */
   async function retireEasy(suiteKey: string): Promise<number> {
+    // Regraded first, so every compared case is marked as such (tests
+    // graded before the mark existed have none).
+    if (suiteOrThrow(suiteKey).gradeTogether) await rescoreRecent(suiteKey);
     const { easyToRetire } = await answerKeyHealthOf(suiteKey);
     for (const c of easyToRetire) await store.setCaseStatus(c.id, "RETIRED");
     if (easyToRetire.length) await rescoreRecent(suiteKey);
@@ -1219,7 +1225,7 @@ export function createRunner(opts: RunnerOptions) {
         a.label.localeCompare(b.label),
     );
     // How each case fared across current, complete tests: easy and split cases.
-    const caseResults: Record<string, { passed: number; models: number }> = {};
+    const caseResults: Record<string, CaseResult> = {};
     for (const row of rows) {
       if (row.variant || !row.test || row.test.stale || row.test.failedAnswers)
         continue;
@@ -1227,6 +1233,9 @@ export function createRunner(opts: RunnerOptions) {
         const c = (caseResults[x.caseId] ??= { passed: 0, models: 0 });
         c.models++;
         if (allPassed(x.checks)) c.passed++;
+        // Compared with other cases (a ranking): others' results need it.
+        if (x.checks?.some((k) => k.together && k.pass !== null))
+          c.ranked = true;
       }
     }
     return {

@@ -8,6 +8,7 @@ import {
   humanize,
 } from "./Readable.js";
 import { CaseStatusChip } from "./ConfirmAnswer.js";
+import { FieldValues, Fields } from "./Fields.js";
 
 const html = (node: React.ReactNode) => renderToStaticMarkup(node);
 
@@ -35,6 +36,11 @@ describe("readable values", () => {
     expect(out).toContain("<p");
     expect(out).toContain("Show the whole text");
     expect(out).not.toContain("\\n");
+  });
+
+  it("reads true and false as Yes and No", () => {
+    expect(html(<ReadableValue value={true} />)).toBe("Yes");
+    expect(html(<ReadableValue value={{ asIs: false }} />)).toContain(">No<");
   });
 
   it("folds a long list", () => {
@@ -105,5 +111,44 @@ describe("text blocks", () => {
       { kind: "list", items: ["Remote", "$70K"] },
       { kind: "text", text: "A closing line\nand more." },
     ]);
+  });
+});
+
+describe("field values", () => {
+  it("edits a labeled yes-or-no as a choice", () => {
+    const out = html(
+      <Fields
+        fields={[
+          {
+            name: "asIs",
+            label: "Show their words unchanged?",
+            help: "",
+            kind: "json",
+            optionLabels: { true: "Yes", false: "No" },
+          },
+        ]}
+        values={{ asIs: false }}
+      />,
+    );
+    expect(out).toContain("<select");
+    expect(out).toContain('<option value="false" selected="">No</option>');
+  });
+
+  it("reads a yes-or-no by its option labels", () => {
+    const fields = [
+      {
+        name: "asIs",
+        label: "Show their words unchanged?",
+        help: "",
+        kind: "json" as const,
+        optionLabels: { true: "Yes, as they typed it", false: "No, tidy it" },
+      },
+    ];
+    expect(
+      html(<FieldValues fields={fields} values={{ asIs: true }} />),
+    ).toContain("Yes, as they typed it");
+    expect(
+      html(<FieldValues fields={fields} values={{ asIs: false }} />),
+    ).toContain("No, tidy it");
   });
 });

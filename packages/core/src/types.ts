@@ -354,7 +354,11 @@ export type FormField = {
   kind: "text" | "textarea" | "select" | "lines" | "json";
   /** For "select". */
   options?: readonly string[];
-  /** For "select": how each option reads to a person ("YES" → "Would apply"). */
+  /**
+   * How each value reads to a person: a choice's options ("YES" → "Would
+   * apply"), or "true" and "false" for a yes-or-no field. A JSON field
+   * with these is edited as a choice between them.
+   */
   optionLabels?: Readonly<Record<string, string>>;
   required?: boolean;
 };

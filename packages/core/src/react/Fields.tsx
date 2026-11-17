@@ -33,14 +33,14 @@ export function Fields({
             <label htmlFor={id} className="block text-sm font-medium">
               {f.label}
             </label>
-            {f.kind === "select" ? (
+            {f.kind === "select" || choices(f) ? (
               <Select
                 id={id}
                 name={f.name}
-                defaultValue={value || f.options?.[0]}
+                defaultValue={value || (f.options ?? choices(f))?.[0]}
                 className={box}
               >
-                {f.options?.map((o) => (
+                {(f.options ?? choices(f))?.map((o) => (
                   <option key={o} value={o}>
                     {f.optionLabels?.[o] ?? o.replace(/_/g, " ")}
                   </option>
@@ -102,21 +102,38 @@ export function FieldValues({
               <InfoTip text={f.help} id={`${prefix}${f.name}-read`} />
             </dt>
             <dd className="mt-0.5 break-words">
-              {f.kind === "select" &&
-              typeof v === "string" &&
-              f.optionLabels?.[v] ? (
-                f.optionLabels[v]
-              ) : f.kind === "json" && typeof v === "string" ? (
-                <ReadableValue value={parseJson(v)} marks={marks} />
-              ) : (
-                <ReadableValue value={v} marks={marks} />
-              )}
+              {labelOf(f, v) ??
+                (f.kind === "json" && typeof v === "string" ? (
+                  <ReadableValue value={parseJson(v)} marks={marks} />
+                ) : (
+                  <ReadableValue value={v} marks={marks} />
+                ))}
             </dd>
           </div>
         );
       })}
     </dl>
   );
+}
+
+/**
+ * A JSON field whose values are all named in `optionLabels` (a
+ * yes-or-no: "true" and "false") is a choice, not a box to type JSON in.
+ * Its value is submitted as the JSON it names.
+ */
+function choices(f: FormField): string[] | undefined {
+  if (f.kind !== "json" || !f.optionLabels) return undefined;
+  const keys = Object.keys(f.optionLabels);
+  return keys.length ? keys : undefined;
+}
+
+/**
+ * How a value reads by the field's `optionLabels`: a choice ("YES" →
+ * "Would apply") or a yes-or-no (true → "Yes, as they typed it").
+ */
+function labelOf(f: FormField, v: unknown): string | undefined {
+  if (typeof v !== "string" && typeof v !== "boolean") return undefined;
+  return f.optionLabels?.[String(v)];
 }
 
 /** A JSON field stored as text, parsed when it parses. */

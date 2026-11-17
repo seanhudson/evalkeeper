@@ -203,8 +203,8 @@ export function ReadableValue({
     return <span className="text-muted">—</span>;
   if (typeof value === "string")
     return <ReadableText text={value} marks={marks} />;
-  if (typeof value === "number" || typeof value === "boolean")
-    return String(value);
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+  if (typeof value === "number") return String(value);
   if (depth >= MAX_DEPTH)
     return (
       <pre className="whitespace-pre-wrap text-xs">

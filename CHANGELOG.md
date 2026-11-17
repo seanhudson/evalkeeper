@@ -5,6 +5,16 @@ Notable changes, newest first. The format follows
 follow [semantic versioning](https://semver.org/): until 1.0, a minor
 version may change an interface, and its entry says how to update.
 
+## 0.17.1 - 2026-11-17
+
+### Fixed
+
+- A yes-or-no value reads "Yes" or "No" instead of "true" or "false",
+  and a field's `optionLabels` can name them ("true" → "Yes, as they
+  typed it").
+- A JSON field whose values are all named in `optionLabels` (a
+  yes-or-no) is edited as a choice between them, not typed as JSON.
+
 ## 0.17.0 - 2026-11-17
 
 Reviewing a case is quicker to read and to act on.

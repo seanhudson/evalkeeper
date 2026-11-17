@@ -18,6 +18,31 @@ test("the hub shows each suite and what needs attention", async ({ page }) => {
   await expect(page.getByText("Most room to improve")).toBeVisible();
 });
 
+test("the hub groups suites by standing, what needs you first", async ({
+  page,
+}) => {
+  await page.goto("/evals");
+  const order = ["At risk", "Can improve", "Healthy", "Can't tell yet"];
+  const suites = page.locator('section[aria-labelledby="suites"]');
+  // The section's own groups, not the ones inside its cards.
+  const groups = suites.locator(":scope > [role=group]");
+  await expect(groups.first()).toBeVisible();
+  const labels = await groups.evaluateAll((els) =>
+    els.map((e) => e.getAttribute("aria-label") ?? ""),
+  );
+  // Every group is a standing, in order, and none is folded away.
+  expect(labels.length).toBeGreaterThan(0);
+  expect(labels).toEqual(order.filter((o) => labels.includes(o)));
+  // Each suite sits in a group, with the same standing on its card.
+  for (const label of labels) {
+    const group = suites.getByRole("group", { name: label, exact: true });
+    await expect(group.getByRole("heading").first()).toBeVisible();
+    await expect(
+      group.locator("article, div").getByText(label, { exact: true }).first(),
+    ).toBeVisible();
+  }
+});
+
 test("testing a model fills in its score", async ({ page }) => {
   await page.goto("/evals/ticket_triage");
   const row = modelRow(page, "Demo Careful");

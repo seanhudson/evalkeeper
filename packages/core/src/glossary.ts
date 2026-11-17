@@ -90,6 +90,8 @@ export const GLOSSARY = {
     "Instructions edited at runtime (an admin override or added guidance) were recorded under the same models. No model was switched. Dated when noticed, which can be after the edit.",
   suites:
     "One suite per AI feature: its cases, the answers people confirmed, and the checks that grade any model against them. Open one to compare models and choose the live one.",
+  standing:
+    "Where a suite stands. At risk: a serious check is under its bar. Can improve: a minor one is, a better model is suggested, or a retest is due. Healthy: meets every bar. Can't tell yet: too few cases or untested.",
   answerKey:
     "The cases and the answers tests grade against. Only confirmed answers count: a model can draft answers, but they stay pending until a person confirms them. Open a case to see how each model did on it.",
   checks:

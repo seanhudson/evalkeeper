@@ -11,7 +11,12 @@ import {
 import { useFormStatus } from "react-dom";
 import { ArrowLeft, Info, LoaderCircle } from "lucide-react";
 import { GLOSSARY, type GlossaryTerm } from "../glossary.js";
-import type { HealthFlag, HealthStatus } from "../health.js";
+import {
+  STANDING_LABEL,
+  type HealthFlag,
+  type HealthStanding,
+  type HealthStatus,
+} from "../health.js";
 import { dayOf, momentOf, pct, QUIET_BUTTON } from "./format.js";
 
 /**
@@ -241,6 +246,37 @@ function flagChips(f: HealthFlag): { text: string; tone: ChipTone }[] {
     case "good":
       return [{ text: "Good", tone: "live" }];
   }
+}
+
+const STANDING_TONE: Record<HealthStanding, ChipTone> = {
+  risk: "serious",
+  improve: "warn",
+  healthy: "live",
+  unknown: "neutral",
+};
+
+/**
+ * A suite's one status, colored by what it asks of you: red at risk, amber
+ * can improve, green healthy, gray can't tell yet. Each color means only
+ * that, so a glance down the hub finds what needs you.
+ */
+export function StandingBadge({ standing }: { standing: HealthStanding }) {
+  return <Chip tone={STANDING_TONE[standing]}>{STANDING_LABEL[standing]}</Chip>;
+}
+
+/**
+ * The reasons behind a suite's standing as one plain line ("1 serious
+ * under bar · New fallback suggested"), for under its name. Provisional
+ * answers are left out: a choice, not a problem, so the card says it in a
+ * footnote instead.
+ */
+export function HealthReasons({ flags }: { flags: readonly HealthFlag[] }) {
+  const line = flags
+    .filter((f) => f.kind !== "provisional" && f.kind !== "good")
+    .flatMap(flagChips)
+    .map((c) => c.text)
+    .join(" · ");
+  return line ? <p className="text-sm font-medium text-ink">{line}</p> : null;
 }
 
 /**

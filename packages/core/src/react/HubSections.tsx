@@ -5,6 +5,8 @@ import {
   perAnswer,
   priorityOf,
   seconds,
+  STANDING_LABEL,
+  STANDING_ORDER,
   suiteHealth,
   thumbsSummary,
   type GlossaryTerm,
@@ -12,7 +14,14 @@ import {
   type Settings,
   type SettingsVersion,
 } from "../index.js";
-import { Link, Card, InfoTip, HealthChips, LocalDate } from "./pieces.js";
+import {
+  Link,
+  Card,
+  InfoTip,
+  LocalDate,
+  StandingBadge,
+  HealthReasons,
+} from "./pieces.js";
 import { pct } from "./format.js";
 import { HistoryEntries } from "./SettingsHistory.js";
 import {
@@ -152,45 +161,66 @@ export function HubStats({ data }: { data: HubData }) {
   );
 }
 
-/** One card per feature, with an injection suite's results on its base feature's card. */
+/**
+ * One card per feature, grouped by standing with what needs you first: at
+ * risk, can improve, healthy, and can't tell yet. An injection suite's results show on its base feature's card.
+ */
 export function SuiteList({ data }: { data: HubData }) {
   const { app, histories, attacksOn, cards } = data;
+  const all = cards.map(({ b, i }) => {
+    const attacked = attacksOn(b.suite.key);
+    const [history, current] = histories[i] ?? [[], null];
+    const health = suiteHealth(
+      b.rows,
+      b.suite.checks,
+      priorityOf(b.suite, current?.settings),
+      b.cases,
+      b.provisional,
+      app.models,
+      { attacks: attacksFrom(attacked) },
+    );
+    return { b, attacked, history, current, health };
+  });
+  const card = (c: (typeof all)[number]) => (
+    <SuiteCard
+      app={app}
+      key={c.b.suite.key}
+      board={c.b}
+      attacked={c.attacked}
+      health={c.health}
+      history={c.history}
+      current={c.current}
+    />
+  );
   return (
-    <>
-      <section aria-labelledby="suites" className="space-y-3">
-        <h2 id="suites" className="text-lg font-semibold">
-          Suites
-          <InfoTip term="suites" />
-        </h2>
-        {cards.length === 0 && <NoSuites />}
-        <div className="space-y-4">
-          {cards.map(({ b, i }) => {
-            const attacked = attacksOn(b.suite.key);
-            const [history, current] = histories[i] ?? [[], null];
-            const h = suiteHealth(
-              b.rows,
-              b.suite.checks,
-              priorityOf(b.suite, current?.settings),
-              b.cases,
-              b.provisional,
-              app.models,
-              { attacks: attacksFrom(attacked) },
-            );
-            return (
-              <SuiteCard
-                app={app}
-                key={b.suite.key}
-                board={b}
-                attacked={attacked}
-                health={h}
-                history={history}
-                current={current}
-              />
-            );
-          })}
-        </div>
-      </section>
-    </>
+    <section aria-labelledby="suites" className="space-y-3">
+      <h2 id="suites" className="text-lg font-semibold">
+        Suites
+        <InfoTip term="suites" />
+      </h2>
+      {cards.length === 0 && <NoSuites />}
+      {STANDING_ORDER.map((standing) => {
+        const group = all.filter((c) => c.health.standing === standing);
+        if (!group.length) return null;
+        const heading = (
+          <span className="flex items-center gap-2 text-sm text-muted">
+            <StandingBadge standing={standing} />
+            {group.length} {group.length === 1 ? "suite" : "suites"}
+          </span>
+        );
+        return (
+          <div
+            key={standing}
+            role="group"
+            aria-label={STANDING_LABEL[standing]}
+            className="space-y-3 pt-2"
+          >
+            {heading}
+            <div className="space-y-4">{group.map(card)}</div>
+          </div>
+        );
+      })}
+    </section>
   );
 }
 
@@ -259,6 +289,44 @@ function Stat({
 
 type Board = Awaited<ReturnType<Runner["board"]>>;
 
+/**
+ * The live model's check furthest under its bar, as a bar with a tick at
+ * the bar, so a card shows how far off it is, not only that it is.
+ */
+function WorstCheck({
+  worst: w,
+}: {
+  worst: NonNullable<ReturnType<typeof suiteHealth>["worst"]>;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-3 text-sm text-muted">
+      <span>
+        {w.label}
+        {w.serious ? " (serious)" : ""}{" "}
+        <span
+          className={`font-semibold ${w.serious ? "text-bad" : "text-warn"}`}
+        >
+          {pct(w.rate)}
+        </span>
+      </span>
+      <span aria-hidden className="relative h-1.5 w-40 rounded-full bg-tint">
+        <span
+          className={`absolute inset-y-0 left-0 rounded-full ${w.serious ? "bg-bad" : "bg-warn"}`}
+          style={{ width: `${Math.round(w.rate * 100)}%` }}
+        />
+        <span
+          className="absolute -inset-y-1 w-px bg-ink"
+          style={{ left: `${Math.round(w.bar * 100)}%` }}
+        />
+      </span>
+      <span>
+        bar {pct(w.bar)}
+        <InfoTip term="bar" />
+      </span>
+    </div>
+  );
+}
+
 /** Green at 95% and up, amber from 80%, red below. */
 const scoreTone = (rate: number) =>
   rate >= 0.95 ? "text-good" : rate >= 0.8 ? "text-warn" : "text-bad";
@@ -309,8 +377,10 @@ function SuiteCard({
                 {b.suite.label}
               </Link>
             </h2>
-            <HealthChips flags={h.flags} />
+            <StandingBadge standing={h.standing} />
+            <InfoTip term="standing" />
           </div>
+          <HealthReasons flags={h.flags} />
           <p className="readable text-sm text-muted">{b.suite.description}</p>
         </div>
         {t && (
@@ -362,6 +432,7 @@ function SuiteCard({
           )}{" "}
           · {b.cases} cases · {h.testedModels} models tested
         </p>
+        {h.worst && <WorstCheck worst={h.worst} />}
       </div>
 
       {h.details.length > 0 && (
@@ -450,9 +521,22 @@ export function NoEvalYet({ data }: { data: HubData }) {
         No eval yet
       </h2>
       <p className="readable text-sm text-muted">
-        {new Intl.ListFormat("en-US").format(gaps.map((f) => f.label))}. Nothing
-        tells you yet whether {gaps.length === 1 ? "it" : "they"} got worse.
+        Nothing tells you yet whether{" "}
+        {gaps.length === 1 ? "this feature" : "these features"} got worse.
       </p>
+      {/* One slim card per feature, like the suites above. */}
+      <ul className="space-y-3">
+        {gaps.map((f) => (
+          <li key={f.operation}>
+            <Card className="space-y-1 py-3">
+              <p className="font-semibold">{f.label}</p>
+              {f.description && (
+                <p className="readable text-sm text-muted">{f.description}</p>
+              )}
+            </Card>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }

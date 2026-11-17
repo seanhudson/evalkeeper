@@ -205,12 +205,67 @@ describe("suiteHealth", () => {
     expect(h.details.join(" ")).toMatch(/Only one model tested/);
   });
 
-  it("says when answers are provisional, first", () => {
+  it("says when answers are provisional, last: a choice, not a problem", () => {
     const rows = [
       row("Luna", "gpt-6-luna", { live: true }),
       row("Haiku", "claude-haiku-5-5", { right: 24 }),
     ];
     const h = suiteHealth(rows, checks, quality, 30, 12);
-    expect(h.details[0]).toMatch(/12 of 30 answers are provisional/);
+    const at = h.details.findIndex((d) =>
+      /12 of 30 answers are provisional/.test(d),
+    );
+    expect(at).toBeGreaterThan(0);
+  });
+
+  it("puts each suite in one of four standings", () => {
+    const untested = [row("Luna", "gpt-6-luna", { live: true, tested: false })];
+    expect(suiteHealth(untested, checks, quality, 60).standing).toBe("unknown");
+    const stale = [row("Luna", "gpt-6-luna", { live: true, stale: true })];
+    expect(suiteHealth(stale, checks, quality, 60).standing).toBe("improve");
+    const fine = [row("Luna", "gpt-6-luna", { live: true })];
+    expect(suiteHealth(fine, checks, quality, 60).standing).toBe("healthy");
+    expect(suiteHealth(fine, checks, quality, 30).standing).toBe("healthy");
+    // Too few cases to trust a score that meets every bar.
+    expect(suiteHealth(fine, checks, quality, 8).standing).toBe("unknown");
+    const under = [
+      row("Luna", "gpt-6-luna", { live: true, passed: 20 }),
+      row("Haiku", "claude-haiku-5-5", { passed: 20 }),
+    ];
+    expect(suiteHealth(under, checks, quality, 60).standing).toBe("risk");
+    // A serious check that low is a risk even on few cases.
+    expect(suiteHealth(under, checks, quality, 8).standing).toBe("risk");
+    // A minor check under its bar is room to improve, not a risk.
+    const minor: CheckDef[] = [{ ...checks[0]!, severity: "minor" }];
+    const soso = [
+      row("Luna", "gpt-6-luna", { live: true, passed: 15 }),
+      row("Haiku", "claude-haiku-5-5", { passed: 15 }),
+    ];
+    expect(suiteHealth(soso, minor, quality, 60).standing).toBe("improve");
+    // A better model alone is something to improve.
+    const cheap = row("Haiku", "claude-haiku-5-5");
+    if (cheap.test) cheap.test.costPerAnswer = 0.001;
+    expect(
+      suiteHealth(
+        [row("Luna", "gpt-6-luna", { live: true }), cheap],
+        checks,
+        { favor: "cost" },
+        60,
+      ).standing,
+    ).toBe("improve");
+  });
+
+  it("names the check furthest under its bar, serious first", () => {
+    const under = [
+      row("Luna", "gpt-6-luna", { live: true, passed: 20 }),
+      row("Haiku", "claude-haiku-5-5", { passed: 20 }),
+    ];
+    expect(suiteHealth(under, checks, quality, 60).worst).toEqual({
+      label: "Rule",
+      rate: 0.8,
+      bar: 0.95,
+      serious: true,
+    });
+    const fine = [row("Luna", "gpt-6-luna", { live: true })];
+    expect(suiteHealth(fine, checks, quality, 60).worst).toBeNull();
   });
 });

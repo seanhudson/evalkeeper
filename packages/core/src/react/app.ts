@@ -80,9 +80,10 @@ export type EvalApp = {
   basePath: string;
   /**
    * Every AI feature your app has, by the operation its suites name. The
-   * hub lists the ones no suite tests yet. Leave it out to skip that list.
+   * hub lists the ones no suite tests yet, one card each, with the
+   * description when there is one. Leave it out to skip that list.
    */
-  features?: { operation: string; label: string }[];
+  features?: { operation: string; label: string; description?: string }[];
 };
 
 /** An `EvalApp` with its suites by key, as the screens read it. */

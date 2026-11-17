@@ -5,6 +5,24 @@ Notable changes, newest first. The format follows
 follow [semantic versioning](https://semver.org/): until 1.0, a minor
 version may change an interface, and its entry says how to update.
 
+## Unreleased
+
+### Changed
+
+- The evals hub groups suites by one standing each, at risk first: At
+  risk (red), Can improve (amber), Healthy (green), and Can't tell yet
+  (gray). Each color means only that. The reasons read as one plain line
+  under the suite's name, the check furthest under its bar shows as a bar
+  with a tick at the bar, and provisional answers move to the end of the
+  details, since they're a choice rather than a problem.
+- `suiteHealth` returns `standing` and `worst` (the live model's check
+  furthest under its bar). `StandingBadge`, `HealthReasons`,
+  `STANDING_LABEL`, and `STANDING_ORDER` are new; `HealthChips` stays for
+  pages of your own.
+- "No eval yet" shows one slim card per untested feature instead of a
+  comma-separated sentence. A feature in `features` can carry a
+  `description` for its card.
+
 ## 0.15.0 - 2026-10-30
 
 A quieter suite page: the answer guide, reasoning settings, and earlier

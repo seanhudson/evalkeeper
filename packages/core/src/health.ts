@@ -19,6 +19,31 @@ export type HealthStatus =
   "untested" | "stale" | "few" | "improve" | "change" | "fair" | "good";
 
 /**
+ * Where a suite stands, in one of four words a card can be colored by:
+ * `risk` (a serious check is under its bar), `improve` (something would
+ * help: a minor check under its bar, a better model, a retest), `healthy`
+ * (meets every bar), or `unknown` (not tested, or too few cases to trust a
+ * score). The hub groups suites by it, at-risk first.
+ */
+export type HealthStanding = "risk" | "improve" | "healthy" | "unknown";
+
+/** The order the hub shows standings in: what needs you first. */
+export const STANDING_ORDER: readonly HealthStanding[] = [
+  "risk",
+  "improve",
+  "healthy",
+  "unknown",
+];
+
+/** What each standing is called on the hub. */
+export const STANDING_LABEL: Readonly<Record<HealthStanding, string>> = {
+  risk: "At risk",
+  improve: "Can improve",
+  healthy: "Healthy",
+  unknown: "Can't tell yet",
+};
+
+/**
  * One reason a suite stands where it does, for a chip on its card. A suite
  * can have several: checks under their bar and a suggestion, say.
  */
@@ -39,6 +64,13 @@ export type HealthFlag =
  */
 export type Health = {
   status: HealthStatus;
+  /** Which of the four groups the suite belongs in, for its color. */
+  standing: HealthStanding;
+  /**
+   * The live model's check furthest under its bar (serious first), to
+   * show how far off it is; null when every check meets its bar.
+   */
+  worst: { label: string; rate: number; bar: number; serious: boolean } | null;
   /** Each reason behind the status, most important first, for chips. */
   flags: HealthFlag[];
   title: string;
@@ -50,6 +82,27 @@ export type Health = {
 };
 
 const pct = (x: number) => `${Math.round(x * 100)}%`;
+
+/**
+ * The standing for a status: a serious check under its bar is a risk even
+ * on few cases (a fuzzy score that low still deserves a look); otherwise
+ * too few cases means no one can tell yet.
+ */
+function standingOf(status: HealthStatus, serious: number): HealthStanding {
+  if (serious > 0) return "risk";
+  switch (status) {
+    case "untested":
+    case "few":
+      return "unknown";
+    case "stale":
+    case "improve":
+    case "change":
+      return "improve";
+    case "fair":
+    case "good":
+      return "healthy";
+  }
+}
 
 /**
  * Where a suite stands, for its card on the hub, from the same board and suggestion its
@@ -81,13 +134,14 @@ export function suiteHealth(
   const t = liveRow?.test;
   const live =
     liveRow && t ? { label: liveRow.label, rate: t.right / t.total } : null;
-  const base = { live, testedModels };
+  const base = { live, testedModels, worst: null };
   const fewer = cases < TARGET_CASES ? `${cases} of ${TARGET_CASES} cases` : "";
 
   if (!t)
     return {
       ...base,
       status: "untested",
+      standing: "unknown",
       flags: [{ kind: "untested" }],
       title: "Not tested yet",
       details: [
@@ -98,16 +152,13 @@ export function suiteHealth(
     return {
       ...base,
       status: "stale",
+      standing: "improve",
       flags: [{ kind: "stale" }],
       title: "Test again",
       details: ["Cases, answers, or instructions changed since the last test."],
     };
 
   const details: string[] = [];
-  if (provisional)
-    details.push(
-      `${provisional} of ${cases} answers are provisional: review them before trusting these scores.`,
-    );
   // Live checks under their bars, serious first.
   const below = checks
     .map((c) => ({ c, rate: t.byCheck[c.key]?.rate ?? null }))
@@ -139,9 +190,26 @@ export function suiteHealth(
     );
   if (testedModels < 2)
     details.push("Only one model tested: test others to compare.");
+  // Last: a standing choice, not a problem, so it never leads.
+  if (provisional)
+    details.push(
+      `${provisional} of ${cases} answers are provisional: review them before trusting these scores.`,
+    );
 
   const confidence = confidenceFor(cases, live?.rate ?? 0.5);
   const serious = below.filter((x) => x.c.severity === "serious").length;
+  const w = below[0];
+  const scored = {
+    ...base,
+    worst: w
+      ? {
+          label: w.c.label,
+          rate: w.rate,
+          bar: checkBar(w.c),
+          serious: w.c.severity === "serious",
+        }
+      : null,
+  };
   const flags: HealthFlag[] = [];
   if (below.length)
     flags.push({ kind: "below", serious, minor: below.length - serious });
@@ -159,8 +227,9 @@ export function suiteHealth(
     flags.push({ kind: "addCases", cases, target: TARGET_CASES });
   if (confidence.level === "too-few")
     return {
-      ...base,
+      ...scored,
       status: "few",
+      standing: standingOf("few", serious),
       flags,
       title: "Too few cases to trust",
       details: [
@@ -172,8 +241,9 @@ export function suiteHealth(
   // suggestion, even when the live model meets every bar.
   if (below.length || change)
     return {
-      ...base,
+      ...scored,
       status: below.length ? "improve" : "change",
+      standing: standingOf(below.length ? "improve" : "change", serious),
       flags,
       title: below.length ? "Room to improve" : "Change suggested",
       details: fewer
@@ -182,8 +252,9 @@ export function suiteHealth(
     };
   if (confidence.level === "rough")
     return {
-      ...base,
+      ...scored,
       status: "fair",
+      standing: "healthy",
       flags,
       title: "Good so far",
       details: [
@@ -192,8 +263,9 @@ export function suiteHealth(
       ],
     };
   return {
-    ...base,
+    ...scored,
     status: "good",
+    standing: "healthy",
     flags: flags.length ? flags : [{ kind: "good" }],
     title: "In good shape",
     details: details.length ? details : ["Meets every bar on enough cases."],

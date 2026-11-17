@@ -58,6 +58,10 @@ The screens are drawn from a few pieces in
 - `Tip`
 - `InfoTip`
 - the plain controls: `Button`, `TextInput`, `TextArea`, and `Select`
+- `notify`, your app's toast, a function rather than a component:
+  `(type: "success" | "error", message: string) => void`. Quick actions
+  (confirming an answer) report through it. Without it, a failure shows
+  in place, and success shows only in the page itself.
 
 ### Rules for your components
 

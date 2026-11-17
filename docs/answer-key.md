@@ -67,9 +67,32 @@ proposed but nobody has checked:
 - **You asked for more** with **Draft N more cases**, above.
 
 A draft's answer is **Pending**: it's never graded against. Open the
-case, read the input and the proposed answer, and either press **Confirm
-this answer** or fix it first with **Edit answer**. Confirming one opens
-the next draft waiting, so you can work through them in a row.
+case: the proposed answer comes first, under **Check this answer**,
+with **Confirm this answer** and **Edit answer** beside it, and the
+input below, as labeled rows and readable text. Confirming one marks it
+**Confirmed** at once and opens the next draft waiting, so you can work
+through them in a row while the save finishes behind it.
+
+### Point at what to check
+
+A suite's `lookAt` names what a person should look at for each case,
+with text to highlight in its input:
+
+```ts
+lookAt: (input) =>
+  input.dueDate
+    ? [{ note: "the deadline: each item should keep it", marks: [input.dueDate] }]
+    : [],
+```
+
+The notes show under **Look at**, and each mark is highlighted wherever
+it appears in the input. When models' latest tests disagree with the
+answer, the list says so on its own: that's the surest sign a case needs
+a closer look.
+
+Pick these by rule from the case (a dealbreaker beside what it rules
+on), never from the drafted answer's own reasoning: that steers a person
+toward agreeing with the draft, which defeats the point of checking it.
 
 ![A drafted case open in the answer key: the ticket, the model's proposed category and urgency marked pending, and a button to confirm the answer.](screenshots/confirm-light.png "A drafted answer waiting for a person.")
 

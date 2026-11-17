@@ -256,6 +256,21 @@ export const actionItems: Suite<Input, Output, Label> = {
   labelFromForm(form) {
     return label.parse({ items: linesOf(form, "items") });
   },
+  // Deadlines are where answers most often slip: point at them.
+  lookAt(input) {
+    const due =
+      input.notes.match(
+        /\bby (?:monday|tuesday|wednesday|thursday|friday|tomorrow|end of (?:the )?(?:day|week|month)|next week)\b/gi,
+      ) ?? [];
+    return due.length
+      ? [
+          {
+            note: "deadlines: each item should keep its date",
+            marks: [...new Set(due)],
+          },
+        ]
+      : [];
+  },
   fields: {
     input: [
       {

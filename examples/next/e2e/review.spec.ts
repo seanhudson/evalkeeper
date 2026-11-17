@@ -54,9 +54,19 @@ test("confirming an answer closes the case and opens the next draft", async ({
 
   await a.locator("summary").click();
   await expect(a).toHaveAttribute("open", "");
+  // The answer to check comes first, with what to look at, marked below.
+  const check = a.getByRole("region", { name: "Check this answer" });
+  await expect(check.getByText("Sam sends the agenda by Friday")).toBeVisible();
+  await expect(
+    check.getByText("deadlines: each item should keep its date"),
+  ).toBeVisible();
+  await expect(a.locator("mark", { hasText: "by Friday" })).toBeVisible();
   await a.getByRole("button", { name: "Confirm this answer" }).click();
 
   // At once, not after the page refreshes.
+  await expect(a.locator("summary").getByText("Confirmed")).toBeVisible({
+    timeout: 1000,
+  });
   await expect(a).not.toHaveAttribute("open", "", { timeout: 1000 });
   await expect(b).toHaveAttribute("open", "", { timeout: 1000 });
   await expect(c).not.toHaveAttribute("open", "");

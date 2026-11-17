@@ -5,6 +5,8 @@ own: the screens, the weekly check, and suites you can use as they are.
 
 ![The evals hub: stat cards for room to improve, the slowest and costliest live models, and thumbs down this week; the weekly check; and a card per feature.](screenshots/hub-light.png "The hub, the first of the seven screens.")
 
+![The hub's suites, grouped by standing: each card names its standing (At risk, Can improve, Healthy, or Can't tell yet), the reasons in one line, and the check furthest under its bar.](screenshots/hub-suites-light.png "Suites grouped by standing, what needs you first.")
+
 ## Seven screens
 
 **Seven screens** in your admin, from the package, drawn with your app's

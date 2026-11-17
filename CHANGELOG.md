@@ -5,7 +5,7 @@ Notable changes, newest first. The format follows
 follow [semantic versioning](https://semver.org/): until 1.0, a minor
 version may change an interface, and its entry says how to update.
 
-## Unreleased
+## 0.17.0 - 2026-11-17
 
 Reviewing a case is quicker to read and to act on.
 

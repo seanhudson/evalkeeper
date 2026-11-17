@@ -407,6 +407,8 @@ export const ticketTriage: Suite<Input, Output, Label> = {
   },
   title: (i) => i.subject,
   describe: (i) => `${i.subject}\n\n${i.body}`,
+  // Each model's answer, beside its result in the answer key.
+  outputLine: (o) => `${o.category.replace(/_/g, " ")}, ${o.urgency} urgency`,
   labelHelp:
     "category: billing, account, bug, feature_request, or other. urgency: low, normal, or high.",
   answerGuide: {

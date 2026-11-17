@@ -65,6 +65,17 @@ test("testing a model fills in its score", async ({ page }) => {
   await expect(
     page.getByRole("menuitem", { name: /^Test again/ }),
   ).toContainText(/free, all \d+ reused/);
+  await page.keyboard.press("Escape");
+
+  // In the answer key, each model's answer shows beside its result.
+  const kase = page
+    .locator("details")
+    .filter({ hasText: "Former employee still has access" })
+    .first();
+  await kase.locator("summary").first().click();
+  await expect(
+    kase.getByText(/^“\w[\w ]*, (low|normal|high) urgency”$/).first(),
+  ).toBeVisible();
 });
 
 test("the board marks the live model and a retiring one with chips", async ({

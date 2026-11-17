@@ -258,7 +258,7 @@ function CaseItem({
   c: CaseRecord;
   results: {
     model: string;
-    output: { scores: unknown; error: string | null };
+    output: { scores: unknown; error: string | null; output?: unknown };
   }[];
 }) {
   const answer =
@@ -310,10 +310,72 @@ function CaseItem({
         ? "no model's latest test agrees with this answer"
         : `models split: ${right} of ${results.length} agree with this answer`,
     );
+  // What each model wrote, as the suite's short line (`outputLine`).
+  const lineOf = (output: unknown): string | null => {
+    try {
+      return suite.outputLine?.(output) ?? null;
+    } catch {
+      return null;
+    }
+  };
   const inputFallback = suite.describe ? (
     <pre className="whitespace-pre-wrap text-xs">{suite.describe(input)}</pre>
   ) : (
     <ReadableValue value={c.input} marks={marks} />
+  );
+
+  // How each model's latest test did, with what it wrote: after the
+  // answer, so a person reads the answer first.
+  const modelResults = results.length > 0 && (
+    <section className="space-y-2">
+      <h4 className="text-xs font-semibold uppercase tracking-wide text-muted">
+        Each model's latest test
+      </h4>
+      <ul className="space-y-1">
+        {results.map(({ model, output }) => {
+          const checks = (output.scores as CheckResult[] | null) ?? null;
+          const failed = checks?.filter((x) => x.pass === false) ?? [];
+          return (
+            <li key={model} className="flex items-start gap-1.5">
+              {output.error ? (
+                <CircleAlert
+                  aria-label="No answer"
+                  className="mt-0.5 h-4 w-4 shrink-0 text-bad"
+                />
+              ) : failed.length ? (
+                <X
+                  aria-label="Wrong"
+                  className="mt-0.5 h-4 w-4 shrink-0 text-warn"
+                />
+              ) : (
+                <Check
+                  aria-label="Right"
+                  className="mt-0.5 h-4 w-4 shrink-0 text-good"
+                />
+              )}
+              <span>
+                <span className="font-medium">{model}</span>
+                {output.error && (
+                  <span className="text-muted">: {output.error}</span>
+                )}
+                {failed.map((x) => (
+                  <span key={x.key} className="text-muted">
+                    {" "}
+                    · {label(x.key)}
+                    {x.note ? `: ${x.note}` : ""}
+                  </span>
+                ))}
+                {!output.error && lineOf(output.output) && (
+                  <span className="readable block">
+                    &ldquo;{lineOf(output.output)}&rdquo;
+                  </span>
+                )}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 
   return (
@@ -453,53 +515,7 @@ function CaseItem({
           </section>
         )}
 
-        {results.length > 0 && (
-          <section className="space-y-2">
-            <h4 className="text-xs font-semibold uppercase tracking-wide text-muted">
-              Each model's latest test
-            </h4>
-            <ul className="space-y-1">
-              {results.map(({ model, output }) => {
-                const checks = (output.scores as CheckResult[] | null) ?? null;
-                const failed = checks?.filter((x) => x.pass === false) ?? [];
-                return (
-                  <li key={model} className="flex items-start gap-1.5">
-                    {output.error ? (
-                      <CircleAlert
-                        aria-label="No answer"
-                        className="mt-0.5 h-4 w-4 shrink-0 text-bad"
-                      />
-                    ) : failed.length ? (
-                      <X
-                        aria-label="Wrong"
-                        className="mt-0.5 h-4 w-4 shrink-0 text-warn"
-                      />
-                    ) : (
-                      <Check
-                        aria-label="Right"
-                        className="mt-0.5 h-4 w-4 shrink-0 text-good"
-                      />
-                    )}
-                    <span>
-                      <span className="font-medium">{model}</span>
-                      {output.error && (
-                        <span className="text-muted">: {output.error}</span>
-                      )}
-                      {failed.map((x) => (
-                        <span key={x.key} className="text-muted">
-                          {" "}
-                          · {label(x.key)}
-                          {x.note ? `: ${x.note}` : ""}
-                        </span>
-                      ))}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-        )}
-
+        {checking && modelResults}
         {checking ? (
           <section className="space-y-2">
             <h4 className="text-xs font-semibold uppercase tracking-wide text-muted">
@@ -564,6 +580,7 @@ function CaseItem({
                 )}
               </section>
             </div>
+            {modelResults}
             {!readOnly && (
               <CaseMenu
                 suite={suite.key}

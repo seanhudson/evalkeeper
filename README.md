@@ -469,7 +469,10 @@ Changes are in the [changelog](CHANGELOG.md).
 
 ## Contributing
 
-Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md),
+Questions and ideas go in
+[Discussions](https://github.com/seanhudson/evalkeeper/discussions); bugs
+go in [Issues](https://github.com/seanhudson/evalkeeper/issues). Pull
+requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md),
 the [code of conduct](CODE_OF_CONDUCT.md), and, for security issues,
 [SECURITY.md](SECURITY.md).
 

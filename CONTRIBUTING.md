@@ -1,6 +1,11 @@
 # Contributing
 
-Thanks for helping. Issues, questions, and pull requests are welcome.
+Thanks for helping. Bugs go in
+[Issues](https://github.com/seanhudson/evalkeeper/issues), questions and
+ideas in [Discussions](https://github.com/seanhudson/evalkeeper/discussions),
+and pull requests are welcome. Issues marked
+[good first issue](https://github.com/seanhudson/evalkeeper/labels/good%20first%20issue)
+are a good place to start.
 The rules for changes are in [AGENTS.md](AGENTS.md) (they apply to
 people too), and [docs/architecture.md](docs/architecture.md) says where
 each kind of change goes.

@@ -1063,6 +1063,56 @@ export function createRunner(opts: RunnerOptions) {
   }
 
   /**
+   * Confirms an answer someone reviewed. A provisional answer already in
+   * use keeps its value, so no grade can change: the tests that were up to
+   * date are marked up to date again, with nothing regraded, and it
+   * returns at once. Any other answer (pending, or not the one in use)
+   * changes what's graded against, so recent tests are rescored.
+   *
+   * @param suiteKey - The suite.
+   * @param labelId - The answer to confirm.
+   * @returns Whether it rescored.
+   */
+  async function confirmAnswer(
+    suiteKey: string,
+    labelId: string,
+  ): Promise<{ rescored: boolean }> {
+    const suite = suiteOrThrow(suiteKey);
+    const before = await store.listCases(suite.key);
+    const inUse = before
+      .map((c) => confirmedLabel(c.labels))
+      .find((l) => l?.id === labelId);
+    if (inUse?.status !== "PROVISIONAL") {
+      await store.setLabelStatus(labelId, "CONFIRMED");
+      await rescoreRecent(suite.key);
+      return { rescored: true };
+    }
+    const runs = (await store.listRuns(suite.key)).filter(
+      (r) => r.status === "SUCCEEDED" && r.datasetVersion,
+    );
+    const sets = [...new Set(runs.map((r) => r.set))];
+    const versions = async () =>
+      new Map(
+        await Promise.all(
+          sets.map(
+            async (s) =>
+              [s, datasetVersion(await casesFor(suite.key, s))] as const,
+          ),
+        ),
+      );
+    const old = await versions();
+    await store.setLabelStatus(labelId, "CONFIRMED");
+    const now = await versions();
+    for (const r of runs) {
+      const was = old.get(r.set);
+      const is = now.get(r.set);
+      if (was && is && was !== is && r.datasetVersion === was)
+        await store.updateRun(r.id, { datasetVersion: is });
+    }
+    return { rescored: false };
+  }
+
+  /**
    * Regrades a suite's finished tests after answers or checks change:
    * every test the board shows, the latest of every model and setting,
    * and the `limit` most recent (`testsToRescore`). With `requestLimitMs`,
@@ -1843,6 +1893,7 @@ export function createRunner(opts: RunnerOptions) {
     gradeOutput,
     rescoreRun,
     rescoreRecent,
+    confirmAnswer,
     answerKeyHealth: answerKeyHealthOf,
     retireEasy,
     easyRounds,

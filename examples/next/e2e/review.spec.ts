@@ -71,9 +71,24 @@ test("confirming an answer closes the case and opens the next draft", async ({
   await expect(b).toHaveAttribute("open", "", { timeout: 1000 });
   await expect(c).not.toHaveAttribute("open", "");
 
-  // The save lands behind it.
+  // The save lands behind it, its chip spinning until then.
+  await expect(a.locator("summary").getByText("Saving")).toHaveCount(0, {
+    timeout: 30_000,
+  });
   await expect(a.locator("summary").getByText("Confirmed")).toBeVisible();
   await expect(
     b.getByRole("button", { name: "Confirm this answer" }),
   ).toBeVisible();
+
+  // Two in a row, without waiting: both land, neither undoes the other.
+  await b.getByRole("button", { name: "Confirm this answer" }).click();
+  await expect(c).toHaveAttribute("open", "", { timeout: 1000 });
+  await c.getByRole("button", { name: "Confirm this answer" }).click();
+  for (const x of [b, c])
+    await expect(x.locator("summary").getByText("Saving")).toHaveCount(0, {
+      timeout: 30_000,
+    });
+  await page.reload();
+  for (const x of [a, b, c])
+    await expect(x.locator("summary").getByText("Confirmed")).toBeVisible();
 });

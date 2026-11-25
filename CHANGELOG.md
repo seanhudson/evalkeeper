@@ -23,6 +23,11 @@ version may change an interface, and its entry says how to update.
   in Suite settings, even if you keep them as they were. It comes back
   when a check is added. Suite settings keep which checks were reviewed
   (`levelsReviewed`).
+- Confirming a provisional answer saves at once: its value doesn't change,
+  so the tests that were up to date stay up to date with nothing regraded
+  (`runner.confirmAnswer`). Before, it rescored every recent test first,
+  and confirming the next case waited behind it. A case's status chip
+  spins until its save finishes.
 
 ## 0.20.0 - 2026-11-25
 

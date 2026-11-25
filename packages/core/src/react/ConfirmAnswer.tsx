@@ -12,22 +12,24 @@ import {
   type ChipTone,
 } from "./pieces.js";
 
-// Answers confirmed here, ahead of the page's refresh.
-const confirmedHere = new Set<string>();
+// Answers confirmed here, ahead of the page's refresh: saving while the
+// save runs, saved once it's done.
+type Here = "saving" | "saved";
+const confirmedHere = new Map<string, Here>();
 const listeners = new Set<() => void>();
-function setConfirmedHere(labelId: string, on: boolean) {
-  if (on) confirmedHere.add(labelId);
+function setConfirmedHere(labelId: string, now: Here | null) {
+  if (now) confirmedHere.set(labelId, now);
   else confirmedHere.delete(labelId);
   for (const l of listeners) l();
 }
-function useConfirmedHere(labelId: string): boolean {
+function useConfirmedHere(labelId: string): Here | null {
   return useSyncExternalStore(
     (l) => {
       listeners.add(l);
       return () => listeners.delete(l);
     },
-    () => confirmedHere.has(labelId),
-    () => false,
+    () => confirmedHere.get(labelId) ?? null,
+    () => null,
   );
 }
 
@@ -35,7 +37,7 @@ type Status = { text: string; tone: ChipTone; term: GlossaryTerm };
 
 /**
  * A case's answer status, which turns to Confirmed the moment someone
- * confirms it there, before the save and the page's refresh finish.
+ * confirms it there, with a spinner until the save finishes.
  */
 export function CaseStatusChip({
   labelId,
@@ -51,10 +53,22 @@ export function CaseStatusChip({
   /** For the tooltip. */
   id: string;
 }) {
-  const now = useConfirmedHere(labelId ?? "") && labelId ? confirmed : status;
+  const saved = useConfirmedHere(labelId ?? "");
+  const here = labelId ? saved : null;
+  const now = here ? confirmed : status;
   return (
     <Tip term={now.term} id={id} align="end">
-      <Chip tone={now.tone}>{now.text}</Chip>
+      <Chip tone={now.tone}>
+        <span className="inline-flex items-center gap-1">
+          {here === "saving" && (
+            <>
+              <Spinner />
+              <span className="sr-only">Saving: </span>
+            </>
+          )}
+          {now.text}
+        </span>
+      </Chip>
     </Tip>
   );
 }
@@ -81,7 +95,7 @@ export function ConfirmAnswer({
 
   function confirm(button: HTMLElement) {
     setFailed(false);
-    setConfirmedHere(labelId, true);
+    setConfirmedHere(labelId, "saving");
     const here = button.closest("details");
     if (here) {
       here.open = false;
@@ -102,9 +116,10 @@ export function ConfirmAnswer({
     start(async () => {
       try {
         await action(form);
+        setConfirmedHere(labelId, "saved");
         notify?.("success", "Answer confirmed");
       } catch {
-        setConfirmedHere(labelId, false);
+        setConfirmedHere(labelId, null);
         if (here) {
           here.open = true;
           here.scrollIntoView({ block: "nearest" });

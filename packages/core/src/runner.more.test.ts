@@ -270,6 +270,45 @@ describe("runner, beyond a basic test", () => {
     expect(m?.judgeCostUsd).toBeCloseTo(0.002);
   });
 
+  it("confirms a provisional answer at once, its tests still up to date", async () => {
+    const { store, runner } = await setup([2]);
+    const answer = (status: "PROVISIONAL" | "PENDING", n: number) =>
+      kase(n, {
+        labels: [
+          {
+            kind: "EXPECTED",
+            status,
+            value: { n: n * 2 },
+            raterRole: "MODEL",
+            raterId: null,
+            note: null,
+          },
+        ],
+      });
+    const provisional = await store.createCase(answer("PROVISIONAL", 7));
+    const pending = await store.createCase(answer("PENDING", 8));
+    const { run } = await runner.createRun({ suite: "double", model: "good" });
+    await runner.runEval(run.id);
+    const stale = async () =>
+      (await runner.board("double")).rows.find((r) => r.model === "good")?.test
+        ?.stale;
+    expect(await stale()).toBe(false);
+    // A later moment, so the confirmation changes the answer's date.
+    await new Promise((r) => setTimeout(r, 5));
+    const regrade = vi.spyOn(store, "setOutputScores");
+    const id = (c: { labels: { id: string }[] }) => c.labels[0]?.id ?? "";
+    expect(await runner.confirmAnswer("double", id(provisional))).toEqual({
+      rescored: false,
+    });
+    expect(regrade).not.toHaveBeenCalled();
+    expect(await stale()).toBe(false);
+    // A pending answer changes what's graded against: rescored.
+    expect(await runner.confirmAnswer("double", id(pending))).toEqual({
+      rescored: true,
+    });
+    regrade.mockRestore();
+  });
+
   it("grades provisional answers, and never pending ones", async () => {
     const { store, runner } = await setup([]);
     await store.createCase(

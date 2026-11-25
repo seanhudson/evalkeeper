@@ -330,10 +330,9 @@ export function evalActions(w: EvalWiring): Required<EvalActions> {
     async confirmAnswer(form) {
       await w.requireAdmin();
       const suite = suiteFrom(form);
-      await store.setLabelStatus(formText(form, "label"), "CONFIRMED");
-      // Rescored before the page refreshes (no new model answers): an
-      // answer change marks tests out of date until then.
-      await runner.rescoreRecent(suite.key);
+      // A provisional answer's tests stay up to date, so it returns at
+      // once; another answer is rescored before the page refreshes.
+      await runner.confirmAnswer(suite.key, formText(form, "label"));
       revalidatePath(page(suite.key));
     },
 

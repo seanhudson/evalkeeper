@@ -94,6 +94,8 @@ export const GLOSSARY = {
     "The instructions changed in code and were recorded under the same models. No model was switched.",
   instructionsEdited:
     "Instructions edited at runtime (an admin override or added guidance) were recorded under the same models. No model was switched. Dated when noticed, which can be after the edit.",
+  noEvalYet:
+    "AI features no suite tests yet, so nothing tells you when one gets worse. Ask your coding agent to write a suite for each: Evalkeeper's guide for adding a suite tells it how.",
   suites:
     "One suite per AI feature: its cases, the answers people confirmed, and the checks that grade any model against them. Open one to compare models and choose the live one.",
   standing:

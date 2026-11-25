@@ -284,6 +284,7 @@ export function NoEvalYet({ data }: { data: HubData }) {
     <section aria-labelledby="no-eval-yet" className="space-y-2">
       <h2 id="no-eval-yet" className="text-lg font-semibold">
         No eval yet
+        <InfoTip term="noEvalYet" />
       </h2>
       <p className="readable text-sm text-muted">
         Nothing tells you yet whether{" "}

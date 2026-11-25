@@ -301,3 +301,10 @@
 .sl-markdown-content .ek-three > * {
   margin: 0;
 }
+
+.sl-markdown-content .ek-license {
+  margin-top: 0.5rem;
+  text-align: center;
+  font-size: var(--sl-text-sm);
+  color: var(--sl-color-gray-3);
+}

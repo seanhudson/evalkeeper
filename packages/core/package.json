@@ -93,7 +93,19 @@
     "llm",
     "ai",
     "testing",
-    "model-selection"
+    "model-selection",
+    "llm-evaluation",
+    "eval-harness",
+    "ai-testing",
+    "regression-testing",
+    "typescript",
+    "openai",
+    "anthropic",
+    "ai-sdk",
+    "prisma",
+    "nextjs",
+    "prompt-injection",
+    "model-drift"
   ],
   "peerDependenciesMeta": {
     "vitest": {

@@ -5,7 +5,18 @@ Notable changes, newest first. The format follows
 follow [semantic versioning](https://semver.org/): until 1.0, a minor
 version may change an interface, and its entry says how to update.
 
-## Unreleased
+## 0.21.0 - 2026-11-25
+
+Fixes for numbers and to-dos that didn't add up: a Must-pass share over
+100%, kept answers and the Test again and Review check levels to-dos that
+kept coming back, and confirming provisional answers that waited on a
+rescore.
+
+Update:
+
+- No re-copy needed, and no migration: nothing in the tables changed.
+- To clear **Review check levels** on a suite you've already reviewed,
+  save its levels once in Suite settings.
 
 ### Fixed
 

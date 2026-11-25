@@ -397,7 +397,9 @@ function SuiteSettingsForm({ data }: { data: SuitePageData }) {
         <table className="w-full text-sm">
           <thead className="text-left text-xs text-muted">
             <tr>
-              <th className="pb-1 font-normal">Check</th>
+              <th className="pb-1 font-normal">
+                <span className="sr-only">Check</span>
+              </th>
               <th className="pb-1 font-normal">Level</th>
               <th className="pb-1 font-normal">Aim, %</th>
             </tr>
@@ -412,12 +414,10 @@ function SuiteSettingsForm({ data }: { data: SuitePageData }) {
                     <Select
                       name={`level:${c.key}`}
                       aria-label={`${c.label}: level`}
-                      defaultValue={saved?.severity ?? ""}
+                      // Starts on its level now; the code's own isn't saved.
+                      defaultValue={saved?.severity ?? c.severity}
                       className="rounded-md border border-line bg-card px-2 py-1.5 text-sm"
                     >
-                      <option value="">
-                        {SEVERITY_LABEL[c.severity]} (its own)
-                      </option>
                       {SEVERITY_ORDER.map((l) => (
                         <option key={l} value={l}>
                           {SEVERITY_LABEL[l]}

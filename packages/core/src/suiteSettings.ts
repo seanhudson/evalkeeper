@@ -88,8 +88,9 @@ export function readSuiteSettings(value: unknown): SuiteSettings {
 /**
  * Reads the Suite settings form: `targetCases` as a whole number in
  * TARGET_CASES_RANGE, and for each of the suite's checks `level:<key>`
- * (serious, moderate, or minor) and `aim:<key>` (a whole percent, 1 to
- * 100), each empty for the suite's own. Throws a sentence a person can act
+ * (serious, moderate, or minor; its own level, or empty, saves no
+ * override) and `aim:<key>` (a whole percent, 1 to 100; empty for its
+ * own). Throws a sentence a person can act
  * on when one doesn't fit.
  *
  * @param form - The submitted form.
@@ -119,7 +120,8 @@ export function suiteSettingsFromForm(
     const level = text(`level:${c.key}`);
     const aimText = text(`aim:${c.key}`).replace(/%$/, "").trim();
     const one: CheckOverride = {};
-    if (level) {
+    // The check's own level isn't an override: it follows the code.
+    if (level && level !== c.severity) {
       if (!SEVERITY_ORDER.includes(level as CheckDef["severity"]))
         throw new Error(
           `Pick a level for ${c.label}: ${SEVERITY_ORDER.map((l) => SEVERITY_LABEL[l]).join(", ")}.`,

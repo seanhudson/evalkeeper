@@ -96,7 +96,8 @@ test("a check's level, set in Suite settings, shows on the page", async ({
 
   // Back to the suite's own.
   const reset = await openDrawer(page, "Ticket triage", "Suite settings");
-  await reset.getByLabel("Right urgency: level").selectOption("");
+  await expect(reset.getByLabel("Right urgency: level")).toHaveValue("serious");
+  await reset.getByLabel("Right urgency: level").selectOption("minor");
   await reset.getByLabel("Right urgency: aim").fill("");
   await reset.getByRole("button", { name: "Save" }).click();
   await expect(

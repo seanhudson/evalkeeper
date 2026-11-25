@@ -88,7 +88,8 @@ export type PageMenuEntry = {
 };
 
 /**
- * The menu beside a page's title: each entry opens its own drawer.
+ * The menu beside a page's title: each entry opens its own drawer, from
+ * the menu or from a link to "#menu=<key>" (a to-do item's, say).
  * Renders nothing without entries.
  */
 export function PageMenu({
@@ -100,6 +101,19 @@ export function PageMenu({
   entries: readonly PageMenuEntry[];
 }) {
   const [open, setOpen] = useState<string | null>(null);
+  // A link to "#menu=<key>" opens that entry's drawer. Setting state twice
+  // (a dev remount) is harmless.
+  useEffect(() => {
+    const fromHash = () => {
+      const h = window.location.hash;
+      if (h.startsWith("#menu=")) setOpen(h.slice("#menu=".length));
+    };
+    fromHash();
+    window.addEventListener("hashchange", fromHash);
+    return () => {
+      window.removeEventListener("hashchange", fromHash);
+    };
+  }, []);
   if (!entries.length) return null;
   const shown = entries.find((e) => e.key === open);
   return (
@@ -121,6 +135,13 @@ export function PageMenu({
         open={shown !== undefined}
         onClose={() => {
           setOpen(null);
+          // So the same link opens it again.
+          if (window.location.hash.startsWith("#menu="))
+            history.replaceState(
+              null,
+              "",
+              window.location.pathname + window.location.search,
+            );
         }}
       >
         {shown?.body}

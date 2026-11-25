@@ -24,17 +24,18 @@ test("the decision board shows probability quality, calibration, and native vs p
   await page.reload();
 
   await expect(
-    page.getByRole("columnheader", { name: /Probability quality/ }),
+    page.getByRole("columnheader", { name: /^Confidence/ }),
   ).toBeVisible();
   await expect(
-    page.getByRole("columnheader", { name: /Calibration error/ }),
+    page.getByRole("columnheader", { name: /^Calibration/ }),
   ).toBeVisible();
 
   const careful = modelRow(page, "Demo Careful");
-  await expect(careful.getByText("Native probabilities")).toBeVisible();
+  // Built-in probabilities are the usual case: no chip.
+  await expect(careful.getByText("Built-in probabilities")).toHaveCount(0);
   await expect(careful.getByText(/\d+%/).first()).toBeVisible();
   await expect(
-    modelRow(page, "Demo Legacy").getByText("Prompted", { exact: true }),
+    modelRow(page, "Demo Legacy").getByText("Self-estimated", { exact: true }),
   ).toBeVisible();
 
   // The test's page shows each answer's probabilities with the cutoff (#67).
@@ -44,6 +45,6 @@ test("the decision board shows probability quality, calibration, and native vs p
   // Text-only checks don't show these columns.
   await page.goto("/evals/ticket_triage");
   await expect(
-    page.getByRole("columnheader", { name: /Probability quality/ }),
+    page.getByRole("columnheader", { name: /^Confidence/ }),
   ).toHaveCount(0);
 });

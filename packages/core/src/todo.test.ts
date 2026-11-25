@@ -303,3 +303,36 @@ describe("replacedStarters", () => {
     ).toHaveLength(1);
   });
 });
+
+describe("too many must-pass checks", () => {
+  const check = (key: string, severity: CheckDef["severity"]): CheckDef => ({
+    key,
+    label: key,
+    description: "",
+    kind: "code",
+    severity,
+  });
+  it("asks to review the levels when most of four or more must pass", () => {
+    const many = ["a", "b", "c"].map((k) => check(k, "serious"));
+    const todos = suiteTodos(input({ checks: [...many, check("d", "minor")] }));
+    const t = todos.find((x) => x.kind === "reviewLevels");
+    expect(t).toEqual({ kind: "reviewLevels", mustPass: 3, checks: 4 });
+    if (!t) throw new Error("listed");
+    expect(todoText(t)).toEqual({
+      what: "Review check levels",
+      why: "3 of 4 checks must pass, so must-pass misses stop telling models apart. Keep must-pass for mistakes that change what your product does.",
+    });
+  });
+
+  it("leaves half, or a short list, alone", () => {
+    const half = [
+      check("a", "serious"),
+      check("b", "serious"),
+      check("c", "moderate"),
+      check("d", "minor"),
+    ];
+    expect(kinds(input({ checks: half }))).not.toContain("reviewLevels");
+    const short = ["a", "b", "c"].map((k) => check(k, "serious"));
+    expect(kinds(input({ checks: short }))).not.toContain("reviewLevels");
+  });
+});

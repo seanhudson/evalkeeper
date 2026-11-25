@@ -11,6 +11,12 @@ import {
 } from "./types.js";
 
 /**
+ * A suite with at least this many checks, more than half of them must
+ * pass, gets "Review check levels" on its to-do list.
+ */
+export const MANY_CHECKS = 4;
+
+/**
  * A suite's to-do list: what to do next, in the order to do it, each with
  * why. The suite's page shows it at the top, where each item is done; the
  * hub shows only whether there is one (`suiteStatus`). Pure, from the same
@@ -56,7 +62,8 @@ export type Todo =
   | { kind: "addCases"; add: number; cases: number; target: number }
   | { kind: "makeAttacks"; suites: { key: string; label: string }[] }
   | { kind: "retireStarters"; cases: number }
-  | { kind: "reviewSplit"; cases: number };
+  | { kind: "reviewSplit"; cases: number }
+  | { kind: "reviewLevels"; mustPass: number; checks: number };
 
 /** What a suite's to-do list is made from. */
 export type TodoInput = {
@@ -177,6 +184,10 @@ export function suiteTodos(input: TodoInput): Todo[] {
     out.push({ kind: "retireStarters", cases: input.replacedStarters });
   if (input.splitCases)
     out.push({ kind: "reviewSplit", cases: input.splitCases });
+  // 8. Too many must-pass checks: their misses stop telling models apart.
+  const mustPass = checks.filter((c) => c.severity === "serious").length;
+  if (checks.length >= MANY_CHECKS && mustPass > checks.length / 2)
+    out.push({ kind: "reviewLevels", mustPass, checks: checks.length });
   return out;
 }
 
@@ -247,6 +258,11 @@ export function todoText(t: Todo): { what: string; why: string } {
       return {
         what: `Review ${n(t.cases, "case")} models split on`,
         why: "often the answer is wrong or the case unclear, and either makes every score less trustworthy.",
+      };
+    case "reviewLevels":
+      return {
+        what: "Review check levels",
+        why: `${t.mustPass} of ${t.checks} checks must pass, so must-pass misses stop telling models apart. Keep must-pass for mistakes that change what your product does.`,
       };
   }
 }

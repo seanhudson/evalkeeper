@@ -26,7 +26,7 @@ test("the board links a model's verdict to its comparison with live", async ({
   await tested(page, "Demo Quick");
   await page.reload();
   await modelRow(page, "Demo Quick")
-    .getByRole("link", { name: /accurate|Too few/ })
+    .getByRole("link", { name: /^(Better|Similar|Worse|Can.t tell)/ })
     .click();
 
   // The one clicked, against the live model's test.
@@ -89,7 +89,7 @@ test("the comparison's words explain themselves on keyboard focus", async ({
   await tested(page, "Demo Quick");
   await page.reload();
   await modelRow(page, "Demo Quick")
-    .getByRole("link", { name: /accurate|Too few/ })
+    .getByRole("link", { name: /^(Better|Similar|Worse|Can.t tell)/ })
     .click();
   const chip = page
     .getByText(/^(Broke|Fixed|Missed differently)$/)

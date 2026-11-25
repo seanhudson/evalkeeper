@@ -1,5 +1,11 @@
 blank_issues_enabled: true
 contact_links:
+  - name: Ask a question
+    url: https://github.com/seanhudson/evalkeeper/discussions/categories/q-a
+    about: How do I...? Does it work with...? Ask in Discussions, where answers stay findable.
+  - name: Suggest an idea
+    url: https://github.com/seanhudson/evalkeeper/discussions/categories/ideas
+    about: Talk an idea through in Discussions before it becomes an issue.
   - name: Report a security issue
     url: https://github.com/seanhudson/evalkeeper/security/advisories/new
     about: Please report security issues privately, not as an issue.

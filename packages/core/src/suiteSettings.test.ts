@@ -136,7 +136,7 @@ describe("a check's level and aim, set per suite", () => {
         form({
           "level:category": "minor",
           "aim:tone": "80%",
-          "level:fact": "",
+          "level:fact": "serious",
           "aim:fact": "",
         }),
         checks,

@@ -395,13 +395,16 @@ Then:
 3. Make them look like your app with your own components ([Make the
    screens your own](screens.md)).
 4. Optional: if your app keeps daily spending limits for eval tests,
-   add `spending` (an `EvalSpending`) to the wiring. Your app keeps the
-   numbers and enforces the limits where its AI calls are made; the
-   pages read them and save the limits. They show a warning panel only
-   when tests are over a limit, stopped, or running (with **Stop all
-   tests** and **Allow tests**), and otherwise keep spending under the
-   page menu's **Spending and daily limits**. `memorySpending()` is an
-   in-memory one for demos and tests.
+   add `spending` (an `EvalSpending`) to the wiring, and pass
+   `budget: spendingBudget(spending)` to `createRunner`. Your app keeps
+   the numbers; the runner asks before each new answer, so a test stops
+   over a limit and says why in the limit's words. The pages read them
+   and save the limits. They show a warning panel only when tests are
+   over a limit, stopped, or running (with **Stop all tests** and
+   **Allow tests**), and otherwise keep spending under the page menu's
+   **Spending and daily limits**. Your `stopAll` can call
+   `runner.stopTests()`: running tests stop within an answer or two.
+   `memorySpending()` is an in-memory one for demos and tests.
 
 **Check it works:** signed in as an admin, open `/admin/evals`. The hub
 lists your suite.

@@ -6,8 +6,8 @@ import { isInjectionSuite, type AnySuite } from "@crowandraven/evalkeeper";
  * The example's eval spending: what its tests spent in the last 24 hours
  * (from the tests themselves), against daily limits kept in memory, with a
  * stop. Your app reads its own usage records and keeps limits where an
- * admin can change them without a deploy, and refuses an eval call over a
- * limit where its AI calls are made; Evalkeeper's pages only show them.
+ * admin can change them without a deploy. The runner asks it before each
+ * new answer (`budget: spendingBudget(spending)`), so the limits hold.
  */
 
 /** Demo limits: low, so a few tests show what being over one looks like. */
@@ -32,10 +32,12 @@ const state: State = (g.evalSpendingDemo ??= {
  *
  * @param store - Where the tests are.
  * @param suites - Every suite, for its feature.
+ * @param stopTests - Stops running tests (`runner.stopTests`).
  */
 export function demoSpending(
   store: EvalStore,
   suites: readonly AnySuite[],
+  stopTests: () => Promise<number> = async () => 0,
 ): EvalSpending {
   const since = () => new Date(Date.now() - 24 * 60 * 60 * 1000);
   /** Tests of these suites in the last 24 hours. */
@@ -86,8 +88,9 @@ export function demoSpending(
     },
     async stopAll() {
       state.stoppedUntil = new Date(Date.now() + 15 * 60_000);
-      // The example's tests finish in seconds; yours would be marked failed here.
-      return 0;
+      // Running tests stop within an answer or two; the stop keeps new
+      // ones from starting answers (the runner's budget).
+      return stopTests();
     },
     async allow() {
       state.stoppedUntil = null;

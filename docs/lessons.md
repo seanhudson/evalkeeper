@@ -279,6 +279,14 @@ checks say `judged: true`, the tooltip says which kind of rescore it is,
 the result says what it actually cost, and a judged rescore waits while
 tests are over a daily limit.
 
+**Every app wrote the same spending guard.** With limits on the pages
+but nothing in the runner asking them, two apps each wrapped every
+suite's `run` to throw an error the runner reads as "out of credits".
+That stopped the spending, but the test then said the provider's account
+was out of credits. _So:_ the runner asks a `budget` before each new
+answer and reports its reason as given, and a stop is read between
+answers.
+
 **Long rescores hit the host's time limit.** Rescoring three large suites
 in production returned a timeout page; the work was saved, so pressing
 again finished them, but nothing said so. _So:_ a rescore stops before

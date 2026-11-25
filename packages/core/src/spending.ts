@@ -55,6 +55,12 @@ export type EvalSpending = {
   allow?(): Promise<void>;
 };
 
+/**
+ * Above this, in USD, Test every model asks for a second press first
+ * (`EvalApp.confirmTestsAboveUsd` changes it).
+ */
+export const CONFIRM_TESTS_USD = 5;
+
 /** The most a limit can be set to, so a typo can't remove it. */
 export const MAX_LIMIT_USD = 500;
 
@@ -96,6 +102,24 @@ export function limitsFromForm(form: FormData): SpendingLimits {
   return operation
     ? { allUsd, feature: { operation, usd: parseLimit(text("featureUsd")) } }
     : { allUsd };
+}
+
+/**
+ * The runner's `budget` from your spending: a test's next answer waits
+ * while tests are stopped or over a daily limit (`spendingHalt`), and the
+ * test says why in those words. `read` runs before every new answer, so
+ * cache it for a few seconds.
+ *
+ * @param spending - Your app's spending (only `read` is used).
+ * @example
+ * ```ts
+ * const runner = createRunner({ ...options, budget: spendingBudget(spending) });
+ * ```
+ */
+export function spendingBudget(
+  spending: Pick<EvalSpending, "read">,
+): (call: { operation: string }) => Promise<string | null> {
+  return async ({ operation }) => spendingHalt(await spending.read(operation));
 }
 
 /** Why tests can't run now, in words that say what to do; null: they can. */

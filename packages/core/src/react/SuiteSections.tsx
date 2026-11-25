@@ -34,9 +34,11 @@ import {
   SEVERITY_ORDER,
   SEVERITY_LABEL,
   usesJudge,
+  CONFIRM_TESTS_USD,
 } from "../index.js";
 import { AnswerKey } from "./AnswerKey.js";
 import { RescoreButton } from "./RescoreButton.js";
+import { TestAll } from "./TestAll.js";
 import { ModelMenu } from "./ModelMenu.js";
 import { PriorityPicker } from "./PriorityPicker.js";
 import { InfoPopover } from "./InfoPopover.js";
@@ -572,6 +574,7 @@ function TodoAction({
           action={app.actions.testAll}
           suite={suite}
           cost={testAllCost}
+          confirmAbove={app.confirmTestsAboveUsd ?? CONFIRM_TESTS_USD}
           again={t.kind === "retest"}
           id="todo-test-all"
         />
@@ -776,6 +779,7 @@ export function ModelTable({ data }: { data: SuitePageData }) {
               action={app.actions.testAll}
               suite={key}
               cost={testAllCost}
+              confirmAbove={app.confirmTestsAboveUsd ?? CONFIRM_TESTS_USD}
               id="board-test-all"
             />
           </div>
@@ -937,9 +941,18 @@ export function ModelTable({ data }: { data: SuitePageData }) {
                         )}
                       </div>
                     ) : (
-                      <span className="text-muted">
-                        {r.failed ?? "Not tested"}
-                      </span>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-muted">
+                          {r.failed ?? "Not tested"}
+                        </span>
+                        {r.failed && estimateText(estimates.get(r.key)) && (
+                          // Before pressing Test again: what's reused, and
+                          // what the rest costs.
+                          <span className="text-xs text-muted">
+                            Test again: {estimateText(estimates.get(r.key))}
+                          </span>
+                        )}
+                      </div>
                     )}
                   </td>
                   <td className="p-3 tabular-nums">
@@ -1552,42 +1565,6 @@ export function AnswerKeySection({ data }: { data: SuitePageData }) {
         />
       )}
     </section>
-  );
-}
-
-/**
- * Test every model, saying it costs money: what it would cost now beside
- * it, and a tooltip on what it does.
- */
-function TestAll({
-  action,
-  suite,
-  cost,
-  again = false,
-  id,
-}: {
-  action: FormAction;
-  suite: string;
-  /** What it costs now; 0: every answer reused; null: unknown. */
-  cost: number | null;
-  again?: boolean;
-  /** Unique per page, for the tooltip. */
-  id: string;
-}) {
-  return (
-    <form action={action} className="flex shrink-0 items-center gap-2">
-      <input type="hidden" name="suite" value={suite} />
-      <Tip control term="testAll" id={id} side="bottom" align="end">
-        <Submit variant="quiet">
-          {again ? "Test every model again" : "Test every model"}
-        </Submit>
-      </Tip>
-      {cost !== null && (
-        <span className="whitespace-nowrap text-xs text-muted">
-          {cost === 0 ? "free, all reused" : `~${money(cost)}`}
-        </span>
-      )}
-    </form>
   );
 }
 

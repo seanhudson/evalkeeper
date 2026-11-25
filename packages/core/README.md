@@ -6,6 +6,8 @@ the runner. Pure TypeScript; the runner (`@crowandraven/evalkeeper/runner`) is
 server-only, and `@crowandraven/evalkeeper/memory` is an in-memory store for tests and
 demos.
 
+[![A 30-second walkthrough of the example app: the hub, testing every model on a suite's answer key, the model board's scores and suggestion, making the suggested model live, and a user's thumbs down becoming a new case in the answer key.](https://raw.githubusercontent.com/seanhudson/evalkeeper/main/docs/demo/evalkeeper-demo.gif)](https://github.com/seanhudson/evalkeeper#readme)
+
 The `evalkeeper` command copies the eval pages into your app:
 `npx @crowandraven/evalkeeper add pages --base admin/evals`. Already have
 pages, tables, or a model router of your own? Copy only what you're

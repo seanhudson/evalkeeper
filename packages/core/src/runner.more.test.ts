@@ -779,6 +779,66 @@ describe("runner, beyond a basic test", () => {
     ).toHaveLength(2);
   });
 
+  it("estimates from what a model's answers really cost, when that's more", async () => {
+    const { store } = await setup([2, 4]);
+    const runner = createRunner({
+      store,
+      suites: [double],
+      models: MODELS,
+      promptVersion: () => "v1",
+      // Tokens only: the app's price misses what each answer really pays.
+      estimateCallCost: async () => 0.001,
+      ceilingTimes: null,
+    });
+    const before = await runner.estimateRun("double", "good", "ALL", 1, {
+      fresh: true,
+    });
+    expect(before.costUsd).toBeCloseTo(0.002);
+    const { run } = await runner.createRun({ suite: "double", model: "good" });
+    await runner.runEval(run.id);
+    // Its answers cost 0.002 each: the estimate now uses that.
+    const after = await runner.estimateRun("double", "good", "ALL", 1, {
+      fresh: true,
+    });
+    expect(after.costUsd).toBeCloseTo(0.004);
+    // A model with no price of its own takes what it cost last time.
+    const unpriced = createRunner({
+      store,
+      suites: [double],
+      models: MODELS,
+      promptVersion: () => "v1",
+    });
+    expect(
+      (await unpriced.estimateRun("double", "good", "ALL", 1, { fresh: true }))
+        .costUsd,
+    ).toBeCloseTo(0.004);
+  });
+
+  it("stops a test that spends more than twice its estimate", async () => {
+    const { store } = await setup();
+    const options = {
+      store,
+      suites: [{ ...double, concurrency: 1 }],
+      models: MODELS,
+      promptVersion: () => "v1",
+      // Priced at a twentieth of what an answer really costs (0.002).
+      estimateCallCost: async () => 0.0001,
+    };
+    const runner = createRunner(options);
+    const { run } = await runner.createRun({ suite: "double", model: "good" });
+    await runner.runEval(run.id, { fresh: true });
+    const done = await store.getRun(run.id);
+    expect(done?.status).toBe("FAILED");
+    expect(done?.error).toBe(
+      "Stopped after 1 of 6 answers. This test has spent 0.20¢, more than twice its estimate (0.060¢). Check the model's price, and what an answer pays for. Answers already given are reused at no cost when you test again.",
+    );
+    // Turned off, the same test finishes.
+    const free = createRunner({ ...options, ceilingTimes: null });
+    const again = await free.createRun({ suite: "double", model: "good" });
+    await free.runEval(again.run.id, { fresh: true });
+    expect((await store.getRun(again.run.id))?.status).toBe("SUCCEEDED");
+  });
+
   it("goes ahead when the budget can't be read", async () => {
     const { store } = await setup([2]);
     const runner = createRunner({

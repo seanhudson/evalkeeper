@@ -30,16 +30,16 @@ the right tool for what you're building.
 It's one package, `@crowandraven/evalkeeper`,
 with optional parts. Install only the peers of the parts you use:
 
-| Your app                              | Use                                                                             | Needs                             |
-| ------------------------------------- | ------------------------------------------------------------------------------- | --------------------------------- |
-| Any TypeScript server                 | The core and the runner                                                         | zod                               |
-| Prisma (PostgreSQL, MySQL, or SQLite) | `/prisma`: the tables and stores                                                | Prisma 6                          |
-| Another database or ORM               | Your own store (`EvalStore`); `memoryStore.ts` is a full example                | Nothing more                      |
-| Vercel AI SDK                         | `/ai-sdk`: instruction hashes, pricing, the meaning judge, decisions            | `ai` 7                            |
-| Another AI client                     | Call it from each suite's `run`                                                 | Nothing more                      |
-| Next.js (App Router)                  | `/next`: pages, server actions, the weekly cron route                           | Next.js 15+, React 19, Tailwind 4 |
-| Another React app                     | `/react`: the screens' sections and views, wired to your own router and actions | React 19, Tailwind 4              |
-| No React                              | The core only, with your own pages                                              | Nothing more                      |
+| Your app                              | Use                                                                             | Needs                                             |
+| ------------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------- |
+| Any TypeScript server                 | The core and the runner                                                         | zod                                               |
+| Prisma (PostgreSQL, MySQL, or SQLite) | `/prisma`: the tables and stores                                                | Prisma 6                                          |
+| Another database or ORM               | Your own store (`EvalStore`); `memoryStore.ts` is a full example                | Nothing more                                      |
+| Vercel AI SDK                         | `/ai-sdk`: instruction hashes, pricing, the meaning judge, decisions            | `ai` 7                                            |
+| Another AI client                     | Call it from each suite's `run`                                                 | Nothing more                                      |
+| Next.js (App Router)                  | `/next`: pages, server actions, the weekly cron route                           | Next.js 15+, React 19, Tailwind 4, `lucide-react` |
+| Another React app                     | `/react`: the screens' sections and views, wired to your own router and actions | React 19, Tailwind 4, `lucide-react`              |
+| No React                              | The core only, with your own pages                                              | Nothing more                                      |
 
 ## AI providers and gateways
 
@@ -82,7 +82,8 @@ is missing should stay out of `candidates`, so it isn't offered.
 Tests spend real money. Before a test starts, the board shows its
 estimated cost (`~$0.16`), from your catalog's prices. Identical requests
 are reused for a week, so testing a model again after a grading fix is
-free, and rescoring stored answers never calls a model. Mark eval calls
+free, and rescoring stored answers calls no model but an AI judge, for
+checks that use one. Mark eval calls
 in your usage records so they aren't billed to a user.
 
 The example app needs no keys: it runs on demo models, and adds real

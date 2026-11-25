@@ -193,13 +193,13 @@ limits, and the button says what it cost. A long rescore stops before
 the request's time limit and goes on in a new request.
 
 **Comparison.** Two tests on the same cases are compared case by case
-with a paired bootstrap. The verdict is _more accurate_, _about as
-accurate_, _less accurate_, or _too few cases to tell_ (under 5 in common).
+with a paired bootstrap. The verdict is _better_, _similar_, _worse_, or
+_can't tell_ (under 5 cases in common).
 A test with failed answers is incomplete and never compared. The compare
 page puts any two finished tests next to each other: the verdict, each
 check's pass rate, and the cases they graded differently (broke, fixed,
 or missed differently), each opened side by side with both answers and
-what each check found. "About as accurate" means little until you've
+what each check found. "No clear difference" means little until you've
 read where the two disagree.
 
 **How sure.** Under 20 cases, a score is mostly noise; under 50, rough;

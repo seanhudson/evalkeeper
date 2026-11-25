@@ -8,8 +8,8 @@ interface; its changelog entry says how to update.
 ## Each upgrade
 
 1. **Read what changed.** Open [What changed](../CHANGELOG.md) and read
-   every version between yours and the new one. Entries marked **To
-   update** need a step from you.
+   every version between yours and the new one. Each version's
+   **Update:** list says what needs a step from you.
 2. **Install it:**
 
    ```bash
@@ -44,7 +44,7 @@ interface; its changelog entry says how to update.
    doesn't. Then open the hub, and test one feature.
 5. **Test again if grading changed.** A release that changes how answers
    are graded says so; earlier tests are then marked out of date. Rescore
-   (free), or test again where the changelog says to.
+   them, or test again where the changelog says to.
 
 ## If you copied pages
 

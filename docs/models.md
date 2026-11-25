@@ -68,9 +68,9 @@ them, create the runner with `retiringOnBoard: "inUse"`.
 
 ## Make costs show up on the pages
 
-Costs appear in four places: each model's cost per answer on the board,
-what a test spent on its page, the estimate on each test button, and
-the hub's costliest live model. They need three things:
+Costs appear in three places: each model's cost per answer on the board,
+what a test spent on its page, and the estimate on each test button.
+They need three things:
 
 1. **A price for each model** in your catalog
    ([The catalog](#the-catalog)).

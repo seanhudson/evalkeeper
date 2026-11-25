@@ -105,7 +105,8 @@ a field meant. Give every input and answer field a plain label and help.
   description, and when a provider ships a model you might use. The
   instructions hash covers all of them, so the board marks old tests out
   of date.
-- **Rescore** after you change an answer or a check. It's free.
+- **Rescore** after you change an answer or a check. It calls no
+  model, only an AI judge for checks that use one.
 - **Schedule the weekly check**, so drift shows up before your users
   notice it.
 - **Reload the page after a deploy that changes grading.** A page loaded
@@ -133,5 +134,5 @@ and the first outage takes the feature down.
 ## Say plainly what a score means
 
 Every score shows how many cases it rests on and how far off it could
-be. Read "about as accurate" as just that: on these cases, the two can't
-be told apart. Add cases before you trust a small difference.
+be. Read **Similar** as just that: on these cases, the two can't be
+told apart. Add cases before you trust a small difference.

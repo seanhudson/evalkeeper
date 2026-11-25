@@ -21,8 +21,8 @@ export type RunOutput = {
 };
 
 /**
- * How a challenger compares with the model in place: more accurate, about as accurate,
- * less accurate, or too few cases to tell.
+ * How a challenger compares with the model in place: better, similar, worse, or
+ * too few cases to tell.
  */
 export type Verdict = "BETTER" | "SAME" | "WORSE" | "TOO_FEW";
 

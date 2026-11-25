@@ -195,8 +195,8 @@ export const ATTACK_CARE: readonly {
 /** Each priority, explained for the suite page. */
 export const FAVOR_TEXT: Record<SuitePriority["favor"], string> = {
   speed:
-    "speed: someone waits on this, so a model that scores as well and answers clearly faster is worth switching to, and so is one about as accurate (within 10 points) in half the time",
-  cost: "cost: this runs in the background, often, so a model that scores as well and is clearly cheaper is worth switching to, and so is one about as accurate (within 10 points) at half the cost",
+    "speed: someone waits on this, so a model that scores as well and answers clearly faster is worth switching to, and so is one with similar accuracy (within 10 points) in half the time",
+  cost: "cost: this runs in the background, often, so a model that scores as well and is clearly cheaper is worth switching to, and so is one with similar accuracy (within 10 points) at half the cost",
   quality:
     "quality: people read and act on this, so only clearly better accuracy or fewer must-pass misses is worth switching for",
 };

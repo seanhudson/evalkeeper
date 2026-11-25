@@ -19,8 +19,9 @@ before, and the edge cases a person would argue about. A score on a
 handful of cases can be off by a lot; every score says how many cases it
 rests on and how far off it could be.
 
-Keep a few cases aside as a held-out set (`TEST`) that you never tune
-your prompt against, and tune against the rest (`DEV`).
+Each case is in `DEV` or `TEST`. Tests on the pages run every case;
+when you test from code, you can keep `TEST` as a held-out set you never
+tune your prompt against, and tune against `DEV`.
 
 ## Add a case by hand
 
@@ -73,7 +74,7 @@ proposed but nobody has checked:
   users](thumbs.md)).
 - **An import** brought in test data you already had ([Cases you
   already have](suites.md#cases-you-already-have)).
-- **You asked for more** with **Draft N more cases**, above.
+- **You asked for more** with **Describe them**, above.
 
 A draft's answer is **Pending**: it's never graded against. Open the
 case: the proposed answer comes first, under **Check this answer**,
@@ -155,5 +156,6 @@ answer takes over, and the shipped review never replaces it.
 
 Changing or confirming an answer makes earlier tests **Out of date** on
 the board. Press **Rescore tests** to grade the answers those tests
-already have against the new answer key. It's free: rescoring never
-calls a model.
+already have against the new answer key. It never calls the models
+again; only a check that asks an AI judge (`judged: true`) may, usually
+for a few cents, and the button says what it cost.

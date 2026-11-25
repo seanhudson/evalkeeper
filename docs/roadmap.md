@@ -15,16 +15,10 @@ Already planned, and the next to be built:
   generated files, and a list of what changed.
 - **Code as the fallback,** the last of what apps already using it
   built for themselves; the rest shipped in 0.12.0.
-- **Tests that cost real money stay in your hands.** A stop that takes
-  effect between answers, not only between tests; a spending check the
-  runner asks before each call, so your daily limits hold; the total
-  cost shown before **Test every model** starts; and a test that
-  survives a deploy instead of starting over.
+- **A test that survives a deploy.** A deploy still ends a running test.
+  Testing again reuses every answer already given, so it costs only the
+  rest, but the test should carry on by itself.
   ([#143](https://github.com/seanhudson/evalkeeper/issues/143))
-- **A suggestion you can tune.** Today one extra mistake on the attacks
-  keeps a cheaper, more accurate model from being suggested. Give that
-  rule a margin, or let each suite set its own suggestion rules.
-  ([#142](https://github.com/seanhudson/evalkeeper/issues/142))
 - **AI gateway support,** optional, in the AI SDK entry point. Test
   models from many providers with one key, through Vercel's AI Gateway,
   OpenRouter, or another gateway. A command checks your

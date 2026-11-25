@@ -403,7 +403,7 @@ function CaseItem({
     >
       {/* The chips keep their place on the right; a long title wraps
           beside them (below them only on a phone). */}
-      <summary className="flex cursor-pointer list-none flex-wrap items-start justify-between gap-2 p-3 text-sm sm:flex-nowrap">
+      <summary className="flex cursor-pointer list-none flex-wrap [&::-webkit-details-marker]:hidden items-start justify-between gap-2 p-3 text-sm sm:flex-nowrap">
         <span className="flex min-w-0 flex-1 items-start pt-0.5 font-medium">
           <ChevronRight
             aria-hidden

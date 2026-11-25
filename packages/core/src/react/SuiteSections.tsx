@@ -56,7 +56,14 @@ import {
   Tip,
 } from "./pieces.js";
 import { pct, LINK, QUIET_BUTTON, TINT } from "./format.js";
-import { Check, Plus, RotateCw, ShieldAlert, Sparkles } from "lucide-react";
+import {
+  Check,
+  ChevronRight,
+  Plus,
+  RotateCw,
+  ShieldAlert,
+  Sparkles,
+} from "lucide-react";
 import { PageMenu, type PageMenuEntry } from "./Drawer.js";
 import { SpendingAlert, SpendingForm } from "./Spending.js";
 import { TARGET_CASES_RANGE } from "../suiteSettings.js";
@@ -1721,7 +1728,11 @@ export function AnswerKeyHealthSection({ data }: { data: SuitePageData }) {
               </ul>
             )}
             <details className="group">
-              <summary className="cursor-pointer text-xs text-muted">
+              <summary className="flex cursor-pointer list-none items-center gap-1 text-xs text-muted [&::-webkit-details-marker]:hidden">
+                <ChevronRight
+                  aria-hidden
+                  className="h-3.5 w-3.5 transition-transform group-open:rotate-90"
+                />
                 Every topic and its cases
               </summary>
               <ul className="mt-2 flex flex-wrap gap-1.5">

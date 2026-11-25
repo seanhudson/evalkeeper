@@ -36,6 +36,7 @@ import {
   Steps,
 } from "@astrojs/starlight/components";
 import Check from "../../components/Check.astro";
+import Demo from "../../components/Demo.astro";
 import Shot from "../../components/Shot.astro";
 
 <div class="ek-install">
@@ -70,11 +71,7 @@ one step at a time, and stop after each step so I can check it.
 
 </div>
 
-<Shot
-  name="board"
-  lazy={false}
-  alt="A feature's model board: each model's score, must-pass misses, time, and cost, the live and retiring models marked, and the suggested live and fallback models with their reasons."
-/>
+<Demo alt="A 30-second walkthrough of the example app: the hub, testing every model on a suite's answer key, the model board's scores and suggestion, making the suggested model live, and a user's thumbs down becoming a new case in the answer key." />
 
 <section class="ek-section">
 
@@ -300,6 +297,16 @@ one step at a time, and stop after each step so I can check it.
 </div>
 
 <div class="ek-tour">
+  <figure class="ek-wide">
+    <Shot
+      name="board"
+      alt="A feature's model board: each model's score, must-pass misses, time, and cost, the live and retiring models marked, and the suggested live and fallback models with their reasons."
+    />
+    <figcaption>
+      <strong>The model board.</strong> Every model's score, must-pass misses,
+      speed, and cost, with the suggested live model and fallback and why.
+    </figcaption>
+  </figure>
   <figure>
     <Shot
       name="hub"

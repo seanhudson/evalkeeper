@@ -1088,7 +1088,14 @@ export function createRunner(opts: RunnerOptions) {
     const suite = suiteOrThrow(suiteKey);
     if (!opts.suiteSettings) return suite;
     const saved = await suiteSettingsOf(suite.key);
-    return { ...suite, checks: effectiveChecks(suite.checks, saved) };
+    return {
+      ...suite,
+      checks: effectiveChecks(suite.checks, saved),
+      // The person's attack setting, for the suggestion.
+      ...(saved.attacks
+        ? { priority: { ...suite.priority, attacks: saved.attacks } }
+        : {}),
+    };
   }
 
   /**

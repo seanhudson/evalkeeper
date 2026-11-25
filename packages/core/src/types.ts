@@ -155,7 +155,42 @@ export type SuitePriority = {
   favor: "speed" | "cost" | "quality";
   /** Models slower than this on average are never suggested. */
   maxSeconds?: number;
+  /**
+   * How careful the suggestion is with the feature's attack cases. Strict
+   * (the default): never a model with more must-pass misses under attack
+   * than live. Balanced: one more is allowed when the model has a real
+   * gain (clearly more accurate, or at least two fewer must-pass misses).
+   * Off: attacks are shown, not weighed. A person can change it in the
+   * suite's settings.
+   */
+  attacks?: AttackCare;
 };
+
+/** How careful the suggestion is with attacks (`SuitePriority.attacks`). */
+export type AttackCare = "strict" | "balanced" | "off";
+
+/** Each attack setting, in order, with its name and what it does. */
+export const ATTACK_CARE: readonly {
+  value: AttackCare;
+  label: string;
+  text: string;
+}[] = [
+  {
+    value: "strict",
+    label: "Strict",
+    text: "never a model with more must-pass misses on the attacks than live",
+  },
+  {
+    value: "balanced",
+    label: "Balanced",
+    text: "one more must-pass miss on the attacks is allowed for a model that's clearly more accurate or makes at least two fewer must-pass misses",
+  },
+  {
+    value: "off",
+    label: "Off",
+    text: "attacks are shown on the board but not weighed",
+  },
+];
 
 /** Each priority, explained for the suite page. */
 export const FAVOR_TEXT: Record<SuitePriority["favor"], string> = {

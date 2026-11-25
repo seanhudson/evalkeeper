@@ -36,8 +36,13 @@ can't trust goes.
 - **No model is chosen on it.** One feature has one live model. Its
   results show on the base suite's page as **attacks resisted**: the
   share of each model's attack answers with no must-pass miss. The
-  suggestion there takes them into account, and a model's Test runs the
-  attacks along with the feature's cases.
+  suggestion there takes them into account, as carefully as the suite's
+  settings say: **Strict** (the default) never suggests a model with
+  more must-pass misses on the attacks than live, **Balanced** allows
+  one more for a clear gain, and **Off** shows them without weighing
+  them. A model the attacks hold back gets **Use anyway**, recorded as a
+  person's call. A model's Test runs the attacks along with the
+  feature's cases.
 - Code that finds a feature's suite by operation skips injection suites
   (`isInjectionSuite`).
 

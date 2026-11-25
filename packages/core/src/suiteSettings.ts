@@ -1,6 +1,12 @@
 import { z } from "zod";
 import { TARGET_CASES } from "./summary.js";
-import { SEVERITY_LABEL, SEVERITY_ORDER, type CheckDef } from "./types.js";
+import {
+  ATTACK_CARE,
+  SEVERITY_LABEL,
+  SEVERITY_ORDER,
+  type AttackCare,
+  type CheckDef,
+} from "./types.js";
 
 /**
  * Settings a person adjusts on a suite's page (its title menu, Suite
@@ -19,6 +25,12 @@ export type SuiteSettings = {
    * in place of the check's own. A check left out keeps its own.
    */
   checks: Readonly<Record<string, CheckOverride>>;
+  /**
+   * How careful the suggestion is with attacks, in place of the suite's
+   * own (`SuitePriority.attacks`, Strict unless it sets one). Unset or
+   * null: the suite's own.
+   */
+  attacks?: AttackCare | null | undefined;
 };
 
 /** A person's level or aim for one check; either may be left to the check's own. */
@@ -54,6 +66,7 @@ const schema = z.object({
     .nullable()
     .catch(null),
   checks: z.record(z.string(), override.catch({})).catch({}),
+  attacks: z.enum(["strict", "balanced", "off"]).nullable().catch(null),
 });
 
 /**
@@ -66,9 +79,11 @@ export function readSuiteSettings(value: unknown): SuiteSettings {
   if (typeof value !== "object" || value === null) return NO_SUITE_SETTINGS;
   const targetCases: unknown = Reflect.get(value, "targetCases");
   const checks: unknown = Reflect.get(value, "checks");
+  const attacks: unknown = Reflect.get(value, "attacks");
   const parsed = schema.safeParse({
     targetCases: targetCases ?? null,
     checks: checks ?? {},
+    attacks: attacks ?? null,
   });
   if (!parsed.success) return NO_SUITE_SETTINGS;
   // Only what was set: an override with neither part is no override.
@@ -82,6 +97,7 @@ export function readSuiteSettings(value: unknown): SuiteSettings {
   return {
     targetCases: parsed.data.targetCases,
     checks: Object.fromEntries(kept),
+    ...(parsed.data.attacks ? { attacks: parsed.data.attacks } : {}),
   };
 }
 
@@ -90,15 +106,19 @@ export function readSuiteSettings(value: unknown): SuiteSettings {
  * TARGET_CASES_RANGE, and for each of the suite's checks `level:<key>`
  * (serious, moderate, or minor; its own level, or empty, saves no
  * override) and `aim:<key>` (a whole percent, 1 to 100; empty for its
- * own). Throws a sentence a person can act
- * on when one doesn't fit.
+ * own), and `attacks` (strict, balanced, or off; the suite's own, or
+ * empty, saves no override). Throws a sentence a person can act on when
+ * one doesn't fit.
  *
  * @param form - The submitted form.
  * @param checks - The suite's checks in code, for their keys and names.
+ * @param ownAttacks - The suite's own attack setting in code; choosing it
+ *   saves no override.
  */
 export function suiteSettingsFromForm(
   form: FormData,
   checks: readonly CheckDef[] = [],
+  ownAttacks: AttackCare = "strict",
 ): SuiteSettings {
   const text = (name: string) => {
     const raw = form.get(name);
@@ -138,6 +158,16 @@ export function suiteSettingsFromForm(
       one.aim = pct / 100;
     }
     if (Object.keys(one).length) out[c.key] = one;
+  }
+  const attacks = text("attacks");
+  // The suite's own setting isn't an override: it follows the code.
+  if (attacks && attacks !== ownAttacks) {
+    const care = ATTACK_CARE.find((a) => a.value === attacks);
+    if (!care)
+      throw new Error(
+        `Pick how careful to be with attacks: ${ATTACK_CARE.map((a) => a.label).join(", ")}.`,
+      );
+    return { targetCases, checks: out, attacks: care.value };
   }
   return { targetCases, checks: out };
 }

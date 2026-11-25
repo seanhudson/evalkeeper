@@ -65,6 +65,10 @@ export const GLOSSARY = {
     "Free: no model calls. Regrades stored answers with today's checks and answers.",
   rescoreJudged:
     "Regrades stored answers with today's checks and answers, with no new model answers. May ask the judge to compare new wording, usually a few cents.",
+  attackCare:
+    "How careful the suggestion is with attack cases. Strict: never more must-pass misses on them than live. Balanced: one more for a clear gain. Off: shown, not weighed.",
+  useAnyway:
+    "Makes this model live although the attacks hold it back, recorded in the history as your call. Read the attack cases it missed first.",
   testAll:
     "Asks every model for new answers to every case, so it costs money; the estimate is beside the button. Answers an identical request gave in the last 7 days are reused free.",
   tags: "What a case tests. The quick set picks cases that cover the most tags.",

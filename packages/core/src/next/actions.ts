@@ -214,7 +214,13 @@ export function evalActions(w: EvalWiring): Required<EvalActions> {
       if (!row?.test || row.test.stale)
         throw new Error("Test this model on the current cases first");
       const score = { right: row.test.right, total: row.test.total };
-      const attacked = attackMistakes(row.key, await attacksOn(suite.key));
+      const attacks = await attacksOn(suite.key);
+      const attacked = attackMistakes(row.key, attacks);
+      // Use anyway: a person makes live a model the attacks held back.
+      const override = formText(form, "override") === "attacks";
+      const liveAttacked = override
+        ? attackMistakes(board.rows.find((r) => r.live)?.key ?? "", attacks)
+        : null;
       await settings.update(
         suite.operation,
         // A row at another setting goes live at that setting.
@@ -223,13 +229,14 @@ export function evalActions(w: EvalWiring): Required<EvalActions> {
           : { model: row.model },
         {
           by: changer(admin),
-          reason: `Made ${row.label} live: ${score.right}/${score.total}, ${VS[row.vsLive ?? ""] ?? "no comparison"}${attacked === null ? "" : `; ${attacked} serious ${attacked === 1 ? "mistake" : "mistakes"} under attack`}`,
+          reason: `Made ${row.label} live${override ? " although the attacks held it back (a person's call)" : ""}: ${score.right}/${score.total}, ${VS[row.vsLive ?? ""] ?? "no comparison"}${attacked === null ? "" : `; ${attacked} serious ${attacked === 1 ? "mistake" : "mistakes"} under attack${liveAttacked === null ? "" : `, against ${liveAttacked} for live`}`}`,
           // The evidence, so the history can show why.
           evidence: {
             runId: row.test.runId,
             liveRunId: board.liveRunId,
             vsLive: row.vsLive,
             score,
+            ...(override ? { override: "attacks" } : {}),
           },
         },
       );
@@ -280,9 +287,9 @@ export function evalActions(w: EvalWiring): Required<EvalActions> {
       const live = current.settings;
       const s = suggest(
         board.rows,
-        // With a person's levels, as the page showed them.
+        // With a person's levels and attack setting, as the page showed them.
         board.suite.checks,
-        priorityOf(suite, live),
+        priorityOf(board.suite, live),
         w.models,
         {
           attacks,
@@ -494,7 +501,7 @@ export function evalActions(w: EvalWiring): Required<EvalActions> {
       const suite = suiteFrom(form);
       await runner.saveSuiteSettings(
         suite.key,
-        suiteSettingsFromForm(form, suite.checks),
+        suiteSettingsFromForm(form, suite.checks, suite.priority.attacks),
         changer(admin),
       );
       // Levels and aims change what passed: recent tests are rescored with

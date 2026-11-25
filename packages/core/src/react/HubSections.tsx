@@ -18,6 +18,8 @@ import { LINK } from "./format.js";
 import { daysAgo, evalsPath, loadWeekly, type EvalAppConfig } from "./app.js";
 import { ChevronRight } from "lucide-react";
 import { WeeklyCheck } from "./WeeklyCheck.js";
+import { InfoPopover } from "./InfoPopover.js";
+import { GLOSSARY } from "../glossary.js";
 import { PageMenu } from "./Drawer.js";
 import { SpendingAlert, SpendingForm } from "./Spending.js";
 
@@ -177,10 +179,23 @@ export function SuiteList({ data }: { data: HubData }) {
   );
   return (
     <section aria-labelledby="suites" className="space-y-3">
-      <h2 id="suites" className="text-lg font-semibold">
-        Suites
-        <InfoTip term="suites" />
-      </h2>
+      {/* The popover's list can't sit inside the heading; it sits beside it. */}
+      <div className="flex items-center">
+        <h2 id="suites" className="text-lg font-semibold">
+          Suites
+        </h2>
+        <InfoPopover label="About suites and their status">
+          <p className="text-muted">{GLOSSARY.suites}</p>
+          <ul className="space-y-1">
+            {SUITE_STATUS_ORDER.map((status) => (
+              <li key={status}>
+                <strong>{SUITE_STATUS_LABEL[status]}:</strong>{" "}
+                {STATUS_MEANS[status]}
+              </li>
+            ))}
+          </ul>
+        </InfoPopover>
+      </div>
       {suites.length === 0 ? (
         <NoSuites />
       ) : (
@@ -204,17 +219,18 @@ export function SuiteList({ data }: { data: HubData }) {
           ))}
         </ul>
       )}
-      {suites.length > 0 && (
-        <p className="readable text-xs text-muted">
-          Needs attention: something is on the suite&apos;s to-do list.
-          Can&apos;t tell yet: no model tested, or too few cases to judge.
-          Healthy: nothing to do.
-          <InfoTip term="standing" id="standing-key" />
-        </p>
-      )}
     </section>
   );
 }
+
+/** What each status means, for the Suites heading's info. */
+const STATUS_MEANS: Readonly<
+  Record<(typeof SUITE_STATUS_ORDER)[number], string>
+> = {
+  attention: "something is on the suite's to-do list.",
+  unknown: "no model tested yet, or too few cases to judge.",
+  healthy: "nothing to do.",
+};
 
 /** Before the first suite: what a suite is, and how to add one. */
 function NoSuites() {

@@ -103,6 +103,14 @@ Update:
 
 ### Fixed
 
+- CI's audit passes again. Two packages that only the Prisma command
+  line tool uses (`effect` and `deepmerge-ts`, through `@prisma/config`)
+  had high advisories with fixed versions Prisma 6 doesn't ask for yet,
+  so `package.json` overrides them to the fixed ones (`effect` 3.22.5,
+  `deepmerge-ts` 8.0.2). They come out when Prisma's own dependencies
+  reach those versions, or with the planned Prisma upgrade. The picomatch
+  advisory is no longer reported, so its allowance is gone. Nothing in
+  the published package changes.
 - One feature with no settings yet (no version, no default in code) no
   longer breaks the hub or its page; its page says how to set them, and
   **Use the suggestion** asks for them first (`currentSettings`, #141).

@@ -8,14 +8,7 @@ import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 /** Advisories allowed for now, by GHSA id, with why. */
-export const ALLOWED = {
-  // picomatch: a ReDoS in repeated single-branch extglobs, published
-  // 2026-11-17 with every version listed as affected and no fix yet. It
-  // reaches here only through tooling (Vitest, an optional peer; Astro for
-  // the docs site; lint and build), which match this repo's own patterns,
-  // never untrusted input. Comes out when picomatch ships a fix.
-  "GHSA-fc5q-39xc-vjpf": "picomatch: no fix yet; tooling on our own globs",
-};
+export const ALLOWED = {};
 
 const BLOCKING = new Set(["high", "critical"]);
 

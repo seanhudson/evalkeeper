@@ -47,7 +47,9 @@
     "zod": "^4.6.7",
     "@typescript-eslint/typescript-estree": {
       "minimatch": "^11.0.1"
-    }
+    },
+    "effect": "^3.22.5",
+    "deepmerge-ts": "^8.0.2"
   },
   "repository": {
     "type": "git",

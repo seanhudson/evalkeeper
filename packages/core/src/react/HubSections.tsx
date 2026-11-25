@@ -316,9 +316,9 @@ export async function HubPage({ app }: { app: EvalAppConfig }) {
   return (
     <div className="space-y-8">
       <HubIntro data={data} />
+      <WeeklyCheck app={app} weekly={data.weekly} />
       <SuiteList data={data} />
       <HubStats data={data} />
-      <WeeklyCheck app={app} weekly={data.weekly} />
       <NoEvalYet data={data} />
     </div>
   );

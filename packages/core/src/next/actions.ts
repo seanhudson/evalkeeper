@@ -22,9 +22,15 @@ import {
   currentSettings,
   replacedStarters,
   suiteSettingsFromForm,
+  spendingHalt,
+  usesJudge,
   type ReasoningEffort,
 } from "../index.js";
-import { evalsPath, type EvalActions } from "../react/app.js";
+import {
+  evalsPath,
+  type EvalActions,
+  type RescoreResult,
+} from "../react/app.js";
 import { injectionCases } from "../suites/injection.js";
 import { weeklyCheck } from "./weekly.js";
 import type { EvalWiring } from "./wiring.js";
@@ -317,17 +323,43 @@ export function evalActions(w: EvalWiring): Required<EvalActions> {
       await w.requireAdmin();
       const suite = suiteFrom(form);
       await store.setLabelStatus(formText(form, "label"), "CONFIRMED");
-      // Rescored before the page refreshes (free, about a second): an
+      // Rescored before the page refreshes (no new model answers): an
       // answer change marks tests out of date until then.
       await runner.rescoreRecent(suite.key);
       revalidatePath(page(suite.key));
     },
 
-    async rescore(form) {
+    /**
+     * Rescores a suite's tests until the time limit, leaving out the ones
+     * an earlier press already did (`done`), and says what's left and what
+     * the judge spent. A suite whose checks ask the judge waits while tests
+     * are stopped or over a daily limit, since its rescore may cost a little.
+     */
+    async rescore(form): Promise<RescoreResult> {
+      const requestStartedAt = Date.now();
       await w.requireAdmin();
       const suite = suiteFrom(form);
-      await runner.rescoreRecent(suite.key);
+      if (usesJudge(suite) && w.spending) {
+        const halt = spendingHalt(await w.spending.read(suite.operation));
+        // Returned, not thrown: a thrown message is hidden in production.
+        if (halt)
+          return {
+            rescored: [],
+            total: 0,
+            left: 0,
+            judgeCostUsd: 0,
+            waiting: `${halt} Rescoring this suite can ask the judge, so it waits too.`,
+          };
+      }
+      const skip = new Set(
+        form.getAll("done").filter((x): x is string => typeof x === "string"),
+      );
+      const progress = await runner.rescoreRecent(suite.key, {
+        skip,
+        requestStartedAt,
+      });
       revalidatePath(page(suite.key));
+      return progress;
     },
 
     /**
@@ -387,7 +419,7 @@ export function evalActions(w: EvalWiring): Required<EvalActions> {
       });
       // A draft (from feedback) is in use once it has an answer.
       await store.setCaseStatus(c.id, "ACTIVE");
-      // Rescored before the page refreshes (free, about a second): an
+      // Rescored before the page refreshes (no new model answers): an
       // answer change marks tests out of date until then.
       await runner.rescoreRecent(suite.key);
       revalidatePath(page(suite.key));
@@ -410,7 +442,7 @@ export function evalActions(w: EvalWiring): Required<EvalActions> {
         raterId: admin.id,
         note: "Checked when models split on it, and kept as right.",
       });
-      // Rescored before the page refreshes (free, about a second): an
+      // Rescored before the page refreshes (no new model answers): an
       // answer change marks tests out of date until then.
       await runner.rescoreRecent(suite.key);
       revalidatePath(page(suite.key));
@@ -598,7 +630,7 @@ export function evalActions(w: EvalWiring): Required<EvalActions> {
       );
       // A draft is in use once it has an answer.
       if (c.status === "DRAFT") await store.setCaseStatus(c.id, "ACTIVE");
-      // Rescored before the page refreshes (free, about a second): an
+      // Rescored before the page refreshes (no new model answers): an
       // answer change marks tests out of date until then.
       await runner.rescoreRecent(suite.key);
       revalidatePath(page(suite.key), "layout");

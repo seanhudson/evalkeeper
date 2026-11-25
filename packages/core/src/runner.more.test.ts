@@ -634,6 +634,90 @@ describe("runner, beyond a basic test", () => {
     expect((await store.getRun(first.id))?.datasetVersion).not.toBe(current);
   });
 
+  it("rescores the test the board shows after newer quick-set tests of the same model", async () => {
+    const { store, runner } = await setup([2, 4]);
+    const { run: full } = await runner.createRun({
+      suite: "double",
+      model: "good",
+    });
+    await runner.runEval(full.id);
+    // A weekly check tests the live model on the quick set: ten newer
+    // tests of the same model and setting, none of them on every case.
+    for (let i = 0; i < 10; i++) {
+      const { run } = await runner.createRun({
+        suite: "double",
+        model: "good",
+        set: "SMOKE",
+      });
+      await runner.runEval(run.id);
+    }
+    const shown = (await runner.board("double")).rows.find(
+      (r) => r.model === "good",
+    )?.test;
+    expect(shown?.runId).toBe(full.id);
+    const c = store.cases[0];
+    const l = c?.labels[0];
+    if (!c || !l) throw new Error("setup");
+    l.value = { n: 999 };
+    l.updatedAt = new Date(Date.now() + 1000);
+    await runner.rescoreRecent("double");
+    expect((await store.getRun(full.id))?.metrics?.byCheck.right?.passed).toBe(
+      1,
+    );
+    const row = (await runner.board("double")).rows.find(
+      (r) => r.model === "good",
+    );
+    expect(row?.test?.stale).toBe(false);
+  });
+
+  it("stops a rescore before the time limit and finishes in another request", async () => {
+    const { store } = await setup([2, 4]);
+    const runner = createRunner({
+      store,
+      suites: [double],
+      models: MODELS,
+      promptVersion: () => "v1",
+      requestLimitMs: 60_000,
+    });
+    const ids: string[] = [];
+    for (const model of ["good", "bad"]) {
+      const { run } = await runner.createRun({ suite: "double", model });
+      await runner.runEval(run.id);
+      ids.push(run.id);
+    }
+    // A request that started long ago is out of time before the first.
+    const late = await runner.rescoreRecent("double", {
+      requestStartedAt: Date.now() - 45_000,
+    });
+    expect(late).toEqual({ rescored: [], total: 2, left: 2, judgeCostUsd: 0 });
+    // A request that already did one does the other: the grader's spend
+    // (half a cent an answer here) is what this request's judge spent.
+    const first = ids[0] ?? "";
+    const rest = await runner.rescoreRecent("double", {
+      skip: new Set([first]),
+    });
+    expect(rest.rescored).toEqual(ids.slice(1));
+    expect(rest.total).toBe(2);
+    expect(rest.left).toBe(0);
+    expect(rest.judgeCostUsd).toBeCloseTo(0.001);
+    // A number is still the limit of recent tests.
+    expect((await runner.rescoreRecent("double", 1)).rescored).toHaveLength(2);
+  });
+
+  it("leaves a test it ran out of time on as it was", async () => {
+    const { store, runner } = await setup([2, 4]);
+    const { run } = await runner.createRun({ suite: "double", model: "good" });
+    await runner.runEval(run.id);
+    const before = await store.getRun(run.id);
+    const r = await runner.rescoreRun(run.id, Date.now() - 1);
+    expect(r).toEqual({ done: false, judgeCostUsd: 0 });
+    expect(await store.getRun(run.id)).toEqual(before);
+    expect(await runner.rescoreRun("missing")).toEqual({
+      done: true,
+      judgeCostUsd: 0,
+    });
+  });
+
   it("gives the same board and estimates with or without the batch store methods", async () => {
     const results = [];
     for (const batch of [true, false]) {

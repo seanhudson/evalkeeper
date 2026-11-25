@@ -522,7 +522,8 @@ function CaseItem({
                       />
                       <p className="readable text-xs text-muted">
                         Saves a new confirmed answer and keeps the old one in
-                        the history. Tests are rescored for free.
+                        the history. Tests are rescored, with no new model
+                        answers.
                       </p>
                       <Submit>Save answer</Submit>
                     </form>
@@ -642,7 +643,8 @@ function CaseItem({
                       />
                       <p className="readable text-xs text-muted">
                         Saves a new confirmed answer and keeps the old one in
-                        the history. Tests are rescored for free.
+                        the history. Tests are rescored, with no new model
+                        answers.
                       </p>
                       <Submit>Save answer</Submit>
                     </form>

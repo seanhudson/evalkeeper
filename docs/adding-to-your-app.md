@@ -302,7 +302,9 @@ Pick the AI feature people would notice most if it got worse. Then write:
 - `grade`
 
 Give every field of the input and answer a plain label and help
-(`fields`). Give every check a description.
+(`fields`). Give every check a description. Mark a check `judged: true`
+when its grading asks an AI judge (such as `createMeaningJudge`), so the
+pages say that rescoring it may cost a little.
 
 Add `describeSuiteContract("our suites", SUITES)` from
 `@crowandraven/evalkeeper/testing` to your tests. It fails until the

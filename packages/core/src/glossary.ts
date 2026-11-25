@@ -22,7 +22,7 @@ export const GLOSSARY = {
   retiring:
     "The provider has announced a date it stops serving this model. It's never suggested, and a retiring live model gets replaced.",
   outOfDate:
-    "Cases, answers, or instructions changed since this test ran. Test again, or rescore for free if only answers changed.",
+    "Cases, answers, or instructions changed since this test ran. Test again, or rescore if only answers changed (no new model answers).",
   serious:
     "Must pass: missing it changes what the product does. A must-pass check aims to pass 95% of the time unless it sets its own aim.",
   moderate:
@@ -62,7 +62,11 @@ export const GLOSSARY = {
   priority:
     "What this suite cares about after accuracy: speed (someone waits), cost (it runs often in the background), or quality (only accuracy counts).",
   rescore:
-    "Regrades stored answers with today's checks and answers. No model calls, so it's free.",
+    "Free: no model calls. Regrades stored answers with today's checks and answers.",
+  rescoreJudged:
+    "Regrades stored answers with today's checks and answers, with no new model answers. May ask the judge to compare new wording, usually a few cents.",
+  testAll:
+    "Asks every model for new answers to every case, so it costs money; the estimate is beside the button. Answers an identical request gave in the last 7 days are reused free.",
   tags: "What a case tests. The quick set picks cases that cover the most tags.",
   improve:
     "The suite whose best tested model scores lowest: where better cases, checks, or instructions would help most.",
@@ -103,7 +107,7 @@ export const GLOSSARY = {
   standing:
     "Where a suite stands. Needs attention: its to-do list has something on it. Can't tell yet: no model tested, or too few cases to judge. Healthy: nothing to do.",
   checkLevels:
-    "Each check's level and aim, in place of the suite's own. Grading and the suggestion use them, a nice-to-have miss never fails an answer, and saving rescores recent tests for free.",
+    "Each check's level and aim, in place of the suite's own. Grading and the suggestion use them, a nice-to-have miss never fails an answer, and saving rescores recent tests (no new model answers).",
   todo: "What to do next on this suite, in order, each with why. Each is done on this page, and drops off once it's done.",
   replacedStarter:
     "Added from the suite's starter cases, which have changed since: this input is no longer one of them. Retire it, unless you want it as a case of your own.",

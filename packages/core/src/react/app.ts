@@ -3,7 +3,7 @@ import type { EvalStore } from "../store.js";
 import type { FeedbackStore } from "../feedback.js";
 import { thumbsSummary } from "../feedback.js";
 import type { ModelCatalog } from "../models.js";
-import type { Route, Runner } from "../runner.js";
+import type { RescoreProgress, Route, Runner } from "../runner.js";
 import type { BoardRow } from "../board.js";
 import type { VersionedSettings } from "../settings.js";
 import type { AnswerEditorProps, AnySuite } from "../types.js";
@@ -12,6 +12,22 @@ import type { EvalSpending } from "../spending.js";
 
 /** A form action: a server action the screens' forms submit to. */
 export type FormAction = (form: FormData) => Promise<void>;
+
+/**
+ * What rescoring returns: what it did and what's left (`RescoreProgress`),
+ * or, with `waiting`, why it didn't start (tests are stopped or over a
+ * daily limit, and the suite's checks ask the judge).
+ */
+export type RescoreResult = RescoreProgress & { waiting?: string };
+
+/**
+ * Rescoring a suite's tests: it says what it did and what's left, so the
+ * button can go on in a new request (each under the time limit) and say
+ * what the judge spent. An action that returns undefined counts as done.
+ */
+export type RescoreAction = (
+  form: FormData,
+) => Promise<RescoreResult | undefined>;
 
 /**
  * The server actions the screens' forms submit to. On Next.js, a
@@ -24,7 +40,7 @@ export type EvalActions = {
   makeLive: FormAction;
   makeFallback: FormAction;
   useSuggestion: FormAction;
-  rescore: FormAction;
+  rescore: RescoreAction;
   rollBackSettings: FormAction;
   confirmAnswer: FormAction;
   addCase: FormAction;

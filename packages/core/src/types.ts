@@ -74,7 +74,24 @@ export type CheckDef = {
    * (checkBar).
    */
   bar?: number;
+  /**
+   * True when grading it can ask an AI judge (such as
+   * `createMeaningJudge`) to compare wording. Rescoring such a suite may
+   * then cost a little, for wording the judge hasn't seen, so the pages
+   * say so and wait while tests are stopped or over a daily limit.
+   */
+  judged?: boolean;
 };
+
+/**
+ * Whether any of a suite's checks asks an AI judge (`CheckDef.judged`),
+ * so rescoring it may cost a little. Use it to say what a rescore costs.
+ *
+ * @param suite - The suite, or anything with its checks.
+ */
+export function usesJudge(suite: { checks: readonly CheckDef[] }): boolean {
+  return suite.checks.some((c) => c.judged === true);
+}
 
 /**
  * Each level's aim when a check sets none: must pass 95%, should pass 85%,

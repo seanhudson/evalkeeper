@@ -5,6 +5,48 @@ Notable changes, newest first. The format follows
 follow [semantic versioning](https://semver.org/): until 1.0, a minor
 version may change an interface, and its entry says how to update.
 
+## Unreleased
+
+Update:
+
+- No re-copy needed: the copied actions file already returns what
+  `rescore` returns. An app that wrote its own `rescore` action returns a
+  `RescoreResult` (or `undefined`) now.
+- Mark checks whose grading asks an AI judge with `judged: true` on the
+  `CheckDef`, so the pages say what rescoring them costs.
+- `runner.rescoreRecent(suite, limit)` still works; it now also takes
+  `{ limit, skip, requestStartedAt }` and returns what it did.
+
+### Fixed
+
+- **Rescore tests covers every test the model table shows.** It rescored
+  the latest test of each model on any set, so a weekly check's quick-set
+  tests of the live model pushed the full test the table shows out of the
+  rescore, and the table kept it graded the old way.
+- **A long rescore no longer fails at the request's time limit.** It
+  stops before `requestLimitMs` and the button goes on in a new request;
+  if a request fails anyway, it says how far it got, and pressing again
+  picks up where it left off (`RescoreOptions`, `RescoreProgress`,
+  `RESCORE_MARGIN_MS`).
+
+### Added
+
+- **What rescoring costs, said plainly.** `CheckDef.judged` and
+  `usesJudge`: the Rescore tests tooltip says "Free: no model calls" for
+  a suite without judged checks, and that it may ask the judge about new
+  wording (usually a few cents) for one with them. After a rescore, the
+  app's toast (or a line beside the button) says what it did and what the
+  judge actually spent (`RescoreButton`, `rescoreMessage`, `centsText`).
+  A judged suite's rescore waits while tests are stopped or over a daily
+  limit.
+- **Test every model says it costs money**: a tooltip, and what testing
+  every model would cost now beside the button.
+
+### Changed
+
+- Notes that said rescoring is free now say it makes no new model
+  answers, since a judged check can cost a little.
+
 ## 0.19.0 - 2026-11-24
 
 A design pass over the eval pages (#148): the hub answers "is anything

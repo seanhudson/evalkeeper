@@ -68,7 +68,7 @@ It lists what to do, in order:
 3. **Retire these.** Cases every model got fully right in four rounds of
    testing, on a suite past its target number of cases (50 unless it
    sets one): **Retire N easy cases** retires as many as keep it at its
-   target or more, then rescores recent tests for free. And drafts nobody reviewed in 30 days, which the
+   target or more, then rescores recent tests. And drafts nobody reviewed in 30 days, which the
    weekly check retires on its own, or **Retire N old drafts now**.
 
 ### When a case counts as easy

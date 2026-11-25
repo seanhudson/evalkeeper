@@ -71,6 +71,9 @@ Update:
   **must pass**, "minor" ones are **nice to have**, and the model table's
   column is **Must-pass misses**. A yes-or-no decision's threshold reads
   "cutoff".
+- The answer key's **Attacks** tab looks like its **Cases** tab: a
+  heading with how many are in use, **Add an attack** as a button, and
+  **Update attack cases** as an icon button, each with a tooltip.
 - **Against live** says **Better**, **Similar**, or **Worse** (or
   **Can't tell**, with too few cases), in place of "More accurate",
   "About as accurate", and "Less accurate".

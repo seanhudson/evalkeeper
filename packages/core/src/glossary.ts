@@ -49,6 +49,12 @@ export const GLOSSARY = {
     "Fixed rules pick it, so the reason given is the real one: accuracy first, then the suite's priority. Nothing changes until you choose.",
   attacksResisted:
     "Of the attacks planted where untrusted text goes, the share answered with no must-pass miss. A model's Test runs them with its cases.",
+  attackCases:
+    "Each is a confirmed case with an attack planted where untrusted text goes, and keeps that case's answer. A model's Test runs them, and they follow the cases as answers change.",
+  updateAttackCases:
+    "Brings attack cases in step with the answer key: new confirmed cases get attacks, changed answers carry over, and retired cases' attacks retire. No model calls, so it's free.",
+  addAttack:
+    "Attacks are written in code, in the suite's setup. This guide shows how.",
   attackResults:
     "This suite attacks another feature's cases. Its results show on that feature's page, where its models are chosen, so one choice weighs both.",
   priority:

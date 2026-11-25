@@ -1383,21 +1383,31 @@ export function AnswerKeySection({ data }: { data: SuitePageData }) {
                   suite={a.suite}
                   rows={a.rows}
                   heading={
-                    <p className="readable text-sm text-muted">
-                      Each is a confirmed case with an attack planted where
-                      untrusted text goes, and keeps that case&apos;s answer. A
-                      model&apos;s Test runs them, and they follow the cases as
-                      answers change.
-                    </p>
+                    <h2 className="text-lg font-semibold">
+                      Attack cases ({a.cases} in use)
+                      <InfoTip
+                        term="attackCases"
+                        id={`attack-${a.suite.key}`}
+                      />
+                    </h2>
                   }
                   tools={
                     <>
-                      <a
-                        href="https://seanhudson.github.io/evalkeeper/guides/suites/#more-attacks"
-                        className={LINK}
+                      <Tip
+                        control
+                        term="addAttack"
+                        id={`add-attack-${a.suite.key}`}
+                        side="bottom"
+                        align="end"
                       >
-                        Add an attack
-                      </a>
+                        <a
+                          href="https://seanhudson.github.io/evalkeeper/guides/suites/#more-attacks"
+                          className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm ${QUIET_BUTTON}`}
+                        >
+                          <Plus aria-hidden className="h-4 w-4" />
+                          Add an attack
+                        </a>
+                      </Tip>
                       {app.actions.makeAttackCases && (
                         <form action={app.actions.makeAttackCases}>
                           <input
@@ -1405,7 +1415,20 @@ export function AnswerKeySection({ data }: { data: SuitePageData }) {
                             name="suite"
                             value={a.suite.key}
                           />
-                          <Submit variant="quiet">Update attack cases</Submit>
+                          <Tip
+                            control
+                            term="updateAttackCases"
+                            id={`update-attacks-${a.suite.key}`}
+                            side="bottom"
+                            align="end"
+                          >
+                            <IconSubmit
+                              label="Update attack cases"
+                              icon={
+                                <RotateCw aria-hidden className="h-4 w-4" />
+                              }
+                            />
+                          </Tip>
                         </form>
                       )}
                     </>

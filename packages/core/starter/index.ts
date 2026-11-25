@@ -122,5 +122,6 @@ export const wiring = {
   requireAdmin,
   // TODO, optional: `spending` (an EvalSpending), if your app keeps daily
   // spending limits for eval tests. The pages then show what tests spent
-  // and save the limits, with a stop.
+  // and save the limits, with a stop. Pass `budget: spendingBudget(spending)`
+  // to createRunner too, so each new answer waits over a limit.
 } satisfies Omit<EvalWiring, "basePath">;

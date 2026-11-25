@@ -3,6 +3,7 @@ import {
   limitsFromForm,
   memorySpending,
   parseLimit,
+  spendingBudget,
   spendingHalt,
   spendingNeedsRoom,
   usd,
@@ -115,5 +116,20 @@ describe("memorySpending", () => {
     expect(stopped.stoppedUntil).not.toBeNull();
     await s.allow?.();
     expect((await s.read()).stoppedUntil).toBeNull();
+  });
+});
+
+describe("spendingBudget", () => {
+  it("lets an answer go ahead under the limits, and says why it can't over one", async () => {
+    const s = memorySpending({ limitUsd: 1, featureDefaults: { triage: 0.5 } });
+    const budget = spendingBudget(s);
+    expect(await budget({ operation: "triage" })).toBeNull();
+    s.spend("triage", 0.6);
+    expect(await budget({ operation: "triage" })).toMatch(
+      /This feature's tests have spent \$0\.60/,
+    );
+    expect(await budget({ operation: "other" })).toBeNull();
+    await s.stopAll?.("Ada");
+    expect(await budget({ operation: "other" })).toMatch(/^Tests are stopped/);
   });
 });

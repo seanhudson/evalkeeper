@@ -513,11 +513,15 @@ export function evalActions(w: EvalWiring): Required<EvalActions> {
       everyPage();
     },
 
-    /** Stops every test now; answers already given are kept. */
+    /**
+     * Stops every test now; answers already given are kept. Your app's
+     * stop when it has one (it may also refuse calls for a while), else
+     * the runner's.
+     */
     async stopTests() {
       const admin = await w.requireAdmin();
-      if (!w.spending?.stopAll) throw new Error("This app has no stop");
-      await w.spending.stopAll(changer(admin));
+      if (w.spending?.stopAll) await w.spending.stopAll(changer(admin));
+      else await runner.stopTests();
       everyPage();
     },
 

@@ -21,6 +21,22 @@ version may change an interface, and its entry says how to update.
 
 ### Added
 
+- **Spending limits the runner keeps** (#143). A `budget` runner option
+  is asked before each new answer (reused ones are free) with the test,
+  its feature, the model, and what the test has spent; a reason stops
+  the test with that reason as its error, not "out of credits".
+  `spendingBudget(spending)` makes one from your `EvalSpending`, so apps
+  no longer need a guard that throws an out-of-credits error.
+- **A stop between answers** (#143). A running test reads its own status
+  every couple of seconds (`STOP_CHECK_MS`), so a stop takes effect
+  within an answer or two, not at the next leg, and a finishing test
+  never overwrites it. `runner.stopTests()` stops running tests, and
+  **Stop all tests** uses it when your `spending` has no `stopAll`.
+- **Test every model asks first** when it would cost more than $5, or
+  when a model's price is unknown (`CONFIRM_TESTS_USD`,
+  `EvalApp.confirmTestsAboveUsd`) (#143).
+- **A failed test says what testing again costs**: under it on the model
+  table, how many answers are reused free and what the rest cost (#143).
 - **`voiceCheck` and `thirdPerson` take what the model was given**
   (`sources`). A pronoun the sources already use for someone else, such
   as "her" for a manager in the person's story or "they" for a company,

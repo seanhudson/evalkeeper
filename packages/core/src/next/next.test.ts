@@ -457,7 +457,8 @@ describe("the eval actions", () => {
     await expect(
       plain.actions.saveLimits(form({ allUsd: "10" })),
     ).rejects.toThrow(/keeps no spending limits/);
-    await expect(plain.actions.stopTests(form({}))).rejects.toThrow(/no stop/);
+    // Without the app's stop, the runner's stops the tests.
+    await expect(plain.actions.stopTests(form({}))).resolves.toBeUndefined();
     await expect(plain.actions.allowTests(form({}))).rejects.toThrow(/no stop/);
 
     const spending = memorySpending();

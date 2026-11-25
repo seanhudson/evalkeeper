@@ -10,12 +10,17 @@ const health = (page: Page) =>
   });
 
 async function testEveryModel(page: Page) {
-  await page.getByRole("button", { name: "Test every model" }).click();
+  await page
+    .locator('section[aria-labelledby="models"]')
+    .getByRole("button", { name: "Test every model" })
+    .click();
   // While tests run there's no suggestion to act on yet.
   await expect(
     page.getByText(/Waiting for the tests running now/),
   ).toBeVisible();
-  await expect(page.getByRole("button", { name: "Use these" })).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Use the suggestion" }),
+  ).toHaveCount(0);
   await expect(page.getByRole("status", { name: "Testing" })).toHaveCount(0, {
     timeout: 60_000,
   });
@@ -45,7 +50,8 @@ test("keep a split case's answer, and it leaves the list", async ({ page }) => {
 
 test("a thin topic opens Add a case with it tagged", async ({ page }) => {
   await page.goto("/evals/ticket_triage");
-  const topic = health(page).locator('a[href^="#add-case="]').first();
+  // A topic itself, not the Add a case button beside them.
+  const topic = health(page).locator('li a[href^="#add-case="]').first();
   const name = await topic.innerText();
   await topic.click();
   await expect(page.getByLabel(/^Tags/)).toHaveValue(new RegExp(name));

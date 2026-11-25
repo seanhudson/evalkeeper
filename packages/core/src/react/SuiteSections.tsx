@@ -308,7 +308,7 @@ export function SuiteHeader({ data }: { data: SuitePageData }) {
             {status && (
               <span className="inline-flex items-center">
                 <SuiteStatusBadge status={status} />
-                <InfoTip term="standing" id="suite-status" />
+                <InfoTip term="standing" id="suite-status" align="end" />
               </span>
             )}
           </div>
@@ -651,10 +651,12 @@ export function ModelTable({ data }: { data: SuitePageData }) {
   const columns = 7 + (showAttacks ? 1 : 0) + (suite.decisions ? 2 : 0);
   return (
     <>
-      <section className="space-y-3">
+      <section className="space-y-3" aria-labelledby="models">
         <div className="flex items-center justify-between gap-4">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-lg font-semibold">Models</h2>
+            <h2 id="models" className="text-lg font-semibold">
+              Models
+            </h2>
             {/* Why this priority, in its words: the page says it once. */}
             {choosesHere && app.actions.setPriority ? (
               <PriorityPicker
@@ -1527,12 +1529,8 @@ export function AnswerKeyHealthSection({ data }: { data: SuitePageData }) {
   const check = h.split.length > 0 || h.duplicates.length > 0;
   const retire = h.easyToRetire.length > 0 || h.staleDrafts.length > 0;
   return (
-    <section
-      id="answer-key-health"
-      className="scroll-mt-4 space-y-3"
-      aria-labelledby="answer-key-health-title"
-    >
-      <h2 id="answer-key-health-title" className="text-lg font-semibold">
+    <section className="space-y-3" aria-labelledby="answer-key-health">
+      <h2 id="answer-key-health" className="scroll-mt-4 text-lg font-semibold">
         Answer key health
         <InfoTip term="answerKeyHealth" />
       </h2>

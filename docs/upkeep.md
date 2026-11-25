@@ -66,8 +66,9 @@ It lists what to do, in order:
    pick none for all). Otherwise, a topic opens **Add a case** with it
    already tagged, and **Add a case** beside them opens it untagged. **Show all topics** lists every tag and its count.
 3. **Retire these.** Cases every model got fully right in four rounds of
-   testing, on a suite past 50 cases: **Retire N easy cases** retires as
-   many as keep it at 50 or more, then rescores recent tests for free. And drafts nobody reviewed in 30 days, which the
+   testing, on a suite past its target number of cases (50 unless it
+   sets one): **Retire N easy cases** retires as many as keep it at its
+   target or more, then rescores recent tests for free. And drafts nobody reviewed in 30 days, which the
    weekly check retires on its own, or **Retire N old drafts now**.
 
 ### When a case counts as easy
@@ -75,9 +76,11 @@ It lists what to do, in order:
 The point of the answer key is to keep adding cases that tell models
 apart, so retiring is slow and rare by design:
 
-- **A floor of 50.** Nothing is suggested while a suite has 50 cases in
-  use or fewer, and retiring never takes it below 50. With 52, at most 2
-  go; the quick set's and the oldest stay longest.
+- **A floor at the target.** Nothing is suggested while a suite has
+  its target number of cases in use or fewer (50 unless it sets
+  `targetCases` or someone changed it in **Suite settings**), and
+  retiring never takes it below that. With 52 and a target of 50, at
+  most 2 go; the quick set's and the oldest stay longest.
 - **Four rounds.** A case qualifies only after four rounds of testing:
   days on which three or more models were tested on it and every one got
   it fully right, each model counted once and right only if every repeat

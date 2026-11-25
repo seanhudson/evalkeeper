@@ -50,7 +50,9 @@ test("models are chosen on the base suite, not the injection suite", async ({
   await expect(page.getByRole("button", { name: "Make fallback" })).toHaveCount(
     0,
   );
-  await expect(page.getByRole("button", { name: "Use these" })).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Use the suggestion" }),
+  ).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Versions" })).toHaveCount(0);
   await page
     .getByRole("link", { name: "Choose models on Ticket triage" })
@@ -80,21 +82,17 @@ test("one Test runs a model on the feature's cases and its attacks", async ({
   });
 });
 
-test("the hub shows attacks on the base feature's card, not a card of their own", async ({
+test("the hub counts attacks on the base feature's row, with no row of their own", async ({
   page,
 }) => {
   await page.goto("/evals");
+  const suites = page.locator('section[aria-labelledby="suites"]');
   await expect(
-    page.getByRole("heading", { name: "Ticket triage: injection" }),
+    suites.getByRole("link", { name: /^Ticket triage: injection/ }),
   ).toHaveCount(0);
-  const card = page
-    .locator("div")
-    .filter({
-      has: page.getByRole("heading", { name: "Ticket triage", exact: true }),
-    })
-    .filter({ hasText: "Attacks resisted" })
-    .last();
-  await expect(card.getByText(/of \d+ attacks/)).toBeVisible();
+  await expect(
+    suites.getByRole("link", { name: /^Ticket triage\b/ }),
+  ).toHaveCount(1);
 });
 
 test("the answer key shows the feature's attack cases in a tab", async ({

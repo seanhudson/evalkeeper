@@ -6,41 +6,38 @@ import { expect, test, type Page } from "@playwright/test";
 const modelRow = (page: Page, label: string) =>
   page.getByRole("row").filter({ has: page.getByText(label, { exact: true }) });
 
-test("the hub shows each suite and what needs attention", async ({ page }) => {
-  await page.goto("/evals");
-  await expect(page.getByRole("heading", { name: "Evals" })).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Ticket triage", exact: true }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Action items" }),
-  ).toBeVisible();
-  await expect(page.getByText("Most room to improve")).toBeVisible();
-});
-
-test("the hub groups suites by standing, what needs you first", async ({
+test("the hub shows each suite and where it stands, in one row each", async ({
   page,
 }) => {
   await page.goto("/evals");
-  const order = ["At risk", "Can improve", "Healthy", "Can't tell yet"];
+  await expect(page.getByRole("heading", { name: "Evals" })).toBeVisible();
   const suites = page.locator('section[aria-labelledby="suites"]');
-  // The section's own groups, not the ones inside its cards.
-  const groups = suites.locator(":scope > [role=group]");
-  await expect(groups.first()).toBeVisible();
-  const labels = await groups.evaluateAll((els) =>
-    els.map((e) => e.getAttribute("aria-label") ?? ""),
-  );
-  // Every group is a standing, in order, and none is folded away.
-  expect(labels.length).toBeGreaterThan(0);
-  expect(labels).toEqual(order.filter((o) => labels.includes(o)));
-  // Each suite sits in a group, with the same standing on its card.
-  for (const label of labels) {
-    const group = suites.getByRole("group", { name: label, exact: true });
-    await expect(group.getByRole("heading").first()).toBeVisible();
+  for (const name of ["Ticket triage", "Action items"])
     await expect(
-      group.locator("article, div").getByText(label, { exact: true }).first(),
+      suites.getByRole("link", { name: new RegExp(`^${name}\\b`) }),
     ).toBeVisible();
-  }
+  // Only names and statuses: no chips, scores, or check lists.
+  await expect(suites.getByText(/aim|bar|serious|Accuracy/)).toHaveCount(0);
+});
+
+test("the hub lists what needs you first, and each row opens its suite", async ({
+  page,
+}) => {
+  await page.goto("/evals");
+  const order = ["Needs attention", "Can't tell yet", "Healthy"];
+  const rows = page.locator('section[aria-labelledby="suites"] li');
+  await expect(rows.first()).toBeVisible();
+  const statuses = await rows.evaluateAll((els) =>
+    els.map(
+      (e) => e.querySelector("a span:last-child span")?.textContent ?? "",
+    ),
+  );
+  expect(statuses.length).toBeGreaterThan(0);
+  const ranks = statuses.map((s) => order.indexOf(s));
+  expect(ranks.every((r) => r >= 0)).toBe(true);
+  expect(ranks).toEqual([...ranks].sort((a, b) => a - b));
+  await rows.first().getByRole("link").click();
+  await expect(page.getByRole("heading", { name: "To do" })).toBeVisible();
 });
 
 test("testing a model fills in its score", async ({ page }) => {

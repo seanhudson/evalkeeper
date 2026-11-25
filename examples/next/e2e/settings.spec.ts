@@ -11,7 +11,10 @@ test("use the suggestion, see it in the history, and roll it back", async ({
   page,
 }) => {
   await page.goto("/evals/ticket_triage");
-  await page.getByRole("button", { name: "Test every model" }).click();
+  await page
+    .locator('section[aria-labelledby="models"]')
+    .getByRole("button", { name: "Test every model" })
+    .click();
   // Wait for the tests to start, then for every one (attacks included) to
   // finish: right after the click, the page may not show them yet.
   const testing = page.getByRole("status", { name: "Testing" });
@@ -20,7 +23,7 @@ test("use the suggestion, see it in the history, and roll it back", async ({
   await page.reload();
 
   // The suggestion replaces the retiring live model.
-  await page.getByRole("button", { name: "Use these" }).click();
+  await page.getByRole("button", { name: "Use the suggestion" }).click();
   await expect(
     modelRow(page, "Demo Careful").getByText("Live", { exact: true }),
   ).toBeVisible();
@@ -38,7 +41,9 @@ test("use the suggestion, see it in the history, and roll it back", async ({
   await expect(
     page.getByRole("heading", { name: "No change suggested" }),
   ).toBeVisible();
-  await expect(page.getByRole("button", { name: "Use these" })).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Use the suggestion" }),
+  ).toHaveCount(0);
   await expect(
     promoted.getByRole("link", { name: "The test behind it" }),
   ).toBeVisible();
@@ -67,16 +72,4 @@ test("use the suggestion, see it in the history, and roll it back", async ({
     rolled.getByText("Checking the old model in production"),
   ).toBeVisible();
   await expect(rolled.getByText("Live now")).toBeVisible();
-
-  // On the hub, the card puts the live version (v1 again, after the
-  // rollback) beside the versions count.
-  await page.goto("/evals");
-  const card = page
-    .getByRole("heading", { name: "Ticket triage", exact: true })
-    .locator("xpath=ancestor::*[.//summary][1]");
-  await expect(
-    card
-      .locator("summary")
-      .filter({ hasText: /v1 live since .* · 2 versions/ }),
-  ).toHaveCount(1);
 });

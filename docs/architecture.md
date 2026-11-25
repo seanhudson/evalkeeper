@@ -14,7 +14,7 @@ flowchart LR
   end
   subgraph core["evalkeeper (pure)"]
     runner["Runner<br/>createRunner"]
-    logic["Stats · compare · suggest<br/>health · attention · glossary"]
+    logic["Stats · compare · suggest<br/>to-do list · glossary"]
     store_if["EvalStore interface"]
   end
   subgraph adapters["Adapters"]
@@ -56,30 +56,35 @@ flowchart LR
 3. Each answer is graded by `grade`, then `gradeTogether` adds checks
    across answers, and the metrics are stored on the test.
 4. `board` reads every model's latest test, compares each with the live
-   model, and `suggest` and `suiteHealth` turn the board into words.
+   model, and `suggest` and `suiteTodos` turn the board into words: the
+   suggestion, and the suite's to-do list, whose status the hub shows.
 
 ## Where changes go
 
-| Change                                   | Where                                                                           | Tested by                                                                    |
-| ---------------------------------------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| A rule for suggestions, health, or stats | `packages/core/src`                                                             | Unit test next to it                                                         |
-| A new word on the pages                  | `packages/core/src/glossary.ts`                                                 | `glossary.test.ts` (length, form)                                            |
-| A storage method                         | `store.ts`, `memoryStore.ts`, every adapter                                     | `describeStoreContract`                                                      |
-| A database or ORM                        | A new entry point implementing `EvalStore`                                      | `describeStoreContract`                                                      |
-| An AI library                            | A new entry point                                                               | Unit tests with a mock model                                                 |
-| A suite                                  | Your app (`examples/next/lib/suites` for examples)                              | Grader tests on fixed outputs                                                |
-| A ready-made suite                       | `packages/core/src/suites`, exported from `./suites`                            | Grader tests on fixed outputs, `suiteContractProblems`                       |
-| Shipped reviews of starter cases         | `reviews.ts`; a suite's `*Reviews.ts`, written by `scripts/review-starters.mjs` | `reviews.test.ts`, `suiteContractProblems`, browser tests                    |
-| Injection testing, attacks, their import | `suites/injection.ts`, `injectionAttacks.ts`, `attackImport.ts`                 | `injection.test.ts`, `attackImport.test.ts`, browser tests                   |
-| Cases found in the instructions          | `inInstructions.ts`, `runner.casesInInstructions`                               | `inInstructions.test.ts`, runner tests, browser tests                        |
-| Blind rating (the queue, ratings, skips) | `blind.ts`; skips are SKIPPED answers in every `EvalStore`                      | `blind.test.ts`, `describeStoreContract`, browser tests                      |
-| Feedback (ratings, cases from them)      | `feedback.ts`, a `FeedbackStore` in every adapter                               | `feedback.test.ts`, `describeFeedbackStoreContract`                          |
-| The weekly check                         | `weekly.ts`, `runner.startDriftCheck` / `runDriftCheck`                         | `weekly.test.ts`, runner tests, browser tests                                |
-| Drafting cases from activity             | `activity.ts`, `runner.draftFromActivity`                                       | `activity.test.ts`, runner tests, browser tests                              |
-| Versioned settings and rollback          | `settings.ts`, a `SettingsStore` in every adapter                               | `settings.test.ts`, `describeSettingsStoreContract`, browser tests           |
-| The copy-in CLI                          | `packages/core/src/cli`, templates from `examples/next`                         | `cli/addPages.test.ts`, `examples/next/test/cli.test.ts` (typechecks a copy) |
-| A screen, section, or piece              | `packages/core/src/react`                                                       | `react/*.test.ts(x)` for pieces and the app object; end-to-end tests         |
-| Next.js actions, pages, or cron route    | `packages/core/src/next`; the thin route files in `examples/next`               | `next/next.test.ts`, end-to-end tests                                        |
+| Change                                      | Where                                                                                  | Tested by                                                                    |
+| ------------------------------------------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| A rule for suggestions, health, or stats    | `packages/core/src`                                                                    | Unit test next to it                                                         |
+| A suite's to-do list or hub status          | `todo.ts` (`suiteTodos`, `suiteStatus`, `replacedStarters`)                            | `todo.test.ts`, browser tests                                                |
+| Settings a person adjusts on a suite's page | `suiteSettings.ts`, a `SuiteSettingsStore` in every adapter                            | `suiteSettings.test.ts`, `describeSuiteSettingsStoreContract`, browser tests |
+| Spending and daily limits on the pages      | `spending.ts` (the app keeps the numbers through `EvalSpending`), `react/Spending.tsx` | `spending.test.ts`, `next.test.ts`, browser tests                            |
+| A menu or drawer on the pages               | `react/Menu.tsx`, `react/Drawer.tsx`: the only ones; never a new one per screen        | browser tests                                                                |
+| A new word on the pages                     | `packages/core/src/glossary.ts`                                                        | `glossary.test.ts` (length, form)                                            |
+| A storage method                            | `store.ts`, `memoryStore.ts`, every adapter                                            | `describeStoreContract`                                                      |
+| A database or ORM                           | A new entry point implementing `EvalStore`                                             | `describeStoreContract`                                                      |
+| An AI library                               | A new entry point                                                                      | Unit tests with a mock model                                                 |
+| A suite                                     | Your app (`examples/next/lib/suites` for examples)                                     | Grader tests on fixed outputs                                                |
+| A ready-made suite                          | `packages/core/src/suites`, exported from `./suites`                                   | Grader tests on fixed outputs, `suiteContractProblems`                       |
+| Shipped reviews of starter cases            | `reviews.ts`; a suite's `*Reviews.ts`, written by `scripts/review-starters.mjs`        | `reviews.test.ts`, `suiteContractProblems`, browser tests                    |
+| Injection testing, attacks, their import    | `suites/injection.ts`, `injectionAttacks.ts`, `attackImport.ts`                        | `injection.test.ts`, `attackImport.test.ts`, browser tests                   |
+| Cases found in the instructions             | `inInstructions.ts`, `runner.casesInInstructions`                                      | `inInstructions.test.ts`, runner tests, browser tests                        |
+| Blind rating (the queue, ratings, skips)    | `blind.ts`; skips are SKIPPED answers in every `EvalStore`                             | `blind.test.ts`, `describeStoreContract`, browser tests                      |
+| Feedback (ratings, cases from them)         | `feedback.ts`, a `FeedbackStore` in every adapter                                      | `feedback.test.ts`, `describeFeedbackStoreContract`                          |
+| The weekly check                            | `weekly.ts`, `runner.startDriftCheck` / `runDriftCheck`                                | `weekly.test.ts`, runner tests, browser tests                                |
+| Drafting cases from activity                | `activity.ts`, `runner.draftFromActivity`                                              | `activity.test.ts`, runner tests, browser tests                              |
+| Versioned settings and rollback             | `settings.ts`, a `SettingsStore` in every adapter                                      | `settings.test.ts`, `describeSettingsStoreContract`, browser tests           |
+| The copy-in CLI                             | `packages/core/src/cli`, templates from `examples/next`                                | `cli/addPages.test.ts`, `examples/next/test/cli.test.ts` (typechecks a copy) |
+| A screen, section, or piece                 | `packages/core/src/react`                                                              | `react/*.test.ts(x)` for pieces and the app object; end-to-end tests         |
+| Next.js actions, pages, or cron route       | `packages/core/src/next`; the thin route files in `examples/next`                      | `next/next.test.ts`, end-to-end tests                                        |
 
 ## Versions
 

@@ -26,6 +26,7 @@ const { formText } = await import("../types.js");
 const { createRunner } = await import("../runner.js");
 const { createSettings } = await import("../settings.js");
 const { defineEvals } = await import("../react/app.js");
+const { memorySpending } = await import("../spending.js");
 const { evalActions, evalPages, isAuthorizedCron, weeklyCronRoute } =
   await import("./index.js");
 import type { Suite } from "../types.js";
@@ -449,6 +450,80 @@ describe("the eval actions", () => {
       easy.mockRestore();
       stale.mockRestore();
     }
+  });
+
+  it("save spending limits, stop every test, and allow them again", async () => {
+    const plain = setup();
+    await expect(
+      plain.actions.saveLimits(form({ allUsd: "10" })),
+    ).rejects.toThrow(/keeps no spending limits/);
+    await expect(plain.actions.stopTests(form({}))).rejects.toThrow(/no stop/);
+    await expect(plain.actions.allowTests(form({}))).rejects.toThrow(/no stop/);
+
+    const spending = memorySpending();
+    const { wiring } = setup();
+    const actions = evalActions({ ...wiring, spending });
+    await actions.saveLimits(
+      form({
+        suite: "double",
+        operation: "double_op",
+        allUsd: "$10",
+        featureUsd: "2.5",
+      }),
+    );
+    expect(await spending.read("double_op")).toMatchObject({
+      limitUsd: 10,
+      feature: { limitUsd: 2.5 },
+    });
+    await expect(actions.saveLimits(form({ allUsd: "" }))).rejects.toThrow(
+      /daily limit for all tests/,
+    );
+    spending.setRunning(2);
+    await actions.stopTests(form({}));
+    expect((await spending.read()).stoppedUntil).not.toBeNull();
+    await actions.allowTests(form({}));
+    expect((await spending.read()).stoppedUntil).toBeNull();
+    expect(revalidated.at(-1)).toBe("/evals");
+  });
+
+  it("save a suite's target, and retire only the starters it replaced", async () => {
+    const { wiring, store } = setup();
+    const runner = createRunner({
+      store,
+      suites: [double],
+      models: {},
+      promptVersion: () => "p1",
+      suiteSettings: store,
+    });
+    const actions = evalActions({ ...wiring, runner });
+    await actions.saveSuiteSettings(
+      form({ suite: "double", targetCases: "12" }),
+    );
+    expect(await runner.targetCases("double")).toBe(12);
+    await expect(
+      actions.saveSuiteSettings(form({ suite: "double", targetCases: "3" })),
+    ).rejects.toThrow(/whole number of cases/);
+
+    const kase = (n: number, sourceRef: string | null) =>
+      store.createCase({
+        suite: "double",
+        input: { n },
+        tags: [],
+        split: "DEV",
+        status: "ACTIVE",
+        source: "IMPORT",
+        sourceRef,
+        note: null,
+        labels: [],
+      });
+    const old = await kase(7, "starter:double#old");
+    const current = await kase(10, "starter:double#cur");
+    const own = await kase(8, null);
+    await actions.retireReplacedStarters(form({ suite: "double" }));
+    const status = (id: string) => store.cases.find((c) => c.id === id)?.status;
+    expect(status(old.id)).toBe("RETIRED");
+    expect(status(current.id)).toBe("ACTIVE");
+    expect(status(own.id)).toBe("ACTIVE");
   });
 
   it("rate blind only in an imported suite", async () => {

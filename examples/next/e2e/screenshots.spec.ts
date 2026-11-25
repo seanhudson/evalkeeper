@@ -15,7 +15,10 @@ const SCHEMES = ["light", "dark"] as const;
 
 async function testEveryModel(page: Page, suite: string) {
   await page.goto(`/evals/${suite}`);
-  await page.getByRole("button", { name: "Test every model" }).click();
+  await page
+    .locator('section[aria-labelledby="models"]')
+    .getByRole("button", { name: "Test every model" })
+    .click();
   // Done when no row is still testing.
   await expect(page.getByRole("status", { name: "Testing" })).toHaveCount(0, {
     timeout: 60_000,
@@ -73,7 +76,7 @@ test("fill the pages with tests, a rating, and a weekly check", async ({
   }
   // A promotion for the settings history.
   await page.goto("/evals/ticket_triage");
-  await page.getByRole("button", { name: "Use these" }).click();
+  await page.getByRole("button", { name: "Use the suggestion" }).click();
   await expect(page.getByText("Live now").first()).toBeVisible();
 
   await page.goto("/try");

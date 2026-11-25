@@ -5,6 +5,19 @@ Notable changes, newest first. The format follows
 follow [semantic versioning](https://semver.org/): until 1.0, a minor
 version may change an interface, and its entry says how to update.
 
+## Unreleased
+
+### Fixed
+
+- CI's audit passes again. Two packages that only the Prisma command
+  line tool uses (`effect` and `deepmerge-ts`, through `@prisma/config`)
+  had high advisories with fixed versions Prisma 6 doesn't ask for yet,
+  so `package.json` overrides them to the fixed ones (`effect` 3.22.5,
+  `deepmerge-ts` 8.0.2). They come out when Prisma's own dependencies
+  reach those versions, or with the planned Prisma upgrade. The picomatch
+  advisory is no longer reported, so its allowance is gone. Nothing in
+  the published package changes.
+
 ## 0.18.0 - 2026-11-17
 
 Retiring easy cases is slow and rare by design: the answer key is for

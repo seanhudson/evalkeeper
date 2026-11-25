@@ -1096,17 +1096,21 @@ export function CheckBreakdownSection({ data }: { data: SuitePageData }) {
                 </tr>
               ))}
               <tr>
-                <td className="py-1.5 pr-4">Answers with no mistakes at all</td>
-                {/* No aim here: the column says out of how many answers. */}
+                <td className="py-1.5 pr-4">
+                  Answers with no mistakes at all (
+                  {Math.max(...tested.map((r) => r.test?.answers ?? 0))}{" "}
+                  answers)
+                </td>
+                {/* Every answer right is the aim: one mistake is one too many. */}
                 <td className="py-1.5 pr-4 tabular-nums text-muted">
-                  {Math.max(...tested.map((r) => r.test?.answers ?? 0))} answers
+                  {pct(1)}
                 </td>
                 {tested.map((r) => (
-                  <td key={r.key} className="py-1 pr-2 tabular-nums">
+                  <td key={r.key} className="py-1 pr-2">
                     {r.test?.answers ? (
                       <span
-                        className="inline-block px-2 py-0.5"
-                        title={`${r.test.answersRight} of ${r.test.answers}`}
+                        title={`${r.test.answersRight} of ${r.test.answers} answers`}
+                        className={`inline-block rounded px-2 py-0.5 tabular-nums ${BAR_TONE[barStatus(r.test.answersRight / r.test.answers, 1)]}`}
                       >
                         {pct(r.test.answersRight / r.test.answers)}
                       </span>

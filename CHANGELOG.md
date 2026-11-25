@@ -72,8 +72,9 @@ Update:
   column is **Must-pass misses**. A yes-or-no decision's threshold reads
   "cutoff".
 - Where the mistakes are: **Answers with no mistakes at all** shows a
-  percentage per model like the rows above it, with the number of
-  answers in the Aim column ("14 of 16" stays as each cell's tooltip).
+  percentage per model in the same colored chips as the rows above it,
+  against an aim of 100%, and its label says how many answers ("14 of
+  16 answers" stays as each cell's tooltip).
 - The answer key's **Attacks** tab looks like its **Cases** tab: a
   heading with how many are in use, **Add an attack** as a button, and
   **Update attack cases** as an icon button, each with a tooltip.

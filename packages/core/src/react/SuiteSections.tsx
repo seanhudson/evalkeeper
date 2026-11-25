@@ -56,13 +56,7 @@ import {
   Tip,
 } from "./pieces.js";
 import { pct, LINK, QUIET_BUTTON, TINT } from "./format.js";
-import {
-  ArrowRight,
-  Plus,
-  RotateCw,
-  ShieldAlert,
-  Sparkles,
-} from "lucide-react";
+import { Plus, RotateCw, ShieldAlert, Sparkles } from "lucide-react";
 import { PageMenu, type PageMenuEntry } from "./Drawer.js";
 import { SpendingAlert, SpendingForm } from "./Spending.js";
 import { TARGET_CASES_RANGE } from "../suiteSettings.js";
@@ -451,13 +445,13 @@ function TodoAction({
   suite: string;
   todo: Todo;
 }) {
+  // Links look like the buttons beside them: every item's action alike.
   const go = (href: string, text: string) => (
     <a
       href={href}
-      className={`inline-flex shrink-0 items-center gap-1 text-sm ${LINK}`}
+      className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm ${QUIET_BUTTON}`}
     >
       {text}
-      <ArrowRight aria-hidden className="h-3.5 w-3.5" />
     </a>
   );
   const button = (

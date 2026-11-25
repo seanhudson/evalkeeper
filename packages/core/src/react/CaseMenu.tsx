@@ -5,6 +5,7 @@ import { QUIET_BUTTON } from "./format.js";
 import { Button } from "./pieces.js";
 import { useState } from "react";
 import { Menu, MenuButton, MenuForm } from "./Menu.js";
+import { CloseButton } from "./InfoPopover.js";
 
 /**
  * A case's menu, in the top right of the open case: edit its answer (the
@@ -78,15 +79,11 @@ export function CaseMenu({
         <div className="space-y-3 rounded-md bg-tint p-3">
           <div className="flex items-center justify-between gap-2">
             <h4 className="text-sm font-medium">{editLabel}</h4>
-            <Button
-              type="button"
+            <CloseButton
               onClick={() => {
                 setEditing(false);
               }}
-              className="text-sm text-muted hover:text-ink"
-            >
-              Cancel
-            </Button>
+            />
           </div>
           {edit}
         </div>

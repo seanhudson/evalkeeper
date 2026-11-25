@@ -4,6 +4,7 @@ import { Button, Card } from "./pieces.js";
 import { QUIET_BUTTON } from "./format.js";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { Plus } from "lucide-react";
+import { CloseButton } from "./InfoPopover.js";
 
 /** The address's hash, kept current; "" on the server. */
 const hashNow = () => window.location.hash;
@@ -116,13 +117,7 @@ export function AddCaseHeader({
             ) : (
               <h3 className="font-medium">New case</h3>
             )}
-            <Button
-              type="button"
-              onClick={close}
-              className="text-sm text-muted hover:text-ink"
-            >
-              Cancel
-            </Button>
+            <CloseButton onClick={close} />
           </div>
           {draft && tab === "describe" ? draft : form}
         </Card>

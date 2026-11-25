@@ -50,6 +50,8 @@ const CHECKS: CheckDef[] = [
     kind: "label",
     severity: "serious",
     bar: 0.85,
+    // Matched by a judge model when a key is set: rescoring may cost a little.
+    judged: true,
   },
   {
     key: "no_extras",
@@ -58,6 +60,7 @@ const CHECKS: CheckDef[] = [
       "At most one item that isn't in the answer key. Nice to have: an extra line is cheap to ignore, but a list of them buries the real ones.",
     kind: "label",
     severity: "minor",
+    judged: true,
   },
 ];
 

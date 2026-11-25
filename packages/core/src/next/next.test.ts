@@ -486,6 +486,61 @@ describe("the eval actions", () => {
     expect(revalidated.at(-1)).toBe("/evals");
   });
 
+  it("rescore in parts, and wait over a limit when the judge may be asked", async () => {
+    const { actions, store, wiring, settings } = setup();
+    await addCases(actions);
+    for (const model of ["good", "bad"])
+      await actions.testModel(form({ suite: "double", model }));
+    await flush();
+    const ids = store.runs.map((r) => r.id);
+    const all = await actions.rescore(form({ suite: "double" }));
+    expect(all).toMatchObject({ total: 2, left: 0, judgeCostUsd: 0 });
+    expect([...(all?.rescored ?? [])].sort()).toEqual([...ids].sort());
+    // A second request leaves out the tests the first one did.
+    const f = form({ suite: "double" });
+    f.append("done", ids[0] ?? "");
+    expect((await actions.rescore(f))?.rescored).toEqual(
+      ids.filter((id) => id !== ids[0]),
+    );
+
+    // Tests are stopped: a suite without the judge still rescores (free),
+    // one whose checks ask the judge waits.
+    const spending = memorySpending();
+    await spending.stopAll?.("Ada");
+    expect(
+      await evalActions({ ...wiring, spending }).rescore(
+        form({ suite: "double" }),
+      ),
+    ).toMatchObject({ left: 0 });
+    const judged = {
+      ...double,
+      checks: double.checks.map((c) => ({ ...c, judged: true })),
+    };
+    const runner = createRunner({
+      store,
+      suites: [judged],
+      models: {},
+      promptVersion: () => "p1",
+      route: (op) => settings.route(op),
+      candidates: () => ({ models: ["good"] }),
+    });
+    const stopped = evalActions({
+      ...wiring,
+      runner,
+      suites: [judged],
+      spending,
+    });
+    const waiting = await stopped.rescore(form({ suite: "double" }));
+    expect(waiting?.waiting).toMatch(
+      /stopped until .*can ask the judge, so it waits too/,
+    );
+    expect(waiting?.rescored).toEqual([]);
+    await spending.allow?.();
+    expect(await stopped.rescore(form({ suite: "double" }))).toMatchObject({
+      left: 0,
+    });
+  });
+
   it("save a suite's target, and retire only the starters it replaced", async () => {
     const { wiring, store } = setup();
     const runner = createRunner({

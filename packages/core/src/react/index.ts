@@ -32,3 +32,4 @@ export * from "./Menu.js";
 export * from "./Drawer.js";
 export * from "./Spending.js";
 export * from "./Tabs.js";
+export * from "./RescoreButton.js";

@@ -102,7 +102,7 @@ Each has an _aim_, the pass rate it aims for: 95%, 85%, and 75% by
 level, unless a check sets its own (`bar`). Under its aim, a check needs
 work. A person can change any check's level and aim in the suite's
 **Suite settings**, without a code change. Each test records the levels
-it was graded with, and saving new ones rescores recent tests for free.
+it was graded with, and saving new ones rescores recent tests.
 
 **Partial credit.** When an answer has parts (action items, facts), a
 check can report `units`: parts right of parts expected. The headline
@@ -163,9 +163,14 @@ much answers move between identical requests.
 **Out of date.** A test is current when its instructions, dataset
 version, temperature, and output cap match today's. Edit a prompt, an
 output schema's description, an answer, or the feature's temperature or
-output cap, and older tests say so. Rescoring regrades stored answers for
-free and brings a test up to today's answers, but never up to inputs
-that changed after it ran.
+output cap, and older tests say so. Rescoring regrades stored answers
+with no new model answers and brings a test up to today's answers, but
+never up to inputs that changed after it ran. It covers every test the
+model table shows, plus the recent ones. It's free unless a check asks
+an AI judge (`judged: true`) about wording the judge hasn't compared
+before, usually a few cents; those calls count against the daily
+limits, and the button says what it cost. A long rescore stops before
+the request's time limit and goes on in a new request.
 
 **Comparison.** Two tests on the same cases are compared case by case
 with a paired bootstrap. The verdict is _more accurate_, _about as

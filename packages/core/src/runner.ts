@@ -185,6 +185,42 @@ export type RunEvalOptions = {
   requestStartedAt?: number;
 };
 
+/**
+ * How to rescore: how many recent tests beyond the board's, tests already
+ * rescored in an earlier request to leave out, and when this request
+ * started (the time limit, `requestLimitMs`, counts from then).
+ */
+export type RescoreOptions = {
+  /** The most recent tests to rescore, beyond every test the board shows. Default 10. */
+  limit?: number;
+  /** Tests an earlier request already rescored, left out. */
+  skip?: ReadonlySet<string>;
+  /** When the request started (ms); default now. */
+  requestStartedAt?: number;
+};
+
+/**
+ * What a rescore did: the tests it rescored, how many are left for
+ * another request (it stops before the time limit), and what the judge
+ * spent comparing wording it hadn't seen.
+ */
+export type RescoreProgress = {
+  /** Tests rescored in this request. */
+  rescored: string[];
+  /** Tests it meant to rescore, this request's and earlier ones' skipped. */
+  total: number;
+  /** Tests left for another request; 0 when done. */
+  left: number;
+  /** USD the judge spent in this request; 0 when every comparison was kept. */
+  judgeCostUsd: number;
+};
+
+/**
+ * Time a rescore leaves before the request limit: it starts no answer's
+ * grading later, as a judge call can take this long.
+ */
+export const RESCORE_MARGIN_MS = 30_000;
+
 const sha = (text: string, n = 8) =>
   createHash("sha256").update(text).digest("hex").slice(0, n);
 
@@ -316,6 +352,13 @@ export function createRunner(opts: RunnerOptions) {
   };
   const providerName = (model: string) =>
     opts.models[model]?.provider ?? "the provider";
+  /**
+   * A board row's key: the model and the reasoning setting it really gets
+   * (models without reasoning settings ignore it, so their rows don't
+   * split by it). The board and rescoring both use it.
+   */
+  const boardKey = (model: string, effort: string | null) =>
+    `${model}|${effortFor(opts.models, model, effort) ?? ""}`;
 
   /**
    * The cases a test uses: in use means a confirmed (or provisional) answer
@@ -757,12 +800,18 @@ export function createRunner(opts: RunnerOptions) {
 
   /**
    * Regrades a test's stored outputs with today's checks and answers. No
-   * model calls. It brings a test up to today's answers, but never up to
-   * inputs that changed after it ran.
+   * new model answers; a suite's judged checks (`CheckDef.judged`) may ask
+   * the judge about wording it hasn't seen. It brings a test up to today's
+   * answers, but never up to inputs that changed after it ran. Past
+   * `deadline` (ms) it grades no more answers and leaves the test as it
+   * was (`done: false`); the answers it graded keep their new scores.
    */
-  async function rescoreRun(runId: string) {
+  async function rescoreRun(
+    runId: string,
+    deadline = Infinity,
+  ): Promise<{ done: boolean; judgeCostUsd: number }> {
     const run = await store.getRun(runId);
-    if (!run) return;
+    if (!run) return { done: true, judgeCostUsd: 0 };
     const suite = await effectiveSuite(run.suite);
     const cases = new Map(
       (await store.listCases(suite.key)).map((c) => [c.id, c]),
@@ -771,13 +820,20 @@ export function createRunner(opts: RunnerOptions) {
       (x) => !x.error && cases.has(x.caseId),
     );
     let judgeCost = 0;
+    // Set inside the grading below, which TypeScript can't follow.
+    let late = false as boolean;
     const onJudge = (usd: number) => (judgeCost += usd);
-    await mapLimit(outputs, 6, async (x) =>
-      store.setOutputScores(
+    await mapLimit(outputs, 6, async (x) => {
+      if (late || Date.now() > deadline) {
+        late = true;
+        return;
+      }
+      await store.setOutputScores(
         x.id,
         await gradeOutput(suite, mustGet(cases, x.caseId), x.output, onJudge),
-      ),
-    );
+      );
+    });
+    if (late) return { done: false, judgeCostUsd: judgeCost };
     await gradeTogether(run, suite);
     const used = [...new Set(outputs.map((x) => x.caseId))].map((id) =>
       mustGet(cases, id),
@@ -797,32 +853,89 @@ export function createRunner(opts: RunnerOptions) {
         new Set(cases.keys()),
       ),
     });
+    return { done: true, judgeCostUsd: judgeCost };
   }
 
   /**
-   * Regrades a suite's finished tests after answers change: the latest of
-   * every model and setting the board shows, however many tests ran since,
-   * plus the `limit` most recent. Any answer change puts every test out of
-   * date until it's regraded, and a test left out of date drops out of the
+   * The tests a rescore covers, most important first: every test the
+   * board shows (each model and reasoning setting's latest test on every
+   * case), the latest of every model and setting on any set, then the
+   * `limit` most recent. Any answer change puts every test out of date
+   * until it's regraded, and a test left out of date drops out of the
    * board, its scores, and the answer key's health ("models split").
    */
-  async function rescoreRecent(suiteKey: string, limit = 10) {
+  async function testsToRescore(
+    suiteKey: string,
+    limit: number,
+  ): Promise<string[]> {
     const runs = await store.listRuns(suiteKey, { status: "SUCCEEDED" });
+    const shown = new Map<string, string>();
     const latest = new Map<string, string>();
     for (const r of runs) {
+      // The board's rows: tests on every case, by model and the reasoning
+      // setting the model really gets (see board).
+      if (r.set === "ALL" && !shown.has(boardKey(r.model, r.reasoningEffort)))
+        shown.set(boardKey(r.model, r.reasoningEffort), r.id);
       const key = [
         r.model,
         r.reasoningEffort ?? "",
         r.temperature ?? "",
         r.maxOutputTokens ?? "",
+        r.set,
       ].join("|");
       if (!latest.has(key)) latest.set(key, r.id);
     }
-    const ids = new Set([
-      ...runs.slice(0, limit).map((r) => r.id),
-      ...latest.values(),
-    ]);
-    for (const id of ids) await rescoreRun(id);
+    return [
+      ...new Set([
+        ...shown.values(),
+        ...latest.values(),
+        ...runs.slice(0, limit).map((r) => r.id),
+      ]),
+    ];
+  }
+
+  /**
+   * Regrades a suite's finished tests after answers or checks change:
+   * every test the board shows, the latest of every model and setting,
+   * and the `limit` most recent (`testsToRescore`). With `requestLimitMs`,
+   * it stops before the limit and says how many are left; call it again
+   * with the ones it did as `skip` to finish.
+   *
+   * @param suiteKey - The suite.
+   * @param o - How many recent tests, what to skip, and when the request
+   *   started; a number is `limit`.
+   */
+  async function rescoreRecent(
+    suiteKey: string,
+    o: RescoreOptions | number = {},
+  ): Promise<RescoreProgress> {
+    const {
+      limit = 10,
+      skip = new Set<string>(),
+      requestStartedAt,
+    } = typeof o === "number" ? { limit: o } : o;
+    const deadline = opts.requestLimitMs
+      ? (requestStartedAt ?? Date.now()) +
+        opts.requestLimitMs -
+        RESCORE_MARGIN_MS
+      : Infinity;
+    const ids = await testsToRescore(suiteKey, limit);
+    const todo = ids.filter((id) => !skip.has(id));
+    const rescored: string[] = [];
+    let judgeCostUsd = 0;
+    for (const id of todo) {
+      if (Date.now() > deadline) break;
+      const r = await rescoreRun(id, deadline);
+      judgeCostUsd += r.judgeCostUsd;
+      if (!r.done) break;
+      rescored.push(id);
+    }
+    return {
+      rescored,
+      total: ids.length,
+      left: todo.length - rescored.length,
+      judgeCostUsd,
+    };
   }
 
   /**
@@ -1196,8 +1309,7 @@ export function createRunner(opts: RunnerOptions) {
     // ignore it, so their rows don't split by it.
     const realEffort = (model: string, effort: string | null) =>
       effortFor(opts.models, model, effort) ?? null;
-    const keyOf = (model: string, effort: string | null) =>
-      `${model}|${realEffort(model, effort) ?? ""}`;
+    const keyOf = boardKey;
     const runKey = (r: RunRecord) => keyOf(r.model, r.reasoningEffort);
     const latestDone = new Map<string, RunRecord>();
     const testing = new Set<string>();

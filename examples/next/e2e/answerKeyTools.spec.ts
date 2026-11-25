@@ -81,3 +81,11 @@ test("the hub lists AI features with no eval yet", async ({ page }) => {
   });
   await expect(section.getByText(/Reply drafts/)).toBeVisible();
 });
+
+test("rescoring says what it did and that it was free", async ({ page }) => {
+  await page.goto("/evals/ticket_triage");
+  await page.getByRole("button", { name: "Rescore tests" }).click();
+  await expect(page.getByRole("status")).toHaveText(
+    /^(Rescored \d+ tests?\. Free: no model calls\.|No finished tests to rescore yet\.)$/,
+  );
+});

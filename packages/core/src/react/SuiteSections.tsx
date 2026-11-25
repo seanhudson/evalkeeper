@@ -33,8 +33,10 @@ import {
   type TodoInput,
   SEVERITY_ORDER,
   SEVERITY_LABEL,
+  usesJudge,
 } from "../index.js";
 import { AnswerKey } from "./AnswerKey.js";
+import { RescoreButton } from "./RescoreButton.js";
 import { ModelMenu } from "./ModelMenu.js";
 import { PriorityPicker } from "./PriorityPicker.js";
 import { InfoPopover } from "./InfoPopover.js";
@@ -146,6 +148,19 @@ export async function loadSuitePage(app: EvalAppConfig, key: string) {
       ),
     ),
   );
+  // What Test every model costs now: each model the feature can use, at
+  // its live setting, as the button tests them. Null: a price is unknown.
+  const testAllCost = (() => {
+    const tested = new Set(app.runner.modelsFor(operation));
+    let usd = 0;
+    for (const r of rows) {
+      if (r.variant || !tested.has(r.model)) continue;
+      const e = estimates.get(r.key);
+      if (!e || e.costUsd === null) return null;
+      usd += e.costUsd;
+    }
+    return usd;
+  })();
   // Results under attack show once the feature has attack cases: a test
   // makes them from its confirmed answers.
   const showAttacks = attackBoards.some((a) => a.cases > 0);
@@ -252,6 +267,7 @@ export async function loadSuitePage(app: EvalAppConfig, key: string) {
     choosesHere,
     testing,
     estimates,
+    testAllCost,
     showAttacks,
     live,
     health,
@@ -461,7 +477,7 @@ function SuiteSettingsForm({ data }: { data: SuitePageData }) {
  * chosen on its feature's page.
  */
 export function TodoSection({ data }: { data: SuitePageData }) {
-  const { app, key, todos, choosesHere, status } = data;
+  const { app, key, todos, choosesHere, status, testAllCost } = data;
   if (!choosesHere) return null;
   return (
     <section aria-labelledby="todo" className="space-y-3">
@@ -497,7 +513,12 @@ export function TodoSection({ data }: { data: SuitePageData }) {
                     <span className="font-medium">{what}</span>: {why}
                   </span>
                 </p>
-                <TodoAction app={app} suite={key} todo={t} />
+                <TodoAction
+                  app={app}
+                  suite={key}
+                  todo={t}
+                  testAllCost={testAllCost}
+                />
               </li>
             );
           })}
@@ -512,10 +533,13 @@ function TodoAction({
   app,
   suite,
   todo: t,
+  testAllCost,
 }: {
   app: EvalAppConfig;
   suite: string;
   todo: Todo;
+  /** What Test every model costs now; null: unknown. */
+  testAllCost: number | null;
 }) {
   // Links look like the buttons beside them: every item's action alike.
   const go = (href: string, text: string) => (
@@ -542,9 +566,16 @@ function TodoAction({
     ) : null;
   switch (t.kind) {
     case "testAll":
-      return button(app.actions.testAll, "Test every model");
     case "retest":
-      return button(app.actions.testAll, "Test every model again");
+      return (
+        <TestAll
+          action={app.actions.testAll}
+          suite={suite}
+          cost={testAllCost}
+          again={t.kind === "retest"}
+          id="todo-test-all"
+        />
+      );
     case "makeLive":
       return button(app.actions.useSuggestion, "Use the suggestion");
     case "fixCheck":
@@ -702,6 +733,7 @@ export function ModelTable({ data }: { data: SuitePageData }) {
     attackBoards,
     choosesHere,
     estimates,
+    testAllCost,
     showAttacks,
     live,
     s,
@@ -740,10 +772,12 @@ export function ModelTable({ data }: { data: SuitePageData }) {
             )}
           </div>
           <div className="flex items-center gap-4">
-            <form action={app.actions.testAll}>
-              <input type="hidden" name="suite" value={key} />
-              <Submit variant="quiet">Test every model</Submit>
-            </form>
+            <TestAll
+              action={app.actions.testAll}
+              suite={key}
+              cost={testAllCost}
+              id="board-test-all"
+            />
           </div>
         </div>
         <Card className="overflow-x-auto p-0 lg:overflow-visible">
@@ -1432,15 +1466,11 @@ export function AnswerKeySection({ data }: { data: SuitePageData }) {
                 </Link>
               </Tip>
             )}
-          <form action={app.actions.rescore}>
-            <input type="hidden" name="suite" value={key} />
-            <Tip control term="rescore" side="bottom" align="end">
-              <IconSubmit
-                label="Rescore tests"
-                icon={<RotateCw aria-hidden className="h-4 w-4" />}
-              />
-            </Tip>
-          </form>
+          <RescoreButton
+            suite={key}
+            action={app.actions.rescore}
+            judged={usesJudge(suite)}
+          />
         </>
       }
     />
@@ -1522,6 +1552,42 @@ export function AnswerKeySection({ data }: { data: SuitePageData }) {
         />
       )}
     </section>
+  );
+}
+
+/**
+ * Test every model, saying it costs money: what it would cost now beside
+ * it, and a tooltip on what it does.
+ */
+function TestAll({
+  action,
+  suite,
+  cost,
+  again = false,
+  id,
+}: {
+  action: FormAction;
+  suite: string;
+  /** What it costs now; 0: every answer reused; null: unknown. */
+  cost: number | null;
+  again?: boolean;
+  /** Unique per page, for the tooltip. */
+  id: string;
+}) {
+  return (
+    <form action={action} className="flex shrink-0 items-center gap-2">
+      <input type="hidden" name="suite" value={suite} />
+      <Tip control term="testAll" id={id} side="bottom" align="end">
+        <Submit variant="quiet">
+          {again ? "Test every model again" : "Test every model"}
+        </Submit>
+      </Tip>
+      {cost !== null && (
+        <span className="whitespace-nowrap text-xs text-muted">
+          {cost === 0 ? "free, all reused" : `~${money(cost)}`}
+        </span>
+      )}
+    </form>
   );
 }
 
@@ -1822,8 +1888,8 @@ export function AnswerKeyHealthSection({ data }: { data: SuitePageData }) {
                   {EASY_MIN_ROUNDS} or more rounds of testing, so they no longer
                   tell models apart. Retiring them keeps{" "}
                   {h.inUse - h.easyToRetire.length} cases, at or above the
-                  suite&apos;s target of {target}. Recent tests are rescored for
-                  free.
+                  suite&apos;s target of {target}. Recent tests are rescored,
+                  with no new model answers.
                   <InfoTip term="easyCases" />
                 </p>
                 {retireEasy && (

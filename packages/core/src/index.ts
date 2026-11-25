@@ -30,6 +30,7 @@ export * from "./weekly.js";
 export * from "./settings.js";
 export * from "./suiteSettings.js";
 export * from "./spending.js";
+export * from "./rescore.js";
 export * from "./decisions.js";
 export * from "./store.js";
 export * from "./suiteContract.js";

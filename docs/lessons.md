@@ -252,6 +252,28 @@ them with a hand-written `expect`. _So:_ every contract takes its test
 functions, `assertExpect` covers the matchers they use, and the testing
 entry loads without Vitest.
 
+**Rescore skipped the tests the model table shows.** After an upgrade,
+an app pressed Rescore tests on every suite, and in 9 of 27 the live
+model's row still showed a test graded the old way. The table shows each
+model's latest test on every case, but rescoring picked each model's
+latest test on any set, and the weekly check's quick-set tests of the
+live model were newer. _So:_ rescoring starts from the table's own key
+(the same function builds both), and a test proves the table's tests
+are rescored after newer quick-set ones.
+
+**"Free" was true for most suites, not all.** Rescoring makes no new
+model answers, but a check that asks an AI judge about wording it hasn't
+seen pays for that call, and the tooltip said "free" everywhere. _So:_
+checks say `judged: true`, the tooltip says which kind of rescore it is,
+the result says what it actually cost, and a judged rescore waits while
+tests are over a daily limit.
+
+**Long rescores hit the host's time limit.** Rescoring three large suites
+in production returned a timeout page; the work was saved, so pressing
+again finished them, but nothing said so. _So:_ a rescore stops before
+the request's limit and says what's left, the button goes on in a new
+request, and if a request fails anyway it says how far it got.
+
 ## On screen
 
 **Jargon means nothing to the person deciding.** Early pages said "smoke

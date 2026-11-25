@@ -113,7 +113,7 @@ export async function RateView({
             </div>
             <p className="readable text-xs text-muted">
               Saves your own confirmed answer beside anyone else&apos;s, and
-              rescores tests for free.
+              rescores tests (no new model answers).
             </p>
             <Submit>Save rating</Submit>
           </form>

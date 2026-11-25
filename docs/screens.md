@@ -138,7 +138,7 @@ read everything from one object, `evals` in `lib/evalkeeper/evals.ts`.
 | Page                | Loads its data with               | Sections, in order                                                                                                                                                                                                                   |
 | ------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Suite (`SuitePage`) | `loadSuitePage(evals, key)`, once | `SuiteHeader`, `TodoSection`, `ChosenOnBase`, `SuggestionCard`, `CasesInInstructions`, `ModelTable`, `CheckBreakdownSection`, `Versions`, `ChecksSection`, `AnswerKeyHealthSection`, `AnswerKeyToolsSection`, and `AnswerKeySection` |
-| Hub (`HubPage`)     | `loadHub(evals)`                  | `HubIntro`, `SuiteList`, `HubStats`, `WeeklyCheck`, and `NoEvalYet`                                                                                                                                                                  |
+| Hub (`HubPage`)     | `loadHub(evals)`                  | `HubIntro`, `WeeklyCheck`, `SuiteList`, `HubStats`, and `NoEvalYet`                                                                                                                                                                  |
 
 The other pages are one view each:
 

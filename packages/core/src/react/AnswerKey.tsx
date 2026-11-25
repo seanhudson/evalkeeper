@@ -428,13 +428,12 @@ function CaseItem({
               <Chip tone="neutral">{shipped.text}</Chip>
             </Tip>
           )}
-          <Tip
-            term={c.split === "TEST" ? "test" : "dev"}
-            id={`split-${c.id}`}
-            align="end"
-          >
-            <Chip tone="neutral">{c.split === "TEST" ? "Test" : "Dev"}</Chip>
-          </Tip>
+          {/* Only held-out cases say so: the rest are the usual kind. */}
+          {c.split === "TEST" && (
+            <Tip term="heldOut" id={`split-${c.id}`} align="end">
+              <Chip tone="neutral">Held out</Chip>
+            </Tip>
+          )}
           {results.length > 0 && (
             <Tip
               text={`Right on ${right} of ${results.length} models' latest tests.`}

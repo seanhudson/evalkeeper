@@ -5,27 +5,6 @@ Notable changes, newest first. The format follows
 follow [semantic versioning](https://semver.org/): until 1.0, a minor
 version may change an interface, and its entry says how to update.
 
-## Unreleased
-
-### Changed
-
-- The model history and the suggestion use the board's words: making a
-  model live records "similar to live" (or "better than live", "worse
-  than live"), and a suggestion says a model "is similar to" the live
-  one "in accuracy", in place of "about as accurate". So does the
-  explanation of what a suite favors, and the glossary's verdict and
-  disagreements entries.
-
-### Fixed
-
-- `add pages --help` named `AnswerKey` as something `--only` can copy,
-  which fails since the pages come from the package. It now lists
-  actions, evals, paths, and evalkeeper.css.
-- The docs match the code again: the board's verdict words, three check
-  levels, what rescoring can cost, the pages coming from the package,
-  `lucide-react` for the pages, and renamed buttons in the answer key
-  and Answer key health.
-
 ## 0.20.0 - 2026-11-25
 
 Rescore tests fixed and made plain, spending limits the runner keeps
@@ -78,6 +57,13 @@ Update:
   "Medical Billing" that names a term in the prompt isn't flagged; a
   message copied into the instructions still is
   (`IN_INSTRUCTIONS_MIN_WHOLE_WORDS`, `minWholeWords`) (#139).
+- `add pages --help` named `AnswerKey` as something `--only` can copy,
+  which fails since the pages come from the package. It now lists
+  actions, evals, paths, and evalkeeper.css.
+- The docs match the code again: the board's verdict words, three check
+  levels, what rescoring can cost, the pages coming from the package,
+  `lucide-react` for the pages, and renamed buttons in the answer key
+  and Answer key health.
 
 ### Added
 
@@ -156,6 +142,12 @@ Update:
 - **Plainer explanations** of accuracy, must-pass, confidence,
   calibration, and built-in versus self-estimated probabilities, with
   examples, in the tooltips and the docs.
+- The model history and the suggestion use the board's words: making a
+  model live records "similar to live" (or "better than live", "worse
+  than live"), and a suggestion says a model "is similar to" the live
+  one "in accuracy", in place of "about as accurate". So does the
+  explanation of what a suite favors, and the glossary's verdict and
+  disagreements entries.
 
 ## 0.19.0 - 2026-11-24
 

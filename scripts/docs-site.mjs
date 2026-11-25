@@ -221,6 +221,12 @@ export function sync(root) {
   cpSync(join(root, "docs/screenshots"), join(site, "public/screenshots"), {
     recursive: true,
   });
+  // The demo video, its GIF, and its poster; not the raw recording.
+  rmSync(join(site, "public/demo"), { recursive: true, force: true });
+  cpSync(join(root, "docs/demo"), join(site, "public/demo"), {
+    recursive: true,
+    filter: (path) => !/demo-raw\.webm$|marks\.json$/.test(path),
+  });
   // TypeDoc's reference, when built (`npm run docs:api`), is served at /api.
   rmSync(join(site, "public/api"), { recursive: true, force: true });
   if (existsSync(join(root, "docs/api/index.html")))

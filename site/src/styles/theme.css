@@ -105,9 +105,13 @@
      dark:sl-hidden pick which of each pair shows. */
   line-height: 0;
 }
-.ek-shot img {
+.ek-shot img,
+.ek-shot video {
   width: 100%;
   height: auto;
+}
+.ek-shot video {
+  display: block;
 }
 
 .sl-markdown-content .ek-section {
@@ -214,6 +218,9 @@
 @media (min-width: 50rem) {
   .ek-tour {
     grid-template-columns: 1fr 1fr;
+  }
+  .ek-tour > figure.ek-wide {
+    grid-column: 1 / -1;
   }
 }
 .sl-markdown-content .ek-tour > figure {

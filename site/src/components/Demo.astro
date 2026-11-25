@@ -1,0 +1,37 @@
+---
+// The demo video (docs/demo, copied in by scripts/docs-site.mjs): plays
+// muted on a loop, like a GIF at a fraction of the size. Readers who ask
+// for less motion get it paused, with controls to play it themselves.
+interface Props {
+  alt: string;
+}
+const { alt } = Astro.props;
+const src = (file: string) =>
+  `${import.meta.env.BASE_URL}/demo/${file}`.replace("//", "/");
+---
+
+<div class="ek-shot ek-demo">
+  <video
+    src={src("evalkeeper-demo.mp4")}
+    poster={src("evalkeeper-demo-poster.jpg")}
+    aria-label={alt}
+    width="1280"
+    height="800"
+    autoplay
+    muted
+    loop
+    playsinline
+    preload="auto"
+  ></video>
+</div>
+
+<script>
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    for (const video of document.querySelectorAll<HTMLVideoElement>(
+      ".ek-demo video",
+    )) {
+      video.pause();
+      video.controls = true;
+    }
+  }
+</script>

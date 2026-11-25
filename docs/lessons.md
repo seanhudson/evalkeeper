@@ -77,6 +77,17 @@ on something the tool never asked. _So:_ the readers turn a checked word
 into the suite's canary, leave the rest out, and list each one skipped
 with its question, so nothing is graded on a check nobody wrote.
 
+**A pronoun for someone else read as the person.** The voice check
+failed "you talked to her privately" (a colleague) and "their remote
+policy" (a company), which made up most of two suites' voice failures.
+_So:_ the check takes what the model was given, and a pronoun the
+sources already use for someone is about them.
+
+**A short label read as a copied case.** "Cases in the instructions"
+flagged four résumé cases whose only match was an education field,
+"Medical Billing", that a prompt names as an industry. A whole-text match
+needed only 12 characters. _So:_ it needs 3 words too.
+
 ## Answers
 
 **History isn't a verdict.** Answers taken from what someone did
@@ -343,6 +354,12 @@ app's field labels walked zod's private structure, which moved in zod 4,
 and Evalkeeper's suite contract reads it too. _So:_ each package reads
 zod's internals in one function, with tests that walk real schemas, so
 the next major breaks one function and its tests, not every page.
+
+**An absolute path landed inside the project.** `migration --out` was
+given a temp folder and wrote to the same path under the project, quietly.
+`path.join` treats an absolute second part as one more folder. _So:_ paths
+a person passes are resolved (`path.resolve`), and the CLI prints the
+full path it wrote.
 
 ## Releasing
 

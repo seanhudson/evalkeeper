@@ -9,13 +9,50 @@ import type { CheckDef, CheckResult } from "./types.js";
 // He, she, and the like never belong in text addressed to the person.
 // They, them, and their often mean things, so they count only when they
 // open a sentence the way writing about the person would ("They want").
-const PRONOUNS = /\b(he|she|him|her|his|hers|himself|herself)\b/i;
-const THIRD_PERSON_START = /(^|[.!?]\s+)(they|their|them)\b/i;
+const PRONOUNS = /\b(he|she|him|her|his|hers|himself|herself)\b/gi;
+const THIRD_PERSON_START = /(^|[.!?]\s+)(they|their|them)\b/gi;
 
-/** Text that refers to the person as he, she, or they; null when none. */
-export function thirdPerson(text: string): string | null {
-  const m = text.match(PRONOUNS) ?? text.match(THIRD_PERSON_START);
-  return m ? m[0].trim().replace(/^[.!?]\s*/, "") : null;
+// Forms of one pronoun: a source that uses any of them has someone it
+// calls that.
+const FAMILIES = [
+  ["she", "her", "hers", "herself"],
+  ["he", "him", "his", "himself"],
+  ["they", "their", "them", "theirs", "themselves"],
+];
+
+/** The pronouns the sources use for someone, in lower case. */
+function pronounsIn(sources: readonly string[]): Set<string> {
+  const used = new Set<string>();
+  const words = new Set(
+    sources.flatMap((s) => s.toLowerCase().match(/[a-z]+/g) ?? []),
+  );
+  for (const family of FAMILIES)
+    if (family.some((w) => words.has(w))) for (const w of family) used.add(w);
+  return used;
+}
+
+/**
+ * Text that refers to the person as he, she, or they; null when none.
+ * With `sources` (what the model was given), a pronoun the sources
+ * already use for someone, in any of its forms, is about that someone
+ * (a manager, a colleague, a company), so it doesn't count.
+ *
+ * @param text - The answer's text.
+ * @param sources - What the model was given; leave out to count every pronoun.
+ */
+export function thirdPerson(
+  text: string,
+  sources?: readonly string[],
+): string | null {
+  const others = sources ? pronounsIn(sources) : new Set<string>();
+  const hits = [
+    ...[...text.matchAll(PRONOUNS)].map((m) => ({ at: m.index, word: m[0] })),
+    ...[...text.matchAll(THIRD_PERSON_START)].map((m) => ({
+      at: m.index,
+      word: m[0].trim().replace(/^[.!?]\s*/, ""),
+    })),
+  ].sort((a, b) => a.at - b.at);
+  return hits.find((h) => !others.has(h.word.toLowerCase()))?.word ?? null;
 }
 
 /**
@@ -136,10 +173,23 @@ export function inRange(
   };
 }
 
-/** The "addressed as you" check over several pieces of text. */
-export function voiceCheck(key: string, texts: string[]): CheckResult {
+/**
+ * The "addressed as you" check over several pieces of text. Pass
+ * `sources` (what the model was given) so a pronoun they already use for
+ * someone else, such as "her" for a manager in the person's story, isn't
+ * read as the person; one that only the answer uses still fails.
+ *
+ * @param key - The check's key.
+ * @param texts - The answer's text.
+ * @param sources - What the model was given; leave out to count every pronoun.
+ */
+export function voiceCheck(
+  key: string,
+  texts: string[],
+  sources?: readonly string[],
+): CheckResult {
   for (const t of texts) {
-    const hit = thirdPerson(t);
+    const hit = thirdPerson(t, sources);
     if (hit) return { key, pass: false, note: `"${hit}" in: ${t}` };
   }
   return { key, pass: true };
@@ -170,7 +220,7 @@ export const VOICE_CHECK: CheckDef = {
   key: "voice",
   label: 'Addressed as "you"',
   description:
-    'Never "he", "she", or "they" for the person (lib/ai/voice.ts): they read it about themselves.',
+    'Never "he", "she", or "they" for the person: they read it about themselves. A pronoun what the model was given already uses for someone else, such as a manager, doesn\'t count.',
   kind: "code",
   severity: "serious",
 };

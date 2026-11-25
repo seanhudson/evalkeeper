@@ -617,6 +617,22 @@ describe("runner, beyond a basic test", () => {
     expect((await store.getRun(run.id))?.metrics?.byCheck.right?.n).toBe(1);
   });
 
+  it("leaves a retired case out of the board's must-pass count", async () => {
+    const { store, runner } = await setup([2, 4, 6]);
+    const { run } = await runner.createRun({ suite: "double", model: "good" });
+    await runner.runEval(run.id);
+    const c = store.cases[0];
+    if (!c) throw new Error("setup");
+    await store.setCaseStatus(c.id, "RETIRED");
+    await runner.rescoreRecent("double");
+    const b = await runner.board("double");
+    const t = b.rows.find((r) => r.model === "good")?.test;
+    // Counted over the same answers as the score: never over 100%.
+    expect(t?.answers).toBe(2);
+    expect(t?.answersNoSerious).toBe(2);
+    expect(Object.keys(b.caseResults)).not.toContain(c.id);
+  });
+
   it("rescores recent tests after answers change, for free", async () => {
     const { store, runner } = await setup([2]);
     const { run } = await runner.createRun({ suite: "double", model: "good" });

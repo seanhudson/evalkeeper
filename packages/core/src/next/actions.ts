@@ -10,6 +10,7 @@ import {
   draftMoreCases,
   formText,
   importStarters,
+  KEPT_AS_RIGHT,
   isInjectionSuite,
   leakNote,
   raterStatus,
@@ -440,14 +441,14 @@ export function evalActions(w: EvalWiring): Required<EvalActions> {
       const answer = confirmedLabel(c.labels);
       if (!answer) throw new Error("This case has no answer in use");
       // A fresh confirmation of the same answer, by whoever checked it: the
-      // split list leaves it out until a newer test splits on it again.
+      // split list leaves it out while this answer is in use.
       await store.addLabel(c.id, {
         kind: "EXPECTED",
         status: "CONFIRMED",
         value: answer.value,
         raterRole: "REVIEWER",
         raterId: admin.id,
-        note: "Checked when models split on it, and kept as right.",
+        note: KEPT_AS_RIGHT,
       });
       // Rescored before the page refreshes (no new model answers): an
       // answer change marks tests out of date until then.

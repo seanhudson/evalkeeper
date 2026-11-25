@@ -251,7 +251,9 @@ list: what to do next, in order, each with why. Each item is done on the
 page and drops off once it's done:
 
 1. **Test every model** (or **Test again** after the instructions,
-   answers, or cases change).
+   answers, or cases change). It asks about the models the button tests;
+   a fallback-only model or another reasoning setting has its own **Test**
+   button in the table.
 2. **Make X live** (or the fallback), when the suggestion differs from
    what's live.
 3. **Fix "check"**, for each must-pass check every tested model misses,

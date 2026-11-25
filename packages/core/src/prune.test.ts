@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   answerKeyHealth,
+  KEPT_AS_RIGHT,
   easyToRetire,
   isEasy,
   isSplit,
@@ -98,7 +99,7 @@ describe("pruning", () => {
         text?: string;
         tags?: string[];
         status?: string;
-        labels?: { status: string; updatedAt: Date }[];
+        labels?: { status: string; updatedAt: Date; note?: string | null }[];
         createdAt?: Date;
       } = {},
     ) => ({
@@ -191,6 +192,38 @@ describe("pruning", () => {
         new Date("2026-10-22"),
       );
       expect(later.split.map((c) => c.id)).toEqual(["1", "2"]);
+    });
+
+    it("keeps a case kept as right off the split list, even after newer tests", () => {
+      const split = { passed: 2, models: 4 };
+      const kept = { status: "CONFIRMED", updatedAt: new Date("2026-10-21") };
+      const cases = [
+        kase("1"),
+        kase("2", {
+          labels: [
+            { status: "CONFIRMED", updatedAt: new Date("2026-10-01") },
+            { ...kept, note: KEPT_AS_RIGHT },
+          ],
+        }),
+        // Kept once, then the answer changed: back in play.
+        kase("3", {
+          labels: [
+            { ...kept, note: KEPT_AS_RIGHT },
+            {
+              status: "CONFIRMED",
+              updatedAt: new Date("2026-10-22"),
+              note: null,
+            },
+          ],
+        }),
+      ];
+      const h = answerKeyHealth(
+        cases,
+        { "1": split, "2": split, "3": split },
+        today,
+        new Date("2026-10-30"),
+      );
+      expect(h.split.map((c) => c.id)).toEqual(["1", "3"]);
     });
 
     it("needs nothing when every case still tells models apart", () => {

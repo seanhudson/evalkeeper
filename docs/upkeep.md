@@ -52,8 +52,8 @@ It lists what to do, in order:
    the answer key's answer and some don't, and each case lists which. That
    usually means the answer is wrong or the case has no clear answer.
    Decide who's right, then press one of:
-   - **The answer is right:** it's confirmed again, and leaves the list
-     until a newer test splits on it.
+   - **The answer is right:** it's confirmed again, and stays off the
+     list while that answer is in use. Changing the answer puts it back.
    - **Fix the answer:** opens the case to edit it.
    - **Retire it:** for a case with no right answer.
 

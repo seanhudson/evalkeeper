@@ -188,6 +188,7 @@ export async function loadSuitePage(app: EvalAppConfig, key: string) {
   const unmade = attackBoards.filter((a) => a.cases === 0);
   const todoInput: TodoInput = {
     rows,
+    testAllModels: app.runner.modelsFor(operation),
     checks: suite.checks,
     priority,
     models: app.models,

@@ -84,6 +84,13 @@ export type TodoInput = {
   unmadeAttacks?: { key: string; label: string }[];
   /** Starter cases a starter update replaced (`replacedStarters`). */
   replacedStarters?: number;
+  /**
+   * The models Test every model tests (`runner.modelsFor`), at the live
+   * setting. The retest to-do asks only about their rows, so pressing it
+   * clears it; other rows keep their own Test buttons. Every row when
+   * absent.
+   */
+  testAllModels?: readonly string[];
   /** Cases models split on (`answerKeyHealth(...).split`). */
   splitCases?: number;
   /**
@@ -113,7 +120,13 @@ export function suiteTodos(input: TodoInput): Todo[] {
   const testing = rows.some((r) => r.testing);
   const models = rows.filter((r) => !r.baseline && !r.variant);
   const tested = testedRows(rows);
-  const stale = rows.some((r) => !r.baseline && r.test?.stale);
+  const retests = input.testAllModels;
+  const stale = rows.some(
+    (r) =>
+      !r.baseline &&
+      r.test?.stale &&
+      (!retests || (!r.variant && retests.includes(r.model))),
+  );
 
   // 1. Tests first: nothing else can be judged without them.
   if (!testing) {

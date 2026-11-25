@@ -128,6 +128,28 @@ describe("suiteTodos", () => {
     expect(kinds(input({ rows: running }))).not.toContain("testAll");
   });
 
+  it("asks to test again only about rows Test every model retests", () => {
+    const fallbackOnly = row("Terra", { stale: true });
+    const variant = {
+      ...row("Sol", { stale: true }),
+      key: "Sol:high",
+      variant: true,
+    };
+    const rows = [
+      row("Luna", { live: true }),
+      row("Sol"),
+      fallbackOnly,
+      variant,
+    ];
+    const testAllModels = ["Luna", "Sol"];
+    // Nothing the button tests is out of date, so pressing it can't clear it.
+    expect(kinds(input({ rows, testAllModels }))).not.toContain("retest");
+    // Without the list, any out-of-date row counts, as before.
+    expect(kinds(input({ rows }))).toContain("retest");
+    const stale = [row("Luna", { live: true, stale: true }), ...rows.slice(1)];
+    expect(kinds(input({ rows: stale, testAllModels }))).toContain("retest");
+  });
+
   it("suggests a better model, with the suggestion's reason", () => {
     const rows = [
       row("Luna", { live: true, cost: 0.02 }),

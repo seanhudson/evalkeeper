@@ -1489,12 +1489,16 @@ export function createRunner(opts: RunnerOptions) {
     const sameLevels = (r: RunRecord) =>
       !r.metrics?.levels ||
       Object.entries(levels).every(([k, l]) => r.metrics?.levels?.[k] === l);
-    const [route, cases, prompt] = await Promise.all([
+    const [route, listed, prompt] = await Promise.all([
       opts.route(suite.operation),
-      casesFor(suite.key, "ALL"),
+      store.listCases(suite.key),
       opts.promptVersion(suite.operation),
       stopStuckRuns(suite.key),
     ]);
+    const cases = listed.filter((c) => confirmedLabel(c.labels));
+    // The cases a rescore keeps: a retired case's answers leave a test's
+    // score, so they leave every count read beside it too.
+    const kept = new Set(listed.map((c) => c.id));
     const current = datasetVersion(cases);
     const { models, fallbackModels = models } = opts.candidates(
       suite.operation,
@@ -1548,13 +1552,15 @@ export function createRunner(opts: RunnerOptions) {
     ))
       outputs.set(
         id,
-        outs.map((x) => ({
-          caseId: x.caseId,
-          checks: x.error ? null : (x.scores ?? []),
-          costUsd: x.costUsd,
-          ms: x.ms,
-          reused: x.reused,
-        })),
+        outs
+          .filter((x) => kept.has(x.caseId))
+          .map((x) => ({
+            caseId: x.caseId,
+            checks: x.error ? null : (x.scores ?? []),
+            costUsd: x.costUsd,
+            ms: x.ms,
+            reused: x.reused,
+          })),
       );
     const outputsOf = (runId: string) => outputs.get(runId) ?? [];
     const checkKeys = suite.checks.map((c) => c.key);

@@ -5,6 +5,21 @@ Notable changes, newest first. The format follows
 follow [semantic versioning](https://semver.org/): until 1.0, a minor
 version may change an interface, and its entry says how to update.
 
+## Unreleased
+
+### Fixed
+
+- The model table's Must-pass share no longer goes over 100% after a case
+  is retired: the board leaves a retired case's answers out of the
+  must-pass count, the per-case results, and the comparison with live, as
+  a rescore already left them out of the score.
+- **The answer is right** sticks: a split case kept as right stays off
+  "Answers worth a second look" while that answer is in use, instead of
+  coming back after the next test. Changing the answer puts it back.
+- The **Test again** to-do asks only about the models **Test every model**
+  retests, so pressing it clears it. An out-of-date fallback-only model or
+  reasoning setting no longer keeps it up; test those from their own row.
+
 ## 0.20.0 - 2026-11-25
 
 Rescore tests fixed and made plain, spending limits the runner keeps

@@ -5,6 +5,7 @@
  * @module evalkeeper/runner
  */
 import { createHash } from "node:crypto";
+import { money, perAnswer } from "./format.js";
 import { compareRuns, disagreements, type RunOutput } from "./compare.js";
 import { isStuck, shouldContinue } from "./legs.js";
 import {
@@ -106,7 +107,13 @@ export type RunnerOptions = {
   liveEffort?: (
     operation: string,
   ) => ReasoningEffort | null | Promise<ReasoningEffort | null>;
-  /** What one answer costs on a model, from your usage records; null: unknown. */
+  /**
+   * What one answer costs on a model, from your usage records; null:
+   * unknown. Include everything an answer pays for (web searches, tool
+   * calls), not only tokens. Estimates also look at what the model's last
+   * finished test of the suite actually cost per answer (everything
+   * reported through `onCost`) and use whichever is higher.
+   */
   estimateCallCost?: (
     operation: string,
     model: string,
@@ -120,6 +127,13 @@ export type RunnerOptions = {
    * `spendingBudget(spending)` makes one from your `EvalSpending`.
    */
   budget?: (call: BudgetCall) => string | null | Promise<string | null>;
+  /**
+   * A test stops once its own new answers cost more than this many times
+   * its estimate, and says so: a price set too low, or an answer that pays
+   * for more than expected, can't run on unnoticed. Default
+   * `CEILING_TIMES` (2); null turns it off. No estimate, no ceiling.
+   */
+  ceilingTimes?: number | null;
   /**
    * How long one request may run, in ms. A test answers what fits, then
    * hands the rest to `continueRun` (a fresh request). Default: no limit.
@@ -180,6 +194,12 @@ export type BudgetCall = {
  * within an answer or two rather than at the next leg.
  */
 export const STOP_CHECK_MS = 2_000;
+
+/** How many times its estimate a test may spend (`ceilingTimes`). */
+export const CEILING_TIMES = 2;
+
+/** USD as the pages show it: "$1.20", or cents below a cent ("0.20¢"). */
+const usdText = (n: number) => (n >= 0.01 ? money(n) : perAnswer(n));
 
 /** A test stopped by hand: its error, and what to do. */
 export const STOPPED_BY_HAND =
@@ -427,6 +447,39 @@ export function createRunner(opts: RunnerOptions) {
     return (await opts.route(operation)).maxOutputTokens ?? null;
   }
 
+  /** What a model's last finished test of a suite cost per answer; null: none. */
+  async function lastCostPerAnswer(
+    suiteKey: string,
+    model: string,
+  ): Promise<number | null> {
+    const runs = await store.listRuns(suiteKey, {
+      status: "SUCCEEDED",
+      limit: 50,
+    });
+    for (const r of runs) {
+      const c = r.metrics?.costPerAnswer;
+      if (r.model === model && typeof c === "number") return c;
+    }
+    return null;
+  }
+
+  /**
+   * What one new answer costs, for estimates: your `estimateCallCost`, or
+   * what the model's last test of the suite actually cost per answer
+   * (searches and tool calls included), whichever is higher.
+   */
+  async function perAnswerCost(
+    suite: AnySuite,
+    model: string,
+  ): Promise<number | null> {
+    const [given, actual] = await Promise.all([
+      opts.estimateCallCost?.(suite.operation, model) ?? null,
+      lastCostPerAnswer(suite.key, model),
+    ]);
+    if (given === null) return actual;
+    return actual === null ? given : Math.max(given, actual);
+  }
+
   /**
    * What a test would cost. Answers an identical request gave in the last
    * 7 days are reused for free, so only the rest are priced: a retest
@@ -460,7 +513,7 @@ export function createRunner(opts: RunnerOptions) {
     const [cases, perCall, prompt, effort, temperature, cap] =
       await Promise.all([
         casesFor(suite.key, set),
-        opts.estimateCallCost?.(suite.operation, model) ?? null,
+        perAnswerCost(suite, model),
         opts.promptVersion(suite.operation),
         o.reasoningEffort !== undefined
           ? o.reasoningEffort
@@ -697,6 +750,14 @@ export function createRunner(opts: RunnerOptions) {
       const todo = jobs.filter((j) => !answered.has(`${j.c.id}:${j.repeat}`));
       // What this test's new answers have cost, earlier legs included.
       let spent = given.reduce((t, x) => t + (x.reused ? 0 : x.costUsd), 0);
+      // The ceiling: a multiple of what every answer this test needs would
+      // cost new. Null: no estimate, or turned off.
+      const times =
+        opts.ceilingTimes === undefined ? CEILING_TIMES : opts.ceilingTimes;
+      const perAnswer = times ? await perAnswerCost(suite, run.model) : null;
+      const estimateUsd = perAnswer ? perAnswer * jobs.length : null;
+      const ceiling = times && estimateUsd ? times * estimateUsd : null;
+      const timesText = times === 2 ? "twice" : String(times) + " times";
       // Set inside the answers below, which TypeScript can't follow.
       let halted = null as string | null;
       let stopped = false as boolean;
@@ -764,17 +825,29 @@ export function createRunner(opts: RunnerOptions) {
         // A new answer costs money: the app's budget may refuse it. If the
         // budget can't be read, the answer goes ahead, as a blip shouldn't
         // fail every test.
-        const refused = opts.budget
-          ? await Promise.resolve(
-              opts.budget({
-                runId,
-                suite: suite.key,
-                operation: suite.operation,
-                model: run.model,
-                spentUsd: spent,
-              }),
-            ).catch(() => null)
-          : null;
+        const overCeiling =
+          ceiling !== null && estimateUsd !== null && spent > ceiling
+            ? "This test has spent " +
+              usdText(spent) +
+              ", more than " +
+              timesText +
+              " its estimate (" +
+              usdText(estimateUsd) +
+              "). Check the model's price, and what an answer pays for."
+            : null;
+        const refused =
+          overCeiling ??
+          (opts.budget
+            ? await Promise.resolve(
+                opts.budget({
+                  runId,
+                  suite: suite.key,
+                  operation: suite.operation,
+                  model: run.model,
+                  spentUsd: spent,
+                }),
+              ).catch(() => null)
+            : null);
         if (refused) {
           halted = refused;
           skipped++;
@@ -1521,10 +1594,7 @@ export function createRunner(opts: RunnerOptions) {
       await Promise.all(
         keys.map(
           async ({ model }) =>
-            [
-              model,
-              (await opts.estimateCallCost?.(suite.operation, model)) ?? null,
-            ] as const,
+            [model, await perAnswerCost(suite, model)] as const,
         ),
       ),
     );

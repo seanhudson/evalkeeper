@@ -55,8 +55,9 @@ a suite's leak check removes it on the way in and says what it removed.
 And a case copied into the instructions as an example gets graded on an
 answer the model was handed: when your app passes its instructions' text
 (`instructionTexts`), the suite page lists any case whose words appear
-in them, under "Cases in the instructions". That's a warning, not a
-failure.
+in them, under "Cases in the instructions". A short label of one or two
+words that names a term the instructions use (a degree, an industry)
+doesn't count. That's a warning, not a failure.
 
 **Answer.** What a good answer to a case looks like, in the suite's
 answer shape. Every answer has a status:

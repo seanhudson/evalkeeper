@@ -232,7 +232,11 @@ function migration(args: Args, io: Parameters<typeof run>[1]): number {
         return 1;
       }
     }
-    if (write) writeMigration(io.cwd, plan, args.out ?? null);
+    if (write) {
+      const sqlFile = writeMigration(io.cwd, plan, args.out ?? null);
+      // In full, so an absolute --out shows where it went.
+      if (sqlFile) io.log(`  ${"wrote".padEnd(10)} ${sqlFile}`);
+    }
     const folder = dirname(plan.target);
     const steps = [
       ...(write

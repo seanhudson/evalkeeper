@@ -5,6 +5,29 @@ Notable changes, newest first. The format follows
 follow [semantic versioning](https://semver.org/): until 1.0, a minor
 version may change an interface, and its entry says how to update.
 
+## Unreleased
+
+### Fixed
+
+- **`migration --write --out` with an absolute path** wrote the SQL
+  inside the project (`<project>/tmp/…`) and made that folder tree there.
+  It now writes where the path says, and prints the SQL file's full path
+  (#157).
+- **"Cases in the instructions" flagged short labels.** A whole-text
+  match now needs 3 words as well as 12 characters, so a field such as
+  "Medical Billing" that names a term in the prompt isn't flagged; a
+  message copied into the instructions still is
+  (`IN_INSTRUCTIONS_MIN_WHOLE_WORDS`, `minWholeWords`) (#139).
+
+### Added
+
+- **`voiceCheck` and `thirdPerson` take what the model was given**
+  (`sources`). A pronoun the sources already use for someone else, such
+  as "her" for a manager in the person's story or "they" for a company,
+  no longer fails the voice check; one only the answer uses still does.
+  Without `sources`, nothing changes. A suite that starts passing them
+  should bump its `graderVersion` (#156).
+
 ## 0.20.0 - 2026-11-25
 
 Rescore tests, fixed and made plain: it covers every test the model

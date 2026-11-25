@@ -278,6 +278,25 @@ describe("evalkeeper migration", () => {
     );
   });
 
+  it("writes the SQL to an absolute --out, and says where", () => {
+    const dir = app({ "prisma/schema/main.prisma": HEAD });
+    const elsewhere = mkdtempSync(join(tmpdir(), "ek-out-"));
+    const target = join(elsewhere, "sql", "up.sql");
+    const r = cli(
+      dir,
+      fakePrisma().exec,
+      "migration",
+      "--write",
+      "--out",
+      target,
+    );
+    expect(r.code).toBe(0);
+    expect(readFileSync(target, "utf8")).toMatch(/CREATE/);
+    // Nothing made under the project for it.
+    expect(existsSync(join(dir, elsewhere))).toBe(false);
+    expect(r.out).toContain(`wrote      ${target}`);
+  });
+
   it("refuses to drop data unless told", () => {
     const dir = app({
       "prisma/schema/main.prisma": HEAD,

@@ -56,6 +56,7 @@ export const RETIRED = new Map([
   ["costliest live model", "nothing: the hub has no cost cards since 0.19"],
   ["Show all topics", "Every topic and its cases"],
   ["Draft N more cases", "Describe them, then Draft them"],
+  ["Against live", "vs live"],
 ]);
 
 /** Code names from other projects (TypeScript, the AI SDK). */

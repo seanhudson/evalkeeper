@@ -235,7 +235,9 @@ describe("suggest", () => {
     ];
     const s = suggest(rows, checks, { favor: "cost" })!;
     expect(s.live.key).toBe("Luna");
-    expect(s.reasons[0]).toMatch(/about as accurate as Sol \(80% against 88%/);
+    expect(s.reasons[0]).toMatch(
+      /similar to Sol in accuracy \(80% against 88%/,
+    );
     expect(s.reasons[0]).toMatch(/94% less per answer/);
     expect(suggest(rows, checks, { favor: "quality" })!.keepLive).toBe(true);
     // Saving time doesn't count for a cost suite.

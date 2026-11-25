@@ -320,7 +320,7 @@ export function suggest<R extends SuggestRow>(
         serious(r) > serious(live)
       )
         return null;
-      const close = `${r.label} is about as accurate as ${live.label} (${against(rate(r), rate(live))}: closer than these cases can tell apart), with no more must-pass misses`;
+      const close = `${r.label} is similar to ${live.label} in accuracy (${against(rate(r), rate(live))}: closer than these cases can tell apart), with no more must-pass misses`;
       if (priority.favor === "cost" && cost(r) <= cost(live) * HALF)
         return `${close}, at ${Math.round((1 - cost(r) / cost(live)) * 100)}% less per answer. This suite favors cost.`;
       if (priority.favor === "speed" && ms(r) <= ms(live) * HALF)

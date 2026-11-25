@@ -52,7 +52,7 @@ come in the order the suggestion weighs them: the suggested model, then
 live, then the rest by fewest must-pass misses, then accuracy, then the
 priority. **Suggested** and **Suggested fallback** mark its picks.
 There's no blended score: cost and speed only ever break ties between
-models that are about as accurate.
+models with similar accuracy.
 
 A model marked **Out of date** was tested before the instructions, the
 cases, or the checks changed. Test it again before trusting its numbers.
@@ -107,7 +107,7 @@ side by side** opens both answers to each case next to the expected one.
 
 Above the board, **Suggested** names a live model and a fallback, with
 one reason each. Accuracy is the floor: a cheaper or faster model is
-suggested only when it's about as accurate, and only for a feature whose
+suggested only when its accuracy is similar, and only for a feature whose
 priority is cost or speed. A model about to retire is never suggested,
 and the fallback comes from another provider, so one outage can't take
 out both. That needs models from at least two providers in your
@@ -135,6 +135,6 @@ record says what went wrong, and saves the rollback as a version too.
 ## Test again when something changes
 
 Test again after you change a prompt, when a provider ships a new
-model, or when the weekly check flags drift. Rescore (free) after you
-change an answer or a check. [Best practices](best-practices.md) has
+model, or when the weekly check flags drift. Rescore after you change
+an answer or a check. [Best practices](best-practices.md) has
 more on reading results.

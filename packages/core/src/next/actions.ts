@@ -36,9 +36,9 @@ import { weeklyCheck } from "./weekly.js";
 import type { EvalWiring } from "./wiring.js";
 
 const VS: Record<string, string> = {
-  BETTER: "more accurate than live",
-  SAME: "about as accurate as live",
-  WORSE: "less accurate than live",
+  BETTER: "better than live",
+  SAME: "similar to live",
+  WORSE: "worse than live",
   TOO_FEW: "too few cases to compare",
 };
 

@@ -32,7 +32,7 @@ each kind of change goes.
 - Every export in the packages has a TSDoc comment that says what it's
   for and when to use it, not just what it is: `@param name - meaning`,
   never `@param {type}` (the types are in the code). The main entry points
-  (`createRunner`, `createSettings`, `suggest`, `suiteHealth`,
+  (`createRunner`, `createSettings`, `suggest`, `suiteTodos`,
   `weeklySummary`, `caseFromFeedback`, `describeStoreContract`,
   `prismaStore`, `instructionsHash`, `createMeaningJudge`) have an
   `@example`; a new entry point gets one too. Lint enforces the syntax
@@ -80,6 +80,15 @@ Every change comes with the tests that prove it, at the right level:
   update.
 - Concepts, the glossary, the README, and the architecture doc change
   when what they describe does.
+- Renaming anything on a screen: search every page for the old words,
+  not just the page you're on, and add them to `RETIRED` in
+  `scripts/docs-names.mjs`. `npm run check` fails when a page names a
+  button, label, or code name the code doesn't have, or uses retired
+  words.
+- Every pull request's description has a "Docs:" line: the pages it
+  changed, or "none" and why. CI fails without one.
+- A pull request that ships a roadmap item takes it off
+  [docs/roadmap.md](docs/roadmap.md).
 - A rule caused by a real case gets an entry in
   [docs/lessons.md](docs/lessons.md): what happened, what it taught, and
   what changed.

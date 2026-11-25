@@ -312,7 +312,7 @@ export type HistoryEntry = SettingsChange & {
  * });
  * await settings.update("ticket_triage", { model: "claude-haiku-5-5" }, {
  *   by: admin.name,
- *   reason: "About as accurate at half the cost",
+ *   reason: "Similar accuracy at half the cost",
  *   evidence: { runId },
  * });
  * await settings.rollBack("ticket_triage", versionId, { by: admin.name, reason: "Worse in production" });

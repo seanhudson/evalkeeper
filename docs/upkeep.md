@@ -63,8 +63,9 @@ It lists what to do, in order:
 2. **Add cases here.** Topics (tags) with only one case, so the score on
    each rests on a single example. On a suite with `draftMore`, pick
    topics and press **Draft cases for the topics you picked** (two each;
-   pick none for all). Otherwise, a topic opens **Add a case** with it
-   already tagged, and **Add a case** beside them opens it untagged. **Show all topics** lists every tag and its count.
+   pick none for all). Otherwise, pick a topic to open **Add a case**
+   with it already tagged. **Every topic and its cases** lists every tag
+   and its count.
 3. **Retire these.** Cases every model got fully right in four rounds of
    testing, on a suite past its target number of cases (50 unless it
    sets one): **Retire N easy cases** retires as many as keep it at its
@@ -101,7 +102,7 @@ Retire a case for another reason too: its input no longer happens in
 your product, or it nearly repeats another case. Open the case, open its
 menu, and press **Retire case**. It leaves every future test and every
 score, and its answers and past results stay in your database. Press
-**Rescore tests** afterwards (free) so recent tests leave it out too.
+**Rescore tests** afterwards so recent tests leave it out too.
 
 ![A case open in the answer key, with its menu showing Retire case.](screenshots/retire-light.png "Retiring one case by hand.")
 
@@ -111,5 +112,5 @@ score, and its answers and past results stay in your database. Press
 | ------------------------------------------------- | ---------------------------------- | ---------------- |
 | A prompt, an output schema, or a tool description | Test again                         | A test per model |
 | A provider shipped a new model                    | Add it to your catalog and test it | One test         |
-| An answer or a check                              | Rescore tests                      | Free             |
+| An answer or a check                              | Rescore tests                      | Free, or cents   |
 | The weekly check flagged drift                    | Test every model, then decide      | A test per model |

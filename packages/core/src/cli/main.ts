@@ -23,8 +23,8 @@ Commands:
   add pages   Write Evalkeeper's pages and their glue into your Next.js app
   migration   Bring your copy of Evalkeeper's tables up to this version
 
-add pages copies Evalkeeper's eval pages, components, and their glue into your
-Next.js app, fitted to its folders and import alias.
+add pages writes a short route file for each of Evalkeeper's eval pages, and
+their glue, into your Next.js app, fitted to its folders and import alias.
 
 Options:
   --base <path>   Where the pages live in your app (default: evals)
@@ -32,8 +32,8 @@ Options:
   --root <dir>    Where the alias points, e.g. "src" (default: from tsconfig.json)
   --no-cron       Leave out the weekly check's cron route
   --only <names>  Copy only these, comma-separated: pages (hub, suite, run,
-                  rate, compare, side-by-side, feedback, cron), components
-                  and glue by name (AnswerKey, actions, …), the groups
+                  rate, compare, side-by-side, feedback, cron), other files
+                  by name (actions, evals, paths, evalkeeper.css), the groups
                   "pages" and "components", or "index" for a starter
                   lib/evalkeeper/index.ts
   --force         Overwrite files that already exist (never your lib/evalkeeper/index.ts)

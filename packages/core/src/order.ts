@@ -42,7 +42,7 @@ export function orderRows<R extends BoardRow>(
 
 /**
  * What a model gains on the suite's priority over the live one, when
- * it's about as accurate: "4× cheaper", "2.5× faster". Null under 1.5×,
+ * its accuracy is similar: "4× cheaper", "2.5× faster". Null under 1.5×,
  * or when the suite favors accuracy. Pure.
  */
 export function priorityGain(

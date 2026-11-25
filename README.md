@@ -53,12 +53,12 @@ design.
 - **Tests per model.** Every case, on any model, with time and cost per
   answer. Identical requests are reused for a week, so retesting is free.
 - **Checks that say what matters.** Each check is must pass (it changes
-  what your product does) or nice to have (a fair difference of
-  judgment), with its own aim for its pass rate. Partial credit where an
-  answer has parts.
+  what your product does), should pass (it matters, but less), or nice to
+  have (a fair difference of judgment), with its own aim for its pass
+  rate. Partial credit where an answer has parts.
 - **A model board.** Every model's latest test, its must-pass misses, speed,
-  and cost, and a bootstrap comparison with the live model: _more accurate_,
-  _about as accurate_, _less accurate_, or _too few cases to tell_.
+  and cost, and a bootstrap comparison with the live model: _better_,
+  _similar_, _worse_, or _can't tell_ (too few cases in common).
 - **Where two models disagree.** Compare any two tests: the verdict in
   plain words, each check's pass rate side by side, and the cases they
   graded differently, each opened with both answers next to the expected
@@ -71,7 +71,8 @@ design.
 - **Honest staleness.** Tests record the instructions (prompt, output
   schema, and tool descriptions), the cases, and the grader they ran
   with. Change any of them and older tests say they're out of date.
-  Regrading stored answers is free and never pretends an old test ran on
+  Regrading stored answers never calls the models again (only an AI
+  judge, for checks that use one) and never pretends an old test ran on
   new inputs.
 - **Every change on the record (optional).** Which model each feature
   runs on is kept as numbered versions: who changed it, when, why, and the
@@ -159,7 +160,8 @@ design.
   the box; any other database works through your own store.
 - **Any AI provider.** Evalkeeper never calls one itself: each suite calls
   your own AI function. The Vercel AI SDK (`ai` 7) adapter is optional.
-- **For the pages:** Next.js 15+ or another React 19 app, with Tailwind 4.
+- **For the pages:** Next.js 15+ or another React 19 app, with Tailwind 4
+  and `lucide-react`.
   Without React, use the core with pages of your own.
 
 [Before you start](docs/before-you-start.md) has the details, and who it
@@ -316,17 +318,18 @@ await runner.runEval(run.id);
 const board = await runner.board("ticket_triage");
 ```
 
-**5. Add the pages.** The eval pages are copied into your app, the way
-shadcn/ui components are, so you can restyle and change them:
+**5. Add the pages.** The eval pages come from the package, so they
+update when you upgrade. One command adds a short route file for each
+page to your app:
 
 ```bash
 npx @crowandraven/evalkeeper add pages --base admin/evals
 ```
 
-It copies the pages, components, and their server actions, fitted to your
-import alias and folders, and never overwrites a file unless you pass
-`--force` (`--dry-run` shows the plan first, and `--only` copies just the
-pages you name). It writes
+It writes the route files, the server actions, and the stylesheet,
+fitted to your import alias and folders, and never overwrites a file
+unless you pass `--force` (`--dry-run` shows the plan first, and `--only`
+writes just the pieces you name). It writes
 `lib/evalkeeper/index.ts`, your wiring, only if you don't have one: fill
 in its TODOs, including `requireAdmin`. Until you do, nobody can open the
 pages.
@@ -428,7 +431,7 @@ counted.
 - **People own the answer key.** A model's draft never becomes a confirmed
   answer on someone's behalf.
 - **Accuracy is the floor.** Cost and speed only count between models that
-  are about as accurate.
+  have similar accuracy.
 - **One reason per suggestion,** in words the person deciding understands.
 - **Read failures before changing prompts.** A low score is often the
   grader's fault; the checks are code you can test.

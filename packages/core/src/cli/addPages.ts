@@ -57,8 +57,8 @@ export function templateName(templatePath: string): string {
 
 /**
  * The template files `--only` picks: each name is a page (hub, suite,
- * run, rate, compare, side-by-side, feedback, cron), a component or glue file by its name (AnswerKey,
- * actions, evalkeeper.css), or a group (pages, components), in any case.
+ * run, rate, compare, side-by-side, feedback, cron), another file by its name (actions,
+ * evals, paths, evalkeeper.css), or a group (pages, components), in any case.
  * "index" (the wiring module) is allowed and handled by `planAddPages`.
  * Throws on a name it doesn't know, listing the ones it does.
  */

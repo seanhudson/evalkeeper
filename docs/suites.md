@@ -249,18 +249,20 @@ targetCases: 10,
 ```
 
 The target sets when the page asks to **Add N cases**, how many
-**Draft N more cases** drafts, and the fewest that retiring easy cases
-leaves. When the runner has a `suiteSettings` store
+`draftMoreCases` drafts when it's called without a count, and the fewest
+that retiring easy cases leaves. When the runner has a `suiteSettings` store
 ([step 4 of the setup](adding-to-your-app.md#6-create-the-runner)), a
 person can change it on the suite's page, under the menu's **Suite
 settings**, and theirs wins.
 
 ## Draft more cases
 
-Give a suite `draftMore` and its page offers **Draft N more cases**. It
-gets the cases you have, how many to draft, and an optional focus from
-the person asking, and returns new cases with proposed answers. Call
-your own model through your router, as `run` does:
+Give a suite `draftMore` and **Add a case** gets a **Describe them**
+tab: a person says what cases they want and how many, and presses
+**Draft them**. Your `draftMore` gets the cases you have, how many to
+draft, and that description as its focus, and returns new cases with
+proposed answers. Call your own model through your router, as `run`
+does:
 
 ```ts
 async draftMore({ existing, count, focus }) {

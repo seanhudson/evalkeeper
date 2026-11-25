@@ -1,0 +1,29 @@
+name: PR docs line
+
+# Its own workflow so that editing a description reruns only this.
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-docs-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  docs-line:
+    name: Docs line in the description
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      # The description goes in through the environment, never into the
+      # command, so its text can't run as a command.
+      - run: node scripts/pr-docs-line.mjs
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}

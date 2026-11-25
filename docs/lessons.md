@@ -391,6 +391,21 @@ given a temp folder and wrote to the same path under the project, quietly.
 a person passes are resolved (`path.resolve`), and the CLI prints the
 full path it wrote.
 
+## Docs
+
+**Pull requests updated the docs, and the docs still went stale.** By
+0.20, 17 of 20 pull requests that changed the package had touched the
+docs, yet 15 passages were wrong: a rename on one screen (the board's
+**Better**, **Similar**, and **Worse**) was fixed on the page being
+worked on, while the README, concepts, the glossary, and the model
+history kept "about as accurate". Seven pages still called rescoring
+free after 0.20 made a judge call possible, and the roadmap listed
+features that had shipped two weeks earlier. _So:_ `npm run check` fails
+when a page names a button, label, or code name the code doesn't have,
+or uses words retired by a rename; every pull request's description says
+which pages it changed or why none; and shipping a roadmap item takes it
+off the roadmap.
+
 ## Releasing
 
 **npm shows a package's README as of its last publish.** A release went

@@ -1663,18 +1663,9 @@ export function AnswerKeyHealthSection({ data }: { data: SuitePageData }) {
               <InfoTip term="tagCoverage" />
             </p>
             {!(draftMore && suite.draftMore) && (
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="readable text-muted">
-                  Pick a topic to open Add a case with it filled in.
-                </p>
-                <a
-                  href="#add-case="
-                  className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm ${QUIET_BUTTON}`}
-                >
-                  <Plus aria-hidden className="h-4 w-4" />
-                  Add a case
-                </a>
-              </div>
+              <p className="readable text-muted">
+                Pick a topic to open Add a case with it filled in.
+              </p>
             )}
             {draftMore && suite.draftMore ? (
               <form action={draftMore} className="space-y-2">

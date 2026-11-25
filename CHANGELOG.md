@@ -89,7 +89,7 @@ Update:
   suggestion's first reason says so, with what it would have won on, and
   it isn't also named as "one to watch" (#142).
 - **Add cases here** says first that picking a topic opens Add a case
-  with it filled in, with an **Add a case** button beside the topics.
+  with it filled in, and each topic shows a + to say it opens one.
   Split-case cards in Answer key health span the panel; their words keep
   a readable width. With `draftMore`, the topics to draft for are chips that
   toggle (a ✓ once picked), like the + chips, not checkboxes.

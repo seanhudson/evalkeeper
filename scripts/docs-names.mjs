@@ -43,6 +43,7 @@ export const NOT_LABELS = new Set([
   "TypeScript on Node 20 or later",
   "Upgrading",
   "Using it",
+  "Write a suite",
   "You asked for more",
 ]);
 
@@ -57,6 +58,7 @@ export const RETIRED = new Map([
   ["Show all topics", "Every topic and its cases"],
   ["Draft N more cases", "Describe them, then Draft them"],
   ["Against live", "vs live"],
+  ["more accurate than live", "better than live"],
 ]);
 
 /** Code names from other projects (TypeScript, the AI SDK). */
@@ -185,6 +187,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const paths = [
     "README.md",
     "AGENTS.md",
+    // The site's home page is written there, not generated from docs/.
+    "site/src/content/docs/index.mdx",
     ...readdirSync(join(root, "docs"))
       .filter((f) => f.endsWith(".md"))
       .map((f) => `docs/${f}`),

@@ -346,6 +346,26 @@ describe("too many must-pass checks", () => {
     });
   });
 
+  it("stops asking once a person saved every check's level", () => {
+    const checks = [
+      ...["a", "b", "c"].map((k) => check(k, "serious")),
+      check("d", "minor"),
+    ];
+    const all = ["a", "b", "c", "d"];
+    expect(kinds(input({ checks, levelsReviewed: all }))).not.toContain(
+      "reviewLevels",
+    );
+    // A check added since brings it back.
+    expect(
+      kinds(
+        input({
+          checks: [...checks, check("e", "serious")],
+          levelsReviewed: all,
+        }),
+      ),
+    ).toContain("reviewLevels");
+  });
+
   it("leaves half, or a short list, alone", () => {
     const half = [
       check("a", "serious"),

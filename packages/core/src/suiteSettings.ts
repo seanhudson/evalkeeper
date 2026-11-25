@@ -31,6 +31,12 @@ export type SuiteSettings = {
    * null: the suite's own.
    */
   attacks?: AttackCare | null | undefined;
+  /**
+   * The checks whose levels a person saved, kept as they were or changed:
+   * the Review check levels to-do stays off while it covers every check.
+   * Unset: never saved.
+   */
+  levelsReviewed?: readonly string[] | undefined;
 };
 
 /** A person's level or aim for one check; either may be left to the check's own. */
@@ -67,6 +73,7 @@ const schema = z.object({
     .catch(null),
   checks: z.record(z.string(), override.catch({})).catch({}),
   attacks: z.enum(["strict", "balanced", "off"]).nullable().catch(null),
+  levelsReviewed: z.array(z.string()).nullable().catch(null),
 });
 
 /**
@@ -80,10 +87,12 @@ export function readSuiteSettings(value: unknown): SuiteSettings {
   const targetCases: unknown = Reflect.get(value, "targetCases");
   const checks: unknown = Reflect.get(value, "checks");
   const attacks: unknown = Reflect.get(value, "attacks");
+  const levelsReviewed: unknown = Reflect.get(value, "levelsReviewed");
   const parsed = schema.safeParse({
     targetCases: targetCases ?? null,
     checks: checks ?? {},
     attacks: attacks ?? null,
+    levelsReviewed: levelsReviewed ?? null,
   });
   if (!parsed.success) return NO_SUITE_SETTINGS;
   // Only what was set: an override with neither part is no override.
@@ -98,6 +107,9 @@ export function readSuiteSettings(value: unknown): SuiteSettings {
     targetCases: parsed.data.targetCases,
     checks: Object.fromEntries(kept),
     ...(parsed.data.attacks ? { attacks: parsed.data.attacks } : {}),
+    ...(parsed.data.levelsReviewed
+      ? { levelsReviewed: parsed.data.levelsReviewed }
+      : {}),
   };
 }
 
@@ -107,7 +119,8 @@ export function readSuiteSettings(value: unknown): SuiteSettings {
  * (serious, moderate, or minor; its own level, or empty, saves no
  * override) and `aim:<key>` (a whole percent, 1 to 100; empty for its
  * own), and `attacks` (strict, balanced, or off; the suite's own, or
- * empty, saves no override). Throws a sentence a person can act on when
+ * empty, saves no override). Every check with a `level:<key>` field counts
+ * as reviewed (`levelsReviewed`), whether its level changed or not. Throws a sentence a person can act on when
  * one doesn't fit.
  *
  * @param form - The submitted form.
@@ -136,6 +149,10 @@ export function suiteSettingsFromForm(
     targetCases = n;
   }
   const out: Record<string, CheckOverride> = {};
+  const reviewed = checks
+    .filter((c) => form.get(`level:${c.key}`) !== null)
+    .map((c) => c.key);
+  const seen = reviewed.length ? { levelsReviewed: reviewed } : {};
   for (const c of checks) {
     const level = text(`level:${c.key}`);
     const aimText = text(`aim:${c.key}`).replace(/%$/, "").trim();
@@ -167,9 +184,9 @@ export function suiteSettingsFromForm(
       throw new Error(
         `Pick how careful to be with attacks: ${ATTACK_CARE.map((a) => a.label).join(", ")}.`,
       );
-    return { targetCases, checks: out, attacks: care.value };
+    return { targetCases, checks: out, attacks: care.value, ...seen };
   }
-  return { targetCases, checks: out };
+  return { targetCases, checks: out, ...seen };
 }
 
 /**

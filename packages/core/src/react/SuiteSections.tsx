@@ -189,6 +189,9 @@ export async function loadSuitePage(app: EvalAppConfig, key: string) {
   const todoInput: TodoInput = {
     rows,
     testAllModels: app.runner.modelsFor(operation),
+    ...(savedSettings.levelsReviewed
+      ? { levelsReviewed: savedSettings.levelsReviewed }
+      : {}),
     checks: suite.checks,
     priority,
     models: app.models,

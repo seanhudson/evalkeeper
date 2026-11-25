@@ -19,6 +19,10 @@ version may change an interface, and its entry says how to update.
 - The **Test again** to-do asks only about the models **Test every model**
   retests, so pressing it clears it. An out-of-date fallback-only model or
   reasoning setting no longer keeps it up; test those from their own row.
+- The **Review check levels** to-do goes away once you save the levels
+  in Suite settings, even if you keep them as they were. It comes back
+  when a check is added. Suite settings keep which checks were reviewed
+  (`levelsReviewed`).
 
 ## 0.20.0 - 2026-11-25
 

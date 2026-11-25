@@ -16,3 +16,7 @@ packages/core/templates/
 docs/api/
 examples/next/test/byo/client/
 
+
+# The demo video's raw recording and step times (npm run demo-video).
+docs/demo/demo-raw.webm
+docs/demo/marks.json

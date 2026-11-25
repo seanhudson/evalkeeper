@@ -15,10 +15,9 @@ switch, and checks weekly that the live model hasn't drifted.
 npm install @crowandraven/evalkeeper
 ```
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/board-dark.png">
-  <img alt="A suite's model board: each model's score, must-pass misses, time, and cost, the live and retiring models marked, and the suggested live and fallback models with their reasons." src="docs/screenshots/board-light.png">
-</picture>
+![A 30-second walkthrough of the example app: the hub, testing every model on a suite's answer key, the model board's scores and suggestion, making the suggested model live, and a user's thumbs down becoming a new case in the answer key.](docs/demo/evalkeeper-demo.gif)
+
+[Watch it as a video](docs/demo/evalkeeper-demo.mp4) · [try it yourself](#quick-start), no API keys needed.
 
 ---
 
@@ -190,6 +189,14 @@ models next to the demo ones; action items are then matched by meaning
 with a judge model instead of by shared words.
 
 ## A look around
+
+**The model board:** each model's score, must-pass misses, speed, and
+cost, with the suggested live model and fallback and their reasons.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/board-dark.png">
+  <img alt="A suite's model board: each model's score, must-pass misses, time, and cost, the live and retiring models marked, and the suggested live and fallback models with their reasons." src="docs/screenshots/board-light.png">
+</picture>
 
 **The hub:** one row per suite with where it stands (Needs attention,
 Can't tell yet, or Healthy), and the weekly check. Each suite's page

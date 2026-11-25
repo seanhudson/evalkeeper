@@ -35,6 +35,7 @@ import {
   SEVERITY_LABEL,
   usesJudge,
   CONFIRM_TESTS_USD,
+  ATTACK_CARE,
 } from "../index.js";
 import { AnswerKey } from "./AnswerKey.js";
 import { RescoreButton } from "./RescoreButton.js";
@@ -384,7 +385,12 @@ function SuiteSettingsForm({ data }: { data: SuitePageData }) {
   const own = app.runner.suiteOrThrow(key);
   const ownTarget = own.targetCases ?? 50;
   return (
-    <form key={target} action={action} className="space-y-4">
+    // Keyed on what's saved, so a save remounts it with fresh defaults.
+    <form
+      key={`${target}:${JSON.stringify(savedSettings)}`}
+      action={action}
+      className="space-y-4"
+    >
       <p className="readable text-muted">
         {GLOSSARY.suiteSettings} An empty field uses the suite&apos;s own.
       </p>
@@ -467,6 +473,32 @@ function SuiteSettingsForm({ data }: { data: SuitePageData }) {
           </tbody>
         </table>
       </fieldset>
+      {data.attackBoards.length > 0 && (
+        <div className="space-y-1">
+          <label htmlFor="attack-care" className="block font-medium">
+            How careful with attacks
+            <InfoTip term="attackCare" id="attack-care-tip" />
+          </label>
+          <Select
+            id="attack-care"
+            name="attacks"
+            // Starts on the setting now; the code's own isn't saved.
+            defaultValue={
+              savedSettings.attacks ?? own.priority.attacks ?? "strict"
+            }
+            className="rounded-md border border-line bg-card px-2 py-1.5 text-sm"
+          >
+            {ATTACK_CARE.map((a) => (
+              <option key={a.value} value={a.value}>
+                {a.label}
+              </option>
+            ))}
+          </Select>
+          <p className="readable text-xs text-muted">
+            {ATTACK_CARE.map((a) => `${a.label}: ${a.text}.`).join(" ")}
+          </p>
+        </div>
+      )}
       <Submit>Save</Submit>
     </form>
   );
@@ -690,10 +722,57 @@ export function SuggestionCard({ data }: { data: SuitePageData }) {
                 <li key={r}>{r}</li>
               ))}
             </ul>
+            {s.held && <UseAnyway data={data} held={s.held} />}
           </Card>
         </section>
       )}
     </>
+  );
+}
+
+/**
+ * A model the attacks hold back: links to the attack tests it missed on,
+ * and **Use anyway**, which makes it live as a person's call.
+ */
+function UseAnyway({
+  data,
+  held,
+}: {
+  data: SuitePageData;
+  held: SuitePageData["rows"][number];
+}) {
+  const { app, key, attackBoards } = data;
+  const runs = attackBoards.flatMap((a) => {
+    const t = a.rows.find((r) => r.key === held.key)?.test;
+    return t && !t.stale
+      ? [{ suite: a.suite.key, label: a.suite.label, runId: t.runId }]
+      : [];
+  });
+  return (
+    <div className="flex flex-wrap items-center gap-3 rounded-md bg-accent/5 p-3 text-sm">
+      <p className="readable">
+        Held back by the attacks: <strong>{held.label}</strong>.{" "}
+        {runs.map((r, i) => (
+          <span key={r.runId}>
+            {i > 0 && ", "}
+            <Link href={evalsPath(app, r.suite, "runs", r.runId)}>
+              See what it missed on {r.label}
+            </Link>
+          </span>
+        ))}
+      </p>
+      <form action={app.actions.makeLive}>
+        <input type="hidden" name="suite" value={key} />
+        <input type="hidden" name="model" value={held.model} />
+        {held.variant && held.effort && (
+          <input type="hidden" name="effort" value={held.effort} />
+        )}
+        <input type="hidden" name="override" value="attacks" />
+        <Tip control term="useAnyway" id="use-anyway" side="bottom">
+          <Submit variant="quiet">Use anyway</Submit>
+        </Tip>
+      </form>
+    </div>
   );
 }
 

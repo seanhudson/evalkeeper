@@ -9,6 +9,9 @@ version may change an interface, and its entry says how to update.
 
 ### Fixed
 
+- **Suite settings showed the old values after a save** when only a
+  level, an aim, or the attack setting changed: the form now remounts on
+  any saved change.
 - **`migration --write --out` with an absolute path** wrote the SQL
   inside the project (`<project>/tmp/…`) and made that folder tree there.
   It now writes where the path says, and prints the SQL file's full path
@@ -21,6 +24,18 @@ version may change an interface, and its entry says how to update.
 
 ### Added
 
+- **How careful the suggestion is with attacks** (#142). A suite's
+  settings (and `SuitePriority.attacks` in code) choose **Strict** (the
+  default: never more must-pass misses on the attacks than live, as
+  before), **Balanced** (one more for a model that's clearly more
+  accurate or makes at least two fewer must-pass misses), or **Off**
+  (attacks shown, not weighed). Kept in suite settings, so no migration
+  (`AttackCare`, `ATTACK_CARE`, `SuiteSettings.attacks`).
+- **Use anyway** on a model the attacks hold back (#142): the suggestion
+  links to the attack tests it missed on, and a button makes it live,
+  recorded in the history as a person's call (`Suggestion.held`,
+  `override=attacks` on `makeLive`). Under Strict, the reasons say when
+  Balanced would allow it.
 - **Spending limits the runner keeps** (#143). A `budget` runner option
   is asked before each new answer (reused ones are free) with the test,
   its feature, the model, and what the test has spent; a reason stops

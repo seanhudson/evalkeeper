@@ -72,6 +72,11 @@ export type Suggestion<R extends SuggestRow = SuggestRow> = {
   retestLive: boolean;
   /** Why, in plain sentences. */
   reasons: string[];
+  /**
+   * A model that would have been suggested as live but for the attacks:
+   * a person may still make it live (**Use anyway**). Null when none.
+   */
+  held?: R | null;
 };
 
 /**
@@ -200,7 +205,8 @@ export function suggest<R extends SuggestRow>(
   opts: SuggestOptions = {},
 ): Suggestion<R> | null {
   const attacks = opts.attacks ?? [];
-  const weighAttacks = attacks.length > 0;
+  const care = priority.attacks ?? "strict";
+  const weighAttacks = attacks.length > 0 && care !== "off";
   /** Serious mistakes under attack; null when not tested against them. */
   const underAttack = (r: SuggestRow) => attackMistakes(r.key, attacks);
   const attackTested = (r: SuggestRow) =>
@@ -243,6 +249,7 @@ export function suggest<R extends SuggestRow>(
 
   // Live: switch only for a real, safe improvement.
   let next: R;
+  let held: R | null = null;
   const liveable = tested.filter((r) => !r.fallbackOnly);
   if (liveFailed?.test) {
     next = liveFailed;
@@ -282,6 +289,7 @@ export function suggest<R extends SuggestRow>(
   } else {
     // At least two fewer serious mistakes on the attacks, as accurate or more.
     const attackReason = (r: R): string | null => {
+      if (!weighAttacks) return null;
       const ra = underAttack(r);
       const la = underAttack(live);
       return ra !== null && la !== null && ra <= la - 2 && rate(r) >= rate(live)
@@ -322,11 +330,17 @@ export function suggest<R extends SuggestRow>(
     // Under attack: tested, and no more serious mistakes than live (when
     // live has a test to compare with).
     const liveAttack = underAttack(live);
+    // Balanced: a real gain earns room for one more miss on the attacks.
+    const realGain = (r: R) =>
+      r.vsLive === "BETTER" || serious(r) <= serious(live) - 2;
     const safeUnderAttack = (r: R) => {
       const a = underAttack(r);
       return (
         !weighAttacks ||
-        (a !== null && (liveAttack === null || a <= liveAttack))
+        (a !== null &&
+          (liveAttack === null ||
+            a <= liveAttack ||
+            (care === "balanced" && a === liveAttack + 1 && realGain(r))))
       );
     };
     const qualifies = (r: R) =>
@@ -352,17 +366,20 @@ export function suggest<R extends SuggestRow>(
       const reason = why(next);
       if (reason) reasons.push(reason);
       const a = underAttack(next);
-      if (a !== null && reason !== attackReason(next))
+      // Off: attacks are on the board, not in the reasons.
+      if (weighAttacks && a !== null && reason !== attackReason(next))
         reasons.push(
           liveAttack === null
             ? `On the attacks, ${next.label} makes ${mistakes(a)}. ${live.label} has no up-to-date test against the attacks to compare with.`
-            : `On the attacks, ${next.label} makes ${mistakes(a)}, against ${liveAttack} for ${live.label}.`,
+            : a > liveAttack
+              ? `On the attacks, ${next.label} makes ${mistakes(a)}, against ${liveAttack} for ${live.label}: one more, which this suite allows for a clear gain (Balanced).`
+              : `On the attacks, ${next.label} makes ${mistakes(a)}, against ${liveAttack} for ${live.label}.`,
         );
     } else {
       next = live;
       // Would have been suggested, but for the attacks: said first, since
       // it's the real reason live stays.
-      const held = liveable.find((r) => qualifies(r) && !safeUnderAttack(r));
+      held = liveable.find((r) => qualifies(r) && !safeUnderAttack(r)) ?? null;
       if (held) {
         const a = underAttack(held);
         const otherwise = why(held);
@@ -371,7 +388,15 @@ export function suggest<R extends SuggestRow>(
             a === null
               ? `: it has no up-to-date test against them. Test it on ${at(attacks, 0).label}.`
               : `: it makes more must-pass misses on them (${a} against ${liveAttack ?? 0}).`
-          }${otherwise ? ` Otherwise it would be suggested: ${otherwise}` : ""}`,
+          }${otherwise ? ` Otherwise it would be suggested: ${otherwise}` : ""}${
+            care === "strict" &&
+            a !== null &&
+            liveAttack !== null &&
+            a === liveAttack + 1 &&
+            realGain(held)
+              ? " Balanced, in the suite's settings, allows one more for a clear gain."
+              : ""
+          }`,
         );
       }
       reasons.push(
@@ -430,5 +455,6 @@ export function suggest<R extends SuggestRow>(
     same: keepLive && !retestLive && (!fallback || fallback.fallback),
     retestLive,
     reasons,
+    held,
   };
 }

@@ -527,6 +527,20 @@ describe("runner, beyond a basic test", () => {
     expect(board.rows.find((x) => x.model === "a")?.test?.stale).toBe(false);
   });
 
+  it("puts a person's attack setting in the suite's priority", async () => {
+    const store = memoryStore();
+    const runner = threeModels(store, double, { settings: true });
+    await runner.saveSuiteSettings(
+      "double",
+      { targetCases: null, checks: {}, attacks: "balanced" },
+      "person-1",
+    );
+    expect((await runner.board("double")).suite.priority).toEqual({
+      favor: "cost",
+      attacks: "balanced",
+    });
+  });
+
   it("reads suite settings it can't load as none saved", async () => {
     const store = memoryStore();
     const runner = createRunner({

@@ -83,6 +83,14 @@ policy" (a company), which made up most of two suites' voice failures.
 _So:_ the check takes what the model was given, and a pronoun the
 sources already use for someone is about them.
 
+**One extra attack miss outweighed everything else.** On a suite that
+favors cost, the suggestion kept live although a model beat it on
+accuracy, must-pass misses, and cost (a sixth of it), because it made
+one more must-pass miss on the attacks. Every other rule needs a margin;
+this veto had none. _So:_ the strict rule stays the default, a suite can
+choose Balanced or Off, and a person can **Use anyway**, recorded as
+their call.
+
 **A short label read as a copied case.** "Cases in the instructions"
 flagged four résumé cases whose only match was an education field,
 "Medical Billing", that a prompt names as an industry. A whole-text match

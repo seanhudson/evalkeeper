@@ -24,6 +24,14 @@ version may change an interface, and its entry says how to update.
 
 ### Added
 
+- **Estimates from what answers really cost** (#143). An estimate uses
+  your `estimateCallCost` or what the model's last finished test of the
+  suite cost per answer (searches and tool calls included), whichever is
+  higher, so a token-only price is corrected after one test.
+- **A per-test ceiling** (#143). A test stops once its new answers cost
+  more than twice its estimate, saying how much it spent against what
+  was expected (`ceilingTimes`, `CEILING_TIMES`; null turns it off).
+
 - **"Review check levels" on a suite's to-do list** when more than half
   of four or more checks must pass, linking to Suite settings
   (`MANY_CHECKS`). A link to `#menu=<key>` opens a page menu's drawer.

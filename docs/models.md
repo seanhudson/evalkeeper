@@ -163,9 +163,17 @@ Answers to identical requests from the last 7 days are reused for free,
 so they don't count, and a test with every answer reused says "Free".
 
 Give the runner `estimateCallCost(operation, model)` for the cost of one
-answer. A good estimate is what that model's last test averaged on the
-feature, or your own usage records for that operation. Without it, the
-estimate shows as unknown, and the test still runs.
+answer, counting everything an answer pays for: web searches and tool
+calls, not only tokens. The runner also looks at what the model's last
+finished test of the suite actually cost per answer (everything your
+suite reported through `onCost`) and uses whichever is higher, so a price
+that misses a per-search fee is corrected after one test. Without either,
+the estimate shows as unknown, and the test still runs.
+
+A test stops once its own new answers cost more than twice its estimate
+and says so, so a price set too low can't run on unnoticed
+(`ceilingTimes`, default 2; null turns it off). Answers already given
+are reused at no cost when it runs again.
 
 ## Which models are offered
 

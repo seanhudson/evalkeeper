@@ -295,6 +295,12 @@ checks say `judged: true`, the tooltip says which kind of rescore it is,
 the result says what it actually cost, and a judged rescore waits while
 tests are over a daily limit.
 
+**A token-only price hid a search fee.** A suite whose answers each paid
+for web searches was estimated from token prices alone, so "Test every
+model" spent about $59 in twenty minutes against a much smaller
+estimate. _So:_ estimates also use what the model's last test actually
+cost per answer, and a test stops at twice its estimate.
+
 **Every app wrote the same spending guard.** With limits on the pages
 but nothing in the runner asking them, two apps each wrapped every
 suite's `run` to throw an error the runner reads as "out of credits".

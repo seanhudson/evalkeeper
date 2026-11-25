@@ -308,3 +308,6 @@
   font-size: var(--sl-text-sm);
   color: var(--sl-color-gray-3);
 }
+.sl-markdown-content .ek-license > p {
+  margin: 0;
+}

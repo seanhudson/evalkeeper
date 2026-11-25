@@ -5,9 +5,9 @@
  */
 export const GLOSSARY = {
   score:
-    "Accuracy: how much the model got right on every case in use. With partial credit, parts right of parts expected; otherwise answers with every check passed.",
+    "Accuracy: how much the model got right on every case in use. With partial credit, parts right of parts expected; otherwise answers with every check passed. Hover a score for the count.",
   seriousMistakes:
-    "Answers that missed a must-pass check: mistakes that change what your product does. Models are compared on these first.",
+    "Must-pass: the share of answers with no must-pass miss, a mistake that changes what your product does. Hover for the count. Models are compared on these misses first.",
   time: "Speed: average seconds per answer, so lower is faster, from answers the model actually made (reused answers keep their original time).",
   favors:
     "What the suggestion weighs once accuracy holds. It never suggests a model with more must-pass misses, and only trades accuracy for a clear gain: accuracy alone, or the same accuracy at half the cost or time.",
@@ -65,6 +65,10 @@ export const GLOSSARY = {
     "Free: no model calls. Regrades stored answers with today's checks and answers.",
   rescoreJudged:
     "Regrades stored answers with today's checks and answers, with no new model answers. May ask the judge to compare new wording, usually a few cents.",
+  attackCare:
+    "How careful the suggestion is with attack cases. Strict: never more must-pass misses on them than live. Balanced: one more for a clear gain. Off: shown, not weighed.",
+  useAnyway:
+    "Makes this model live although the attacks hold it back, recorded in the history as your call. Read the attack cases it missed first.",
   testAll:
     "Asks every model for new answers to every case, so it costs money; the estimate is beside the button. Answers an identical request gave in the last 7 days are reused free.",
   tags: "What a case tests. The quick set picks cases that cover the most tags.",
@@ -122,13 +126,13 @@ export const GLOSSARY = {
   checks:
     "What a good answer gets right, one thing per check. Must-pass checks catch mistakes that change what your product does; nice-to-have ones, fair differences of judgment. Each has an aim for its pass rate.",
   probabilityQuality:
-    "How good the probabilities were: 100% minus the Brier score. High means sure when right and unsure when wrong; picking right with careless probabilities scores lower.",
+    "Confidence: how well its confidence fit its answers. Sure and right scores high; sure and wrong scores very low. Two models with the same accuracy can differ a lot here.",
   calibrationError:
-    "How far the model's confidence is from how often it's right: 0% means its 80%-sure answers are right 80% of the time. It needs more cases than accuracy to be trusted.",
+    "Calibration: how far its stated confidence is from how often it's right. 0% off means its 80%-sure answers are right 80% of the time. Lower is better; trust it only with many cases.",
   nativeProbabilities:
-    "The model returns its own probabilities for every option, so they can be scored and compared.",
+    "Built-in probabilities: the model returns a probability for every option itself, so its confidence can be scored on every question.",
   promptedProbabilities:
-    "The model writes out its own estimate. Choices come without a distribution, so only true-or-false questions get probability scores.",
+    "Self-estimated: a regular model writes down how sure it is. Rougher than built-in probabilities, and only yes-or-no questions get confidence scores.",
   comparison:
     "Two finished tests of one suite, compared case by case on the cases both answered, so which cases each happened to get can't decide it.",
   inPlace:

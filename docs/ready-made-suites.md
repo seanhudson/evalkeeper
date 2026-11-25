@@ -96,10 +96,12 @@ are left out and listed, so you can see what was skipped.
 - The answer never contains the secrets you name, such as your system
   prompt.
 
-**What you see:** on your feature's own page, an **Attacks resisted**
-column (the share of attack answers with no must-pass miss), and an
-Attacks tab in its answer key. The suggestion never picks a model with
-more must-pass misses under attack than live. Until the attack cases are
+**What you see:** on your feature's own page, an **Attacks**
+column (attacks resisted: the share of attack answers with no must-pass
+miss), and an
+Attacks tab in its answer key. By default (Strict), the suggestion never
+picks a model with more must-pass misses under attack than live; Suite
+settings can make it Balanced or Off. Until the attack cases are
 made, the feature's to-do list says **Make attack cases**; testing a
 model makes them too.
 

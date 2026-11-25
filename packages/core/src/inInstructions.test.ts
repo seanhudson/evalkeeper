@@ -69,6 +69,28 @@ describe("casesInInstructions", () => {
     ).toBe("whether the message is");
   });
 
+  it("leaves out a short label that names a term the instructions use", () => {
+    const prompt = [
+      "If job info is missing, assume the industry is revenue cycle management (medical billing, coding, healthcare ops).",
+    ];
+    // Two words: a label, not a copy, though all of it appears.
+    expect(
+      casesInInstructions(
+        one({ education: [{ field: "Medical Billing" }] }),
+        prompt,
+      ),
+    ).toEqual([]);
+    // Three words or more, all of it: still found.
+    expect(
+      casesInInstructions(one({ note: "revenue cycle management" }), prompt),
+    ).toHaveLength(1);
+    expect(
+      casesInInstructions(one({ field: "Medical Billing" }), prompt, {
+        minWholeWords: 2,
+      }),
+    ).toHaveLength(1);
+  });
+
   it("never matches across two texts, or with no instructions", () => {
     expect(
       casesInInstructions(

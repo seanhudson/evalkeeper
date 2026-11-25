@@ -10,6 +10,7 @@ import {
 import {
   createSettings,
   isInjectionSuite,
+  spendingBudget,
   type AnswerEditorProps,
   type Settings,
 } from "@crowandraven/evalkeeper";
@@ -104,6 +105,9 @@ export const store = prismaStore(prisma);
 /** Thumbs up and down on answers in the product. */
 export const feedbackStore = prismaFeedbackStore(prisma);
 
+/** Daily limits and a stop; Stop all tests stops the runner's tests. */
+const spending = demoSpending(store, SUITES, () => runner.stopTests());
+
 export const runner = createRunner({
   store,
   suites: SUITES,
@@ -113,6 +117,8 @@ export const runner = createRunner({
   route: routeFor,
   candidates: (operation) => ({ models: modelsFor(operation) }),
   estimateCallCost,
+  // Each new answer waits while tests are stopped or over a daily limit.
+  budget: spendingBudget(spending),
   // Lets people change a suite's target number of cases on its page.
   suiteSettings: prismaSuiteSettingsStore(prisma),
 });
@@ -195,5 +201,5 @@ export const wiring = {
   answerEditors,
   requireAdmin,
   features: FEATURES,
-  spending: demoSpending(store, SUITES),
+  spending,
 } satisfies Omit<EvalWiring, "basePath">;

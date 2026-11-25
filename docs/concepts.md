@@ -36,8 +36,13 @@ can't trust goes.
 - **No model is chosen on it.** One feature has one live model. Its
   results show on the base suite's page as **attacks resisted**: the
   share of each model's attack answers with no must-pass miss. The
-  suggestion there takes them into account, and a model's Test runs the
-  attacks along with the feature's cases.
+  suggestion there takes them into account, as carefully as the suite's
+  settings say: **Strict** (the default) never suggests a model with
+  more must-pass misses on the attacks than live, **Balanced** allows
+  one more for a clear gain, and **Off** shows them without weighing
+  them. A model the attacks hold back gets **Use anyway**, recorded as a
+  person's call. A model's Test runs the attacks along with the
+  feature's cases.
 - Code that finds a feature's suite by operation skips injection suites
   (`isInjectionSuite`).
 
@@ -55,8 +60,9 @@ a suite's leak check removes it on the way in and says what it removed.
 And a case copied into the instructions as an example gets graded on an
 answer the model was handed: when your app passes its instructions' text
 (`instructionTexts`), the suite page lists any case whose words appear
-in them, under "Cases in the instructions". That's a warning, not a
-failure.
+in them, under "Cases in the instructions". A short label of one or two
+words that names a term the instructions use (a degree, an industry)
+doesn't count. That's a warning, not a failure.
 
 **Answer.** What a good answer to a case looks like, in the suite's
 answer shape. Every answer has a status:
@@ -138,20 +144,34 @@ grade each question with `decisionCheck`. A decision is graded twice:
   any suite.
 - **The probabilities.** Each check also records measures: the Brier
   score (squared error, 0 to 1), log loss, and how sure the model was.
-  The board shows **probability quality** (1 minus the mean Brier; 100%
-  is all probability on the right answers) and **calibration error**
-  (how far "how sure" sits from "how often right", in 10 bins; 0 is
-  perfect). Calibration needs more cases than accuracy to be trusted.
+  The board shows two of them:
+  - **Confidence** (probability quality: 1 minus the mean Brier score).
+    Accuracy asks only whether the pick was right; confidence also asks
+    how sure the model was. Sure and right scores high, unsure and wrong
+    costs a little, and sure and wrong costs a lot. Example: two models
+    both pick right on 9 of 10 tickets. One puts 95% on each right pick
+    and 60% on its wrong one; the other puts 70% on every pick. The first
+    scores higher, because its confidence tells you something.
+  - **Calibration** (calibration error, shown as "12% off"): how far its
+    stated confidence sits from how often it's right, over 10 bands.
+    0% off means the answers it was 80% sure of were right 80% of the
+    time. 12% off might mean its 90%-sure answers were right only 78%
+    of the time. Lower is better. It needs more cases than accuracy to
+    trust. It isn't a margin of error: the margin of error is how sure
+    we can be of the accuracy itself, with this many cases, and **vs
+    live** already accounts for it.
 
 Two models that pick right equally often can differ a lot here, and that
 difference matters when your code acts on the probability (route only
-above 80%, ask a person below). **Native** decision models return a
-probability for every option. They include models built only for typed
-judgments, such as TypeSafe's System One models (Jev), and providers'
-own decision models through the AI SDK. **Prompted** ones are a text
-model asked to decide, which gives a pick with no distribution for
-choices, so probability quality counts only their true-or-false answers.
-A catalog entry's `decisions` field says which.
+above 80%, ask a person below). Models with **built-in probabilities**
+(a catalog entry's `decisions: "native"`) return a probability for every
+option themselves. They include models built only for typed judgments,
+such as TypeSafe's System One models (Jev), and providers' own decision
+models through the AI SDK. That's the usual case, so the board marks
+only the exception: **Self-estimated** (`decisions: "prompted"`), a text
+model asked to decide and to write down how sure it is. That's rougher,
+and it gives no probability for each choice, so confidence counts only
+its true-or-false answers.
 
 ## Rules
 

@@ -112,6 +112,15 @@ export type RunnerOptions = {
     model: string,
   ) => Promise<number | null>;
   /**
+   * Asked before each new model answer in a test (reused answers are
+   * free): null lets it go ahead; a reason, in words a person can act on,
+   * stops the test there, with that reason as its error. Answers already
+   * given are kept and reused when the test runs again. Keep it cheap: it
+   * runs once per answer, so cache your reading for a few seconds.
+   * `spendingBudget(spending)` makes one from your `EvalSpending`.
+   */
+  budget?: (call: BudgetCall) => string | null | Promise<string | null>;
+  /**
    * How long one request may run, in ms. A test answers what fits, then
    * hands the rest to `continueRun` (a fresh request). Default: no limit.
    */
@@ -152,6 +161,29 @@ export type RunnerOptions = {
    */
   suiteSettings?: SuiteSettingsStore;
 };
+
+/**
+ * One answer a test is about to pay for, as `budget` sees it: the test,
+ * its suite and feature, the model, and what the test has spent so far.
+ */
+export type BudgetCall = {
+  runId: string;
+  suite: string;
+  operation: string;
+  model: string;
+  /** USD this test's new answers have cost so far, earlier legs included. */
+  spentUsd: number;
+};
+
+/**
+ * How often a running test reads its own status, so a stop takes effect
+ * within an answer or two rather than at the next leg.
+ */
+export const STOP_CHECK_MS = 2_000;
+
+/** A test stopped by hand: its error, and what to do. */
+export const STOPPED_BY_HAND =
+  "Stopped by hand. Test again: answers already given are reused at no cost.";
 
 /**
  * Which model a feature runs on now, its fallback, its reasoning setting,
@@ -660,10 +692,23 @@ export function createRunner(opts: RunnerOptions) {
       const jobs = cases.flatMap((c) =>
         Array.from({ length: run.repeats }, (_, i) => ({ c, repeat: i + 1 })),
       );
-      const answered = new Set(
-        (await store.listOutputs(runId)).map((x) => `${x.caseId}:${x.repeat}`),
-      );
+      const given = await store.listOutputs(runId);
+      const answered = new Set(given.map((x) => `${x.caseId}:${x.repeat}`));
       const todo = jobs.filter((j) => !answered.has(`${j.c.id}:${j.repeat}`));
+      // What this test's new answers have cost, earlier legs included.
+      let spent = given.reduce((t, x) => t + (x.reused ? 0 : x.costUsd), 0);
+      // Set inside the answers below, which TypeScript can't follow.
+      let halted = null as string | null;
+      let stopped = false as boolean;
+      let checkedAt = Date.now();
+      /** Whether the test was stopped meanwhile (by hand, or as stuck). */
+      async function stoppedMeanwhile(): Promise<boolean> {
+        if (stopped) return true;
+        if (Date.now() - checkedAt < STOP_CHECK_MS) return false;
+        checkedAt = Date.now();
+        stopped = (await store.getRun(runId))?.status !== "RUNNING";
+        return stopped;
+      }
 
       let judgeCost = o.judgeCostUsd ?? 0;
       const onJudge = (usd: number) => (judgeCost += usd);
@@ -677,7 +722,12 @@ export function createRunner(opts: RunnerOptions) {
       let skipped = 0;
 
       await mapLimit(todo, suite.concurrency ?? 6, async ({ c, repeat }) => {
-        if (Date.now() > deadline || outOfCredits) {
+        if (
+          Date.now() > deadline ||
+          outOfCredits ||
+          halted ||
+          (await stoppedMeanwhile())
+        ) {
           skipped++;
           return;
         }
@@ -711,6 +761,25 @@ export function createRunner(opts: RunnerOptions) {
           });
           return;
         }
+        // A new answer costs money: the app's budget may refuse it. If the
+        // budget can't be read, the answer goes ahead, as a blip shouldn't
+        // fail every test.
+        const refused = opts.budget
+          ? await Promise.resolve(
+              opts.budget({
+                runId,
+                suite: suite.key,
+                operation: suite.operation,
+                model: run.model,
+                spentUsd: spent,
+              }),
+            ).catch(() => null)
+          : null;
+        if (refused) {
+          halted = refused;
+          skipped++;
+          return;
+        }
         const started = Date.now();
         let cost = 0;
         try {
@@ -736,6 +805,7 @@ export function createRunner(opts: RunnerOptions) {
             ms: Date.now() - started,
             reused: false,
           });
+          spent += cost;
         } catch (e) {
           const message = e instanceof Error ? e.message : String(e);
           if (OUT_OF_CREDITS.test(message)) outOfCredits = message;
@@ -751,9 +821,24 @@ export function createRunner(opts: RunnerOptions) {
             ms: Date.now() - started,
             reused: false,
           });
+          spent += cost;
         }
       });
 
+      // Stopped meanwhile: whoever stopped it has marked it already.
+      if (stopped) return;
+      if (halted) {
+        await store.updateRun(
+          runId,
+          {
+            status: "FAILED",
+            finishedAt: new Date(),
+            error: `Stopped after ${jobs.length - skipped} of ${jobs.length} answers. ${halted}${/reused/i.test(halted) ? "" : " Answers already given are reused at no cost when you test again."}`,
+          },
+          { status: "RUNNING" },
+        );
+        return;
+      }
       if (skipped) {
         const next = {
           fresh: !!o.fresh,
@@ -772,23 +857,33 @@ export function createRunner(opts: RunnerOptions) {
           (await opts.continueRun(runId, next).catch(() => false))
         )
           return;
-        await store.updateRun(runId, {
-          status: "FAILED",
-          finishedAt: new Date(),
-          error: outOfCredits
-            ? `The ${providerName(run.model)} account is out of credits, so the test stopped after ${jobs.length - skipped} of ${jobs.length} answers. Add credits, then test again: answers already given are reused at no cost.`
-            : `Ran out of time after ${jobs.length - skipped} of ${jobs.length} answers. Test again to finish: answers already given are reused at no cost.`,
-        });
+        await store.updateRun(
+          runId,
+          {
+            status: "FAILED",
+            finishedAt: new Date(),
+            error: outOfCredits
+              ? `The ${providerName(run.model)} account is out of credits, so the test stopped after ${jobs.length - skipped} of ${jobs.length} answers. Add credits, then test again: answers already given are reused at no cost.`
+              : `Ran out of time after ${jobs.length - skipped} of ${jobs.length} answers. Test again to finish: answers already given are reused at no cost.`,
+          },
+          // A stop that came meanwhile stays.
+          { status: "RUNNING" },
+        );
         return;
       }
 
       await gradeTogether(run, suite);
-      await store.updateRun(runId, {
-        status: "SUCCEEDED",
-        finishedAt: new Date(),
-        datasetVersion: datasetVersion(cases),
-        metrics: await metricsFor(run, suite, judgeCost),
-      });
+      await store.updateRun(
+        runId,
+        {
+          status: "SUCCEEDED",
+          finishedAt: new Date(),
+          datasetVersion: datasetVersion(cases),
+          metrics: await metricsFor(run, suite, judgeCost),
+        },
+        // A stop that came during the last answers stays.
+        { status: "RUNNING" },
+      );
     } catch (e) {
       await store.updateRun(runId, {
         status: "FAILED",
@@ -993,7 +1088,14 @@ export function createRunner(opts: RunnerOptions) {
     const suite = suiteOrThrow(suiteKey);
     if (!opts.suiteSettings) return suite;
     const saved = await suiteSettingsOf(suite.key);
-    return { ...suite, checks: effectiveChecks(suite.checks, saved) };
+    return {
+      ...suite,
+      checks: effectiveChecks(suite.checks, saved),
+      // The person's attack setting, for the suggestion.
+      ...(saved.attacks
+        ? { priority: { ...suite.priority, attacks: saved.attacks } }
+        : {}),
+    };
   }
 
   /**
@@ -1166,6 +1268,30 @@ export function createRunner(opts: RunnerOptions) {
       : (await Promise.all(runIds.map((id) => store.listOutputs(id)))).flat();
     for (const o of rows) byRun.get(o.runId)?.push(o);
     return byRun;
+  }
+
+  /**
+   * Stops running tests now: each is marked failed ("Stopped by hand"),
+   * and its leg stops within an answer or two (`STOP_CHECK_MS`). Answers
+   * already given are kept and reused when it runs again. Returns how many
+   * it stopped. Your `EvalSpending.stopAll` can call it.
+   *
+   * @param suiteKeys - The suites whose tests to stop; default every suite.
+   */
+  async function stopTests(
+    suiteKeys: readonly string[] = opts.suites.map((s) => s.key),
+  ): Promise<number> {
+    let n = 0;
+    for (const key of suiteKeys)
+      for (const r of await store.listRuns(key, { status: "RUNNING" })) {
+        await store.updateRun(
+          r.id,
+          { status: "FAILED", finishedAt: new Date(), error: STOPPED_BY_HAND },
+          { status: "RUNNING" },
+        );
+        n++;
+      }
+    return n;
   }
 
   /** Marks tests the server stopped mid-way as failed. */
@@ -1652,6 +1778,7 @@ export function createRunner(opts: RunnerOptions) {
     canSaveSuiteSettings: opts.suiteSettings !== undefined,
     retireStaleDrafts,
     stopStuckRuns,
+    stopTests,
     compare,
     casesInInstructions: casesInInstructionsFor,
   };

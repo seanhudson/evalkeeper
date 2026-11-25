@@ -34,9 +34,12 @@ import {
   SEVERITY_ORDER,
   SEVERITY_LABEL,
   usesJudge,
+  CONFIRM_TESTS_USD,
+  ATTACK_CARE,
 } from "../index.js";
 import { AnswerKey } from "./AnswerKey.js";
 import { RescoreButton } from "./RescoreButton.js";
+import { TestAll } from "./TestAll.js";
 import { ModelMenu } from "./ModelMenu.js";
 import { PriorityPicker } from "./PriorityPicker.js";
 import { InfoPopover } from "./InfoPopover.js";
@@ -382,7 +385,12 @@ function SuiteSettingsForm({ data }: { data: SuitePageData }) {
   const own = app.runner.suiteOrThrow(key);
   const ownTarget = own.targetCases ?? 50;
   return (
-    <form key={target} action={action} className="space-y-4">
+    // Keyed on what's saved, so a save remounts it with fresh defaults.
+    <form
+      key={`${target}:${JSON.stringify(savedSettings)}`}
+      action={action}
+      className="space-y-4"
+    >
       <p className="readable text-muted">
         {GLOSSARY.suiteSettings} An empty field uses the suite&apos;s own.
       </p>
@@ -465,6 +473,32 @@ function SuiteSettingsForm({ data }: { data: SuitePageData }) {
           </tbody>
         </table>
       </fieldset>
+      {data.attackBoards.length > 0 && (
+        <div className="space-y-1">
+          <label htmlFor="attack-care" className="block font-medium">
+            How careful with attacks
+            <InfoTip term="attackCare" id="attack-care-tip" />
+          </label>
+          <Select
+            id="attack-care"
+            name="attacks"
+            // Starts on the setting now; the code's own isn't saved.
+            defaultValue={
+              savedSettings.attacks ?? own.priority.attacks ?? "strict"
+            }
+            className="rounded-md border border-line bg-card px-2 py-1.5 text-sm"
+          >
+            {ATTACK_CARE.map((a) => (
+              <option key={a.value} value={a.value}>
+                {a.label}
+              </option>
+            ))}
+          </Select>
+          <p className="readable text-xs text-muted">
+            {ATTACK_CARE.map((a) => `${a.label}: ${a.text}.`).join(" ")}
+          </p>
+        </div>
+      )}
       <Submit>Save</Submit>
     </form>
   );
@@ -572,6 +606,7 @@ function TodoAction({
           action={app.actions.testAll}
           suite={suite}
           cost={testAllCost}
+          confirmAbove={app.confirmTestsAboveUsd ?? CONFIRM_TESTS_USD}
           again={t.kind === "retest"}
           id="todo-test-all"
         />
@@ -606,6 +641,8 @@ function TodoAction({
       return button(app.actions.retireReplacedStarters, `Retire ${t.cases}`);
     case "reviewSplit":
       return go("#answer-key-health", "Review them");
+    case "reviewLevels":
+      return go("#menu=settings", "Review levels");
   }
 }
 
@@ -687,10 +724,88 @@ export function SuggestionCard({ data }: { data: SuitePageData }) {
                 <li key={r}>{r}</li>
               ))}
             </ul>
+            {s.held && <UseAnyway data={data} held={s.held} />}
           </Card>
         </section>
       )}
     </>
+  );
+}
+
+/**
+ * A model the attacks hold back: links to the attack tests it missed on,
+ * and **Use anyway**, which makes it live as a person's call.
+ */
+function UseAnyway({
+  data,
+  held,
+}: {
+  data: SuitePageData;
+  held: SuitePageData["rows"][number];
+}) {
+  const { app, key, attackBoards } = data;
+  const runs = attackBoards.flatMap((a) => {
+    const t = a.rows.find((r) => r.key === held.key)?.test;
+    return t && !t.stale
+      ? [{ suite: a.suite.key, label: a.suite.label, runId: t.runId }]
+      : [];
+  });
+  return (
+    <div className="flex flex-wrap items-center gap-3 rounded-md bg-accent/5 p-3 text-sm">
+      <p className="readable">
+        Held back by the attacks: <strong>{held.label}</strong>.{" "}
+        {runs.map((r, i) => (
+          <span key={r.runId}>
+            {i > 0 && ", "}
+            <Link href={evalsPath(app, r.suite, "runs", r.runId)}>
+              See what it missed on {r.label}
+            </Link>
+          </span>
+        ))}
+      </p>
+      <form action={app.actions.makeLive}>
+        <input type="hidden" name="suite" value={key} />
+        <input type="hidden" name="model" value={held.model} />
+        {held.variant && held.effort && (
+          <input type="hidden" name="effort" value={held.effort} />
+        )}
+        <input type="hidden" name="override" value="attacks" />
+        <Tip control term="useAnyway" id="use-anyway" side="bottom">
+          <Submit variant="quiet">Use anyway</Submit>
+        </Tip>
+      </form>
+    </div>
+  );
+}
+
+/**
+ * Must-pass, as a share: answers with no must-pass miss, the count of
+ * misses in its tooltip. The suggestion still weighs the count.
+ */
+function MustPass({
+  id,
+  misses,
+  clean,
+  answers,
+}: {
+  id: string;
+  misses: number;
+  clean: number;
+  answers: number;
+}) {
+  const missed = answers - clean;
+  return (
+    <Tip
+      text={
+        misses
+          ? `${misses} must-pass ${misses === 1 ? "miss" : "misses"}, in ${missed} of ${answers} answers.`
+          : `No must-pass misses in ${answers} answers.`
+      }
+      side="bottom"
+      id={`must-pass-${id}`}
+    >
+      <span>{asPct(answers ? clean / answers : null)}</span>
+    </Tip>
   );
 }
 
@@ -776,6 +891,7 @@ export function ModelTable({ data }: { data: SuitePageData }) {
               action={app.actions.testAll}
               suite={key}
               cost={testAllCost}
+              confirmAbove={app.confirmTestsAboveUsd ?? CONFIRM_TESTS_USD}
               id="board-test-all"
             />
           </div>
@@ -784,51 +900,51 @@ export function ModelTable({ data }: { data: SuitePageData }) {
           <table className="w-full text-sm">
             <thead className="text-left text-muted">
               <tr className="border-b border-line">
-                <th className="p-3 font-normal">Model</th>
-                <th className="p-3 font-normal">
+                <th className="whitespace-nowrap p-3 font-normal">Model</th>
+                <th className="whitespace-nowrap p-3 font-normal">
                   <Tip term="score" side="bottom">
                     Accuracy
                   </Tip>
                 </th>
-                <th className="p-3 font-normal">
+                <th className="whitespace-nowrap p-3 font-normal">
                   <Tip term="seriousMistakes" side="bottom">
-                    Must-pass misses
+                    Must-pass
                   </Tip>
                 </th>
                 {showAttacks && (
-                  <th className="p-3 font-normal">
+                  <th className="whitespace-nowrap p-3 font-normal">
                     <Tip term="attacksResisted" side="bottom">
-                      Attacks resisted
+                      Attacks
                     </Tip>
                   </th>
                 )}
-                <th className="p-3 font-normal">
+                <th className="whitespace-nowrap p-3 font-normal">
                   <Tip term="time" side="bottom" align="end">
                     Speed
                   </Tip>
                 </th>
                 {suite.decisions && (
                   <>
-                    <th className="p-3 font-normal">
+                    <th className="whitespace-nowrap p-3 font-normal">
                       <Tip term="probabilityQuality" side="bottom">
-                        Probability quality
+                        Confidence
                       </Tip>
                     </th>
-                    <th className="p-3 font-normal">
+                    <th className="whitespace-nowrap p-3 font-normal">
                       <Tip term="calibrationError" side="bottom" align="end">
-                        Calibration error
+                        Calibration
                       </Tip>
                     </th>
                   </>
                 )}
-                <th className="p-3 font-normal">
+                <th className="whitespace-nowrap p-3 font-normal">
                   <Tip term="cost" side="bottom" align="end">
                     Cost
                   </Tip>
                 </th>
-                <th className="p-3 font-normal">
+                <th className="whitespace-nowrap p-3 font-normal">
                   <Tip term="againstLive" side="bottom" align="end">
-                    Against live
+                    vs live
                   </Tip>
                 </th>
                 <th className="p-3" />
@@ -883,23 +999,18 @@ export function ModelTable({ data }: { data: SuitePageData }) {
                           </Chip>
                         </Tip>
                       )}
-                      {suite.decisions && app.models[r.model]?.decisions && (
-                        <Tip
-                          term={
-                            app.models[r.model]?.decisions === "native"
-                              ? "nativeProbabilities"
-                              : "promptedProbabilities"
-                          }
-                          side="bottom"
-                          id={`decisions-${r.key}`}
-                        >
-                          <Chip tone="neutral">
-                            {app.models[r.model]?.decisions === "native"
-                              ? "Native probabilities"
-                              : "Prompted"}
-                          </Chip>
-                        </Tip>
-                      )}
+                      {/* Built-in probabilities are the usual case; only the
+                          exception gets a chip. */}
+                      {suite.decisions &&
+                        app.models[r.model]?.decisions === "prompted" && (
+                          <Tip
+                            term="promptedProbabilities"
+                            side="bottom"
+                            id={`decisions-${r.key}`}
+                          >
+                            <Chip tone="neutral">Self-estimated</Chip>
+                          </Tip>
+                        )}
                       {r.test?.stale && (
                         <Tip
                           term="outOfDate"
@@ -922,9 +1033,21 @@ export function ModelTable({ data }: { data: SuitePageData }) {
                       </span>
                     ) : r.test ? (
                       <div className="flex flex-col gap-0.5">
-                        <Link href={evalsPath(app, key, "runs", r.test.runId)}>
-                          <Score right={r.test.right} total={r.test.total} />
-                        </Link>
+                        <Tip
+                          text={`${Math.round(r.test.right)} of ${Math.round(r.test.total)} right. Open the test to see each case.`}
+                          side="bottom"
+                          id={`score-${r.key}`}
+                        >
+                          <Link
+                            href={evalsPath(app, key, "runs", r.test.runId)}
+                          >
+                            <Score
+                              right={r.test.right}
+                              total={r.test.total}
+                              counts={false}
+                            />
+                          </Link>
+                        </Tip>
                         {!r.test.stale && r.test.failedAnswers > 0 && (
                           <Link
                             href={`${evalsPath(app, key, "runs", r.test.runId)}#failed`}
@@ -937,13 +1060,31 @@ export function ModelTable({ data }: { data: SuitePageData }) {
                         )}
                       </div>
                     ) : (
-                      <span className="text-muted">
-                        {r.failed ?? "Not tested"}
-                      </span>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-muted">
+                          {r.failed ?? "Not tested"}
+                        </span>
+                        {r.failed && estimateText(estimates.get(r.key)) && (
+                          // Before pressing Test again: what's reused, and
+                          // what the rest costs.
+                          <span className="text-xs text-muted">
+                            Test again: {estimateText(estimates.get(r.key))}
+                          </span>
+                        )}
+                      </div>
                     )}
                   </td>
                   <td className="p-3 tabular-nums">
-                    {r.test ? seriousMistakes(r, suite.checks) : "—"}
+                    {r.test ? (
+                      <MustPass
+                        id={r.key}
+                        misses={seriousMistakes(r, suite.checks)}
+                        clean={r.test.answersNoSerious}
+                        answers={r.test.answers}
+                      />
+                    ) : (
+                      "—"
+                    )}
                   </td>
                   {showAttacks && (
                     <td className="p-3">
@@ -971,10 +1112,11 @@ export function ModelTable({ data }: { data: SuitePageData }) {
                           r.test ? probabilityQuality(r.test.measures) : null,
                         )}
                       </td>
-                      <td className="p-3 tabular-nums">
-                        {asPct(
-                          r.test ? meanCalibrationError(r.test.measures) : null,
-                        )}
+                      <td className="whitespace-nowrap p-3 tabular-nums">
+                        {r.test &&
+                        meanCalibrationError(r.test.measures) !== null
+                          ? `${asPct(meanCalibrationError(r.test.measures))} off`
+                          : "—"}
                       </td>
                     </>
                   )}
@@ -1552,42 +1694,6 @@ export function AnswerKeySection({ data }: { data: SuitePageData }) {
         />
       )}
     </section>
-  );
-}
-
-/**
- * Test every model, saying it costs money: what it would cost now beside
- * it, and a tooltip on what it does.
- */
-function TestAll({
-  action,
-  suite,
-  cost,
-  again = false,
-  id,
-}: {
-  action: FormAction;
-  suite: string;
-  /** What it costs now; 0: every answer reused; null: unknown. */
-  cost: number | null;
-  again?: boolean;
-  /** Unique per page, for the tooltip. */
-  id: string;
-}) {
-  return (
-    <form action={action} className="flex shrink-0 items-center gap-2">
-      <input type="hidden" name="suite" value={suite} />
-      <Tip control term="testAll" id={id} side="bottom" align="end">
-        <Submit variant="quiet">
-          {again ? "Test every model again" : "Test every model"}
-        </Submit>
-      </Tip>
-      {cost !== null && (
-        <span className="whitespace-nowrap text-xs text-muted">
-          {cost === 0 ? "free, all reused" : `~${money(cost)}`}
-        </span>
-      )}
-    </form>
   );
 }
 

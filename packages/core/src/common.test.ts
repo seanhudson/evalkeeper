@@ -60,6 +60,30 @@ describe("shared eval checks", () => {
     expect(numbersIn("1,500.5 and 12,34")).toEqual(new Set(["1500.5", "12"]));
   });
 
+  it("leaves pronouns the sources use for someone else", () => {
+    const story = [
+      "My manager asked me to check her numbers before the review.",
+    ];
+    expect(
+      voiceCheck("voice", ["You talked to her privately."], story).pass,
+    ).toBe(true);
+    // Any form of the same pronoun: "she" in the answer, "her" in the story.
+    expect(thirdPerson("She trusted you.", story)).toBeNull();
+    // A pronoun only the answer uses is still about the person.
+    expect(thirdPerson("He checked her numbers.", story)).toBe("He");
+    expect(voiceCheck("voice", ["He fits."], story).note).toMatch(/"He"/);
+    // A company the sources call "they".
+    const company = ["Northwind is in Toronto. They work in the office."];
+    expect(
+      thirdPerson("A good fit. Their remote policy is strict.", company),
+    ).toBeNull();
+    expect(thirdPerson("A good fit. Their remote policy is strict.")).toBe(
+      "Their",
+    );
+    // Without sources, as before: the first pronoun.
+    expect(thirdPerson("You and her. He left.")).toBe("her");
+  });
+
   it("wraps voice and numbers as checks", () => {
     expect(voiceCheck("voice", ["You fit.", "He fits."]).pass).toBe(false);
     expect(

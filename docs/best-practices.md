@@ -25,16 +25,38 @@ by side, decide which is right for your product, and make both say it.
 Say so, and leave the decision to a person, rather than loosening the
 checks until something passes.
 
+## Choose check levels
+
+Each check has a level, and the level decides what a miss costs:
+
+- **Must pass** (`severity: "serious"`): a miss changes what your
+  product does, or misleads or harms the person. The wrong queue, a
+  missed urgent ticket, an invented salary, a crisis message treated as
+  ordinary. Models are compared on these first, and the suggestion
+  never trades one away for cost or speed.
+- **Should pass** (`"moderate"`): it matters, but a person reading the
+  answer would shrug and move on. A summary a sentence too long, a
+  missing detail that's easy to find.
+- **Nice to have** (`"minor"`): style, wording, and fair differences of
+  judgment. A category a fact could fairly take two ways, a tone a
+  little off. Its miss never fails an answer.
+
+**Keep must-pass for the few that matter.** Most suites need one to
+three must-pass checks. When most of a suite's checks must pass, every
+model misses some, the must-pass count stops telling models apart, and
+real mistakes hide among style misses. Ask of each check: "If a model
+missed this on one answer in ten, would I switch models?" Only a yes is
+must-pass. The suite's to-do list flags a suite where more than half
+the checks must pass.
+
+A level you set in code is a starting point: anyone can change it in the
+suite's **Suite settings**, and the page rescores recent tests. A coding
+agent proposes levels and lists them for you to review; it doesn't
+decide them for you.
+
 ## Write checks that measure the right thing
 
-**Mark what must pass.** A must-pass check (`severity: "serious"`)
-catches a mistake that changes what your product does: the wrong queue,
-a missed urgent ticket. A should-pass one (`"moderate"`) matters, but
-less. A nice-to-have one (`"minor"`) is a fair difference of judgment,
-and its miss never fails an answer: a category a fact could fairly take
-two ways belongs here, or it will hold every model's fully right
-answers down. Compare must-pass misses before you keep a
-prompt change: in one app, a rule cut nice-to-have misses from 8 to 5
+**Compare must-pass misses before you keep a prompt change.** In one app, a rule cut nice-to-have misses from 8 to 5
 and raised made-up details, a must-pass miss, from 4 to 7.
 
 **Grade rankings, not cutoffs, when the answer is a score.** Every model

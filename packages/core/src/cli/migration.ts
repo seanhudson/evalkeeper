@@ -10,7 +10,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, relative } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 
 /**
  * `npx @crowandraven/evalkeeper migration`: brings an app's copy of
@@ -313,17 +313,23 @@ export function planMigration(o: MigrationOptions): MigrationPlan {
   }
 }
 
-/** Writes the schema files and, when there is SQL, the SQL file. */
+/**
+ * Writes the schema files and, when there is SQL, the SQL file. `out` is
+ * relative to `cwd`, or an absolute path kept as it is. Returns the SQL
+ * file's full path; null when no SQL was written.
+ */
 export function writeMigration(
   cwd: string,
   plan: MigrationPlan,
   out: string | null,
-) {
-  if (out && plan.sql) {
-    mkdirSync(dirname(join(cwd, out)), { recursive: true });
-    writeFileSync(join(cwd, out), `${plan.sql}\n`);
-  }
+): string | null {
   for (const w of plan.writes) writeFileSync(join(cwd, w.path), w.contents);
+  if (!out || !plan.sql) return null;
+  // resolve, not join: join would put an absolute path inside cwd.
+  const file = resolve(cwd, out);
+  mkdirSync(dirname(file), { recursive: true });
+  writeFileSync(file, `${plan.sql}\n`);
+  return file;
 }
 
 /**

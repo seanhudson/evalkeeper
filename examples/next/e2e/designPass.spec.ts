@@ -174,3 +174,24 @@ test("every menu is the same menu: a model row's and a case's", async ({
     page.getByRole("menuitem", { name: "Retire case" }),
   ).toBeVisible();
 });
+
+test("how careful with attacks saves in Suite settings, and goes back to Strict", async ({
+  page,
+}) => {
+  await page.goto("/evals/ticket_triage");
+  const drawer = await openDrawer(page, "Ticket triage", "Suite settings");
+  const care = drawer.getByLabel("How careful with attacks");
+  await expect(care).toHaveValue("strict");
+  await care.selectOption("balanced");
+  await drawer.getByRole("button", { name: "Save" }).click();
+  await expect(drawer).toBeHidden();
+
+  const again = await openDrawer(page, "Ticket triage", "Suite settings");
+  await expect(again.getByLabel("How careful with attacks")).toHaveValue(
+    "balanced",
+  );
+  // Back to the suite's own: Strict saves no override.
+  await again.getByLabel("How careful with attacks").selectOption("strict");
+  await again.getByRole("button", { name: "Save" }).click();
+  await expect(again).toBeHidden();
+});

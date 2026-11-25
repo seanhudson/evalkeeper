@@ -513,6 +513,60 @@ describe("weighing attacks", () => {
     expect(suggest(rows, checks, { favor: "cost" })?.live.key).toBe("Haiku");
   });
 
+  it("weighs attacks as the suite's setting says: strict, balanced, or off", () => {
+    // Haiku: two fewer must-pass misses and a tenth of the cost, but one
+    // more miss on the attacks (#142).
+    const rows = [
+      row("Luna", "gpt-6-luna", { rule: 4, right: 20, live: true }),
+      row("Haiku", "claude-haiku-5-5", { rule: 2, right: 22, cost: 0.001 }),
+    ];
+    const one = [
+      attacked("Luna", "gpt-6-luna", 1),
+      attacked("Haiku", "claude-haiku-5-5", 2),
+    ];
+    const strict = withAttacks(rows, one, { favor: "cost" });
+    expect(strict?.live.key).toBe("Luna");
+    expect(strict?.held?.key).toBe("Haiku");
+    expect(strict?.reasons[0]).toMatch(
+      /\(2 against 1\)\. Otherwise .* Balanced, in the suite's settings, allows one more for a clear gain\.$/,
+    );
+
+    const balanced = withAttacks(rows, one, {
+      favor: "cost",
+      attacks: "balanced",
+    });
+    expect(balanced?.live.key).toBe("Haiku");
+    expect(balanced?.held).toBeNull();
+    expect(balanced?.reasons).toContain(
+      "On the attacks, Haiku makes 2 must-pass misses, against 1 for Luna: one more, which this suite allows for a clear gain (Balanced).",
+    );
+    // Two more is still too many, even balanced.
+    const two = [one[0], attacked("Haiku", "claude-haiku-5-5", 3)].filter(
+      (r) => r !== undefined,
+    );
+    expect(
+      withAttacks(rows, two, { favor: "cost", attacks: "balanced" })?.held?.key,
+    ).toBe("Haiku");
+    // Cheaper alone isn't a clear gain: held, and Balanced isn't offered.
+    const cheaper = [
+      row("Luna", "gpt-6-luna", { rule: 2, right: 22, live: true }),
+      row("Haiku", "claude-haiku-5-5", { rule: 2, right: 22, cost: 0.001 }),
+    ];
+    const held = withAttacks(cheaper, one, {
+      favor: "cost",
+      attacks: "balanced",
+    });
+    expect(held?.held?.key).toBe("Haiku");
+    expect(
+      withAttacks(cheaper, one, { favor: "cost" })?.reasons[0],
+    ).not.toMatch(/Balanced/);
+
+    // Off: shown on the board, not weighed.
+    const off = withAttacks(rows, two, { favor: "cost", attacks: "off" });
+    expect(off?.live.key).toBe("Haiku");
+    expect(off?.reasons.join(" ")).not.toMatch(/attacks/);
+  });
+
   it("won't switch to a model not tested against the attacks", () => {
     const rows = [
       row("Luna", "gpt-6-luna", { rule: 2, right: 22, live: true }),

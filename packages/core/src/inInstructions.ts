@@ -11,6 +11,12 @@ export const IN_INSTRUCTIONS_MIN_CHARS = 20;
 /** A whole case text this long counts when all of it appears. */
 export const IN_INSTRUCTIONS_MIN_WHOLE = 12;
 
+/**
+ * A whole case text needs this many words too, so a short label that
+ * names a term the instructions use ("medical billing") isn't a copy.
+ */
+export const IN_INSTRUCTIONS_MIN_WHOLE_WORDS = 3;
+
 /** One case found in the instructions, with the words that matched. */
 export type CaseInInstructions = {
   caseId: string;
@@ -68,8 +74,8 @@ function longestRun(text: string, within: string): string {
  * @param instructions - Everything the model is told: system text, prompt
  *   templates, schema and tool descriptions (`instructionParts` in
  *   `@crowandraven/evalkeeper/ai-sdk` gives these).
- * @param opts - Other lengths than `IN_INSTRUCTIONS_MIN_CHARS` and
- *   `IN_INSTRUCTIONS_MIN_WHOLE`.
+ * @param opts - Other lengths than `IN_INSTRUCTIONS_MIN_CHARS`,
+ *   `IN_INSTRUCTIONS_MIN_WHOLE`, and `IN_INSTRUCTIONS_MIN_WHOLE_WORDS`.
  * @returns The cases found, each with its longest matching words.
  * @example
  * ```ts
@@ -82,10 +88,11 @@ function longestRun(text: string, within: string): string {
 export function casesInInstructions(
   cases: readonly { id: string; title: string; input: unknown }[],
   instructions: readonly string[],
-  opts: { minChars?: number; minWhole?: number } = {},
+  opts: { minChars?: number; minWhole?: number; minWholeWords?: number } = {},
 ): CaseInInstructions[] {
   const minChars = opts.minChars ?? IN_INSTRUCTIONS_MIN_CHARS;
   const minWhole = opts.minWhole ?? IN_INSTRUCTIONS_MIN_WHOLE;
+  const minWholeWords = opts.minWholeWords ?? IN_INSTRUCTIONS_MIN_WHOLE_WORDS;
   const within = instructions.map(evenOut).join(" \u0000 ");
   if (!within) return [];
   const found: CaseInInstructions[] = [];
@@ -96,7 +103,10 @@ export function casesInInstructions(
       if (!text) continue;
       const run = longestRun(text, within);
       const counts =
-        run.length >= minChars || (run === text && run.length >= minWhole);
+        run.length >= minChars ||
+        (run === text &&
+          run.length >= minWhole &&
+          run.split(" ").length >= minWholeWords);
       if (counts && run.length > best.length) best = run;
     }
     if (best) found.push({ caseId: c.id, title: c.title, found: best });

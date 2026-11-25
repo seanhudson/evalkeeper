@@ -118,6 +118,12 @@ export type EvalApp = {
    * stopped, or running) and save the limits. Leave it out to show none.
    */
   spending?: EvalSpending;
+  /**
+   * Test every model asks for a second press when it would cost more than
+   * this, in USD, or when a model's price is unknown. Default
+   * `CONFIRM_TESTS_USD` ($5).
+   */
+  confirmTestsAboveUsd?: number;
 };
 
 /** An `EvalApp` with its suites by key, as the screens read it. */

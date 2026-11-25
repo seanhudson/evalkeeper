@@ -1,7 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { memoryStore } from "./memoryStore.js";
-import { commonError, createRunner, datasetVersion } from "./runner.js";
+import {
+  STOPPED_BY_HAND,
+  commonError,
+  createRunner,
+  datasetVersion,
+  type BudgetCall,
+} from "./runner.js";
 import type { EvalStore, NewCase } from "./store.js";
 import { SCHEDULED } from "./weekly.js";
 import type { Suite } from "./types.js";
@@ -521,6 +527,20 @@ describe("runner, beyond a basic test", () => {
     expect(board.rows.find((x) => x.model === "a")?.test?.stale).toBe(false);
   });
 
+  it("puts a person's attack setting in the suite's priority", async () => {
+    const store = memoryStore();
+    const runner = threeModels(store, double, { settings: true });
+    await runner.saveSuiteSettings(
+      "double",
+      { targetCases: null, checks: {}, attacks: "balanced" },
+      "person-1",
+    );
+    expect((await runner.board("double")).suite.priority).toEqual({
+      favor: "cost",
+      attacks: "balanced",
+    });
+  });
+
   it("reads suite settings it can't load as none saved", async () => {
     const store = memoryStore();
     const runner = createRunner({
@@ -717,6 +737,101 @@ describe("runner, beyond a basic test", () => {
       done: true,
       judgeCostUsd: 0,
     });
+  });
+
+  it("stops a test where its budget says, in the budget's words", async () => {
+    const { store } = await setup();
+    const calls: BudgetCall[] = [];
+    const runner = createRunner({
+      store,
+      // One answer at a time, so the budget sees each one's cost.
+      suites: [{ ...double, concurrency: 1 }],
+      models: MODELS,
+      promptVersion: () => "v1",
+      budget: (call) => {
+        calls.push(call);
+        return call.spentUsd >= 0.004 ? "Over today's limit ($0.00)." : null;
+      },
+    });
+    const { run } = await runner.createRun({ suite: "double", model: "good" });
+    await runner.runEval(run.id);
+    const done = await store.getRun(run.id);
+    expect(done?.status).toBe("FAILED");
+    expect(done?.error).toBe(
+      "Stopped after 2 of 6 answers. Over today's limit ($0.00). Answers already given are reused at no cost when you test again.",
+    );
+    expect(await store.listOutputs(run.id)).toHaveLength(2);
+    expect(calls[1]).toEqual({
+      runId: run.id,
+      suite: "double",
+      operation: "double",
+      model: "good",
+      spentUsd: 0.002,
+    });
+    // Testing again reuses the two answers, free: the budget isn't asked
+    // for them.
+    calls.length = 0;
+    const again = await runner.createRun({ suite: "double", model: "good" });
+    await runner.runEval(again.run.id);
+    expect(calls[0]?.spentUsd).toBe(0);
+    expect(
+      (await store.listOutputs(again.run.id)).filter((x) => x.reused),
+    ).toHaveLength(2);
+  });
+
+  it("goes ahead when the budget can't be read", async () => {
+    const { store } = await setup([2]);
+    const runner = createRunner({
+      store,
+      suites: [double],
+      models: MODELS,
+      promptVersion: () => "v1",
+      budget: () => Promise.reject(new Error("database blip")),
+    });
+    const { run } = await runner.createRun({ suite: "double", model: "good" });
+    await runner.runEval(run.id);
+    expect((await store.getRun(run.id))?.status).toBe("SUCCEEDED");
+  });
+
+  it("stops a running test within an answer or two of a stop", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      const store = memoryStore();
+      for (const n of [1, 2, 3, 4, 5, 6]) await store.createCase(kase(n));
+      let answers = 0;
+      const runner = createRunner({
+        store,
+        suites: [
+          {
+            ...double,
+            concurrency: 1,
+            async run(i: In, ctx: Parameters<typeof double.run>[1]) {
+              answers++;
+              // A person stops every test during the second answer.
+              if (answers === 2) {
+                expect(await runner.stopTests()).toBe(1);
+                vi.setSystemTime(Date.now() + 3_000);
+              }
+              return double.run(i, ctx);
+            },
+          },
+        ],
+        models: MODELS,
+        promptVersion: () => "v1",
+      });
+      const { run } = await runner.createRun({
+        suite: "double",
+        model: "good",
+      });
+      await runner.runEval(run.id);
+      expect(answers).toBe(2);
+      const done = await store.getRun(run.id);
+      expect(done?.status).toBe("FAILED");
+      expect(done?.error).toBe(STOPPED_BY_HAND);
+      expect(await runner.stopTests(["double"])).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("gives the same board and estimates with or without the batch store methods", async () => {

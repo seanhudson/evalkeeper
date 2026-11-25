@@ -288,6 +288,21 @@ describe("the eval actions", () => {
     expect((await byId.settings.history("double_op"))[0]?.by).toBe("ada");
   });
 
+  it("record Use anyway as a person's call over the attacks", async () => {
+    const { actions, settings } = setup();
+    await addCases(actions);
+    await actions.testAll(form({ suite: "double" }));
+    await flush();
+    await actions.makeLive(
+      form({ suite: "double", model: "bad", override: "attacks" }),
+    );
+    const [latest] = await settings.history("double_op");
+    expect(latest?.reason).toMatch(
+      /^Made bad live although the attacks held it back \(a person's call\): /,
+    );
+    expect(latest?.evidence).toMatchObject({ override: "attacks" });
+  });
+
   it("change what a feature favors, as a settings version", async () => {
     const { actions, settings } = setup();
     await actions.setPriority(
@@ -457,7 +472,8 @@ describe("the eval actions", () => {
     await expect(
       plain.actions.saveLimits(form({ allUsd: "10" })),
     ).rejects.toThrow(/keeps no spending limits/);
-    await expect(plain.actions.stopTests(form({}))).rejects.toThrow(/no stop/);
+    // Without the app's stop, the runner's stops the tests.
+    await expect(plain.actions.stopTests(form({}))).resolves.toBeUndefined();
     await expect(plain.actions.allowTests(form({}))).rejects.toThrow(/no stop/);
 
     const spending = memorySpending();

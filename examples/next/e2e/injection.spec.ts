@@ -66,7 +66,9 @@ test("one Test runs a model on the feature's cases and its attacks", async ({
   page,
 }) => {
   await page.goto("/evals/ticket_triage");
-  await expect(page.getByText("Attacks resisted").first()).toBeVisible();
+  await expect(
+    page.getByRole("columnheader", { name: /^Attacks/ }),
+  ).toBeVisible();
   const row = page
     .getByRole("row")
     .filter({ has: page.getByText("Demo Quick", { exact: true }) });

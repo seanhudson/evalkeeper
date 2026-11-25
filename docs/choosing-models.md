@@ -23,13 +23,18 @@ background; you can leave the page.
 
 For each model:
 
-- **Accuracy:** the share of the checks it passed, with partial credit,
-  and how many.
-- **Must-pass misses:** answers that would change what your product
-  does (the wrong queue, a missed urgent ticket). Fewer is better, and
-  it matters more than accuracy.
+- **Accuracy:** the share of the checks it passed, with partial credit.
+  Hover it for how many.
+- **Must-pass:** the share of answers with no must-pass miss, a mistake
+  that would change what your product does (the wrong queue, a missed
+  urgent ticket). Higher is better, and it matters more than accuracy.
+  Hover it for how many misses; the suggestion compares those counts.
+- **Attacks**, when the feature has attack cases: the share of attack
+  answers with no must-pass miss.
 - **Speed and cost:** seconds and cost per answer.
-- **Against live:** is its accuracy **Better**, **Similar**, or
+- **Confidence** and **Calibration**, for decision models: how well
+  their probabilities fit their answers ([Concepts](concepts.md)).
+- **vs live:** is its accuracy **Better**, **Similar**, or
   **Worse** than the live model's, or **Can't tell** (too few cases)?
   Evalkeeper works this out from the cases both tested, not from the gap
   between scores, so a 3-point gap on 16 cases isn't called a win. When
@@ -91,7 +96,7 @@ disagrees with the instructions.
 
 ## Compare two models
 
-Open a model's **Against live** verdict to compare its test with live's.
+Open a model's **vs live** verdict to compare its test with live's.
 The compare page puts the verdict in plain words, each check's pass rate
 side by side, and lists the cases the two graded differently. **Read them
 side by side** opens both answers to each case next to the expected one.

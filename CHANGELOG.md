@@ -5,6 +5,81 @@ Notable changes, newest first. The format follows
 follow [semantic versioning](https://semver.org/): until 1.0, a minor
 version may change an interface, and its entry says how to update.
 
+## Unreleased
+
+### Fixed
+
+- **Suite settings showed the old values after a save** when only a
+  level, an aim, or the attack setting changed: the form now remounts on
+  any saved change.
+- **`migration --write --out` with an absolute path** wrote the SQL
+  inside the project (`<project>/tmp/…`) and made that folder tree there.
+  It now writes where the path says, and prints the SQL file's full path
+  (#157).
+- **"Cases in the instructions" flagged short labels.** A whole-text
+  match now needs 3 words as well as 12 characters, so a field such as
+  "Medical Billing" that names a term in the prompt isn't flagged; a
+  message copied into the instructions still is
+  (`IN_INSTRUCTIONS_MIN_WHOLE_WORDS`, `minWholeWords`) (#139).
+
+### Added
+
+- **"Review check levels" on a suite's to-do list** when more than half
+  of four or more checks must pass, linking to Suite settings
+  (`MANY_CHECKS`). A link to `#menu=<key>` opens a page menu's drawer.
+- **Guidance on check levels and on letting a coding agent set things
+  up**: a "Choose check levels" section in best practices, AGENTS.md
+  rules to propose levels sparingly and list them for review, and a
+  README section on what an agent does and what stays yours.
+- **How careful the suggestion is with attacks** (#142). A suite's
+  settings (and `SuitePriority.attacks` in code) choose **Strict** (the
+  default: never more must-pass misses on the attacks than live, as
+  before), **Balanced** (one more for a model that's clearly more
+  accurate or makes at least two fewer must-pass misses), or **Off**
+  (attacks shown, not weighed). Kept in suite settings, so no migration
+  (`AttackCare`, `ATTACK_CARE`, `SuiteSettings.attacks`).
+- **Use anyway** on a model the attacks hold back (#142): the suggestion
+  links to the attack tests it missed on, and a button makes it live,
+  recorded in the history as a person's call (`Suggestion.held`,
+  `override=attacks` on `makeLive`). Under Strict, the reasons say when
+  Balanced would allow it.
+- **Spending limits the runner keeps** (#143). A `budget` runner option
+  is asked before each new answer (reused ones are free) with the test,
+  its feature, the model, and what the test has spent; a reason stops
+  the test with that reason as its error, not "out of credits".
+  `spendingBudget(spending)` makes one from your `EvalSpending`, so apps
+  no longer need a guard that throws an out-of-credits error.
+- **A stop between answers** (#143). A running test reads its own status
+  every couple of seconds (`STOP_CHECK_MS`), so a stop takes effect
+  within an answer or two, not at the next leg, and a finishing test
+  never overwrites it. `runner.stopTests()` stops running tests, and
+  **Stop all tests** uses it when your `spending` has no `stopAll`.
+- **Test every model asks first** when it would cost more than $5, or
+  when a model's price is unknown (`CONFIRM_TESTS_USD`,
+  `EvalApp.confirmTestsAboveUsd`) (#143).
+- **A failed test says what testing again costs**: under it on the model
+  table, how many answers are reused free and what the rest cost (#143).
+- **`voiceCheck` and `thirdPerson` take what the model was given**
+  (`sources`). A pronoun the sources already use for someone else, such
+  as "her" for a manager in the person's story or "they" for a company,
+  no longer fails the voice check; one only the answer uses still does.
+  Without `sources`, nothing changes. A suite that starts passing them
+  should bump its `graderVersion` (#156).
+
+### Changed
+
+- **A roomier model table.** Short headings that fit on one line
+  (Must-pass, Attacks, Confidence, Calibration, vs live). Accuracy shows
+  the percent and bar, with "85 of 90 right" in its tooltip. Must-pass
+  is now the share of answers with no must-pass miss, with the count in
+  its tooltip; the suggestion still compares counts. Calibration reads
+  "12% off". The "Native probabilities" chip is gone; only the exception,
+  **Self-estimated** (prompted), gets one. `ScoreProps.counts` hides the
+  count beside the bar (screen readers still read it).
+- **Plainer explanations** of accuracy, must-pass, confidence,
+  calibration, and built-in versus self-estimated probabilities, with
+  examples, in the tooltips and the docs.
+
 ## 0.20.0 - 2026-11-25
 
 Rescore tests, fixed and made plain: it covers every test the model

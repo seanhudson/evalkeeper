@@ -77,6 +77,33 @@ on something the tool never asked. _So:_ the readers turn a checked word
 into the suite's canary, leave the rest out, and list each one skipped
 with its question, so nothing is graded on a check nobody wrote.
 
+**A pronoun for someone else read as the person.** The voice check
+failed "you talked to her privately" (a colleague) and "their remote
+policy" (a company), which made up most of two suites' voice failures.
+_So:_ the check takes what the model was given, and a pronoun the
+sources already use for someone is about them.
+
+**One extra attack miss outweighed everything else.** On a suite that
+favors cost, the suggestion kept live although a model beat it on
+accuracy, must-pass misses, and cost (a sixth of it), because it made
+one more must-pass miss on the attacks. Every other rule needs a margin;
+this veto had none. _So:_ the strict rule stays the default, a suite can
+choose Balanced or Off, and a person can **Use anyway**, recorded as
+their call.
+
+**Most checks were marked must-pass.** An app's suites, set up by a
+coding agent, marked most checks must-pass, including wording rules,
+so every model missed some and the must-pass count stopped telling
+models apart. The guide said only "at least one must pass". _So:_ the
+docs say what each level is for and that most suites need one to three
+must-pass checks, agents propose levels and list them for review, and
+the to-do list flags a suite where most checks must pass.
+
+**A short label read as a copied case.** "Cases in the instructions"
+flagged four résumé cases whose only match was an education field,
+"Medical Billing", that a prompt names as an industry. A whole-text match
+needed only 12 characters. _So:_ it needs 3 words too.
+
 ## Answers
 
 **History isn't a verdict.** Answers taken from what someone did
@@ -268,6 +295,14 @@ checks say `judged: true`, the tooltip says which kind of rescore it is,
 the result says what it actually cost, and a judged rescore waits while
 tests are over a daily limit.
 
+**Every app wrote the same spending guard.** With limits on the pages
+but nothing in the runner asking them, two apps each wrapped every
+suite's `run` to throw an error the runner reads as "out of credits".
+That stopped the spending, but the test then said the provider's account
+was out of credits. _So:_ the runner asks a `budget` before each new
+answer and reports its reason as given, and a stop is read between
+answers.
+
 **Long rescores hit the host's time limit.** Rescoring three large suites
 in production returned a timeout page; the work was saved, so pressing
 again finished them, but nothing said so. _So:_ a rescore stops before
@@ -343,6 +378,12 @@ app's field labels walked zod's private structure, which moved in zod 4,
 and Evalkeeper's suite contract reads it too. _So:_ each package reads
 zod's internals in one function, with tests that walk real schemas, so
 the next major breaks one function and its tests, not every page.
+
+**An absolute path landed inside the project.** `migration --out` was
+given a temp folder and wrote to the same path under the project, quietly.
+`path.join` treats an absolute second part as one more folder. _So:_ paths
+a person passes are resolved (`path.resolve`), and the CLI prints the
+full path it wrote.
 
 ## Releasing
 

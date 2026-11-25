@@ -206,3 +206,31 @@ describe("allPassed", () => {
     expect(allPassed(null)).toBe(false);
   });
 });
+
+describe("how careful with attacks", () => {
+  it("reads a saved setting, and drops one that doesn't fit", () => {
+    expect(readSuiteSettings({ attacks: "balanced" })).toEqual({
+      targetCases: null,
+      checks: {},
+      attacks: "balanced",
+    });
+    expect(readSuiteSettings({ attacks: "loose" })).toEqual(NO_SUITE_SETTINGS);
+  });
+
+  it("reads the form: another setting saves, the suite's own doesn't", () => {
+    expect(suiteSettingsFromForm(form({ attacks: "off" }))).toEqual({
+      targetCases: null,
+      checks: {},
+      attacks: "off",
+    });
+    expect(suiteSettingsFromForm(form({ attacks: "strict" }))).toEqual(
+      NO_SUITE_SETTINGS,
+    );
+    expect(
+      suiteSettingsFromForm(form({ attacks: "strict" }), [], "balanced"),
+    ).toMatchObject({ attacks: "strict" });
+    expect(() => suiteSettingsFromForm(form({ attacks: "loose" }))).toThrow(
+      /Strict, Balanced, Off/,
+    );
+  });
+});

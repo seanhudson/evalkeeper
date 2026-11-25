@@ -13,11 +13,21 @@ Already planned, and the next to be built:
   (its AI features, eval data, and model router) and sets Evalkeeper up
   around them. `upgrade` brings an app to a new release: the tables, the
   generated files, and a list of what changed.
-- **More from apps already using it.** Testing a reasoning setting, each
-  check per model, buttons for starter cases and drafts, a suite's answer
-  guide, AI features with no suite yet, and code as the fallback.
-- **AI gateway support.** Test models from many providers with one key,
-  through Vercel's AI Gateway or another gateway. A command checks your
+- **Code as the fallback,** the last of what apps already using it
+  built for themselves; the rest shipped in 0.12.0.
+- **Tests that cost real money stay in your hands.** A stop that takes
+  effect between answers, not only between tests; a spending check the
+  runner asks before each call, so your daily limits hold; the total
+  cost shown before **Test every model** starts; and a test that
+  survives a deploy instead of starting over.
+  ([#143](https://github.com/seanhudson/evalkeeper/issues/143))
+- **A suggestion you can tune.** Today one extra mistake on the attacks
+  keeps a cheaper, more accurate model from being suggested. Give that
+  rule a margin, or let each suite set its own suggestion rules.
+  ([#142](https://github.com/seanhudson/evalkeeper/issues/142))
+- **AI gateway support,** optional, in the AI SDK entry point. Test
+  models from many providers with one key, through Vercel's AI Gateway,
+  OpenRouter, or another gateway. A command checks your
   [catalog](models.md)'s prices against the gateway's and writes the
   differences for you to review; the weekly check warns when a price is
   old or a model you use leaves the gateway's list, so you can look for

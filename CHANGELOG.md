@@ -24,6 +24,13 @@ version may change an interface, and its entry says how to update.
 
 ### Added
 
+- **"Review check levels" on a suite's to-do list** when more than half
+  of four or more checks must pass, linking to Suite settings
+  (`MANY_CHECKS`). A link to `#menu=<key>` opens a page menu's drawer.
+- **Guidance on check levels and on letting a coding agent set things
+  up**: a "Choose check levels" section in best practices, AGENTS.md
+  rules to propose levels sparingly and list them for review, and a
+  README section on what an agent does and what stays yours.
 - **How careful the suggestion is with attacks** (#142). A suite's
   settings (and `SuitePriority.attacks` in code) choose **Strict** (the
   default: never more must-pass misses on the attacks than live, as
@@ -58,6 +65,20 @@ version may change an interface, and its entry says how to update.
   no longer fails the voice check; one only the answer uses still does.
   Without `sources`, nothing changes. A suite that starts passing them
   should bump its `graderVersion` (#156).
+
+### Changed
+
+- **A roomier model table.** Short headings that fit on one line
+  (Must-pass, Attacks, Confidence, Calibration, vs live). Accuracy shows
+  the percent and bar, with "85 of 90 right" in its tooltip. Must-pass
+  is now the share of answers with no must-pass miss, with the count in
+  its tooltip; the suggestion still compares counts. Calibration reads
+  "12% off". The "Native probabilities" chip is gone; only the exception,
+  **Self-estimated** (prompted), gets one. `ScoreProps.counts` hides the
+  count beside the bar (screen readers still read it).
+- **Plainer explanations** of accuracy, must-pass, confidence,
+  calibration, and built-in versus self-estimated probabilities, with
+  examples, in the tooltips and the docs.
 
 ## 0.20.0 - 2026-11-25
 

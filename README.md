@@ -94,9 +94,9 @@ design.
 - **Decision models, graded on their probabilities.** For features that
   answer typed questions (pick a queue, say true or false) with the AI
   SDK's decisions, a suite scores the pick and the probabilities: how close
-  they were (probability quality) and whether a model that says 90% is
-  right 90% of the time (calibration error). The board marks which models
-  give probabilities natively and which are prompted.
+  they were (confidence) and whether a model that says 90% is right 90%
+  of the time (calibration). The board marks models that only estimate
+  their own probabilities.
 - **A crisis risk suite, ready made.** If your app watches chat messages
   for suicide or self-harm risk, `crisisRiskSuite` from
   `@crowandraven/evalkeeper/suites` tests the detector on about 90 starter
@@ -334,6 +334,26 @@ pages.
 [Adding Evalkeeper to your app](docs/adding-to-your-app.md) has the full
 steps, and [AGENTS.md](AGENTS.md) gives a coding agent what it needs to do
 them for you.
+
+### Let your coding agent set it up
+
+You don't have to do these steps by hand. Ask your coding agent (Claude
+Code, Cursor, Codex, or another) something like:
+
+> Add Evalkeeper to this app, following its AGENTS.md. Start with a
+> suite for our ticket triage feature.
+
+It reads [AGENTS.md](AGENTS.md) and does the setup: the wiring, a suite
+per feature with its checks and their levels, starter cases, and the
+pages. It stops after each step for you to check. Some calls stay yours,
+and it says so:
+
+- **Answers.** Cases it drafts are pending until you confirm them.
+- **Check levels.** It proposes which checks must pass, should pass, or
+  are nice to have, and lists them for you to review
+  ([Choose check levels](docs/best-practices.md#choose-check-levels)).
+- **Money and models.** It asks before any test that calls a paid
+  model, and never changes which model is live.
 
 ## How it compares
 

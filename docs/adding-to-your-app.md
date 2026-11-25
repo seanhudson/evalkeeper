@@ -296,8 +296,9 @@ graded. Start with one, so you see a real result soon.
 Pick the AI feature people would notice most if it got worse. Then write:
 
 - its input and answer shapes, with zod
-- two or three checks, at least one of them must pass
-  (`severity: "serious"`)
+- two or three checks, one or two of them must pass
+  (`severity: "serious"`); the rest should pass or are nice to have
+  ([Choose check levels](best-practices.md#choose-check-levels))
 - `run`
 - `grade`
 

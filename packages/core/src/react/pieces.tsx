@@ -57,7 +57,15 @@ export type LinkProps = {
 /** Where a back link goes, and its words. */
 export type BackLinkProps = { href: string; children: ReactNode };
 /** A score: parts right of parts expected. */
-export type ScoreProps = { right: number; total: number };
+export type ScoreProps = {
+  right: number;
+  total: number;
+  /**
+   * Show "85/90" beside the bar; false where a tooltip says it (screen
+   * readers still read it). Default true.
+   */
+  counts?: boolean;
+};
 /** A form's submit button: its words, its weight, and whether it's off. */
 export type SubmitProps = {
   children: ReactNode;
@@ -420,9 +428,14 @@ export function Score(props: ScoreProps) {
           style={{ width: `${rate * 100}%` }}
         />
       </span>
-      <span className="text-xs text-muted tabular-nums">
-        {/* Whole numbers: a failed answer counts a graded answer's average
-            parts, which can be a fraction. */}
+      {/* Whole numbers: a failed answer counts a graded answer's average
+          parts, which can be a fraction. Hidden, but still read aloud,
+          where a tooltip shows it. */}
+      <span
+        className={
+          props.counts === false ? "sr-only" : "text-xs text-muted tabular-nums"
+        }
+      >
         {Math.round(right)}/{Math.round(total)}
       </span>
     </div>

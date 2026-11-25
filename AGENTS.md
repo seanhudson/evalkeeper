@@ -225,6 +225,20 @@ you found and which you'd map, keep, or replace.
   input behind an answer only when the person agreed, with names and
   contact details removed. The rating action looks the answer up by its
   id; it never takes the input or output from the browser.
+- **Choose check levels sparingly, and list them for review.** Must
+  pass (`serious`) only where a miss changes what the product does or
+  misleads or harms the person; usually one to three a suite. Should
+  pass (`moderate`) for what matters less; nice to have (`minor`) for
+  style and fair differences of judgment. Follow
+  [Choose check levels](docs/best-practices.md#choose-check-levels).
+  After writing a suite, show the person a table of its checks and
+  levels, with a line on why each must-pass one must, and ask them to
+  confirm. Do the same for anything else you chose for them: a suite's
+  priority, its attack setting, and its target number of cases.
+- **Tell the person what you can do for them.** When you add Evalkeeper,
+  say which steps you'll do (wiring, suites, drafting cases, pages) and
+  which stay theirs (confirming answers, reviewing levels, approving
+  paid tests, choosing the live model).
 - **Give every suite field help and every check a description,** and test
   the suite's grader like any other code. Run `describeSuiteContract`
   over the app's suites so a missing label or help fails a test.

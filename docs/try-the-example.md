@@ -40,7 +40,7 @@ it with the example's cases. Then open `http://localhost:3000/evals` in your bro
    of the page says **Make X live**: press **Use the suggestion** to make
    them live. The change shows under **Versions**, with the test behind
    it and a button to roll it back.
-4. **See where two models differ.** In the **Against live** column,
+4. **See where two models differ.** In the **vs live** column,
    open "Worse" for any model. The compare page says which is
    better, in plain words, and lists the cases they graded differently.
 5. **Rate an answer.** Open **Rate an answer** in the header, and press

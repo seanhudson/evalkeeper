@@ -91,6 +91,14 @@ this veto had none. _So:_ the strict rule stays the default, a suite can
 choose Balanced or Off, and a person can **Use anyway**, recorded as
 their call.
 
+**Most checks were marked must-pass.** An app's suites, set up by a
+coding agent, marked most checks must-pass, including wording rules,
+so every model missed some and the must-pass count stopped telling
+models apart. The guide said only "at least one must pass". _So:_ the
+docs say what each level is for and that most suites need one to three
+must-pass checks, agents propose levels and list them for review, and
+the to-do list flags a suite where most checks must pass.
+
 **A short label read as a copied case.** "Cases in the instructions"
 flagged four résumé cases whose only match was an education field,
 "Medical Billing", that a prompt names as an industry. A whole-text match

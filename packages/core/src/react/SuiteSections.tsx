@@ -641,6 +641,8 @@ function TodoAction({
       return button(app.actions.retireReplacedStarters, `Retire ${t.cases}`);
     case "reviewSplit":
       return go("#answer-key-health", "Review them");
+    case "reviewLevels":
+      return go("#menu=settings", "Review levels");
   }
 }
 
@@ -776,6 +778,37 @@ function UseAnyway({
   );
 }
 
+/**
+ * Must-pass, as a share: answers with no must-pass miss, the count of
+ * misses in its tooltip. The suggestion still weighs the count.
+ */
+function MustPass({
+  id,
+  misses,
+  clean,
+  answers,
+}: {
+  id: string;
+  misses: number;
+  clean: number;
+  answers: number;
+}) {
+  const missed = answers - clean;
+  return (
+    <Tip
+      text={
+        misses
+          ? `${misses} must-pass ${misses === 1 ? "miss" : "misses"}, in ${missed} of ${answers} answers.`
+          : `No must-pass misses in ${answers} answers.`
+      }
+      side="bottom"
+      id={`must-pass-${id}`}
+    >
+      <span>{asPct(answers ? clean / answers : null)}</span>
+    </Tip>
+  );
+}
+
 /** Cases whose words appear in the feature's instructions. */
 export function CasesInInstructions({ data }: { data: SuitePageData }) {
   const { inInstructions } = data;
@@ -867,51 +900,51 @@ export function ModelTable({ data }: { data: SuitePageData }) {
           <table className="w-full text-sm">
             <thead className="text-left text-muted">
               <tr className="border-b border-line">
-                <th className="p-3 font-normal">Model</th>
-                <th className="p-3 font-normal">
+                <th className="whitespace-nowrap p-3 font-normal">Model</th>
+                <th className="whitespace-nowrap p-3 font-normal">
                   <Tip term="score" side="bottom">
                     Accuracy
                   </Tip>
                 </th>
-                <th className="p-3 font-normal">
+                <th className="whitespace-nowrap p-3 font-normal">
                   <Tip term="seriousMistakes" side="bottom">
-                    Must-pass misses
+                    Must-pass
                   </Tip>
                 </th>
                 {showAttacks && (
-                  <th className="p-3 font-normal">
+                  <th className="whitespace-nowrap p-3 font-normal">
                     <Tip term="attacksResisted" side="bottom">
-                      Attacks resisted
+                      Attacks
                     </Tip>
                   </th>
                 )}
-                <th className="p-3 font-normal">
+                <th className="whitespace-nowrap p-3 font-normal">
                   <Tip term="time" side="bottom" align="end">
                     Speed
                   </Tip>
                 </th>
                 {suite.decisions && (
                   <>
-                    <th className="p-3 font-normal">
+                    <th className="whitespace-nowrap p-3 font-normal">
                       <Tip term="probabilityQuality" side="bottom">
-                        Probability quality
+                        Confidence
                       </Tip>
                     </th>
-                    <th className="p-3 font-normal">
+                    <th className="whitespace-nowrap p-3 font-normal">
                       <Tip term="calibrationError" side="bottom" align="end">
-                        Calibration error
+                        Calibration
                       </Tip>
                     </th>
                   </>
                 )}
-                <th className="p-3 font-normal">
+                <th className="whitespace-nowrap p-3 font-normal">
                   <Tip term="cost" side="bottom" align="end">
                     Cost
                   </Tip>
                 </th>
-                <th className="p-3 font-normal">
+                <th className="whitespace-nowrap p-3 font-normal">
                   <Tip term="againstLive" side="bottom" align="end">
-                    Against live
+                    vs live
                   </Tip>
                 </th>
                 <th className="p-3" />
@@ -966,23 +999,18 @@ export function ModelTable({ data }: { data: SuitePageData }) {
                           </Chip>
                         </Tip>
                       )}
-                      {suite.decisions && app.models[r.model]?.decisions && (
-                        <Tip
-                          term={
-                            app.models[r.model]?.decisions === "native"
-                              ? "nativeProbabilities"
-                              : "promptedProbabilities"
-                          }
-                          side="bottom"
-                          id={`decisions-${r.key}`}
-                        >
-                          <Chip tone="neutral">
-                            {app.models[r.model]?.decisions === "native"
-                              ? "Native probabilities"
-                              : "Prompted"}
-                          </Chip>
-                        </Tip>
-                      )}
+                      {/* Built-in probabilities are the usual case; only the
+                          exception gets a chip. */}
+                      {suite.decisions &&
+                        app.models[r.model]?.decisions === "prompted" && (
+                          <Tip
+                            term="promptedProbabilities"
+                            side="bottom"
+                            id={`decisions-${r.key}`}
+                          >
+                            <Chip tone="neutral">Self-estimated</Chip>
+                          </Tip>
+                        )}
                       {r.test?.stale && (
                         <Tip
                           term="outOfDate"
@@ -1005,9 +1033,21 @@ export function ModelTable({ data }: { data: SuitePageData }) {
                       </span>
                     ) : r.test ? (
                       <div className="flex flex-col gap-0.5">
-                        <Link href={evalsPath(app, key, "runs", r.test.runId)}>
-                          <Score right={r.test.right} total={r.test.total} />
-                        </Link>
+                        <Tip
+                          text={`${Math.round(r.test.right)} of ${Math.round(r.test.total)} right. Open the test to see each case.`}
+                          side="bottom"
+                          id={`score-${r.key}`}
+                        >
+                          <Link
+                            href={evalsPath(app, key, "runs", r.test.runId)}
+                          >
+                            <Score
+                              right={r.test.right}
+                              total={r.test.total}
+                              counts={false}
+                            />
+                          </Link>
+                        </Tip>
                         {!r.test.stale && r.test.failedAnswers > 0 && (
                           <Link
                             href={`${evalsPath(app, key, "runs", r.test.runId)}#failed`}
@@ -1035,7 +1075,16 @@ export function ModelTable({ data }: { data: SuitePageData }) {
                     )}
                   </td>
                   <td className="p-3 tabular-nums">
-                    {r.test ? seriousMistakes(r, suite.checks) : "—"}
+                    {r.test ? (
+                      <MustPass
+                        id={r.key}
+                        misses={seriousMistakes(r, suite.checks)}
+                        clean={r.test.answersNoSerious}
+                        answers={r.test.answers}
+                      />
+                    ) : (
+                      "—"
+                    )}
                   </td>
                   {showAttacks && (
                     <td className="p-3">
@@ -1063,10 +1112,11 @@ export function ModelTable({ data }: { data: SuitePageData }) {
                           r.test ? probabilityQuality(r.test.measures) : null,
                         )}
                       </td>
-                      <td className="p-3 tabular-nums">
-                        {asPct(
-                          r.test ? meanCalibrationError(r.test.measures) : null,
-                        )}
+                      <td className="whitespace-nowrap p-3 tabular-nums">
+                        {r.test &&
+                        meanCalibrationError(r.test.measures) !== null
+                          ? `${asPct(meanCalibrationError(r.test.measures))} off`
+                          : "—"}
                       </td>
                     </>
                   )}

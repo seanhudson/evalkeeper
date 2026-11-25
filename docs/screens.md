@@ -39,8 +39,8 @@ export function AppComponents({ children }: { children: React.ReactNode }) {
 }
 ```
 
-**Check it works:** open the eval hub. Its buttons and cards look like
-the rest of your app.
+**Check it works:** open a suite's page. Its buttons and cards look
+like the rest of your app.
 
 ### The pieces you can replace
 
@@ -135,10 +135,10 @@ Each page is a short arrangement of sections from
 `@crowandraven/evalkeeper/react`. The sections hold all the logic. They
 read everything from one object, `evals` in `lib/evalkeeper/evals.ts`.
 
-| Page                | Loads its data with               | Sections, in order                                                                                                                                                                                                                          |
-| ------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Suite (`SuitePage`) | `loadSuitePage(evals, key)`, once | `SuiteHeader`, `ChosenOnBase`, `SuggestionCard`, `CasesInInstructions`, `ModelTable`, `TestSettingSection`, `CheckBreakdownSection`, `Versions`, `ChecksSection`, `AnswerKeyHealthSection`, `AnswerKeyToolsSection`, and `AnswerKeySection` |
-| Hub (`HubPage`)     | `loadHub(evals)`                  | `HubIntro`, `HubStats`, `WeeklyCheck`, `SuiteList`, and `NoEvalYet`                                                                                                                                                                         |
+| Page                | Loads its data with               | Sections, in order                                                                                                                                                                                                                   |
+| ------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Suite (`SuitePage`) | `loadSuitePage(evals, key)`, once | `SuiteHeader`, `TodoSection`, `ChosenOnBase`, `SuggestionCard`, `CasesInInstructions`, `ModelTable`, `CheckBreakdownSection`, `Versions`, `ChecksSection`, `AnswerKeyHealthSection`, `AnswerKeyToolsSection`, and `AnswerKeySection` |
+| Hub (`HubPage`)     | `loadHub(evals)`                  | `HubIntro`, `SuiteList`, `HubStats`, `WeeklyCheck`, and `NoEvalYet`                                                                                                                                                                  |
 
 The other pages are one view each:
 

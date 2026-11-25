@@ -71,6 +71,9 @@ Update:
   **must pass**, "minor" ones are **nice to have**, and the model table's
   column is **Must-pass misses**. A yes-or-no decision's threshold reads
   "cutoff".
+- **Against live** says **Better**, **Similar**, or **Worse** (or
+  **Can't tell**, with too few cases), in place of "More accurate",
+  "About as accurate", and "Less accurate".
 - The suite page's status sits beside its title. The to-do list is the
   one place to act: the suggestion card explains, and its item has **Use
   the suggestion**; the separate "attack cases not made yet" card is now

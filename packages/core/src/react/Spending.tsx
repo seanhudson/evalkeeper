@@ -25,9 +25,8 @@ export function SpendingAlert({
 }) {
   if (!reading || !spendingNeedsRoom(reading)) return null;
   const halt = spendingHalt(reading);
-  const stopped = Boolean(
-    reading.stoppedUntil && halt?.startsWith("Tests are stopped"),
-  );
+  const stopped =
+    reading.stoppedUntil !== null && reading.stoppedUntil > new Date();
   const { stopTests, allowTests } = app.actions;
   const canStop = app.spending?.stopAll && stopTests;
   const canAllow = app.spending?.allow && allowTests;

@@ -213,7 +213,7 @@ for (const scheme of SCHEMES) {
 
     await page.goto("/evals/ticket_triage");
     await page
-      .locator('main a[href*="/compare?"]', { hasText: "Less accurate" })
+      .locator('main a[href*="/compare?"]', { hasText: "Worse" })
       .first()
       .click();
     await expect(page).toHaveURL(/\/compare\?/);

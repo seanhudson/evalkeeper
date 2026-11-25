@@ -15,7 +15,7 @@ export const GLOSSARY = {
     "Answers on the attack cases that never came back (an error or a timeout, not a wrong answer). Attacks resisted counts only complete tests: test again.",
   cost: "Average cost per answer on this model, from your catalog's prices.",
   againstLive:
-    "A paired comparison with the live model on the same cases: more accurate, about as accurate, less accurate, or too few cases to tell.",
+    "Accuracy against the live model, paired on the same cases: better, similar (closer than these cases can tell apart), or worse. Can't tell: too few cases.",
   live: "The model this feature runs on now.",
   fallback:
     "The model that answers when the live model's provider is down. Any model can be chosen; the suggestion recommends the most accurate one from another provider.",

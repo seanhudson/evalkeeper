@@ -286,10 +286,10 @@ const whyFavor = (favor: SuitePriority["favor"]) => {
 const FAVORS = { cost: "cost", speed: "speed", quality: "accuracy" } as const;
 
 const VS: Record<string, string> = {
-  BETTER: "More accurate",
-  SAME: "About as accurate",
-  WORSE: "Less accurate",
-  TOO_FEW: "Too few cases to tell",
+  BETTER: "Better",
+  SAME: "Similar",
+  WORSE: "Worse",
+  TOO_FEW: "Can't tell",
 };
 
 /**

@@ -1,0 +1,29 @@
+# Evalkeeper
+
+> Evalkeeper is a free, open-source (MIT) eval harness for the AI features in a TypeScript app. For each feature it keeps an answer key that people confirm, tests any model against it, compares models on accuracy, must-pass misses, cost, and speed, suggests a live model and a fallback with reasons, records every model switch with rollback, and checks weekly that the live model hasn't drifted. It runs inside the app, on the app's own database, behind its own admin login. npm package: `@crowandraven/evalkeeper`.
+
+To add Evalkeeper to an app, follow the agent instructions one step at a time and stop after each step so a person can check it: https://github.com/seanhudson/evalkeeper/blob/main/AGENTS.md#adding-evalkeeper-to-an-app
+
+Requirements: TypeScript on Node 20+, zod 4.6.6+, a database (Prisma 6 out of the box, or a custom `EvalStore`), and the app's own AI provider calls. Optional: Vercel AI SDK 7 adapter, Next.js 15+ or React 19 pages with Tailwind 4.
+
+Not a fit yet: non-TypeScript apps, open-ended writing judged only by taste, live production tracing, or teams that want a hosted platform.
+
+## Start here
+
+- [What Evalkeeper is](https://seanhudson.github.io/evalkeeper/): overview, screenshots, and install
+- [Before you start](https://seanhudson.github.io/evalkeeper/start/before-you-start/): requirements, which parts to use, and who it's for
+- [Try the example](https://seanhudson.github.io/evalkeeper/start/try-the-example/): a Next.js app with demo models, no API keys
+- [Concepts](https://seanhudson.github.io/evalkeeper/start/concepts/): suites, cases, answers, checks, tests, and the board
+- [Add it to your app](https://seanhudson.github.io/evalkeeper/start/adding-to-your-app/): every step, in order, with code
+
+## Guides
+
+- [Bring your own](https://seanhudson.github.io/evalkeeper/guides/bring-your-own/): keep your own tables, router, and pages
+- [Test models and choose one](https://seanhudson.github.io/evalkeeper/guides/choosing-models/)
+- [Ready-made suites](https://seanhudson.github.io/evalkeeper/guides/ready-made-suites/): prompt injection, crisis risk, and hopelessness
+- [API reference](https://seanhudson.github.io/evalkeeper/api/)
+
+## Optional
+
+- [Source on GitHub](https://github.com/seanhudson/evalkeeper)
+- [Changelog](https://github.com/seanhudson/evalkeeper/blob/main/CHANGELOG.md)

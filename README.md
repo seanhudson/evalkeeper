@@ -9,6 +9,7 @@ switch, and checks weekly that the live model hasn't drifted.
 [![CI](https://github.com/seanhudson/evalkeeper/actions/workflows/ci.yml/badge.svg)](https://github.com/seanhudson/evalkeeper/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![npm](https://img.shields.io/npm/v/@crowandraven/evalkeeper.svg)](https://www.npmjs.com/package/@crowandraven/evalkeeper)
+[![npm downloads](https://img.shields.io/npm/dm/@crowandraven/evalkeeper.svg)](https://www.npmjs.com/package/@crowandraven/evalkeeper)
 
 ```bash
 npm install @crowandraven/evalkeeper
@@ -148,6 +149,21 @@ design.
   fresh request instead of dying at the platform's limit, stuck tests are
   marked failed, and a provider out of credits stops a test instead of
   failing every answer.
+
+## What it needs
+
+- TypeScript on **Node 20 or later**, and a server that can run work in
+  the background.
+- **zod 4.6.6 or later.**
+- **A database.** Prisma 6 (PostgreSQL, MySQL, or SQLite) works out of
+  the box; any other database works through your own store.
+- **Any AI provider.** Evalkeeper never calls one itself: each suite calls
+  your own AI function. The Vercel AI SDK (`ai` 7) adapter is optional.
+- **For the pages:** Next.js 15+ or another React 19 app, with Tailwind 4.
+  Without React, use the core with pages of your own.
+
+[Before you start](docs/before-you-start.md) has the details, and who it
+isn't for yet.
 
 ## Quick start
 
@@ -318,6 +334,22 @@ pages.
 [Adding Evalkeeper to your app](docs/adding-to-your-app.md) has the full
 steps, and [AGENTS.md](AGENTS.md) gives a coding agent what it needs to do
 them for you.
+
+## How it compares
+
+Good eval tools already exist. Pick the one that fits the job:
+
+| Tool                                                                                        | What it is best at                                                                                                                                                                   |
+| ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Evalkeeper**                                                                              | Running inside your app, on your database, behind your admin login: answer keys people confirm, a board per feature that suggests the live model, version history, and drift checks. |
+| [promptfoo](https://www.promptfoo.dev/)                                                     | A CLI and config files for testing prompts across many providers, and red teaming. Runs locally, any language.                                                                       |
+| [Evalite](https://github.com/mattpocock/evalite)                                            | Writing evals as `.eval.ts` files on Vitest, with a local UI while you iterate.                                                                                                      |
+| [Braintrust](https://www.braintrust.dev/), [LangSmith](https://www.langchain.com/langsmith) | Hosted platforms that pair evals with tracing and observability of live traffic.                                                                                                     |
+
+They mix well. Evalkeeper's prompt-injection suite reads attacks from
+promptfoo, and it pairs with an observability tool for live traffic.
+Choose Evalkeeper when the question is "which model should this feature
+use, and has it gotten worse?" and you want the answer in your own admin.
 
 ## Packages
 

@@ -5,7 +5,7 @@ Notable changes, newest first. The format follows
 follow [semantic versioning](https://semver.org/): until 1.0, a minor
 version may change an interface, and its entry says how to update.
 
-## Unreleased
+## 0.19.0 - 2026-11-24
 
 A design pass over the eval pages (#148): the hub answers "is anything
 wrong?" in seconds, each suite's page leads with what to do next, every

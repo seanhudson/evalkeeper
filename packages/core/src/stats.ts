@@ -86,10 +86,16 @@ export type SuiteMetrics = {
 };
 
 /**
- * Whether an answer passed every check that applied. A failed answer (null) didn't.
+ * Whether an answer passed every check that applied, leaving out
+ * nice-to-have (minor) misses, which never fail an answer. A failed answer
+ * (null) didn't.
  */
 export function allPassed(checks: CheckResult[] | null): boolean {
-  return checks !== null && checks.every((c) => c.pass !== false);
+  // A nice-to-have miss is a fair difference of judgment: never a failure.
+  return (
+    checks !== null &&
+    checks.every((c) => c.pass !== false || c.level === "minor")
+  );
 }
 
 /**

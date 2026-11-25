@@ -364,12 +364,13 @@ describe("runner, beyond a basic test", () => {
     expect(c?.comparison.byCheck.right?.champion.passed).toBe(6);
     expect(c?.comparison.byCheck.right?.challenger.passed).toBe(3);
     expect(c?.caveats).toEqual([]);
-    // The cases graded differently, for reading side by side: here both
-    // miss them, on different checks.
+    // The cases graded differently, for reading side by side. The first
+    // test misses them only on a nice-to-have check, which never fails an
+    // answer, so these are cases the second broke.
     expect(c?.disagreements.map((d) => [d.caseId, d.kind])).toEqual([
-      ["case_1", "differ"],
-      ["case_5", "differ"],
-      ["case_9", "differ"],
+      ["case_1", "broke"],
+      ["case_5", "broke"],
+      ["case_9", "broke"],
     ]);
     expect(await runner.compare("double", a.run.id, a.run.id)).toBeNull();
     expect(await runner.compare("double", a.run.id, "missing")).toBeNull();
@@ -440,7 +441,7 @@ describe("runner, beyond a basic test", () => {
     );
     expect(plain.canSaveSuiteSettings).toBe(false);
     await expect(
-      plain.saveSuiteSettings("double", { targetCases: 10 }, "p"),
+      plain.saveSuiteSettings("double", { targetCases: 10, checks: {} }, "p"),
     ).rejects.toThrow(/pass suiteSettings/);
     // The suite's own target of 15 in code: 5 can go.
     const own = threeModels(store, { ...single, targetCases: 15 });
@@ -453,10 +454,71 @@ describe("runner, beyond a basic test", () => {
       { settings: true },
     );
     expect(saved.canSaveSuiteSettings).toBe(true);
-    await saved.saveSuiteSettings("double", { targetCases: 18 }, "person-1");
-    expect(await saved.suiteSettings("double")).toEqual({ targetCases: 18 });
+    await saved.saveSuiteSettings(
+      "double",
+      { targetCases: 18, checks: {} },
+      "person-1",
+    );
+    expect(await saved.suiteSettings("double")).toEqual({
+      targetCases: 18,
+      checks: {},
+    });
     expect(await saved.targetCases("double")).toBe(18);
     expect(await saved.retireEasy("double")).toBe(2);
+  });
+
+  it("grades at the levels a person set, and records them on each test", async () => {
+    const store = memoryStore();
+    for (const n of [1, 2, 3, 4]) await store.createCase(kase(n));
+    const runner = threeModels(store, double, { settings: true });
+    const runOf = async () =>
+      (await store.listRuns("double", { status: "SUCCEEDED" }))[0];
+
+    const { run } = await runner.createRun({ suite: "double", model: "a" });
+    await runner.runEval(run.id);
+    // "Biggest in its group" is nice to have: its misses fail no answer.
+    let done = await runOf();
+    expect(done?.metrics?.allPass.passed).toBe(4);
+    expect(done?.metrics?.levels).toEqual({
+      right: "serious",
+      biggest: "minor",
+    });
+    const [scored] = await store.listOutputs(run.id);
+    expect(scored?.scores?.find((c) => c.key === "biggest")?.level).toBe(
+      "minor",
+    );
+
+    // Made a must-pass check: the test was graded at other levels.
+    await runner.saveSuiteSettings(
+      "double",
+      { targetCases: null, checks: { biggest: { severity: "serious" } } },
+      "person-1",
+    );
+    let board = await runner.board("double");
+    expect(board.suite.checks.find((c) => c.key === "biggest")?.severity).toBe(
+      "serious",
+    );
+    expect(board.rows.find((r) => r.model === "a")?.test?.stale).toBe(true);
+
+    // A free rescore grades it at the new levels: one biggest per group.
+    await runner.rescoreRecent("double");
+    done = await runOf();
+    expect(done?.metrics?.allPass.passed).toBe(2);
+    expect(done?.metrics?.levels?.biggest).toBe("serious");
+    board = await runner.board("double");
+    expect(board.rows.find((r) => r.model === "a")?.test?.stale).toBe(false);
+  });
+
+  it("counts a test graded before levels were kept as current", async () => {
+    const store = memoryStore();
+    for (const n of [1, 2]) await store.createCase(kase(n));
+    const runner = threeModels(store, double, { settings: true });
+    const { run } = await runner.createRun({ suite: "double", model: "a" });
+    await runner.runEval(run.id);
+    const r = store.runs.find((x) => x.id === run.id);
+    if (r?.metrics) delete r.metrics.levels;
+    const board = await runner.board("double");
+    expect(board.rows.find((x) => x.model === "a")?.test?.stale).toBe(false);
   });
 
   it("reads suite settings it can't load as none saved", async () => {
@@ -471,7 +533,10 @@ describe("runner, beyond a basic test", () => {
         saveSuiteSettings: () => Promise.resolve(),
       },
     });
-    expect(await runner.suiteSettings("double")).toEqual({ targetCases: null });
+    expect(await runner.suiteSettings("double")).toEqual({
+      targetCases: null,
+      checks: {},
+    });
     expect(await runner.targetCases("double")).toBe(50);
   });
 

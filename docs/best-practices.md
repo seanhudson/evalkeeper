@@ -29,8 +29,11 @@ checks until something passes.
 
 **Mark what must pass.** A must-pass check (`severity: "serious"`)
 catches a mistake that changes what your product does: the wrong queue,
-a missed urgent ticket. A nice-to-have one (`"minor"`) is a fair
-difference of judgment. Compare must-pass misses before you keep a
+a missed urgent ticket. A should-pass one (`"moderate"`) matters, but
+less. A nice-to-have one (`"minor"`) is a fair difference of judgment,
+and its miss never fails an answer: a category a fact could fairly take
+two ways belongs here, or it will hold every model's fully right
+answers down. Compare must-pass misses before you keep a
 prompt change: in one app, a rule cut nice-to-have misses from 8 to 5
 and raised made-up details, a must-pass miss, from 4 to 7.
 

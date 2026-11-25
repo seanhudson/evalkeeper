@@ -306,7 +306,15 @@ export function SuiteStatusBadge({ status }: { status: SuiteStatus }) {
 /** A check's severity as the pages say it: Must pass, or Nice to have. */
 export function SeverityChip({ severity }: { severity: CheckDef["severity"] }) {
   return (
-    <Chip tone={severity === "serious" ? "serious" : "neutral"}>
+    <Chip
+      tone={
+        severity === "serious"
+          ? "serious"
+          : severity === "moderate"
+            ? "warn"
+            : "neutral"
+      }
+    >
       {SEVERITY_LABEL[severity]}
     </Chip>
   );

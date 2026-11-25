@@ -51,6 +51,8 @@ import { at } from "./util.js";
 import { targetCasesOf } from "./summary.js";
 import {
   NO_SUITE_SETTINGS,
+  effectiveChecks,
+  levelsOf,
   type SuiteSettings,
   type SuiteSettingsStore,
 } from "./suiteSettings.js";
@@ -562,8 +564,22 @@ export function createRunner(opts: RunnerOptions) {
     /** Only these cases' answers count; all when absent. */
     caseIds?: ReadonlySet<string>,
   ): Promise<RunMetrics> {
-    const outputs = (await store.listOutputs(run.id)).filter(
-      (o) => !caseIds || caseIds.has(o.caseId),
+    const levels = levelsOf(suite.checks);
+    // Each result keeps the level it was graded at, so a nice-to-have miss
+    // never fails an answer wherever the answer is read.
+    const outputs = await Promise.all(
+      (await store.listOutputs(run.id))
+        .filter((o) => !caseIds || caseIds.has(o.caseId))
+        .map(async (o) => {
+          if (!o.scores) return o;
+          const stamped = o.scores.map((c) => {
+            const level = levels[c.key];
+            return level ? { ...c, level } : c;
+          });
+          if (stamped.some((c, i) => c.level !== o.scores?.[i]?.level))
+            await store.setOutputScores(o.id, stamped);
+          return { ...o, scores: stamped };
+        }),
     );
     const scored: ScoredOutput[] = outputs.map((o) => ({
       caseId: o.caseId,
@@ -580,6 +596,7 @@ export function createRunner(opts: RunnerOptions) {
       ),
       judgeCostUsd,
       failureReason: commonError(outputs.map((o) => o.error)),
+      levels,
     };
   }
 
@@ -594,7 +611,7 @@ export function createRunner(opts: RunnerOptions) {
     if (!run || run.status !== "RUNNING") return;
     const leg = o.leg ?? 1;
     try {
-      const suite = suiteOrThrow(run.suite);
+      const suite = await effectiveSuite(run.suite);
       const cases = await casesFor(suite.key, run.set);
       const since = new Date(Date.now() - REUSE_DAYS * 86_400_000);
       const jobs = cases.flatMap((c) =>
@@ -746,7 +763,7 @@ export function createRunner(opts: RunnerOptions) {
   async function rescoreRun(runId: string) {
     const run = await store.getRun(runId);
     if (!run) return;
-    const suite = suiteOrThrow(run.suite);
+    const suite = await effectiveSuite(run.suite);
     const cases = new Map(
       (await store.listCases(suite.key)).map((c) => [c.id, c]),
     );
@@ -853,6 +870,17 @@ export function createRunner(opts: RunnerOptions) {
       suiteOrThrow(suiteKey),
       await suiteSettingsOf(suiteKey),
     );
+  }
+
+  /**
+   * A suite with a person's levels and aims (Suite settings) in place of
+   * its checks' own: what grading, the board, and the pages use.
+   */
+  async function effectiveSuite(suiteKey: string): Promise<AnySuite> {
+    const suite = suiteOrThrow(suiteKey);
+    if (!opts.suiteSettings) return suite;
+    const saved = await suiteSettingsOf(suite.key);
+    return { ...suite, checks: effectiveChecks(suite.checks, saved) };
   }
 
   /**
@@ -1060,7 +1088,7 @@ export function createRunner(opts: RunnerOptions) {
    * the two answers side by side.
    */
   async function compare(suiteKey: string, a: string, b: string) {
-    const suite = suiteOrThrow(suiteKey);
+    const suite = await effectiveSuite(suiteKey);
     const [ra, rb] = await Promise.all([store.getRun(a), store.getRun(b)]);
     if (
       !ra ||
@@ -1143,7 +1171,12 @@ export function createRunner(opts: RunnerOptions) {
   async function board(suiteKey: string) {
     if (!opts.route || !opts.candidates)
       throw new Error("The board needs the route and candidates options");
-    const suite = suiteOrThrow(suiteKey);
+    // With a person's levels and aims, so every page reads the same checks.
+    const suite = await effectiveSuite(suiteKey);
+    const levels = levelsOf(suite.checks);
+    const sameLevels = (r: RunRecord) =>
+      !r.metrics?.levels ||
+      Object.entries(levels).every(([k, l]) => r.metrics?.levels?.[k] === l);
     const [route, cases, prompt] = await Promise.all([
       opts.route(suite.operation),
       casesFor(suite.key, "ALL"),
@@ -1179,7 +1212,10 @@ export function createRunner(opts: RunnerOptions) {
     const liveCap = route.maxOutputTokens ?? null;
     // A test at another temperature or output cap than the live ones
     // answered differently.
+    // Tests graded at other levels need a rescore (free); tests from
+    // before levels were kept count as current.
     const isCurrent = (r: RunRecord) =>
+      sameLevels(r) &&
       r.datasetVersion === current &&
       r.promptVersion === prompt &&
       (r.temperature ?? null) === liveTemperature &&
@@ -1497,6 +1533,7 @@ export function createRunner(opts: RunnerOptions) {
     retireEasy,
     easyRounds,
     targetCases,
+    effectiveSuite,
     suiteSettings: suiteSettingsOf,
     saveSuiteSettings,
     /** Whether suite settings can be saved (a `suiteSettings` store). */

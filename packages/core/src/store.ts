@@ -68,6 +68,11 @@ export type RunStatus = "RUNNING" | "SUCCEEDED" | "FAILED";
 export type RunMetrics = SuiteMetrics & {
   judgeCostUsd: number;
   failureReason: string | null;
+  /**
+   * Each check's level the test was graded with (must pass, should pass,
+   * nice to have), by key. Absent on tests graded before levels were kept.
+   */
+  levels?: Record<string, "serious" | "moderate" | "minor">;
 };
 
 /**

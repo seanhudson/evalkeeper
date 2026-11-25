@@ -599,6 +599,7 @@ export function describeSuiteSettingsStoreContract(
       const suite = names()("triage");
       expect(await store.getSuiteSettings(suite)).toEqual({
         targetCases: null,
+        checks: {},
       });
     });
 
@@ -606,13 +607,37 @@ export function describeSuiteSettingsStoreContract(
       const store = await make();
       const name = names();
       const [a, b] = [name("triage"), name("summary")];
-      await store.saveSuiteSettings(a, { targetCases: 10 }, "person-1");
-      expect(await store.getSuiteSettings(a)).toEqual({ targetCases: 10 });
-      expect(await store.getSuiteSettings(b)).toEqual({ targetCases: null });
-      await store.saveSuiteSettings(a, { targetCases: 12 }, "person-2");
-      expect(await store.getSuiteSettings(a)).toEqual({ targetCases: 12 });
-      await store.saveSuiteSettings(a, { targetCases: null }, null);
-      expect(await store.getSuiteSettings(a)).toEqual({ targetCases: null });
+      const levels = {
+        category: { severity: "minor" as const },
+        tone: { severity: "moderate" as const, aim: 0.8 },
+      };
+      await store.saveSuiteSettings(
+        a,
+        { targetCases: 10, checks: levels },
+        "person-1",
+      );
+      expect(await store.getSuiteSettings(a)).toEqual({
+        targetCases: 10,
+        checks: levels,
+      });
+      expect(await store.getSuiteSettings(b)).toEqual({
+        targetCases: null,
+        checks: {},
+      });
+      await store.saveSuiteSettings(
+        a,
+        { targetCases: 12, checks: {} },
+        "person-2",
+      );
+      expect(await store.getSuiteSettings(a)).toEqual({
+        targetCases: 12,
+        checks: {},
+      });
+      await store.saveSuiteSettings(a, { targetCases: null, checks: {} }, null);
+      expect(await store.getSuiteSettings(a)).toEqual({
+        targetCases: null,
+        checks: {},
+      });
     });
   });
 }

@@ -25,8 +25,10 @@ export const GLOSSARY = {
     "Cases, answers, or instructions changed since this test ran. Test again, or rescore for free if only answers changed.",
   serious:
     "Must pass: missing it changes what the product does. A must-pass check aims to pass 95% of the time unless it sets its own aim.",
+  moderate:
+    "Should pass: it matters, but less than a must-pass check. It aims to pass 85% of the time unless it sets its own aim, and a miss fails the answer.",
   minor:
-    "Nice to have: a fair difference of judgment. It aims to pass 75% of the time unless it sets its own aim.",
+    "Nice to have: a fair difference of judgment. It aims to pass 75% of the time unless it sets its own aim, and a miss never fails the answer.",
   aim: "The pass rate this check aims for. Under it, the check needs work.",
   reasoningSetting:
     "Some models think before answering, and how much is a setting. Less is faster and cheaper; more can be more accurate. Each setting you test gets its own row.",
@@ -100,6 +102,8 @@ export const GLOSSARY = {
     "One suite per AI feature: its cases, the answers people confirmed, and the checks that grade any model against them. Open one to compare models and choose the live one.",
   standing:
     "Where a suite stands. Needs attention: its to-do list has something on it. Can't tell yet: no model tested, or too few cases to judge. Healthy: nothing to do.",
+  checkLevels:
+    "Each check's level and aim, in place of the suite's own. Grading and the suggestion use them, a nice-to-have miss never fails an answer, and saving rescores recent tests for free.",
   todo: "What to do next on this suite, in order, each with why. Each is done on this page, and drops off once it's done.",
   replacedStarter:
     "Added from the suite's starter cases, which have changed since: this input is no longer one of them. Retire it, unless you want it as a case of your own.",

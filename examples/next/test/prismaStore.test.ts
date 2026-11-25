@@ -159,7 +159,7 @@ describe("scoped contracts on a database with other rows", () => {
       });
       await prismaSuiteSettingsStore(prisma).saveSuiteSettings(
         suite,
-        { targetCases: 10 },
+        { targetCases: 10, checks: {} },
         "person-1",
       );
     }

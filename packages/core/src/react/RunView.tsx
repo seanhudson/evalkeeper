@@ -1,6 +1,13 @@
 import { evalsPath, type EvalAppConfig } from "./app.js";
-import { Link, LocalDate } from "./pieces.js";
-import { allPassed, failureHints, money, summarize } from "../index.js";
+import { InfoTip, Link, LocalDate } from "./pieces.js";
+import {
+  SEVERITY_LABEL,
+  SEVERITY_ORDER,
+  allPassed,
+  failureHints,
+  money,
+  summarize,
+} from "../index.js";
 import { FieldValues } from "./Fields.js";
 import { ReadableOutput } from "./ReadableOutput.js";
 import { BackLink, Card } from "./pieces.js";
@@ -83,6 +90,25 @@ export async function RunView({
             {pct(summary.total ? summary.right / summary.total : 0)})
           </p>
           <p className="readable text-sm text-muted">{summary.trust}</p>
+          {metrics?.levels && (
+            // The levels it was graded at: a nice-to-have miss didn't fail
+            // an answer. Saving other levels rescores it.
+            <p className="readable text-sm text-muted">
+              Graded with{" "}
+              {SEVERITY_ORDER.flatMap((level) => {
+                const names = suite.checks
+                  .filter((c) => metrics.levels?.[c.key] === level)
+                  .map((c) => c.label);
+                return names.length
+                  ? [
+                      `${SEVERITY_LABEL[level].toLowerCase()}: ${names.join(", ")}`,
+                    ]
+                  : [];
+              }).join("; ")}
+              .
+              <InfoTip term="checkLevels" id="run-levels" />
+            </p>
+          )}
           {failed.length > 0 && (
             <p className="readable text-sm text-bad">
               {failed.length} {failed.length === 1 ? "answer" : "answers"}{" "}

@@ -76,6 +76,34 @@ test("a suite's own target changes what its to-do list asks for", async ({
   await expect(todo(page).getByText(/^Add 34 cases/)).toBeVisible();
 });
 
+test("a check's level, set in Suite settings, shows on the page", async ({
+  page,
+}) => {
+  await page.goto("/evals/ticket_triage");
+  const checks = page.locator("#checks");
+  const urgency = checks.locator("section", { hasText: "Right urgency" });
+  await expect(
+    urgency.getByText("Nice to have", { exact: true }),
+  ).toBeVisible();
+
+  const drawer = await openDrawer(page, "Ticket triage", "Suite settings");
+  await drawer.getByLabel("Right urgency: level").selectOption("serious");
+  await drawer.getByLabel("Right urgency: aim").fill("90");
+  await drawer.getByRole("button", { name: "Save" }).click();
+  await expect(drawer).toBeHidden();
+  await expect(urgency.getByText("Must pass", { exact: true })).toBeVisible();
+  await expect(urgency.getByText("Aim: 90%")).toBeVisible();
+
+  // Back to the suite's own.
+  const reset = await openDrawer(page, "Ticket triage", "Suite settings");
+  await reset.getByLabel("Right urgency: level").selectOption("");
+  await reset.getByLabel("Right urgency: aim").fill("");
+  await reset.getByRole("button", { name: "Save" }).click();
+  await expect(
+    urgency.getByText("Nice to have", { exact: true }),
+  ).toBeVisible();
+});
+
 test("spending limits save as money, in one form, and go back to the default", async ({
   page,
 }) => {

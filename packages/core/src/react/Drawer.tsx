@@ -9,8 +9,6 @@ import { Menu, MenuButton } from "./Menu.js";
  * belongs to the whole page (Suite settings, Spending and daily limits):
  * one form, one primary Save. Closes with its X, Escape, or a click on
  * the page behind it, and returns focus to what opened it.
- *
- * @param props.title - The drawer's heading, and its accessible name.
  */
 export function Drawer({
   title,
@@ -18,6 +16,7 @@ export function Drawer({
   onClose,
   children,
 }: {
+  /** The drawer's heading, and its accessible name. */
   title: string;
   open: boolean;
   onClose: () => void;
@@ -91,13 +90,12 @@ export type PageMenuEntry = {
 /**
  * The menu beside a page's title: each entry opens its own drawer.
  * Renders nothing without entries.
- *
- * @param props.label - The menu button's accessible name.
  */
 export function PageMenu({
   label,
   entries,
 }: {
+  /** The menu button's accessible name. */
   label: string;
   entries: readonly PageMenuEntry[];
 }) {

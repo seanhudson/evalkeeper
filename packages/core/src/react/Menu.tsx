@@ -26,10 +26,6 @@ const ITEM = "block w-full rounded px-3 py-1.5 text-left text-sm hover:bg-tint";
 
 /**
  * A vertical-dots button and its menu.
- *
- * @param props.label - The button's accessible name: "Choose GPT-6 Luna".
- * @param props.width - The menu's width class; `w-56` by default.
- * @param props.className - Classes for the wrapper (to place it).
  */
 export function Menu({
   label,
@@ -37,9 +33,12 @@ export function Menu({
   width = "w-56",
   className = "relative",
 }: {
+  /** The button's accessible name: "Choose GPT-6 Luna". */
   label: string;
   children: ReactNode;
+  /** The menu's width class; `w-56` by default. */
   width?: string;
+  /** Classes for the wrapper (to place it). */
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -82,8 +81,6 @@ export function Menu({
 /**
  * A menu item that does something in the browser (opens a form or a
  * drawer), then closes the menu.
- *
- * @param props.danger - Shown in the bad color, for retiring and the like.
  */
 export function MenuButton({
   onSelect,
@@ -92,6 +89,7 @@ export function MenuButton({
 }: {
   onSelect: () => void;
   children: ReactNode;
+  /** Shown in the bad color, for retiring and the like. */
   danger?: boolean;
 }) {
   const close = useContext(Close);
@@ -114,8 +112,6 @@ export function MenuButton({
  * A menu item that submits a server action with hidden fields, with an
  * optional note under its words ("free, all 34 reused"). The menu closes
  * once the form is read, so it doesn't cover the rows below.
- *
- * @param props.fields - Hidden fields, by name; undefined ones are left out.
  */
 export function MenuForm({
   action,
@@ -125,6 +121,7 @@ export function MenuForm({
   danger = false,
 }: {
   action: FormAction;
+  /** Hidden fields, by name; undefined ones are left out. */
   fields: Readonly<Record<string, string | undefined>>;
   children: ReactNode;
   note?: string | null;

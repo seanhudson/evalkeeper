@@ -13,14 +13,13 @@ import { WARN_PANEL } from "./format.js";
  * What tests spent, and the stop, when it matters: over a limit, stopped,
  * or a test running (so Stop is in reach). Otherwise it renders nothing,
  * and spending lives in the page's menu. Needs your app's `spending`.
- *
- * @param props.reading - The reading the page loaded; null: none to show.
  */
 export function SpendingAlert({
   app,
   reading,
 }: {
   app: EvalAppConfig;
+  /** The reading the page loaded; null: none to show. */
   reading: SpendingReading | null;
 }) {
   if (!reading || !spendingNeedsRoom(reading)) return null;
@@ -69,9 +68,6 @@ export function SpendingAlert({
  * The Spending and daily limits drawer: the last 24 hours' spending, then
  * one form for both limits with one Save. On a suite's page the reading
  * has its feature; an empty feature limit means its default.
- *
- * @param props.suite - The suite whose page this is, for its feature's limit.
- * @param props.label - That feature's name, as the page shows it.
  */
 export function SpendingForm({
   app,
@@ -81,7 +77,9 @@ export function SpendingForm({
 }: {
   app: EvalAppConfig;
   reading: SpendingReading;
+  /** The suite whose page this is, for its feature's limit. */
   suite?: string;
+  /** That feature's name, as the page shows it. */
   label?: string;
 }) {
   const f = reading.feature;

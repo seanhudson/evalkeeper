@@ -27,6 +27,11 @@ test("the template's own hint doesn't count as an answer", () => {
   );
 });
 
+test("a hint nested in a hint, or left unclosed, is stripped too", () => {
+  assert.match(docsLineProblem("Docs: <!-<!-- x -->- y -->") ?? "", /is empty/);
+  assert.match(docsLineProblem("Docs: <!-- never closed") ?? "", /is empty/);
+});
+
 test("dependency updates from Dependabot are exempt", () => {
   assert.equal(docsLineProblem("Bumps zod.", "dependabot[bot]"), null);
 });

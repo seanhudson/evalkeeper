@@ -18,7 +18,13 @@ export const EXEMPT_AUTHORS = new Set(["dependabot[bot]"]);
  */
 export function docsLineProblem(body, author = "") {
   if (EXEMPT_AUTHORS.has(author)) return null;
-  const text = (body ?? "").replace(/<!--[\s\S]*?-->/g, "");
+  // Template hints are comments: strip them until none is left, an
+  // unclosed one included, so a hint never counts as an answer.
+  let text = body ?? "";
+  for (let before = ""; before !== text;) {
+    before = text;
+    text = text.replace(/<!--[\s\S]*?(?:-->|$)/g, "");
+  }
   const match = /^\s*(?:[-*]\s*)?\**Docs:?\**:?[ \t]*(.*)$/im.exec(text);
   if (!match)
     return 'The description needs a "Docs:" line: the pages this changed, or "none" and why.';

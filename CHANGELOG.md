@@ -75,9 +75,9 @@ Update:
   percentage per model in the same colored chips as the rows above it,
   against an aim of 100%, and its label says how many answers ("14 of
   16 answers" stays as each cell's tooltip).
-- In the answer key, only held-out cases (`split: "TEST"`) carry a chip,
-  **Held out**, with a tooltip saying what it means; the "Dev" chip on
-  every other case is gone.
+- The answer key no longer shows each case's Dev or Test chip: nothing
+  on the pages treats the two sets differently (every test runs every
+  case). Cases keep their `split` for tests run from code.
 - The answer key's **Attacks** tab looks like its **Cases** tab: a
   heading with how many are in use, **Add an attack** as a button, and
   **Update attack cases** as an icon button, each with a tooltip.

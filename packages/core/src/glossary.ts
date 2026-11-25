@@ -45,8 +45,6 @@ export const GLOSSARY = {
     "Confirmed by an expert in what the suite judges, such as a crisis line counselor, once for every app that uses the suite. Your own confirmed answer replaces it.",
   dev: "A case you can look at while you change the instructions. Most cases are.",
   test: "A held-out case: kept out of sight while you change the instructions, so it shows whether a change works on cases nobody tuned it on.",
-  heldOut:
-    "Kept out of sight while you change the instructions, so it shows whether a change works on cases nobody tuned it on. Tests run it like any other case.",
   suggestion:
     "Fixed rules pick it, so the reason given is the real one: accuracy first, then the suite's priority. Nothing changes until you choose.",
   attacksResisted:

@@ -68,7 +68,7 @@ export function Drawer({
         }
         className="absolute inset-y-0 right-0 flex w-full max-w-md flex-col overflow-y-auto border-l border-line bg-card shadow-xl focus:outline-none"
       >
-        <div className="flex items-start justify-between gap-3 border-b border-line p-4">
+        <div className="flex items-start justify-between gap-3 p-4 pb-0">
           <h2 className="text-lg font-semibold">{title}</h2>
           <CloseButton onClick={onClose} />
         </div>

@@ -62,7 +62,6 @@ import {
   RotateCw,
   ShieldAlert,
   Sparkles,
-  Square,
 } from "lucide-react";
 import { PageMenu, type PageMenuEntry } from "./Drawer.js";
 import { SpendingAlert, SpendingForm } from "./Spending.js";
@@ -414,8 +413,10 @@ export function TodoSection({ data }: { data: SuitePageData }) {
             : "Nothing to do: every must-pass check meets its aim, and the answer key is at its target."}
         </p>
       ) : (
-        <ul className="divide-y divide-line rounded-lg border border-line bg-card">
-          {todos.map((t) => {
+        // Numbered: the list is in the order to do it. No checkbox: an item
+        // drops off on its own once it's done.
+        <ol className="divide-y divide-line rounded-lg border border-line bg-card">
+          {todos.map((t, n) => {
             const { what, why } = todoText(t);
             return (
               <li
@@ -423,10 +424,12 @@ export function TodoSection({ data }: { data: SuitePageData }) {
                 className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 px-4 py-3 text-sm"
               >
                 <p className="readable flex min-w-0 items-start gap-2">
-                  <Square
+                  <span
                     aria-hidden
-                    className="mt-0.5 h-4 w-4 shrink-0 text-muted"
-                  />
+                    className="w-4 shrink-0 text-right tabular-nums text-muted"
+                  >
+                    {n + 1}.
+                  </span>
                   <span>
                     <span className="font-medium">{what}</span>: {why}
                   </span>
@@ -435,7 +438,7 @@ export function TodoSection({ data }: { data: SuitePageData }) {
               </li>
             );
           })}
-        </ul>
+        </ol>
       )}
     </section>
   );

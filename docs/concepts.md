@@ -89,12 +89,20 @@ kept as a SKIPPED mark with no value: it's never graded against and only
 keeps the case out of that person's queue.
 
 **Check.** One thing a good answer gets right. A check passes, fails, or
-doesn't apply (null). It's either _must pass_ (`severity: "serious"`: a
-mistake that changes what your product does, the wrong queue, a missed
-urgent ticket) or _nice to have_ (`severity: "minor"`: a fair difference
-of judgment). Each has an _aim_, the pass rate it aims for: 95% for
-must-pass checks and 75% for nice-to-have ones, unless a check sets its
-own (`bar`). Under its aim, a check needs work.
+doesn't apply (null). Its level is one of three:
+
+- _Must pass_ (`severity: "serious"`): a mistake that changes what your
+  product does, such as the wrong queue or a missed urgent ticket. Models
+  are compared on these misses first.
+- _Should pass_ (`"moderate"`): it matters, but less.
+- _Nice to have_ (`"minor"`): a fair difference of judgment. It's tracked
+  against its aim, but a miss never fails an answer.
+
+Each has an _aim_, the pass rate it aims for: 95%, 85%, and 75% by
+level, unless a check sets its own (`bar`). Under its aim, a check needs
+work. A person can change any check's level and aim in the suite's
+**Suite settings**, without a code change. Each test records the levels
+it was graded with, and saving new ones rescores recent tests for free.
 
 **Partial credit.** When an answer has parts (action items, facts), a
 check can report `units`: parts right of parts expected. The headline

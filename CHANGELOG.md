@@ -23,6 +23,10 @@ Update:
   `suiteSettings: prismaSuiteSettingsStore(prisma)` to `createRunner`.
 - To show spending, pass your own `spending` (an `EvalSpending`) in your
   wiring, and take out any panel of your own on the eval pages.
+- A nice-to-have miss no longer fails an answer. Tests graded before
+  this still count it until rescored: press **Rescore tests** (free) on
+  each suite's answer key once after upgrading. `CheckDef.severity` can
+  now be `"moderate"` too, so a `switch` over it needs that case.
 - The glossary term `bar` is now `aim`. `InfoTip term="bar"` becomes
   `term="aim"`.
 - A hub of your own: `loadHub` returns `suites` (each with its `status`
@@ -57,6 +61,15 @@ Update:
   no starter has anymore is marked **No longer a starter**, and the to-do
   list offers to retire just those. A new starter that shares a title
   with one it replaces says so (`replacedStarters`).
+- **Three check levels, set per suite** (#150): must pass (`serious`),
+  should pass (`moderate`, a new level, aiming at 85%), and nice to have
+  (`minor`). A nice-to-have miss no longer fails an answer, so it no
+  longer drags down the answers fully right. **Suite settings** sets any
+  check's level and aim in place of the code's; grading, the board, the
+  suggestion, and the to-do list all use them. Each test records the
+  levels it was graded with (`metrics.levels`, shown on its page), and
+  saving new levels rescores recent tests for free (`effectiveChecks`,
+  `runner.effectiveSuite`).
 - One vertical-dots `Menu` (model rows, cases, and the page title all use
   it) and a `Drawer`, exported for custom pages.
 

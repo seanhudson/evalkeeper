@@ -274,7 +274,8 @@ export function evalActions(w: EvalWiring): Required<EvalActions> {
       const live = current.settings;
       const s = suggest(
         board.rows,
-        suite.checks,
+        // With a person's levels, as the page showed them.
+        board.suite.checks,
         priorityOf(suite, live),
         w.models,
         {
@@ -461,9 +462,12 @@ export function evalActions(w: EvalWiring): Required<EvalActions> {
       const suite = suiteFrom(form);
       await runner.saveSuiteSettings(
         suite.key,
-        suiteSettingsFromForm(form),
+        suiteSettingsFromForm(form, suite.checks),
         changer(admin),
       );
+      // Levels and aims change what passed: recent tests are rescored with
+      // them now (free), so no test reads as out of date.
+      await runner.rescoreRecent(suite.key);
       everyPage();
     },
 

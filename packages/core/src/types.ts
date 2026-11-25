@@ -35,6 +35,13 @@ export type CheckResult = {
    */
   measures?: Record<string, number> | undefined;
   /**
+   * Set by Evalkeeper when it grades: the check's level then (the suite's,
+   * or a person's from Suite settings). A nice-to-have (`minor`) miss
+   * never fails an answer (`allPassed`). Absent on answers graded before
+   * levels were kept: those count every check.
+   */
+  level?: CheckDef["severity"] | undefined;
+  /**
    * Set by Evalkeeper on checks from a suite's `gradeTogether`: they grade
    * this answer against others (a ranking), so the case matters to other
    * cases' results too, and is never retired as easy.
@@ -54,11 +61,14 @@ export type CheckDef = {
   /** "code": needs no label. "label": compares with a confirmed label. */
   kind: "code" | "label";
   /**
-   * Serious: changes what the product does (which queue a ticket lands
-   * in, what a summary claims). Minor: a fair difference of judgment (a category, how finely
-   * to split). Models are ranked on serious mistakes.
+   * Its level. Serious (must pass): changes what the product does (which
+   * queue a ticket lands in, what a summary claims); models are ranked on
+   * these misses first. Moderate (should pass): matters, but less. Minor
+   * (nice to have): a fair difference of judgment (a category, how finely
+   * to split); tracked against its aim, but never fails an answer. A
+   * person can change any check's level in the suite's settings.
    */
-  severity: "serious" | "minor";
+  severity: "serious" | "moderate" | "minor";
   /**
    * The pass rate it aims for, shown as its aim; default by severity
    * (checkBar).
@@ -67,17 +77,35 @@ export type CheckDef = {
 };
 
 /**
- * What the pages call each severity: a serious check must pass, a minor
- * one is nice to have.
+ * Each level's aim when a check sets none: must pass 95%, should pass 85%,
+ * nice to have 75%.
+ */
+export const DEFAULT_AIM: Readonly<Record<CheckDef["severity"], number>> = {
+  serious: 0.95,
+  moderate: 0.85,
+  minor: 0.75,
+};
+
+/** The levels in order, most important first, for sorting checks. */
+export const SEVERITY_ORDER: readonly CheckDef["severity"][] = [
+  "serious",
+  "moderate",
+  "minor",
+];
+
+/**
+ * What the pages call each level: a serious check must pass, a moderate
+ * one should pass, a minor one is nice to have.
  */
 export const SEVERITY_LABEL: Readonly<Record<CheckDef["severity"], string>> = {
   serious: "Must pass",
+  moderate: "Should pass",
   minor: "Nice to have",
 };
 
-/** The pass rate a check should reach: its own, else 95% serious, 75% minor. */
+/** The pass rate a check should reach: its own, else its level's (DEFAULT_AIM). */
 export function checkBar(c: CheckDef): number {
-  return c.bar ?? (c.severity === "serious" ? 0.95 : 0.75);
+  return c.bar ?? DEFAULT_AIM[c.severity];
 }
 
 /**

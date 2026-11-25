@@ -59,10 +59,11 @@ export function memoryStore(): EvalStore &
     versions,
     changes,
     async getSuiteSettings(suite) {
-      return { ...(suiteSettings.get(suite) ?? NO_SUITE_SETTINGS) };
+      // A copy, so a caller can't change what's kept.
+      return structuredClone(suiteSettings.get(suite) ?? NO_SUITE_SETTINGS);
     },
     async saveSuiteSettings(suite, settings) {
-      suiteSettings.set(suite, { ...settings });
+      suiteSettings.set(suite, structuredClone(settings));
     },
     async liveVersion(operation) {
       const id = live.get(operation);

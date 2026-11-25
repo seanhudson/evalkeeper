@@ -503,6 +503,18 @@ describe("the eval actions", () => {
     await expect(
       actions.saveSuiteSettings(form({ suite: "double", targetCases: "3" })),
     ).rejects.toThrow(/whole number of cases/);
+    // A check's level and aim, saved apart from the target, then a free
+    // rescore so no test reads as graded at other levels.
+    const rescore = vi.spyOn(runner, "rescoreRecent");
+    await actions.saveSuiteSettings(
+      form({ suite: "double", "level:right": "moderate", "aim:right": "90" }),
+    );
+    expect(await runner.suiteSettings("double")).toEqual({
+      targetCases: null,
+      checks: { right: { severity: "moderate", aim: 0.9 } },
+    });
+    expect(rescore).toHaveBeenCalledWith("double");
+    rescore.mockRestore();
 
     const kase = (n: number, sourceRef: string | null) =>
       store.createCase({

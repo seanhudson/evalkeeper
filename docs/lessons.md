@@ -7,6 +7,14 @@ one is why a rule exists.
 
 ## Grading
 
+**A judgment call failed answers that were right.** One suite's models
+got 92 to 98% of the facts right, yet only 37 to 48% of answers passed
+every check, mostly on a minor category check where a fact could fairly
+take two categories. A minor miss failed an answer as a serious one did.
+_So:_ a nice-to-have miss never fails an answer, a middle level (should
+pass) covers what matters but less, and a person can change any check's
+level and aim in the suite's settings.
+
 **A low score was more often the grader than the model.** Across three
 suites under 90%, most failures were check bugs: a number check that read
 "16 weeks" but not "sixteen weeks", a check that failed a model for

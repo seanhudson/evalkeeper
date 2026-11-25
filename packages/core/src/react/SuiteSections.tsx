@@ -31,6 +31,8 @@ import {
   todoText,
   type Todo,
   type TodoInput,
+  SEVERITY_ORDER,
+  SEVERITY_LABEL,
 } from "../index.js";
 import { AnswerKey } from "./AnswerKey.js";
 import { ModelMenu } from "./ModelMenu.js";
@@ -352,14 +354,17 @@ function menuEntries(data: SuitePageData): PageMenuEntry[] {
 }
 
 /**
- * Suite settings: one form, one Save. Its target number of cases, kept
- * apart from the model versions, so changing it never makes a version.
+ * Suite settings: one form, one Save. Its target number of cases, and each
+ * check's level and aim, kept apart from the model versions, so changing
+ * them never makes a version.
  */
 function SuiteSettingsForm({ data }: { data: SuitePageData }) {
-  const { app, key, suite, savedSettings, target } = data;
+  const { app, key, savedSettings, target } = data;
   const action = app.actions.saveSuiteSettings;
   if (!action) return null;
-  const own = suite.targetCases ?? 50;
+  // The suite as written in code: what "its own" means for each field.
+  const own = app.runner.suiteOrThrow(key);
+  const ownTarget = own.targetCases ?? 50;
   return (
     <form key={target} action={action} className="space-y-4">
       <p className="readable text-muted">
@@ -379,11 +384,71 @@ function SuiteSettingsForm({ data }: { data: SuitePageData }) {
           min={TARGET_CASES_RANGE.min}
           max={TARGET_CASES_RANGE.max}
           step={1}
-          placeholder={String(own)}
+          placeholder={String(ownTarget)}
           defaultValue={savedSettings.targetCases ?? ""}
           className="w-32 rounded-md border border-line bg-card px-3 py-2 tabular-nums focus:border-accent focus:outline-none"
         />
       </div>
+      <fieldset className="space-y-3">
+        <legend className="font-medium">
+          Checks
+          <InfoTip term="checkLevels" id="check-levels" />
+        </legend>
+        <table className="w-full text-sm">
+          <thead className="text-left text-xs text-muted">
+            <tr>
+              <th className="pb-1 font-normal">Check</th>
+              <th className="pb-1 font-normal">Level</th>
+              <th className="pb-1 font-normal">Aim, %</th>
+            </tr>
+          </thead>
+          <tbody>
+            {own.checks.map((c) => {
+              const saved = savedSettings.checks[c.key];
+              return (
+                <tr key={c.key}>
+                  <td className="py-1 pr-2">{c.label}</td>
+                  <td className="py-1 pr-2">
+                    <Select
+                      name={`level:${c.key}`}
+                      aria-label={`${c.label}: level`}
+                      defaultValue={saved?.severity ?? ""}
+                      className="rounded-md border border-line bg-card px-2 py-1.5 text-sm"
+                    >
+                      <option value="">
+                        {SEVERITY_LABEL[c.severity]} (its own)
+                      </option>
+                      {SEVERITY_ORDER.map((l) => (
+                        <option key={l} value={l}>
+                          {SEVERITY_LABEL[l]}
+                        </option>
+                      ))}
+                    </Select>
+                  </td>
+                  <td className="py-1">
+                    <input
+                      name={`aim:${c.key}`}
+                      aria-label={`${c.label}: aim`}
+                      type="number"
+                      inputMode="numeric"
+                      min={1}
+                      max={100}
+                      step={1}
+                      placeholder={String(Math.round(checkBar(c) * 100))}
+                      defaultValue={
+                        saved?.aim === undefined
+                          ? ""
+                          : Math.round(saved.aim * 100)
+                      }
+                      className="w-16 rounded-md border border-line bg-card px-2 py-1.5 text-sm tabular-nums focus:border-accent focus:outline-none"
+                    />
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </fieldset>
       <Submit>Save</Submit>
     </form>
   );
@@ -1027,7 +1092,8 @@ export function CheckBreakdownSection({ data }: { data: SuitePageData }) {
   const tested = rows.filter((r) => r.test && !r.test.stale);
   if (!tested.length) return null;
   const checks = [...suite.checks].sort(
-    (a, b) => Number(a.severity === "minor") - Number(b.severity === "minor"),
+    (a, b) =>
+      SEVERITY_ORDER.indexOf(a.severity) - SEVERITY_ORDER.indexOf(b.severity),
   );
   return (
     <section aria-labelledby="check-breakdown" className="space-y-3">
@@ -1174,10 +1240,9 @@ export function ChecksSection({ data }: { data: SuitePageData }) {
         </h2>
         <div className="grid gap-3 md:grid-cols-2">
           {/* Must pass first; each group keeps the suite's own order. */}
-          {[
-            ...suite.checks.filter((c) => c.severity === "serious"),
-            ...suite.checks.filter((c) => c.severity !== "serious"),
-          ].map((c) => {
+          {SEVERITY_ORDER.flatMap((level) =>
+            suite.checks.filter((c) => c.severity === level),
+          ).map((c) => {
             const rate = live?.test?.byCheck[c.key];
             return (
               <Card key={c.key} className="space-y-1">

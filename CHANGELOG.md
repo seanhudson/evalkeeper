@@ -5,10 +5,46 @@ Notable changes, newest first. The format follows
 follow [semantic versioning](https://semver.org/): until 1.0, a minor
 version may change an interface, and its entry says how to update.
 
-## Unreleased
+## 0.20.0 - 2026-11-25
+
+Rescore tests fixed and made plain, spending limits the runner keeps
+(with estimates from what answers really cost and a per-test ceiling),
+a choice of how careful the suggestion is with attacks, a roomier model
+table, and guidance on check levels and on letting a coding agent set
+Evalkeeper up.
+
+Update:
+
+- No re-copy needed: the copied actions file already returns what
+  `rescore` returns. An app that wrote its own `rescore` action returns a
+  `RescoreResult` (or `undefined`) now.
+- Mark checks whose grading asks an AI judge with `judged: true` on the
+  `CheckDef`, so the pages say what rescoring them costs.
+- `runner.rescoreRecent(suite, limit)` still works; it now also takes
+  `{ limit, skip, requestStartedAt }` and returns what it did.
+- If your app keeps daily limits, pass `budget: spendingBudget(spending)`
+  to `createRunner`, and take out any guard that throws an
+  out-of-credits error to stop tests; your `stopAll` can call
+  `runner.stopTests()`.
+- Tests now stop at twice their estimate. If your `estimateCallCost`
+  leaves out fees an answer pays (web searches, tool calls), add them,
+  or pass `ceilingTimes: null` to turn the ceiling off.
+- A suite that passes its inputs to `voiceCheck` as `sources` bumps its
+  `graderVersion`.
+- A `switch` over a `Todo`'s `kind` needs the new `reviewLevels` case.
+- No migration: the attack setting is kept in suite settings.
 
 ### Fixed
 
+- **Rescore tests covers every test the model table shows.** It rescored
+  the latest test of each model on any set, so a weekly check's quick-set
+  tests of the live model pushed the full test the table shows out of the
+  rescore, and the table kept it graded the old way.
+- **A long rescore no longer fails at the request's time limit.** It
+  stops before `requestLimitMs` and the button goes on in a new request;
+  if a request fails anyway, it says how far it got, and pressing again
+  picks up where it left off (`RescoreOptions`, `RescoreProgress`,
+  `RESCORE_MARGIN_MS`).
 - **Suite settings showed the old values after a save** when only a
   level, an aim, or the attack setting changed: the form now remounts on
   any saved change.
@@ -24,6 +60,16 @@ version may change an interface, and its entry says how to update.
 
 ### Added
 
+- **What rescoring costs, said plainly.** `CheckDef.judged` and
+  `usesJudge`: the Rescore tests tooltip says "Free: no model calls" for
+  a suite without judged checks, and that it may ask the judge about new
+  wording (usually a few cents) for one with them. After a rescore, the
+  app's toast (or a line beside the button) says what it did and what the
+  judge actually spent (`RescoreButton`, `rescoreMessage`, `centsText`).
+  A judged suite's rescore waits while tests are stopped or over a daily
+  limit.
+- **Test every model says it costs money**: a tooltip, and what testing
+  every model would cost now beside the button.
 - **Estimates from what answers really cost** (#143). An estimate uses
   your `estimateCallCost` or what the model's last finished test of the
   suite cost per answer (searches and tool calls included), whichever is
@@ -76,6 +122,8 @@ version may change an interface, and its entry says how to update.
 
 ### Changed
 
+- Notes that said rescoring is free now say it makes no new model
+  answers, since a judged check can cost a little.
 - **A roomier model table.** Short headings that fit on one line
   (Must-pass, Attacks, Confidence, Calibration, vs live). Accuracy shows
   the percent and bar, with "85 of 90 right" in its tooltip. Must-pass
@@ -87,51 +135,6 @@ version may change an interface, and its entry says how to update.
 - **Plainer explanations** of accuracy, must-pass, confidence,
   calibration, and built-in versus self-estimated probabilities, with
   examples, in the tooltips and the docs.
-
-## 0.20.0 - 2026-11-25
-
-Rescore tests, fixed and made plain: it covers every test the model
-table shows, says what it cost, and goes on past the request's time limit.
-
-Update:
-
-- No re-copy needed: the copied actions file already returns what
-  `rescore` returns. An app that wrote its own `rescore` action returns a
-  `RescoreResult` (or `undefined`) now.
-- Mark checks whose grading asks an AI judge with `judged: true` on the
-  `CheckDef`, so the pages say what rescoring them costs.
-- `runner.rescoreRecent(suite, limit)` still works; it now also takes
-  `{ limit, skip, requestStartedAt }` and returns what it did.
-
-### Fixed
-
-- **Rescore tests covers every test the model table shows.** It rescored
-  the latest test of each model on any set, so a weekly check's quick-set
-  tests of the live model pushed the full test the table shows out of the
-  rescore, and the table kept it graded the old way.
-- **A long rescore no longer fails at the request's time limit.** It
-  stops before `requestLimitMs` and the button goes on in a new request;
-  if a request fails anyway, it says how far it got, and pressing again
-  picks up where it left off (`RescoreOptions`, `RescoreProgress`,
-  `RESCORE_MARGIN_MS`).
-
-### Added
-
-- **What rescoring costs, said plainly.** `CheckDef.judged` and
-  `usesJudge`: the Rescore tests tooltip says "Free: no model calls" for
-  a suite without judged checks, and that it may ask the judge about new
-  wording (usually a few cents) for one with them. After a rescore, the
-  app's toast (or a line beside the button) says what it did and what the
-  judge actually spent (`RescoreButton`, `rescoreMessage`, `centsText`).
-  A judged suite's rescore waits while tests are stopped or over a daily
-  limit.
-- **Test every model says it costs money**: a tooltip, and what testing
-  every model would cost now beside the button.
-
-### Changed
-
-- Notes that said rescoring is free now say it makes no new model
-  answers, since a judged check can cost a little.
 
 ## 0.19.0 - 2026-11-24
 

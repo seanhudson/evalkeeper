@@ -56,7 +56,7 @@ import {
   Tip,
 } from "./pieces.js";
 import { pct, LINK, QUIET_BUTTON, TINT } from "./format.js";
-import { Plus, RotateCw, ShieldAlert, Sparkles } from "lucide-react";
+import { Check, Plus, RotateCw, ShieldAlert, Sparkles } from "lucide-react";
 import { PageMenu, type PageMenuEntry } from "./Drawer.js";
 import { SpendingAlert, SpendingForm } from "./Spending.js";
 import { TARGET_CASES_RANGE } from "../suiteSettings.js";
@@ -1682,14 +1682,24 @@ export function AnswerKeyHealthSection({ data }: { data: SuitePageData }) {
                 <ul className="flex flex-wrap gap-1.5">
                   {thin.map((t) => (
                     <li key={t}>
+                      {/* A chip like the + ones, that toggles: the box
+                          itself stays hidden, and a ✓ shows it's picked. */}
                       <label
-                        className={`inline-flex cursor-pointer items-center gap-1 rounded-full px-2 py-0.5 text-xs ${TINT.warn} has-[:checked]:bg-warn/40`}
+                        className={`inline-flex cursor-pointer items-center gap-1 rounded-full px-2 py-0.5 text-xs hover:underline ${TINT.warn} has-[:checked]:bg-warn/40 has-[:checked]:font-medium has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent`}
                       >
                         <input
                           type="checkbox"
                           name="topic"
                           value={t}
-                          className="h-3 w-3 accent-[var(--color-warn)]"
+                          className="peer sr-only"
+                        />
+                        <Plus
+                          aria-hidden
+                          className="h-3 w-3 peer-checked:hidden"
+                        />
+                        <Check
+                          aria-hidden
+                          className="hidden h-3 w-3 peer-checked:inline"
                         />
                         {t}
                       </label>

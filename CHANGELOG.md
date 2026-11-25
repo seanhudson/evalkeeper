@@ -91,7 +91,8 @@ Update:
 - **Add cases here** says first that picking a topic opens Add a case
   with it filled in, with an **Add a case** button beside the topics.
   Split-case cards in Answer key health span the panel; their words keep
-  a readable width.
+  a readable width. With `draftMore`, the topics to draft for are chips that
+  toggle (a ✓ once picked), like the + chips, not checkboxes.
 - Colors come from the app's color names (`--color-good`, `--color-warn`,
   `--color-bad`), not fixed palette colors with `dark:` variants, so an
   app's own light and dark themes apply to chips, the check breakdown,

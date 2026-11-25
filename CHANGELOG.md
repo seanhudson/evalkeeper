@@ -5,7 +5,21 @@ Notable changes, newest first. The format follows
 follow [semantic versioning](https://semver.org/): until 1.0, a minor
 version may change an interface, and its entry says how to update.
 
-## Unreleased
+## 0.21.0 - 2026-11-25
+
+Fixes for numbers and to-dos that didn't add up: a Must-pass share over
+100%, kept answers and the Test again and Review check levels to-dos that
+kept coming back, confirming provisional answers that waited on a
+rescore, and a test's page that called 16 answers solid.
+
+Update:
+
+- No re-copy needed, and no migration: nothing in the tables changed.
+- `summarize(metrics, checks)` takes the suite's target as a third
+  argument (50 by default). `TRUST_MIN` is deprecated: a test's page
+  counts cases against `tooFewBelow(target)` now.
+- To clear **Review check levels** on a suite you've already reviewed,
+  save its levels once in Suite settings.
 
 ### Fixed
 
@@ -28,6 +42,12 @@ version may change an interface, and its entry says how to update.
   (`runner.confirmAnswer`). Before, it rescored every recent test first,
   and confirming the next case waited behind it. A case's status chip
   spins until its save finishes.
+- A test's page no longer calls a small perfect test "a solid number"
+  (#172). It's too few to tell below 20 cases, or the suite's target if
+  that's lower, as the suite's page says. Above that, it's solid only when
+  the score's range reaches no more than 10 points on either side.
+  Otherwise it's rough and says where the real rate likely is ("likely 81%
+  or better").
 
 ## 0.20.0 - 2026-11-25
 

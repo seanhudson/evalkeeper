@@ -11,7 +11,8 @@
     "typecheck": "npm run generate && tsc --noEmit",
     "test": "DATABASE_URL=file:./test.db prisma db push --skip-generate >/dev/null && BYO_DATABASE_URL=file:./byo.db prisma db push --schema test/byo/schema.prisma >/dev/null && vitest run",
     "e2e": "playwright test",
-    "screenshots": "SCREENSHOTS=1 playwright test e2e/screenshots.spec.ts"
+    "screenshots": "SCREENSHOTS=1 playwright test e2e/screenshots.spec.ts",
+    "demo-video": "DEMO_VIDEO=1 playwright test e2e/demo-video.spec.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.107",

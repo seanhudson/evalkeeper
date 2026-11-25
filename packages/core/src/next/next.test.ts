@@ -583,6 +583,7 @@ describe("the eval actions", () => {
     expect(await runner.suiteSettings("double")).toEqual({
       targetCases: null,
       checks: { right: { severity: "moderate", aim: 0.9 } },
+      levelsReviewed: ["right"],
     });
     expect(rescore).toHaveBeenCalledWith("double");
     rescore.mockRestore();

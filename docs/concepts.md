@@ -251,7 +251,9 @@ list: what to do next, in order, each with why. Each item is done on the
 page and drops off once it's done:
 
 1. **Test every model** (or **Test again** after the instructions,
-   answers, or cases change).
+   answers, or cases change). It asks about the models the button tests;
+   a fallback-only model or another reasoning setting has its own **Test**
+   button in the table.
 2. **Make X live** (or the fallback), when the suggestion differs from
    what's live.
 3. **Fix "check"**, for each must-pass check every tested model misses,
@@ -262,6 +264,9 @@ page and drops off once it's done:
 6. **Make attack cases**, when attacks are set up but none are made.
 7. **Retire N replaced starters**, then **Review N cases models split
    on**.
+8. **Review check levels**, when more than half of four or more checks
+   must pass. Saving the levels in Suite settings, changed or not,
+   settles it until a check is added.
 
 The suite's status shows beside its name and on its row on the hub:
 _Needs attention_ when the list has something on it (a must-pass check

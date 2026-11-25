@@ -62,6 +62,10 @@ export async function loadHub(app: EvalAppConfig) {
       );
       const input: TodoInput = {
         rows: b.rows,
+        testAllModels: app.runner.modelsFor(suite.operation),
+        ...(saved.levelsReviewed
+          ? { levelsReviewed: saved.levelsReviewed }
+          : {}),
         checks: suite.checks,
         priority: priorityOf(suite, current?.settings),
         models: app.models,

@@ -128,6 +128,28 @@ describe("suiteTodos", () => {
     expect(kinds(input({ rows: running }))).not.toContain("testAll");
   });
 
+  it("asks to test again only about rows Test every model retests", () => {
+    const fallbackOnly = row("Terra", { stale: true });
+    const variant = {
+      ...row("Sol", { stale: true }),
+      key: "Sol:high",
+      variant: true,
+    };
+    const rows = [
+      row("Luna", { live: true }),
+      row("Sol"),
+      fallbackOnly,
+      variant,
+    ];
+    const testAllModels = ["Luna", "Sol"];
+    // Nothing the button tests is out of date, so pressing it can't clear it.
+    expect(kinds(input({ rows, testAllModels }))).not.toContain("retest");
+    // Without the list, any out-of-date row counts, as before.
+    expect(kinds(input({ rows }))).toContain("retest");
+    const stale = [row("Luna", { live: true, stale: true }), ...rows.slice(1)];
+    expect(kinds(input({ rows: stale, testAllModels }))).toContain("retest");
+  });
+
   it("suggests a better model, with the suggestion's reason", () => {
     const rows = [
       row("Luna", { live: true, cost: 0.02 }),
@@ -322,6 +344,26 @@ describe("too many must-pass checks", () => {
       what: "Review check levels",
       why: "3 of 4 checks must pass, so must-pass misses stop telling models apart. Keep must-pass for mistakes that change what your product does.",
     });
+  });
+
+  it("stops asking once a person saved every check's level", () => {
+    const checks = [
+      ...["a", "b", "c"].map((k) => check(k, "serious")),
+      check("d", "minor"),
+    ];
+    const all = ["a", "b", "c", "d"];
+    expect(kinds(input({ checks, levelsReviewed: all }))).not.toContain(
+      "reviewLevels",
+    );
+    // A check added since brings it back.
+    expect(
+      kinds(
+        input({
+          checks: [...checks, check("e", "serious")],
+          levelsReviewed: all,
+        }),
+      ),
+    ).toContain("reviewLevels");
   });
 
   it("leaves half, or a short list, alone", () => {

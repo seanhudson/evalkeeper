@@ -177,6 +177,19 @@ export function withRounds(
 }
 
 /** Whether a person confirmed the case's answer after `at`. */
+/**
+ * The note on an answer a person kept as right when models split on it
+ * ("The answer is right"). While that answer is in use, the case stays off
+ * the split list; a changed answer puts it back in play.
+ */
+export const KEPT_AS_RIGHT =
+  "Checked when models split on it, and kept as right.";
+
+/** The answer in use is one a person kept as right on a split. */
+function keptAsRight(labels: readonly LabelLike[]): boolean {
+  return confirmedLabel(labels)?.note === KEPT_AS_RIGHT;
+}
+
 function checkedSince(labels: readonly LabelLike[], since: Date): boolean {
   const answer = confirmedLabel(labels);
   return !!answer && answer.status === "CONFIRMED" && answer.updatedAt > since;
@@ -194,8 +207,9 @@ function checkedSince(labels: readonly LabelLike[], since: Date): boolean {
  *   `caseResults`, with `rounds` from the runner's `easyRounds`).
  * @param today - Now, for old drafts.
  * @param testedAt - When the newest current test ran. A split case whose
- *   answer a person confirmed after it ("the answer is right") isn't
- *   listed again until a newer test splits on it.
+ *   answer a person confirmed after it isn't listed again until a newer
+ *   test splits on it. One kept as right (`KEPT_AS_RIGHT`) stays off the
+ *   list while that answer is in use.
  * @param floor - The fewest cases retiring may leave: the suite's target
  *   number of cases (`targetCasesOf`), EASY_FLOOR_CASES by default.
  * @returns What needs a look: easy, split, and duplicate cases, old
@@ -234,6 +248,7 @@ export function answerKeyHealth<C extends HealthCase>(
     split: inUse.filter(
       (c) =>
         isSplit(caseResults[c.id]) &&
+        !keptAsRight(c.labels) &&
         !(testedAt && checkedSince(c.labels, testedAt)),
     ),
     duplicates: nearDuplicates(inUse),

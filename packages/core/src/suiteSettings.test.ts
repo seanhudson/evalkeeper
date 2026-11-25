@@ -144,6 +144,8 @@ describe("a check's level and aim, set per suite", () => {
     ).toEqual({
       targetCases: null,
       checks: { category: { severity: "minor" }, tone: { aim: 0.8 } },
+      // Each level field sent counts as reviewed, changed or not.
+      levelsReviewed: ["fact", "category"],
     });
     expect(() =>
       suiteSettingsFromForm(form({ "level:fact": "huge" }), checks),
@@ -154,6 +156,32 @@ describe("a check's level and aim, set per suite", () => {
       expect(() =>
         suiteSettingsFromForm(form({ "aim:tone": bad }), checks),
       ).toThrow(/Tone's aim as a whole percent from 1 to 100/);
+  });
+
+  it("keeps which checks' levels were reviewed, even unchanged", () => {
+    const kept = suiteSettingsFromForm(
+      form({
+        "level:fact": "serious",
+        "level:category": "",
+        "level:tone": "minor",
+      }),
+      checks,
+    );
+    expect(kept).toEqual({
+      targetCases: null,
+      checks: {},
+      levelsReviewed: ["fact", "category", "tone"],
+    });
+    // Saved and read back; a form without level fields marks none.
+    expect(readSuiteSettings(JSON.parse(JSON.stringify(kept)))).toEqual(kept);
+    expect(suiteSettingsFromForm(form({ targetCases: "60" }), checks)).toEqual({
+      targetCases: 60,
+      checks: {},
+    });
+    expect(readSuiteSettings({ checks: {}, levelsReviewed: "all" })).toEqual({
+      targetCases: null,
+      checks: {},
+    });
   });
 
   it("puts a person's level and aim in place of the check's own", () => {

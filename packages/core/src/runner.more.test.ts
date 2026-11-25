@@ -270,6 +270,45 @@ describe("runner, beyond a basic test", () => {
     expect(m?.judgeCostUsd).toBeCloseTo(0.002);
   });
 
+  it("confirms a provisional answer at once, its tests still up to date", async () => {
+    const { store, runner } = await setup([2]);
+    const answer = (status: "PROVISIONAL" | "PENDING", n: number) =>
+      kase(n, {
+        labels: [
+          {
+            kind: "EXPECTED",
+            status,
+            value: { n: n * 2 },
+            raterRole: "MODEL",
+            raterId: null,
+            note: null,
+          },
+        ],
+      });
+    const provisional = await store.createCase(answer("PROVISIONAL", 7));
+    const pending = await store.createCase(answer("PENDING", 8));
+    const { run } = await runner.createRun({ suite: "double", model: "good" });
+    await runner.runEval(run.id);
+    const stale = async () =>
+      (await runner.board("double")).rows.find((r) => r.model === "good")?.test
+        ?.stale;
+    expect(await stale()).toBe(false);
+    // A later moment, so the confirmation changes the answer's date.
+    await new Promise((r) => setTimeout(r, 5));
+    const regrade = vi.spyOn(store, "setOutputScores");
+    const id = (c: { labels: { id: string }[] }) => c.labels[0]?.id ?? "";
+    expect(await runner.confirmAnswer("double", id(provisional))).toEqual({
+      rescored: false,
+    });
+    expect(regrade).not.toHaveBeenCalled();
+    expect(await stale()).toBe(false);
+    // A pending answer changes what's graded against: rescored.
+    expect(await runner.confirmAnswer("double", id(pending))).toEqual({
+      rescored: true,
+    });
+    regrade.mockRestore();
+  });
+
   it("grades provisional answers, and never pending ones", async () => {
     const { store, runner } = await setup([]);
     await store.createCase(
@@ -615,6 +654,22 @@ describe("runner, beyond a basic test", () => {
     await store.setCaseStatus(c.id, "RETIRED");
     await runner.rescoreRecent("double");
     expect((await store.getRun(run.id))?.metrics?.byCheck.right?.n).toBe(1);
+  });
+
+  it("leaves a retired case out of the board's must-pass count", async () => {
+    const { store, runner } = await setup([2, 4, 6]);
+    const { run } = await runner.createRun({ suite: "double", model: "good" });
+    await runner.runEval(run.id);
+    const c = store.cases[0];
+    if (!c) throw new Error("setup");
+    await store.setCaseStatus(c.id, "RETIRED");
+    await runner.rescoreRecent("double");
+    const b = await runner.board("double");
+    const t = b.rows.find((r) => r.model === "good")?.test;
+    // Counted over the same answers as the score: never over 100%.
+    expect(t?.answers).toBe(2);
+    expect(t?.answersNoSerious).toBe(2);
+    expect(Object.keys(b.caseResults)).not.toContain(c.id);
   });
 
   it("rescores recent tests after answers change, for free", async () => {

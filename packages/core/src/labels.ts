@@ -1,5 +1,10 @@
 /** What the answer-in-use rule needs from a label: the store's, or an app's own row. */
-export type LabelLike = { status: string; updatedAt: Date };
+export type LabelLike = {
+  status: string;
+  updatedAt: Date;
+  /** Why it was given; `KEPT_AS_RIGHT` marks an answer kept on a split. */
+  note?: string | null;
+};
 
 /**
  * The EXPECTED answer tests use: the newest confirmed one, or failing that a

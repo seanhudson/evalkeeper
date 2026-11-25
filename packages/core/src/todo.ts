@@ -84,6 +84,19 @@ export type TodoInput = {
   unmadeAttacks?: { key: string; label: string }[];
   /** Starter cases a starter update replaced (`replacedStarters`). */
   replacedStarters?: number;
+  /**
+   * The models Test every model tests (`runner.modelsFor`), at the live
+   * setting. The retest to-do asks only about their rows, so pressing it
+   * clears it; other rows keep their own Test buttons. Every row when
+   * absent.
+   */
+  testAllModels?: readonly string[];
+  /**
+   * The checks whose levels a person saved (`SuiteSettings.levelsReviewed`).
+   * Review check levels stays off while it covers every check; a new check
+   * brings it back.
+   */
+  levelsReviewed?: readonly string[];
   /** Cases models split on (`answerKeyHealth(...).split`). */
   splitCases?: number;
   /**
@@ -113,7 +126,13 @@ export function suiteTodos(input: TodoInput): Todo[] {
   const testing = rows.some((r) => r.testing);
   const models = rows.filter((r) => !r.baseline && !r.variant);
   const tested = testedRows(rows);
-  const stale = rows.some((r) => !r.baseline && r.test?.stale);
+  const retests = input.testAllModels;
+  const stale = rows.some(
+    (r) =>
+      !r.baseline &&
+      r.test?.stale &&
+      (!retests || (!r.variant && retests.includes(r.model))),
+  );
 
   // 1. Tests first: nothing else can be judged without them.
   if (!testing) {
@@ -185,8 +204,10 @@ export function suiteTodos(input: TodoInput): Todo[] {
   if (input.splitCases)
     out.push({ kind: "reviewSplit", cases: input.splitCases });
   // 8. Too many must-pass checks: their misses stop telling models apart.
+  // Once a person saved every check's level, that's their call.
   const mustPass = checks.filter((c) => c.severity === "serious").length;
-  if (checks.length >= MANY_CHECKS && mustPass > checks.length / 2)
+  const reviewed = checks.every((c) => input.levelsReviewed?.includes(c.key));
+  if (!reviewed && checks.length >= MANY_CHECKS && mustPass > checks.length / 2)
     out.push({ kind: "reviewLevels", mustPass, checks: checks.length });
   return out;
 }

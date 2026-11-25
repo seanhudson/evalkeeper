@@ -162,7 +162,12 @@ function sourceFiles(dir, out = []) {
     if (statSync(p).isDirectory()) {
       if (!["node_modules", ".next", "dist", "test-results"].includes(f))
         sourceFiles(p, out);
-    } else if (/\.(tsx?|mjs|prisma)$/.test(f) && !/\.test\./.test(f)) {
+    } else if (
+      /\.(tsx?|mjs|prisma)$/.test(f) &&
+      !/\.test\./.test(f) &&
+      // This file lists retired labels; they mustn't count as on a screen.
+      f !== "docs-names.mjs"
+    ) {
       out.push(p);
     }
   }

@@ -123,12 +123,13 @@ export function HubIntro({ data }: { data?: HubData }) {
       : [];
   return (
     <div className="space-y-4">
-      <div className="readable space-y-2">
+      <div className="space-y-2">
+        {/* The menu at the page's right edge, as on a suite's page. */}
         <div className="flex items-center justify-between gap-4">
           <h1 className="text-2xl font-semibold">Evals</h1>
           <PageMenu label="Evals menu" entries={entries} />
         </div>
-        <p className="text-muted">
+        <p className="readable text-muted">
           Each suite tests one AI feature against answers people confirmed. Test
           models on it, then pick the live one on evidence.
         </p>

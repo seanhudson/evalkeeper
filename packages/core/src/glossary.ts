@@ -102,7 +102,7 @@ export const GLOSSARY = {
   replacedStarter:
     "Added from the suite's starter cases, which have changed since: this input is no longer one of them. Retire it, unless you want it as a case of your own.",
   targetCases:
-    "How many cases this answer key aims for. Fewer make scores less certain, but when every case costs real money (a web search), about 10 can be right.",
+    "How many cases this answer key aims for: when to ask for more, how many to draft, and the fewest retiring leaves. Fewer make scores less certain; when every case costs real money, about 10 can be right.",
   suiteSettings:
     "This suite's own settings, kept apart from its model versions: changing them never makes a new version.",
   spending:

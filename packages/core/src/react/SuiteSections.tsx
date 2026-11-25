@@ -361,11 +361,14 @@ function SuiteSettingsForm({ data }: { data: SuitePageData }) {
   const own = suite.targetCases ?? 50;
   return (
     <form key={target} action={action} className="space-y-4">
-      <p className="readable text-muted">{GLOSSARY.suiteSettings}</p>
+      <p className="readable text-muted">
+        {GLOSSARY.suiteSettings} An empty field uses the suite&apos;s own.
+      </p>
       <input type="hidden" name="suite" value={key} />
       <div className="space-y-1">
         <label htmlFor="target-cases" className="block font-medium">
           Target number of cases
+          <InfoTip term="targetCases" id="target-cases" />
         </label>
         <input
           id="target-cases"
@@ -377,14 +380,8 @@ function SuiteSettingsForm({ data }: { data: SuitePageData }) {
           step={1}
           placeholder={String(own)}
           defaultValue={savedSettings.targetCases ?? ""}
-          aria-describedby="target-cases-help"
           className="w-32 rounded-md border border-line bg-card px-3 py-2 tabular-nums focus:border-accent focus:outline-none"
         />
-        <p id="target-cases-help" className="readable text-xs text-muted">
-          {GLOSSARY.targetCases} Leave it empty for the suite&apos;s own ({own}
-          ). It sets when the page asks for more cases, how many to draft, and
-          the fewest that retiring easy cases leaves.
-        </p>
       </div>
       <Submit>Save</Submit>
     </form>

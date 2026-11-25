@@ -677,7 +677,8 @@ describe("runner, beyond a basic test", () => {
       suites: [double],
       models: MODELS,
       promptVersion: () => "v1",
-      requestLimitMs: 60_000,
+      // Room for the tests themselves: answers stop a minute early.
+      requestLimitMs: 120_000,
     });
     const ids: string[] = [];
     for (const model of ["good", "bad"]) {
@@ -687,7 +688,7 @@ describe("runner, beyond a basic test", () => {
     }
     // A request that started long ago is out of time before the first.
     const late = await runner.rescoreRecent("double", {
-      requestStartedAt: Date.now() - 45_000,
+      requestStartedAt: Date.now() - 105_000,
     });
     expect(late).toEqual({ rescored: [], total: 2, left: 2, judgeCostUsd: 0 });
     // A request that already did one does the other: the grader's spend

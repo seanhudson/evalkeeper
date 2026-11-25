@@ -1097,10 +1097,22 @@ export function CheckBreakdownSection({ data }: { data: SuitePageData }) {
               ))}
               <tr>
                 <td className="py-1.5 pr-4">Answers with no mistakes at all</td>
-                <td />
+                {/* No aim here: the column says out of how many answers. */}
+                <td className="py-1.5 pr-4 tabular-nums text-muted">
+                  {Math.max(...tested.map((r) => r.test?.answers ?? 0))} answers
+                </td>
                 {tested.map((r) => (
-                  <td key={r.key} className="py-1.5 pr-3 tabular-nums">
-                    {r.test?.answersRight} of {r.test?.answers}
+                  <td key={r.key} className="py-1 pr-2 tabular-nums">
+                    {r.test?.answers ? (
+                      <span
+                        className="inline-block px-2 py-0.5"
+                        title={`${r.test.answersRight} of ${r.test.answers}`}
+                      >
+                        {pct(r.test.answersRight / r.test.answers)}
+                      </span>
+                    ) : (
+                      <span className="text-muted">–</span>
+                    )}
                   </td>
                 ))}
               </tr>

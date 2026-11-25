@@ -55,7 +55,7 @@ const CHECKS: CheckDef[] = [
     key: "no_extras",
     label: "Nothing extra",
     description:
-      "At most one item that isn't in the answer key. Minor: an extra line is cheap to ignore, but a list of them buries the real ones.",
+      "At most one item that isn't in the answer key. Nice to have: an extra line is cheap to ignore, but a list of them buries the real ones.",
     kind: "label",
     severity: "minor",
   },

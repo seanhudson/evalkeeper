@@ -11,6 +11,7 @@ import {
   describeFeedbackStoreContract,
   describeMappedReadCheck,
   describeSettingsStoreContract,
+  describeSuiteSettingsStoreContract,
   describeStoreContract,
   type ContractTest,
   type FeedbackColumn,
@@ -19,6 +20,7 @@ import {
 describeStoreContract("memoryStore", () => memoryStore());
 describeFeedbackStoreContract("memoryStore", () => memoryStore());
 describeSettingsStoreContract("memoryStore", () => memoryStore());
+describeSuiteSettingsStoreContract("memoryStore", () => memoryStore());
 
 /**
  * A feedback store on a thumbs table without some columns, as a mapped
@@ -152,6 +154,9 @@ const scope = "contract-";
 describeStoreContract("memoryStore, scoped", () => shared, { scope });
 describeFeedbackStoreContract("memoryStore, scoped", () => shared, { scope });
 describeSettingsStoreContract("memoryStore, scoped", () => shared, { scope });
+describeSuiteSettingsStoreContract("memoryStore, scoped", () => shared, {
+  scope,
+});
 
 describe("the scoped contracts", () => {
   it("left the other rows as they were, and wrote only scoped ones", async () => {

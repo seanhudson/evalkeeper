@@ -23,6 +23,7 @@ import {
   type SettingsStore,
 } from "./settings.js";
 import type { EvalStore, NewCase } from "./store.js";
+import type { SuiteSettingsStore } from "./suiteSettings.js";
 import { suiteContractProblems } from "./suiteContract.js";
 import type { AnySuite, Suite } from "./types.js";
 import { readCheckSummary, type ReadCheckReport } from "./readCheck.js";
@@ -561,6 +562,57 @@ export function describeStoreContract(
       const done = await store.getRun(run.id);
       expect(done?.status).toBe("SUCCEEDED");
       expect(done?.metrics?.allPass.passed).toBe(1);
+    });
+  });
+}
+
+/**
+ * The contract every SuiteSettingsStore must meet: nothing saved reads as
+ * the suite's own values, a save replaces what was there, and each suite
+ * keeps its own. With `opts.scope`, every suite it writes starts with the
+ * scope (see `describeStoreContract`).
+ *
+ * @param name - What the tests are called, e.g. "prismaSuiteSettingsStore".
+ * @param make - Returns the store to test (an empty one, unless scoped).
+ * @param opts - A scope and cleanup, and test functions.
+ *
+ * @example
+ * ```ts
+ * describeSuiteSettingsStoreContract("our database", () =>
+ *   prismaSuiteSettingsStore(prisma),
+ * );
+ * ```
+ */
+export function describeSuiteSettingsStoreContract(
+  name: string,
+  make: () => SuiteSettingsStore | Promise<SuiteSettingsStore>,
+  opts: ScopedContractOptions = {},
+) {
+  const t = testFunctions(opts.test);
+  const { describe, it, expect } = t;
+  const names = scopeNames(opts.scope);
+  describe(`SuiteSettingsStore contract: ${name}`, () => {
+    registerCleanup(t, opts);
+
+    it("reads nothing saved as the suite's own values", async () => {
+      const store = await make();
+      const suite = names()("triage");
+      expect(await store.getSuiteSettings(suite)).toEqual({
+        targetCases: null,
+      });
+    });
+
+    it("replaces what was saved, and keeps each suite apart", async () => {
+      const store = await make();
+      const name = names();
+      const [a, b] = [name("triage"), name("summary")];
+      await store.saveSuiteSettings(a, { targetCases: 10 }, "person-1");
+      expect(await store.getSuiteSettings(a)).toEqual({ targetCases: 10 });
+      expect(await store.getSuiteSettings(b)).toEqual({ targetCases: null });
+      await store.saveSuiteSettings(a, { targetCases: 12 }, "person-2");
+      expect(await store.getSuiteSettings(a)).toEqual({ targetCases: 12 });
+      await store.saveSuiteSettings(a, { targetCases: null }, null);
+      expect(await store.getSuiteSettings(a)).toEqual({ targetCases: null });
     });
   });
 }

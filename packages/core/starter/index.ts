@@ -15,6 +15,7 @@ import {
   prismaFeedbackStore,
   prismaSettingsStore,
   prismaStore,
+  prismaSuiteSettingsStore,
 } from "@crowandraven/evalkeeper/prisma";
 // TODO: your app's Prisma client, with Evalkeeper's models added to the
 // schema (node_modules/@crowandraven/evalkeeper/schema/evalkeeper.prisma).
@@ -88,6 +89,9 @@ export const runner = createRunner({
   instructionTexts: (operation) => INSTRUCTION_TEXTS[operation] ?? [],
   route: routeFor,
   candidates: (operation) => ({ models: modelsFor(operation) }),
+  // Lets people change a suite's target number of cases on its page
+  // (the EvalSuiteSetting table). Leave it out to keep the targets in code.
+  suiteSettings: prismaSuiteSettingsStore(prisma),
 });
 
 /**
@@ -116,4 +120,7 @@ export const wiring = {
   routeFor,
   answerEditors,
   requireAdmin,
+  // TODO, optional: `spending` (an EvalSpending), if your app keeps daily
+  // spending limits for eval tests. The pages then show what tests spent
+  // and save the limits, with a stop.
 } satisfies Omit<EvalWiring, "basePath">;

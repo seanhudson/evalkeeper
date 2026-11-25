@@ -53,7 +53,7 @@ export function CaseStatusChip({
 }) {
   const now = useConfirmedHere(labelId ?? "") && labelId ? confirmed : status;
   return (
-    <Tip term={now.term} id={id}>
+    <Tip term={now.term} id={id} align="end">
       <Chip tone={now.tone}>{now.text}</Chip>
     </Tip>
   );

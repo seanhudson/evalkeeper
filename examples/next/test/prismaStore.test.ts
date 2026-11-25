@@ -4,11 +4,13 @@ import {
   prismaFeedbackStore,
   prismaSettingsStore,
   prismaStore,
+  prismaSuiteSettingsStore,
 } from "@crowandraven/evalkeeper/prisma";
 import {
   describeFeedbackStoreContract,
   describeSettingsStoreContract,
   describeStoreContract,
+  describeSuiteSettingsStoreContract,
 } from "@crowandraven/evalkeeper/testing";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
@@ -27,6 +29,7 @@ async function empty() {
   await prisma.evalSettingsChange.deleteMany();
   await prisma.evalSettingsLive.deleteMany();
   await prisma.evalSettingsVersion.deleteMany();
+  await prisma.evalSuiteSetting.deleteMany();
 }
 
 describeStoreContract("prismaStore on SQLite", async () => {
@@ -43,6 +46,14 @@ describeSettingsStoreContract("prismaSettingsStore on SQLite", async () => {
   await empty();
   return prismaSettingsStore(prisma);
 });
+
+describeSuiteSettingsStoreContract(
+  "prismaSuiteSettingsStore on SQLite",
+  async () => {
+    await empty();
+    return prismaSuiteSettingsStore(prisma);
+  },
+);
 
 // The scoped contracts on a database that holds other rows, as a shared
 // development database would: they pass without emptying anything, and
@@ -64,6 +75,9 @@ describe("scoped contracts on a database with other rows", () => {
     }),
     changes: await prisma.evalSettingsChange.findMany({
       orderBy: { id: "asc" },
+    }),
+    suiteSettings: await prisma.evalSuiteSetting.findMany({
+      orderBy: { suite: "asc" },
     }),
   });
   let before: Awaited<ReturnType<typeof snapshot>>;
@@ -143,6 +157,11 @@ describe("scoped contracts on a database with other rows", () => {
         by: "person-1",
         expectLive: null,
       });
+      await prismaSuiteSettingsStore(prisma).saveSuiteSettings(
+        suite,
+        { targetCases: 10 },
+        "person-1",
+      );
     }
     before = await snapshot();
   });
@@ -159,6 +178,11 @@ describe("scoped contracts on a database with other rows", () => {
   describeSettingsStoreContract(
     "prismaSettingsStore, scoped",
     () => prismaSettingsStore(prisma),
+    { scope, cleanup },
+  );
+  describeSuiteSettingsStoreContract(
+    "prismaSuiteSettingsStore, scoped",
+    () => prismaSuiteSettingsStore(prisma),
     { scope, cleanup },
   );
 

@@ -93,7 +93,7 @@ describe("suggest", () => {
     expect(suggest([row("Matcher", "matcher")], checks)).toBeNull();
   });
 
-  it("puts fewest serious mistakes first, and a fallback from another provider", () => {
+  it("puts fewest must-pass misses first, and a fallback from another provider", () => {
     const s = suggest(
       [
         row("Sonnet", "claude-sonnet-5-5", {
@@ -110,7 +110,7 @@ describe("suggest", () => {
     expect(s.live.key).toBe("Sol");
     expect(s.fallback?.key).toBe("Haiku");
     expect(s.same).toBe(false);
-    expect(s.reasons[0]).toMatch(/fewer serious mistakes.*0 against 3/);
+    expect(s.reasons[0]).toMatch(/fewer must-pass misses.*0 against 3/);
   });
 
   it("ignores minor mistakes until serious ones tie, and keeps what's live", () => {
@@ -153,7 +153,7 @@ describe("suggest", () => {
   });
 
   it("never suggests a lower score, and names the one to watch", () => {
-    // From a real suite: Sol had fewer serious mistakes but scored
+    // From a real suite: Sol had fewer must-pass misses but scored
     // far lower than live; GPT-4o scored higher but within noise.
     const s = suggest(
       [
@@ -242,7 +242,7 @@ describe("suggest", () => {
     expect(suggest(rows, checks, { favor: "speed" })!.keepLive).toBe(true);
   });
 
-  it("doesn't trade when the drop is large, serious mistakes rise, or the gap is clear", () => {
+  it("doesn't trade when the drop is large, must-pass misses rise, or the gap is clear", () => {
     const live = row("Sol", "gpt-6.1-sol", {
       live: true,
       right: 22,
@@ -258,7 +258,7 @@ describe("suggest", () => {
         cost,
       )!.keepLive,
     ).toBe(true);
-    // More serious mistakes.
+    // More must-pass misses.
     expect(
       suggest(
         [live, row("Luna", "gpt-6-luna", { ...cheap, rule: 1 })],
@@ -476,7 +476,7 @@ describe("weighing attacks", () => {
       attacks: attacks(...attackRows),
     });
 
-  it("adds up serious mistakes on the attacks, null without a current test", () => {
+  it("adds up must-pass misses on the attacks, null without a current test", () => {
     const a = attacks(attacked("Luna", "gpt-6-luna", 3));
     expect(attackMistakes("Luna", a)).toBe(3);
     expect(attackMistakes("Sol", a)).toBeNull();
@@ -489,7 +489,7 @@ describe("weighing attacks", () => {
     expect(attackMistakes("Sol", attacks(failed))).toBeNull();
   });
 
-  it("won't switch to a model that makes more serious mistakes on the attacks", () => {
+  it("won't switch to a model that makes more must-pass misses on the attacks", () => {
     const rows = [
       row("Luna", "gpt-6-luna", { rule: 2, right: 22, live: true }),
       // Clearly cheaper, which would be a reason to switch...
@@ -504,9 +504,11 @@ describe("weighing attacks", () => {
       { favor: "cost" },
     );
     expect(s?.live.key).toBe("Luna");
-    expect(s?.reasons).toContain(
-      "Haiku would otherwise qualify, but it makes more serious mistakes on the attacks (4 against 1).",
+    // The real reason comes first, with what Haiku would have won on.
+    expect(s?.reasons[0]).toBe(
+      "Haiku is held back by the attacks: it makes more must-pass misses on them (4 against 1). Otherwise it would be suggested: Haiku scores at least as well as Luna (88% against 88%) at 90% less per answer.",
     );
+    expect(s?.reasons[1]).toBe("Keep Luna until then.");
     // ...and without the attacks, it switches.
     expect(suggest(rows, checks, { favor: "cost" })?.live.key).toBe("Haiku");
   });
@@ -520,12 +522,12 @@ describe("weighing attacks", () => {
       favor: "cost",
     });
     expect(s?.live.key).toBe("Luna");
-    expect(s?.reasons).toContain(
-      "Haiku would otherwise qualify, but it has no up-to-date test against the attacks. Test it on Triage: injection.",
+    expect(s?.reasons[0]).toMatch(
+      /^Haiku is held back by the attacks: it has no up-to-date test against them\. Test it on Triage: injection\. Otherwise it would be suggested: /,
     );
   });
 
-  it("switches for at least two fewer serious mistakes on the attacks", () => {
+  it("switches for at least two fewer must-pass misses on the attacks", () => {
     const rows = [
       row("Luna", "gpt-6-luna", { rule: 1, right: 23, live: true }),
       row("Sol", "gpt-6.1-sol", { rule: 1, right: 23 }),
@@ -536,7 +538,7 @@ describe("weighing attacks", () => {
     ]);
     expect(s?.live.key).toBe("Sol");
     expect(s?.reasons[0]).toBe(
-      "Sol makes fewer serious mistakes on the attacks than Luna (1 against 3), and scores at least as well (92% against 92%).",
+      "Sol makes fewer must-pass misses on the attacks than Luna (1 against 3), and scores at least as well (92% against 92%).",
     );
     // One fewer isn't enough on its own.
     const close = withAttacks(rows, [
@@ -557,13 +559,13 @@ describe("weighing attacks", () => {
     ]);
     expect(s?.live.key).toBe("Sol");
     expect(s?.reasons).toContain(
-      "On the attacks, Sol makes 1 serious mistake, against 2 for Luna.",
+      "On the attacks, Sol makes 1 must-pass miss, against 2 for Luna.",
     );
     // Live with no test against the attacks: a tested model can still win.
     const untested = withAttacks(rows, [attacked("Sol", "gpt-6.1-sol", 1)]);
     expect(untested?.live.key).toBe("Sol");
     expect(untested?.reasons).toContain(
-      "On the attacks, Sol makes 1 serious mistake. Luna has no up-to-date test against the attacks to compare with.",
+      "On the attacks, Sol makes 1 must-pass miss. Luna has no up-to-date test against the attacks to compare with.",
     );
   });
 
@@ -596,7 +598,7 @@ describe("weighing attacks", () => {
     ]);
     expect(s?.fallback?.key).toBe("Luna");
     expect(s?.reasons).toContain(
-      "Fallback: Luna is the most accurate from another provider (96%, 0 serious mistakes; 1 serious mistake on the attacks).",
+      "Fallback: Luna is the most accurate from another provider (96%, 0 must-pass misses; 1 must-pass miss on the attacks).",
     );
     const untested = withAttacks(rows, [
       attacked("Sonnet", "claude-sonnet-5-5", 0),

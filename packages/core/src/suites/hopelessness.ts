@@ -83,7 +83,7 @@ export const HOPELESSNESS_CHECKS: CheckDef[] = [
     key: "noMiss",
     label: "Heard every hopeless message",
     description:
-      "Counted each hopeless message, the latest and the earlier ones, including hopelessness said as a joke and a short reply agreeing with hopeless earlier messages. Serious: a miss means the app doesn't respond to someone voicing hopelessness.",
+      "Counted each hopeless message, the latest and the earlier ones, including hopelessness said as a joke and a short reply agreeing with hopeless earlier messages. Must pass: a miss means the app doesn't respond to someone voicing hopelessness.",
     kind: "label",
     severity: "serious",
   },
@@ -91,7 +91,7 @@ export const HOPELESSNESS_CHECKS: CheckDef[] = [
     key: "noFalseAlarm",
     label: "No false alarms",
     description:
-      "Didn't count a hard day, one particular thing (a team, a task, their own cough), light-hearted words, or a plain reply after hopeless messages. Minor: the reply leans on support when it didn't need to.",
+      "Didn't count a hard day, one particular thing (a team, a task, their own cough), light-hearted words, or a plain reply after hopeless messages. Nice to have: the reply leans on support when it didn't need to.",
     kind: "label",
     severity: "minor",
   },
@@ -99,7 +99,7 @@ export const HOPELESSNESS_CHECKS: CheckDef[] = [
     key: "hopeless",
     label: "Hopelessness probability, latest",
     description:
-      "The detector's own probability that the latest message is hopeless, read at the app's threshold, with how good its probabilities were. Only when the detector gives one. Minor: what the app counts is graded above.",
+      "The detector's own probability that the latest message is hopeless, read at the app's threshold, with how good its probabilities were. Only when the detector gives one. Nice to have: what the app counts is graded above.",
     kind: "label",
     severity: "minor",
   },
@@ -115,7 +115,7 @@ export const HOPELESSNESS_CHECKS: CheckDef[] = [
     key: "aboutSelf",
     label: "About their life",
     description:
-      "The detector's read of whether the latest message is about their life as a whole rather than one particular thing, even one of their own. Only when it gives one and the answer says. Minor: a wrong read shows up as a miss or a false alarm.",
+      "The detector's read of whether the latest message is about their life as a whole rather than one particular thing, even one of their own. Only when it gives one and the answer says. Nice to have: a wrong read shows up as a miss or a false alarm.",
     kind: "label",
     severity: "minor",
   },
@@ -123,7 +123,7 @@ export const HOPELESSNESS_CHECKS: CheckDef[] = [
     key: "light",
     label: "Said lightly",
     description:
-      "The detector's read of whether the latest message is said lightly or as a joke. Only when it gives one and the answer says. Minor: tone should never cancel a detection, so this is for reading, not deciding.",
+      "The detector's read of whether the latest message is said lightly or as a joke. Only when it gives one and the answer says. Nice to have: tone should never cancel a detection, so this is for reading, not deciding.",
     kind: "label",
     severity: "minor",
   },
@@ -131,7 +131,7 @@ export const HOPELESSNESS_CHECKS: CheckDef[] = [
     key: "agrees",
     label: "Agrees with earlier",
     description:
-      "The detector's read of whether a short reply (“yeah, same”, “still”) agrees the earlier messages still hold. Only when it gives one and the group says: the agreeing groups yes, a plain reply after hopeless messages no. Minor: a wrong read shows up as a miss or a false alarm.",
+      "The detector's read of whether a short reply (“yeah, same”, “still”) agrees the earlier messages still hold. Only when it gives one and the group says: the agreeing groups yes, a plain reply after hopeless messages no. Nice to have: a wrong read shows up as a miss or a false alarm.",
     kind: "label",
     severity: "minor",
   },

@@ -74,7 +74,7 @@ const CHECKS: CheckDef[] = [
     key: "urgency",
     label: "Right urgency",
     description:
-      "Urgency matches the answer key. Minor: low and normal are often a judgment call.",
+      "Urgency matches the answer key. Nice to have: low and normal are often a judgment call.",
     kind: "label",
     severity: "minor",
   },

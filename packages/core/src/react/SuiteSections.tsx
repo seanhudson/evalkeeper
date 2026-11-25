@@ -22,8 +22,15 @@ import {
   seriousMistakes,
   suggest,
   withRounds,
-  EASY_FLOOR_CASES,
   EASY_MIN_ROUNDS,
+  currentSettings,
+  replacedStarters,
+  suiteStatus,
+  suiteTodos,
+  targetCasesOf,
+  todoText,
+  type Todo,
+  type TodoInput,
 } from "../index.js";
 import { AnswerKey } from "./AnswerKey.js";
 import { ModelMenu } from "./ModelMenu.js";
@@ -38,6 +45,8 @@ import {
   Card,
   RefreshWhile,
   Chip,
+  SeverityChip,
+  SuiteStatusBadge,
   IconSubmit,
   InfoTip,
   Score,
@@ -46,9 +55,24 @@ import {
   Submit,
   Tip,
 } from "./pieces.js";
-import { pct, LINK, QUIET_BUTTON } from "./format.js";
-import { Plus, RotateCw, ShieldAlert, Sparkles } from "lucide-react";
-import { evalsPath, type EvalAppConfig, attacksResisted } from "./app.js";
+import { pct, LINK, QUIET_BUTTON, TINT } from "./format.js";
+import {
+  ArrowRight,
+  Plus,
+  RotateCw,
+  ShieldAlert,
+  Sparkles,
+  Square,
+} from "lucide-react";
+import { PageMenu, type PageMenuEntry } from "./Drawer.js";
+import { SpendingAlert, SpendingForm } from "./Spending.js";
+import { TARGET_CASES_RANGE } from "../suiteSettings.js";
+import {
+  evalsPath,
+  type EvalAppConfig,
+  type FormAction,
+  attacksResisted,
+} from "./app.js";
 import { SettingsHistory } from "./SettingsHistory.js";
 
 /**
@@ -62,31 +86,41 @@ import { SettingsHistory } from "./SettingsHistory.js";
 export async function loadSuitePage(app: EvalAppConfig, key: string) {
   const operation = app.suiteByKey[key]?.operation;
   if (!operation) return null;
-  const [b, attackBoards, [history, liveSettings], inInstructions, cases] =
-    await Promise.all([
-      app.runner.board(key),
-      // Injection suites that attack this feature: their results count here.
-      app.runner.attackBoards(key),
-      // Records a deploy if the instructions changed under the live
-      // settings, before reading them.
-      app.settings
-        .syncPrompt(operation)
-        .then(() =>
-          Promise.all([
-            app.settings.history(operation),
-            app.settings.current(operation),
-          ]),
-        ),
-      app.runner.casesInInstructions(key),
-      // Retired ones too: starters already added once aren't offered again.
-      app.store.listCases(key, { includeRetired: true }),
-    ]);
+  const [
+    b,
+    attackBoards,
+    [history, liveSettings],
+    inInstructions,
+    cases,
+    savedSettings,
+    spending,
+  ] = await Promise.all([
+    app.runner.board(key),
+    // Injection suites that attack this feature: their results count here.
+    app.runner.attackBoards(key),
+    // Records a deploy if the instructions changed under the live
+    // settings, before reading them.
+    app.settings.syncPrompt(operation).then(() =>
+      Promise.all([
+        app.settings.history(operation),
+        // Null for a feature with no settings yet: the page still shows.
+        currentSettings(app.settings, operation),
+      ]),
+    ),
+    app.runner.casesInInstructions(key),
+    // Retired ones too: starters already added once aren't offered again.
+    app.store.listCases(key, { includeRetired: true }),
+    app.runner.suiteSettings(key),
+    // The page must load even when spending can't be read.
+    app.spending ? app.spending.read(operation).catch(() => null) : null,
+  ]);
   const { suite, rows } = b;
   const attacks = attacksFrom(attackBoards);
   // An injection suite's models are chosen on its base suite's page.
   const choosesHere = !isInjectionSuite(suite);
   // The suite's priority, or the one an admin chose in its settings.
-  const priority = priorityOf(suite, liveSettings.settings);
+  const priority = priorityOf(suite, liveSettings?.settings);
+  const target = targetCasesOf(suite, savedSettings);
   const testing =
     rows.some((r) => r.testing) ||
     attackBoards.some((a) => a.rows.some((r) => r.testing));
@@ -121,31 +155,84 @@ export async function loadSuitePage(app: EvalAppConfig, key: string) {
     null,
   );
   // Rounds each case passed (read only past the floor of cases).
-  const rounds = await app.runner.easyRounds(key, cases);
+  const rounds = await app.runner.easyRounds(key, cases, target);
   const health = answerKeyHealth(
     cases,
     withRounds(b.caseResults, rounds),
     new Date(),
     testedAt,
+    target,
   );
+  const replaced = replacedStarters(suite, cases);
+  // Attack tests set up but not made yet.
+  const unmade = attackBoards.filter((a) => a.cases === 0);
+  const todoInput: TodoInput = {
+    rows,
+    checks: suite.checks,
+    priority,
+    models: app.models,
+    attacks,
+    cases: b.cases,
+    provisional: b.provisional,
+    target,
+    unmadeAttacks: app.actions.makeAttackCases
+      ? unmade.map((a) => ({ key: a.suite.key, label: a.suite.label }))
+      : [],
+    replacedStarters: replaced.length,
+    splitCases: health.split.length,
+  };
   // For each split case, which models got it fully right and which didn't,
   // so a person sees the disagreement before deciding.
   const split = new Set(health.split.map((c) => c.id));
   const splitBy: Record<string, { right: string[]; wrong: string[] }> = {};
-  if (split.size)
+  // Must-pass checks every tested model misses: count the cases each
+  // misses them on, for the to-do list.
+  const fixing = new Set(
+    suiteTodos(todoInput).flatMap((t) =>
+      t.kind === "fixCheck" ? [t.check] : [],
+    ),
+  );
+  // check → case → models that missed it there
+  const missedBy = new Map<string, Map<string, Set<string>>>();
+  const scored = current.filter((r) => !r.variant);
+  if (split.size || fixing.size)
     await Promise.all(
-      current
-        .filter((r) => !r.variant)
-        .map(async (r) => {
-          if (!r.test) return;
-          for (const o of await app.store.listOutputs(r.test.runId)) {
-            if (!split.has(o.caseId) || o.error) continue;
+      scored.map(async (r) => {
+        if (!r.test) return;
+        for (const o of await app.store.listOutputs(r.test.runId)) {
+          if (o.error) continue;
+          if (split.has(o.caseId)) {
             const side = allPassed(o.scores) ? "right" : "wrong";
             const entry = (splitBy[o.caseId] ??= { right: [], wrong: [] });
             if (!entry[side].includes(r.label)) entry[side].push(r.label);
           }
-        }),
+          for (const x of o.scores ?? []) {
+            if (!fixing.has(x.key) || x.pass !== false) continue;
+            const byCase =
+              missedBy.get(x.key) ?? new Map<string, Set<string>>();
+            const models = byCase.get(o.caseId) ?? new Set<string>();
+            models.add(r.key);
+            byCase.set(o.caseId, models);
+            missedBy.set(x.key, byCase);
+          }
+        }
+      }),
     );
+  const missedByCheck = Object.fromEntries(
+    [...fixing].map((k) => [
+      k,
+      [...(missedBy.get(k)?.values() ?? [])].filter(
+        (models) => models.size === scored.length,
+      ).length,
+    ]),
+  );
+  // The to-do list, on the page that chooses models.
+  const todos: Todo[] = choosesHere
+    ? suiteTodos({ ...todoInput, missedByCheck })
+    : [];
+  const status = choosesHere
+    ? suiteStatus({ ...todoInput, missedByCheck }, todos)
+    : null;
 
   return {
     app,
@@ -169,6 +256,12 @@ export async function loadSuitePage(app: EvalAppConfig, key: string) {
     cases,
     priority,
     splitBy,
+    target,
+    savedSettings,
+    spending,
+    todos,
+    status,
+    replaced,
   };
 }
 
@@ -199,18 +292,224 @@ const VS: Record<string, string> = {
   TOO_FEW: "Too few cases to tell",
 };
 
-/** The suite's name, what it tests, and its priority. */
+/**
+ * The suite's name and status, its menu (Suite settings, Spending and
+ * daily limits), what it tests, and spending when it needs room.
+ */
 export function SuiteHeader({ data }: { data: SuitePageData }) {
-  const { app, suite } = data;
+  const { app, suite, status } = data;
   return (
-    <>
+    <div className="space-y-4">
       <div className="space-y-2">
         <BackLink href={app.basePath}>Evals</BackLink>
-        <h1 className="text-2xl font-semibold">{suite.label}</h1>
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-2xl font-semibold">{suite.label}</h1>
+            {status && (
+              <span className="inline-flex items-center">
+                <SuiteStatusBadge status={status} />
+                <InfoTip term="standing" id="suite-status" />
+              </span>
+            )}
+          </div>
+          <PageMenu label={`${suite.label} menu`} entries={menuEntries(data)} />
+        </div>
         <p className="readable text-muted">{suite.description}</p>
       </div>
-    </>
+      <SpendingAlert app={app} reading={data.spending} />
+    </div>
   );
+}
+
+/** The title menu's entries, each opening its own drawer. */
+function menuEntries(data: SuitePageData): PageMenuEntry[] {
+  const { app, key, suite, spending, choosesHere } = data;
+  const entries: PageMenuEntry[] = [];
+  if (
+    choosesHere &&
+    app.runner.canSaveSuiteSettings &&
+    app.actions.saveSuiteSettings
+  )
+    entries.push({
+      key: "settings",
+      label: "Suite settings",
+      body: <SuiteSettingsForm data={data} />,
+    });
+  if (spending && app.actions.saveLimits)
+    entries.push({
+      key: "spending",
+      label: "Spending and daily limits",
+      body: (
+        <SpendingForm
+          app={app}
+          reading={spending}
+          suite={key}
+          label={suite.label}
+        />
+      ),
+    });
+  return entries;
+}
+
+/**
+ * Suite settings: one form, one Save. Its target number of cases, kept
+ * apart from the model versions, so changing it never makes a version.
+ */
+function SuiteSettingsForm({ data }: { data: SuitePageData }) {
+  const { app, key, suite, savedSettings, target } = data;
+  const action = app.actions.saveSuiteSettings;
+  if (!action) return null;
+  const own = suite.targetCases ?? 50;
+  return (
+    <form key={target} action={action} className="space-y-4">
+      <p className="readable text-muted">{GLOSSARY.suiteSettings}</p>
+      <input type="hidden" name="suite" value={key} />
+      <div className="space-y-1">
+        <label htmlFor="target-cases" className="block font-medium">
+          Target number of cases
+        </label>
+        <input
+          id="target-cases"
+          name="targetCases"
+          type="number"
+          inputMode="numeric"
+          min={TARGET_CASES_RANGE.min}
+          max={TARGET_CASES_RANGE.max}
+          step={1}
+          placeholder={String(own)}
+          defaultValue={savedSettings.targetCases ?? ""}
+          aria-describedby="target-cases-help"
+          className="w-32 rounded-md border border-line bg-card px-3 py-2 tabular-nums focus:border-accent focus:outline-none"
+        />
+        <p id="target-cases-help" className="readable text-xs text-muted">
+          {GLOSSARY.targetCases} Leave it empty for the suite&apos;s own ({own}
+          ). It sets when the page asks for more cases, how many to draft, and
+          the fewest that retiring easy cases leaves.
+        </p>
+      </div>
+      <Submit>Save</Submit>
+    </form>
+  );
+}
+
+/**
+ * What to do next on this suite, in order, each with why and the way to
+ * do it here. Each drops off once it's done; empty, the section says
+ * there's nothing to do. Not on an injection suite, whose models are
+ * chosen on its feature's page.
+ */
+export function TodoSection({ data }: { data: SuitePageData }) {
+  const { app, key, todos, choosesHere, status } = data;
+  if (!choosesHere) return null;
+  return (
+    <section aria-labelledby="todo" className="space-y-3">
+      <h2 id="todo" className="text-lg font-semibold">
+        To do
+        <InfoTip term="todo" />
+      </h2>
+      {todos.length === 0 ? (
+        <p className="readable text-sm text-muted">
+          {status === "unknown"
+            ? "Nothing to do here yet."
+            : "Nothing to do: every must-pass check meets its aim, and the answer key is at its target."}
+        </p>
+      ) : (
+        <ul className="divide-y divide-line rounded-lg border border-line bg-card">
+          {todos.map((t) => {
+            const { what, why } = todoText(t);
+            return (
+              <li
+                key={`${t.kind}-${t.kind === "fixCheck" ? t.check : ""}`}
+                className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 px-4 py-3 text-sm"
+              >
+                <p className="readable flex min-w-0 items-start gap-2">
+                  <Square
+                    aria-hidden
+                    className="mt-0.5 h-4 w-4 shrink-0 text-muted"
+                  />
+                  <span>
+                    <span className="font-medium">{what}</span>: {why}
+                  </span>
+                </p>
+                <TodoAction app={app} suite={key} todo={t} />
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+/** Where a to-do item is done: a button for this page's action, or a link to its section. */
+function TodoAction({
+  app,
+  suite,
+  todo: t,
+}: {
+  app: EvalAppConfig;
+  suite: string;
+  todo: Todo;
+}) {
+  const go = (href: string, text: string) => (
+    <a
+      href={href}
+      className={`inline-flex shrink-0 items-center gap-1 text-sm ${LINK}`}
+    >
+      {text}
+      <ArrowRight aria-hidden className="h-3.5 w-3.5" />
+    </a>
+  );
+  const button = (
+    action: FormAction | undefined,
+    text: string,
+    fields: Record<string, string> = {},
+  ) =>
+    action ? (
+      <form action={action} className="shrink-0">
+        <input type="hidden" name="suite" value={suite} />
+        {Object.entries(fields).map(([k, v]) => (
+          <input key={k} type="hidden" name={k} value={v} />
+        ))}
+        <Submit variant="quiet">{text}</Submit>
+      </form>
+    ) : null;
+  switch (t.kind) {
+    case "testAll":
+      return button(app.actions.testAll, "Test every model");
+    case "retest":
+      return button(app.actions.testAll, "Test every model again");
+    case "makeLive":
+      return button(app.actions.useSuggestion, "Use the suggestion");
+    case "fixCheck":
+      return t.runId
+        ? go(
+            `${evalsPath(app, suite, "runs", t.runId)}#check-${t.check}`,
+            "See the cases",
+          )
+        : go("#checks", "See the check");
+    case "confirm":
+      return go("#answer-key", "Review them");
+    case "addCases":
+      return go("#add-case=", "Add a case");
+    case "makeAttacks":
+      return (
+        <span className="flex shrink-0 flex-wrap gap-2">
+          {t.suites.map((a) => (
+            <form key={a.key} action={app.actions.makeAttackCases}>
+              <input type="hidden" name="suite" value={a.key} />
+              <Submit variant="quiet">
+                {t.suites.length > 1 ? `Make ${a.label}` : "Make attack cases"}
+              </Submit>
+            </form>
+          ))}
+        </span>
+      );
+    case "retireStarters":
+      return button(app.actions.retireReplacedStarters, `Retire ${t.cases}`);
+    case "reviewSplit":
+      return go("#answer-key-health", "Review them");
+  }
 }
 
 /** On an injection suite: models are chosen on its base suite, with a link there. */
@@ -228,7 +527,7 @@ export function ChosenOnBase({ data }: { data: SuitePageData }) {
             This suite tests the same feature as {suite.base.label}, so one
             choice of model serves both. Its results show there as Attacks
             resisted, and the suggestion there never picks a model with more
-            serious mistakes on them than live.
+            must-pass misses on them than live.
           </p>
           <Link
             href={evalsPath(app, suite.base.key)}
@@ -244,7 +543,7 @@ export function ChosenOnBase({ data }: { data: SuitePageData }) {
 
 /** Which models to make live and the fallback, and why; shown when nothing would change too. */
 export function SuggestionCard({ data }: { data: SuitePageData }) {
-  const { app, key, s, choosesHere, testing } = data;
+  const { s, choosesHere, testing } = data;
   if (choosesHere && testing)
     return (
       <section className="space-y-3" aria-labelledby="suggestion">
@@ -272,14 +571,7 @@ export function SuggestionCard({ data }: { data: SuitePageData }) {
               {s.same ? "No change suggested" : "Suggested"}
               <InfoTip term="suggestion" />
             </h2>
-            {/* Retesting live changes nothing until the fallback would. */}
-            {!s.same &&
-              !(s.retestLive && (!s.fallback || s.fallback.fallback)) && (
-                <form action={app.actions.useSuggestion}>
-                  <input type="hidden" name="suite" value={key} />
-                  <Submit>Use these</Submit>
-                </form>
-              )}
+            {/* The to-do list above is where to act on it; this says why. */}
           </div>
           <Card className="space-y-3">
             {!s.same && (
@@ -398,7 +690,7 @@ export function ModelTable({ data }: { data: SuitePageData }) {
                 </th>
                 <th className="p-3 font-normal">
                   <Tip term="seriousMistakes" side="bottom">
-                    Serious mistakes
+                    Must-pass misses
                   </Tip>
                 </th>
                 {showAttacks && (
@@ -714,16 +1006,16 @@ export function TestSettingSection(_props: { data: SuitePageData }) {
   return null;
 }
 
+// From the app's color names, so its evalkeeper.css decides both themes.
 const BAR_TONE = {
-  meets:
-    "bg-emerald-100 text-emerald-900 dark:bg-emerald-500/15 dark:text-emerald-200",
-  close: "bg-amber-100 text-amber-900 dark:bg-amber-500/15 dark:text-amber-200",
-  below: "bg-red-100 text-red-900 dark:bg-red-500/15 dark:text-red-200",
+  meets: TINT.good,
+  close: TINT.warn,
+  below: TINT.bad,
 } as const;
 
 /**
  * Where the mistakes are: how often each check passed, for every model
- * with a current test, beside each check's bar. Serious checks first. The
+ * with a current test, beside each check's aim. Must-pass checks first. The
  * checks section shows the live model alone; this shows which model fails
  * which check.
  */
@@ -744,9 +1036,9 @@ export function CheckBreakdownSection({ data }: { data: SuitePageData }) {
         <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
           {(
             [
-              ["meets", "Meets the bar"],
-              ["close", "Within 10 points"],
-              ["below", "Further below"],
+              ["meets", "Meets its aim"],
+              ["close", "Within 10 points of it"],
+              ["below", "Further off"],
             ] as const
           ).map(([k, text]) => (
             <span key={k} className="flex items-center gap-1.5">
@@ -760,7 +1052,11 @@ export function CheckBreakdownSection({ data }: { data: SuitePageData }) {
             <thead className="text-xs text-muted">
               <tr>
                 <th className="py-2 pr-4 font-normal">Check</th>
-                <th className="py-2 pr-4 font-normal">Bar</th>
+                <th className="py-2 pr-4 font-normal">
+                  <Tip term="aim" side="bottom" id="breakdown-aim">
+                    Aim
+                  </Tip>
+                </th>
                 {tested.map((r) => (
                   <th key={r.key} className="py-2 pr-3 font-normal">
                     {r.label}
@@ -773,11 +1069,7 @@ export function CheckBreakdownSection({ data }: { data: SuitePageData }) {
                 <tr key={c.key}>
                   <td className="py-1.5 pr-4">
                     <span className="mr-2">{c.label}</span>
-                    <Chip
-                      tone={c.severity === "serious" ? "serious" : "neutral"}
-                    >
-                      {c.severity}
-                    </Chip>
+                    <SeverityChip severity={c.severity} />
                   </td>
                   <td className="py-1.5 pr-4 tabular-nums text-muted">
                     {pct(checkBar(c))}
@@ -819,10 +1111,25 @@ export function CheckBreakdownSection({ data }: { data: SuitePageData }) {
 }
 /** The feature's settings history, with rollback; not on an injection suite. */
 export function Versions({ data }: { data: SuitePageData }) {
-  const { app, key, history, liveSettings, choosesHere } = data;
+  const { app, key, history, liveSettings, choosesHere, suite } = data;
+  if (choosesHere && !liveSettings)
+    return (
+      <Card className="space-y-2">
+        <h2 className="font-semibold">
+          No settings yet
+          <InfoTip term="versions" />
+        </h2>
+        <p className="readable text-sm text-muted">
+          {suite.label} has no settings version yet, and no default in code, so
+          nothing says which model it runs on. Record its first version (
+          <code>settings.seed</code> or <code>settings.change</code>), or give
+          it a default in your wiring. Tests still run.
+        </p>
+      </Card>
+    );
   return (
     <>
-      {choosesHere && (
+      {choosesHere && liveSettings && (
         <SettingsHistory
           app={app}
           suite={key}
@@ -836,18 +1143,18 @@ export function Versions({ data }: { data: SuitePageData }) {
   );
 }
 
-/** Each check: what it checks, its severity and bar, and how the live model does. */
+/** Each check: what it checks, must pass or nice to have, its aim, and how the live model does. */
 export function ChecksSection({ data }: { data: SuitePageData }) {
   const { suite, live } = data;
   return (
     <>
-      <section className="space-y-3">
+      <section id="checks" className="scroll-mt-4 space-y-3">
         <h2 className="text-lg font-semibold">
           Checks
           <InfoTip term="checks" />
         </h2>
         <div className="grid gap-3 md:grid-cols-2">
-          {/* Serious first; each group keeps the suite's own order. */}
+          {/* Must pass first; each group keeps the suite's own order. */}
           {[
             ...suite.checks.filter((c) => c.severity === "serious"),
             ...suite.checks.filter((c) => c.severity !== "serious"),
@@ -857,12 +1164,8 @@ export function ChecksSection({ data }: { data: SuitePageData }) {
               <Card key={c.key} className="space-y-1">
                 <div className="flex justify-between gap-4">
                   <h3 className="font-medium">{c.label}</h3>
-                  <Tip term={c.severity} id={`severity-${c.key}`}>
-                    <Chip
-                      tone={c.severity === "serious" ? "serious" : "neutral"}
-                    >
-                      {c.severity}
-                    </Chip>
+                  <Tip term={c.severity} id={`severity-${c.key}`} align="end">
+                    <SeverityChip severity={c.severity} />
                   </Tip>
                 </div>
                 <p className="readable text-sm text-muted">{c.description}</p>
@@ -882,8 +1185,8 @@ export function ChecksSection({ data }: { data: SuitePageData }) {
                       ({rate.passed}/{rate.n}) ·{" "}
                     </>
                   )}
-                  <Tip term="bar" id={`bar-${c.key}`}>
-                    <span className="text-muted">Bar: {pct(checkBar(c))}</span>
+                  <Tip term="aim" id={`aim-${c.key}`}>
+                    <span className="text-muted">Aim: {pct(checkBar(c))}</span>
                   </Tip>
                 </p>
               </Card>
@@ -903,11 +1206,22 @@ export function ChecksSection({ data }: { data: SuitePageData }) {
  * passes its action.
  */
 export function AnswerKeyToolsSection({ data }: { data: SuitePageData }) {
-  const { app, key, suite, cases } = data;
+  const { app, key, suite, cases, replaced } = data;
   const { actions } = app;
   const inUse = cases.filter((c) => c.status !== "RETIRED");
   const drafts = draftAnswers(cases);
   const fresh = newStarters(suite.starter, cases);
+  // New starters named like a case they replace: said up front, so nobody
+  // retires the wrong one of two cases with the same title.
+  const titleOf = (input: unknown) => {
+    const p = suite.input.safeParse(input);
+    return p.success ? suite.title(p.data) : null;
+  };
+  const oldTitles = new Set(replaced.map((c) => titleOf(c.input)));
+  const sameTitle = fresh.filter((c) => {
+    const t = titleOf(c.input);
+    return t !== null && oldTitles.has(t);
+  }).length;
   const injection = isInjectionSuite(suite) ? suite : null;
   const parts = [
     actions.useDraftsProvisionally && drafts.length > 0 && (
@@ -950,6 +1264,8 @@ export function AnswerKeyToolsSection({ data }: { data: SuitePageData }) {
             : `No cases yet. Start with the suite's ${fresh.length} starter ${fresh.length === 1 ? "case" : "cases"}.`}{" "}
           Each needs your review and counts only once you confirm it, unless the
           suite&apos;s author already reviewed it.
+          {sameTitle > 0 &&
+            ` ${sameTitle === 1 ? "One shares its title" : `${sameTitle} share their titles`} with a starter case ${sameTitle === 1 ? "it replaces" : "they replace"}: the old ${sameTitle === 1 ? "one is" : "ones are"} marked No longer a starter in the answer key.`}
         </p>
         <form action={actions.addStarters}>
           <input type="hidden" name="suite" value={key} />
@@ -990,10 +1306,6 @@ export function AnswerKeySection({ data }: { data: SuitePageData }) {
   const { app, key, b, suite, rows, attackBoards } = data;
   // A feature's attack cases are a tab of its answer key.
   const attacked = attackBoards.filter((a) => a.cases > 0);
-  // Attack tests set up but not made yet: nothing else on this page says so.
-  const unmade = app.actions.makeAttackCases
-    ? attackBoards.filter((a) => a.cases === 0)
-    : [];
   const guide =
     suite.answerGuide ??
     (suite.labelHelp ? { points: [{ text: suite.labelHelp }] } : null);
@@ -1052,32 +1364,6 @@ export function AnswerKeySection({ data }: { data: SuitePageData }) {
   return (
     // The weekly check links here to review drafts.
     <section id="answer-key" className="scroll-mt-4 space-y-3">
-      {unmade.length > 0 && b.cases > 0 && (
-        <Card className="space-y-3">
-          <p className="readable text-sm">
-            <ShieldAlert
-              aria-hidden
-              className="mr-1.5 inline h-4 w-4 text-warn"
-            />
-            This feature has attack tests set up, but no attack cases yet. Each
-            is one of its confirmed cases with an attack planted where text it
-            can&apos;t trust goes, so a test shows whether a model follows it.
-            <InfoTip term="attacksResisted" />
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {unmade.map((a) => (
-              <form key={a.suite.key} action={app.actions.makeAttackCases}>
-                <input type="hidden" name="suite" value={a.suite.key} />
-                <Submit variant="quiet">
-                  {unmade.length > 1
-                    ? `Make attack cases: ${a.suite.label}`
-                    : "Make attack cases"}
-                </Submit>
-              </form>
-            ))}
-          </div>
-        </Card>
-      )}
       {attacked.length === 0 ? (
         cases
       ) : (
@@ -1209,13 +1495,14 @@ function UnderAttack({
 }
 
 /**
- * Keeping the answer key useful: easy cases to retire (past a floor of 50),
+ * Keeping the answer key useful: easy cases to retire (past the suite's
+ * target number of cases),
  * cases models split on and near-duplicates to check, old drafts, and
  * tags with a single case. Shows only what needs a look, and nothing on
  * an injection suite, whose cases are made from its base suite's.
  */
 export function AnswerKeyHealthSection({ data }: { data: SuitePageData }) {
-  const { app, key, suite, health: h, choosesHere, splitBy } = data;
+  const { app, key, suite, health: h, choosesHere, splitBy, target } = data;
   const thin = h.tags.filter(([, n]) => n === 1).map(([t]) => t);
   const needs =
     h.easyToRetire.length ||
@@ -1240,8 +1527,12 @@ export function AnswerKeyHealthSection({ data }: { data: SuitePageData }) {
   const check = h.split.length > 0 || h.duplicates.length > 0;
   const retire = h.easyToRetire.length > 0 || h.staleDrafts.length > 0;
   return (
-    <section className="space-y-3" aria-labelledby="answer-key-health">
-      <h2 id="answer-key-health" className="text-lg font-semibold">
+    <section
+      id="answer-key-health"
+      className="scroll-mt-4 space-y-3"
+      aria-labelledby="answer-key-health-title"
+    >
+      <h2 id="answer-key-health-title" className="text-lg font-semibold">
         Answer key health
         <InfoTip term="answerKeyHealth" />
       </h2>
@@ -1267,11 +1558,15 @@ export function AnswerKeyHealthSection({ data }: { data: SuitePageData }) {
                     const names = (xs: string[]) =>
                       new Intl.ListFormat("en-US").format(xs);
                     return (
+                      // The tint spans the panel; the words keep their
+                      // readable width inside it.
                       <li
                         key={c.id}
-                        className="space-y-2 rounded-md bg-tint p-3"
+                        className="w-full space-y-2 rounded-md bg-tint p-3"
                       >
-                        <div className="font-medium">{caseLink(c)}</div>
+                        <div className="readable font-medium">
+                          {caseLink(c)}
+                        </div>
                         {by && (
                           <p className="readable text-xs text-muted">
                             {by.right.length > 0 &&
@@ -1336,18 +1631,34 @@ export function AnswerKeyHealthSection({ data }: { data: SuitePageData }) {
               or two to each.
               <InfoTip term="tagCoverage" />
             </p>
+            {!(draftMore && suite.draftMore) && (
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="readable text-muted">
+                  Pick a topic to open Add a case with it filled in.
+                </p>
+                <a
+                  href="#add-case="
+                  className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm ${QUIET_BUTTON}`}
+                >
+                  <Plus aria-hidden className="h-4 w-4" />
+                  Add a case
+                </a>
+              </div>
+            )}
             {draftMore && suite.draftMore ? (
               <form action={draftMore} className="space-y-2">
                 <input type="hidden" name="suite" value={key} />
                 <ul className="flex flex-wrap gap-1.5">
                   {thin.map((t) => (
                     <li key={t}>
-                      <label className="inline-flex cursor-pointer items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800 has-[:checked]:bg-amber-300 dark:bg-amber-500/15 dark:text-amber-200 dark:has-[:checked]:bg-amber-500/40">
+                      <label
+                        className={`inline-flex cursor-pointer items-center gap-1 rounded-full px-2 py-0.5 text-xs ${TINT.warn} has-[:checked]:bg-warn/40`}
+                      >
                         <input
                           type="checkbox"
                           name="topic"
                           value={t}
-                          className="h-3 w-3 accent-amber-700"
+                          className="h-3 w-3 accent-[var(--color-warn)]"
                         />
                         {t}
                       </label>
@@ -1363,40 +1674,23 @@ export function AnswerKeyHealthSection({ data }: { data: SuitePageData }) {
                 </p>
               </form>
             ) : (
-              <div className="space-y-2">
-                <p className="readable text-muted">
-                  Pick a topic to open Add a case with it already tagged.
-                </p>
-                <div className="flex flex-wrap items-center gap-3">
-                  <ul className="flex flex-wrap gap-1.5">
-                    {thin.map((t) => (
-                      <li key={t}>
-                        <a
-                          href={`#add-case=${encodeURIComponent(t)}`}
-                          className="inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800 hover:underline dark:bg-amber-500/15 dark:text-amber-200"
-                        >
-                          {t}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                  <a
-                    href="#add-case="
-                    className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm ${QUIET_BUTTON}`}
-                  >
-                    <Plus aria-hidden className="h-4 w-4" />
-                    Add a case
-                  </a>
-                </div>
-                <p className="readable text-xs text-muted">
-                  A suite with <code>draftMore</code> drafts whole cases for the
-                  topics you pick instead.
-                </p>
-              </div>
+              <ul className="flex flex-wrap gap-1.5">
+                {thin.map((t) => (
+                  <li key={t}>
+                    <a
+                      href={`#add-case=${encodeURIComponent(t)}`}
+                      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs hover:underline ${TINT.warn}`}
+                    >
+                      <Plus aria-hidden className="h-3 w-3" />
+                      {t}
+                    </a>
+                  </li>
+                ))}
+              </ul>
             )}
             <details className="group">
-              <summary className="cursor-pointer text-muted">
-                Show all topics
+              <summary className="cursor-pointer text-xs text-muted">
+                Every topic and its cases
               </summary>
               <ul className="mt-2 flex flex-wrap gap-1.5">
                 {h.tags.map(([t, n]) => (
@@ -1419,8 +1713,9 @@ export function AnswerKeyHealthSection({ data }: { data: SuitePageData }) {
                   Every model got {cases(h.easyToRetire.length)} fully right in{" "}
                   {EASY_MIN_ROUNDS} or more rounds of testing, so they no longer
                   tell models apart. Retiring them keeps{" "}
-                  {h.inUse - h.easyToRetire.length} cases, at or above the floor
-                  of {EASY_FLOOR_CASES}. Recent tests are rescored for free.
+                  {h.inUse - h.easyToRetire.length} cases, at or above the
+                  suite&apos;s target of {target}. Recent tests are rescored for
+                  free.
                   <InfoTip term="easyCases" />
                 </p>
                 {retireEasy && (
@@ -1477,6 +1772,7 @@ export async function SuitePage({
     <div className="space-y-8">
       <RefreshWhile active={data.testing} />
       <SuiteHeader data={data} />
+      <TodoSection data={data} />
       <ChosenOnBase data={data} />
       <SuggestionCard data={data} />
       <CasesInInstructions data={data} />

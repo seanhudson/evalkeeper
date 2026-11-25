@@ -19,6 +19,7 @@ import {
   EXPERT_REVIEWED,
   FROM_BASE_CASE,
   isShippedReview,
+  replacedStarters,
 } from "../index.js";
 import { Check, ChevronRight, CircleAlert, Eye, X } from "lucide-react";
 import type { EvalAppConfig } from "./app.js";
@@ -108,6 +109,11 @@ export async function AnswerKey({
     byCase.set(o.caseId, list);
   }
   const fields = suite.fields;
+  // Starters a starter update replaced: marked, so nobody retires the
+  // current ones by mistake.
+  const replaced = new Set(
+    readOnly ? [] : replacedStarters(suite, cases).map((c) => c.id),
+  );
 
   return (
     <div className="space-y-4">
@@ -243,6 +249,7 @@ export async function AnswerKey({
             suite={suite}
             c={c}
             results={byCase.get(c.id) ?? []}
+            replaced={replaced.has(c.id)}
           />
         ))}
         {!cases.length && <p className="text-sm text-muted">No cases yet.</p>}
@@ -257,11 +264,14 @@ function CaseItem({
   suite,
   c,
   results,
+  replaced = false,
 }: {
   app: EvalAppConfig;
   readOnly: boolean;
   suite: AnySuite;
   c: CaseRecord;
+  /** A starter a starter update replaced (`replacedStarters`). */
+  replaced?: boolean;
   results: {
     model: string;
     output: { scores: unknown; error: string | null; output?: unknown };
@@ -408,12 +418,21 @@ function CaseItem({
             confirmed={CONFIRMED_STATUS}
             id={`status-${c.id}`}
           />
+          {replaced && (
+            <Tip term="replacedStarter" id={`replaced-${c.id}`} align="end">
+              <Chip tone="warn">No longer a starter</Chip>
+            </Tip>
+          )}
           {shipped && (
-            <Tip term={shipped.term} id={`reviewed-${c.id}`}>
+            <Tip term={shipped.term} id={`reviewed-${c.id}`} align="end">
               <Chip tone="neutral">{shipped.text}</Chip>
             </Tip>
           )}
-          <Tip term={c.split === "TEST" ? "test" : "dev"} id={`split-${c.id}`}>
+          <Tip
+            term={c.split === "TEST" ? "test" : "dev"}
+            id={`split-${c.id}`}
+            align="end"
+          >
             <Chip tone="neutral">{c.split === "TEST" ? "Test" : "Dev"}</Chip>
           </Tip>
           {results.length > 0 && (

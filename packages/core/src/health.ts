@@ -173,9 +173,10 @@ export function suiteHealth(
     );
   for (const { c, rate } of below.slice(0, 3))
     details.push(
-      `${c.label}: ${pctBeside(rate, checkBar(c))}, under the ${pct(checkBar(c))} bar${c.severity === "serious" ? " (serious)" : ""}.`,
+      `${c.label}: ${pctBeside(rate, checkBar(c))}, under its ${pct(checkBar(c))} aim${c.severity === "serious" ? " (must pass)" : ""}.`,
     );
-  if (below.length > 3) details.push(`${below.length - 3} more under the bar.`);
+  if (below.length > 3)
+    details.push(`${below.length - 3} more under their aim.`);
 
   const s = suggest(rows, checks, priority, models, opts);
   // Not while a test runs: the suggestion would weigh half a board.

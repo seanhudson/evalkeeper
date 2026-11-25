@@ -71,16 +71,39 @@ export type Confidence = {
 };
 
 /**
+ * Fewer cases than this can't be judged at all: a score could be off by
+ * more than 20 points. A suite whose own target is smaller (cases that cost
+ * real money) uses its target instead, so a suite at its target is never
+ * "too few".
+ */
+export const TOO_FEW_CASES = 20;
+
+/** How many cases are too few to judge, for a suite aiming at `target`. */
+export function tooFewBelow(target: number = TARGET_CASES): number {
+  return Math.min(TOO_FEW_CASES, target);
+}
+
+/**
  * How far to trust scores on this many cases. The margin is the 95% range
  * of a pass rate (at the given rate, or 50%, the widest), in points.
+ *
+ * @param cases - Cases in use.
+ * @param rate - The score to judge the margin at; 50% (the widest) by default.
+ * @param target - The suite's target number of cases (`targetCasesOf`):
+ *   "too few" is below it or 20, whichever is smaller, and the sentence
+ *   asks for more only while the suite is under it.
  */
-export function confidenceFor(cases: number, rate = 0.5): Confidence {
+export function confidenceFor(
+  cases: number,
+  rate = 0.5,
+  target: number = TARGET_CASES,
+): Confidence {
   const p = Math.min(Math.max(rate, 0.05), 0.95);
   const margin = cases
     ? Math.round(1.96 * Math.sqrt((p * (1 - p)) / cases) * 100)
     : 100;
   const level =
-    cases < 20
+    cases < tooFewBelow(target)
       ? "too-few"
       : cases < 50
         ? "rough"
@@ -93,17 +116,45 @@ export function confidenceFor(cases: number, rate = 0.5): Confidence {
     good: "good",
     strong: "strong",
   }[level];
+  const aim = cases < target ? ` Aim for ${target}.` : "";
   const sentence =
     level === "too-few"
-      ? `With ${cases} cases a score could be off by about ${margin} points: only big problems show. Aim for 50.`
-      : `With ${cases} cases a score could be off by about ${margin} points either way, so models closer than that can't be told apart.${level === "rough" ? " Aim for 50." : ""}`;
+      ? `With ${cases} cases a score could be off by about ${margin} points: only big problems show.${aim}`
+      : `With ${cases} cases a score could be off by about ${margin} points either way, so models closer than that can't be told apart.${aim}`;
   return { level, label, margin, sentence };
 }
 
-/** The answer key size to aim for (see confidenceFor). */
+/**
+ * The answer key size to aim for when a suite sets none (see
+ * confidenceFor). A suite sets its own with `targetCases`, and a person can
+ * change it in the suite's settings.
+ */
 export const TARGET_CASES = 50;
 
-/** How many drafts get the key to the target: at least 10, at most 30 a batch. */
-export function draftsToTarget(casesNotRetired: number): number {
-  return Math.min(30, Math.max(10, TARGET_CASES - casesNotRetired));
+/**
+ * A suite's target number of cases: what a person saved in its settings,
+ * else the suite's `targetCases`, else TARGET_CASES.
+ *
+ * @param suite - The suite, for its `targetCases`.
+ * @param saved - The suite's saved settings, when there are any.
+ */
+export function targetCasesOf(
+  suite: { targetCases?: number | undefined },
+  saved?: { targetCases?: number | null | undefined } | null,
+): number {
+  return saved?.targetCases ?? suite.targetCases ?? TARGET_CASES;
+}
+
+/**
+ * How many drafts get the key to its target: at least 10 a batch (or the
+ * whole target, when that's smaller), at most 30.
+ *
+ * @param casesNotRetired - Cases in the answer key, drafts included.
+ * @param target - The suite's target number of cases.
+ */
+export function draftsToTarget(
+  casesNotRetired: number,
+  target: number = TARGET_CASES,
+): number {
+  return Math.min(30, Math.max(Math.min(10, target), target - casesNotRetired));
 }

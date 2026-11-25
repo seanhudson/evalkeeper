@@ -34,6 +34,8 @@ export async function draftMoreCases(opts: {
   focus: string | null;
   /** How many to draft (1 to 10); default enough to near the target. */
   count?: number;
+  /** The suite's target number of cases (`targetCasesOf`); default 50. */
+  target?: number;
 }): Promise<DraftMoreResult> {
   const { store, suite } = opts;
   const result: DraftMoreResult = { drafted: 0, rejected: [] };
@@ -44,7 +46,7 @@ export async function draftMoreCases(opts: {
     existing: all.map((c) => ({ input: c.input, tags: c.tags })),
     count:
       opts.count === undefined
-        ? draftsToTarget(inUse.length)
+        ? draftsToTarget(inUse.length, opts.target)
         : Math.min(10, Math.max(1, Math.round(opts.count))),
     focus: opts.focus,
   });

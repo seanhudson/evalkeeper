@@ -1,196 +1,178 @@
 import {
+  answerKeyHealth,
   attacksFrom,
-  attention,
+  currentSettings,
   isInjectionSuite,
-  perAnswer,
   priorityOf,
-  seconds,
-  STANDING_LABEL,
-  STANDING_ORDER,
-  suiteHealth,
+  replacedStarters,
+  SUITE_STATUS_LABEL,
+  SUITE_STATUS_ORDER,
+  suiteStatus,
+  suiteTodos,
+  targetCasesOf,
   thumbsSummary,
-  type GlossaryTerm,
-  type HistoryEntry,
-  type Settings,
-  type SettingsVersion,
+  type TodoInput,
 } from "../index.js";
-import {
-  Link,
-  Card,
-  InfoTip,
-  LocalDate,
-  StandingBadge,
-  HealthReasons,
-} from "./pieces.js";
-import { pct } from "./format.js";
-import { HistoryEntries } from "./SettingsHistory.js";
-import {
-  daysAgo,
-  evalsPath,
-  loadWeekly,
-  type EvalAppConfig,
-  attacksResisted,
-} from "./app.js";
-import type { Runner } from "../runner.js";
-import { ChevronDown } from "lucide-react";
+import { Link, Card, InfoTip, SuiteStatusBadge } from "./pieces.js";
+import { LINK } from "./format.js";
+import { daysAgo, evalsPath, loadWeekly, type EvalAppConfig } from "./app.js";
+import { ChevronRight } from "lucide-react";
 import { WeeklyCheck } from "./WeeklyCheck.js";
+import { PageMenu } from "./Drawer.js";
+import { SpendingAlert, SpendingForm } from "./Spending.js";
 
 /**
  * Everything the evals hub shows, loaded together. Sections read from
  * this, so a hub of your own loads the same data once.
  */
 export async function loadHub(app: EvalAppConfig) {
-  const [boards, weekly] = await Promise.all([
+  const [boards, weekly, feedback, spending] = await Promise.all([
     Promise.all(app.suites.map((s) => app.runner.board(s.key))),
     loadWeekly(app),
+    app.feedbackStore.listFeedback(),
+    // The hub must load even when spending can't be read.
+    app.spending ? app.spending.read().catch(() => null) : null,
   ]);
-  const histories = await Promise.all(
-    app.suites.map((s) =>
-      Promise.all([
-        app.settings.history(s.operation),
-        app.settings.current(s.operation),
-      ]),
-    ),
-  );
-  const thumbs = thumbsSummary(
-    await app.feedbackStore.listFeedback(),
-    daysAgo(7),
-  );
+  const thumbs = thumbsSummary(feedback, daysAgo(7));
   const down = thumbs.reduce((t, s) => t + s.down, 0);
   const waiting = thumbs.reduce((t, s) => t + s.open, 0);
   const flagged = thumbs.filter((s) => s.alert).length;
-  // An injection suite shows on its base suite's card, not its own.
+  // An injection suite shows on its base suite's row, not its own.
   const attacksOn = (key: string) =>
     boards.filter((x) => isInjectionSuite(x.suite) && x.suite.base.key === key);
-  const cards = boards
-    .map((b, i) => ({ b, i }))
-    .filter(({ b }) => !isInjectionSuite(b.suite));
-  const needs = attention(
-    cards.map(({ b }) => ({
-      key: b.suite.key,
-      label: b.suite.label,
-      rows: b.rows,
-      toReview: b.provisional,
-    })),
+  const features = boards.filter((b) => !isInjectionSuite(b.suite));
+  const suites = await Promise.all(
+    features.map(async (b) => {
+      const { suite } = b;
+      const [current, saved, cases] = await Promise.all([
+        // One feature with no settings yet mustn't break the hub.
+        currentSettings(app.settings, suite.operation),
+        app.runner.suiteSettings(suite.key),
+        app.store.listCases(suite.key),
+      ]);
+      const attacked = attacksOn(suite.key);
+      const tested = b.rows.filter(
+        (r) => r.test && !r.test.stale && !r.baseline,
+      );
+      const testedAt = tested.reduce<Date | null>(
+        (m, r) => (r.test && (!m || r.test.at > m) ? r.test.at : m),
+        null,
+      );
+      const input: TodoInput = {
+        rows: b.rows,
+        checks: suite.checks,
+        priority: priorityOf(suite, current?.settings),
+        models: app.models,
+        attacks: attacksFrom(attacked),
+        cases: b.cases,
+        provisional: b.provisional,
+        target: targetCasesOf(suite, saved),
+        unmadeAttacks: app.actions.makeAttackCases
+          ? attacked
+              .filter((a) => a.cases === 0)
+              .map((a) => ({ key: a.suite.key, label: a.suite.label }))
+          : [],
+        replacedStarters: replacedStarters(suite, cases).length,
+        splitCases: answerKeyHealth(cases, b.caseResults, new Date(), testedAt)
+          .split.length,
+      };
+      const todos = suiteTodos(input);
+      return {
+        suite,
+        board: b,
+        todos,
+        status: suiteStatus(input, todos),
+        settings: current,
+      };
+    }),
   );
   return {
     app,
     boards,
     weekly,
-    histories,
     thumbs,
     down,
     waiting,
     flagged,
     attacksOn,
-    cards,
-    needs,
+    suites,
+    spending,
   };
 }
 
 /** What `loadHub` returns, for sections and custom pages. */
 export type HubData = Awaited<ReturnType<typeof loadHub>>;
 
-/** What the evals hub is for. */
-export function HubIntro() {
+/**
+ * What the evals hub is for, with its menu (Spending and daily limits)
+ * beside the title, and spending when it needs room: over a limit,
+ * stopped, or a test running.
+ */
+export function HubIntro({ data }: { data?: HubData }) {
+  const app = data?.app;
+  const spending = data?.spending ?? null;
+  const entries =
+    app && spending && app.actions.saveLimits
+      ? [
+          {
+            key: "spending",
+            label: "Spending and daily limits",
+            body: <SpendingForm app={app} reading={spending} />,
+          },
+        ]
+      : [];
   return (
-    <>
+    <div className="space-y-4">
       <div className="readable space-y-2">
-        <h1 className="text-2xl font-semibold">Evals</h1>
+        <div className="flex items-center justify-between gap-4">
+          <h1 className="text-2xl font-semibold">Evals</h1>
+          <PageMenu label="Evals menu" entries={entries} />
+        </div>
         <p className="text-muted">
           Each suite tests one AI feature against answers people confirmed. Test
           models on it, then pick the live one on evidence.
         </p>
       </div>
-    </>
-  );
-}
-
-/** Where the features stand: most room to improve, the slowest and costliest live models, and thumbs down this week. */
-export function HubStats({ data }: { data: HubData }) {
-  const { app, down, waiting, flagged, needs } = data;
-  return (
-    <>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat
-          title="Most room to improve"
-          term="improve"
-          value={needs.improve ? pct(needs.improve.best) : "—"}
-          detail={
-            !needs.improve
-              ? "Test a suite to see"
-              : needs.improve.best >= 1
-                ? "Every suite has a model scoring 100%"
-                : `${needs.improve.label}, best on ${needs.improve.model}`
-          }
-        />
-        <Stat
-          title="Slowest live model"
-          term="slowest"
-          value={needs.slowest ? seconds(needs.slowest.ms) : "—"}
-          detail={
-            needs.slowest
-              ? `${needs.slowest.label} on ${needs.slowest.model}`
-              : "—"
-          }
-        />
-        <Stat
-          title="Costliest live model"
-          term="costliest"
-          value={needs.costliest ? perAnswer(needs.costliest.usd) : "—"}
-          detail={
-            needs.costliest
-              ? `${needs.costliest.label} on ${needs.costliest.model}`
-              : "—"
-          }
-        />
-        <Link href={evalsPath(app, "feedback")} className="block h-full">
-          <Stat
-            title="Thumbs down this week"
-            term="thumbs"
-            value={String(down)}
-            detail={
-              flagged
-                ? `${flagged} feature${flagged === 1 ? "" : "s"} need a look · ${waiting} waiting`
-                : `${waiting} waiting for a look`
-            }
-          />
-        </Link>
-      </div>
-    </>
+      {app && <SpendingAlert app={app} reading={spending} />}
+    </div>
   );
 }
 
 /**
- * One card per feature, grouped by standing with what needs you first: at
- * risk, can improve, healthy, and can't tell yet. An injection suite's results show on its base feature's card.
+ * Thumbs down people gave this week, in one line linking to them, shown
+ * only when there's something to look at. The hub's one number: the rest
+ * (cost, speed, scores) is on each suite's page.
+ */
+export function HubStats({ data }: { data: HubData }) {
+  const { app, down, waiting, flagged } = data;
+  if (!down && !waiting) return null;
+  return (
+    <p className="text-sm">
+      <Link href={evalsPath(app, "feedback")} className={LINK}>
+        {down} thumbs down this week
+      </Link>
+      <InfoTip term="thumbs" />
+      <span className="text-muted">
+        {" "}
+        · {waiting} waiting for a look
+        {flagged
+          ? ` · ${flagged} feature${flagged === 1 ? "" : "s"} need a look`
+          : ""}
+      </span>
+    </p>
+  );
+}
+
+/**
+ * One short row per feature, its name and status, with what needs you
+ * first: Needs attention, then Can't tell yet, then Healthy. Each row
+ * opens the suite's page, where its to-do list and details are. An
+ * injection suite counts on its base feature's row.
  */
 export function SuiteList({ data }: { data: HubData }) {
-  const { app, histories, attacksOn, cards } = data;
-  const all = cards.map(({ b, i }) => {
-    const attacked = attacksOn(b.suite.key);
-    const [history, current] = histories[i] ?? [[], null];
-    const health = suiteHealth(
-      b.rows,
-      b.suite.checks,
-      priorityOf(b.suite, current?.settings),
-      b.cases,
-      b.provisional,
-      app.models,
-      { attacks: attacksFrom(attacked) },
-    );
-    return { b, attacked, history, current, health };
-  });
-  const card = (c: (typeof all)[number]) => (
-    <SuiteCard
-      app={app}
-      key={c.b.suite.key}
-      board={c.b}
-      attacked={c.attacked}
-      health={c.health}
-      history={c.history}
-      current={c.current}
-    />
+  const { app, suites } = data;
+  const ordered = SUITE_STATUS_ORDER.flatMap((status) =>
+    suites.filter((s) => s.status === status),
   );
   return (
     <section aria-labelledby="suites" className="space-y-3">
@@ -198,28 +180,37 @@ export function SuiteList({ data }: { data: HubData }) {
         Suites
         <InfoTip term="suites" />
       </h2>
-      {cards.length === 0 && <NoSuites />}
-      {STANDING_ORDER.map((standing) => {
-        const group = all.filter((c) => c.health.standing === standing);
-        if (!group.length) return null;
-        const heading = (
-          <span className="flex items-center gap-2 text-sm text-muted">
-            <StandingBadge standing={standing} />
-            {group.length} {group.length === 1 ? "suite" : "suites"}
-          </span>
-        );
-        return (
-          <div
-            key={standing}
-            role="group"
-            aria-label={STANDING_LABEL[standing]}
-            className="space-y-3 pt-2"
-          >
-            {heading}
-            <div className="space-y-4">{group.map(card)}</div>
-          </div>
-        );
-      })}
+      {suites.length === 0 ? (
+        <NoSuites />
+      ) : (
+        <ul className="divide-y divide-line overflow-hidden rounded-lg border border-line bg-card">
+          {ordered.map((s) => (
+            <li key={s.suite.key}>
+              <Link
+                href={evalsPath(app, s.suite.key)}
+                className="flex items-center justify-between gap-4 px-4 py-3 hover:bg-tint"
+                title={`${s.suite.label}: ${SUITE_STATUS_LABEL[s.status]}`}
+              >
+                <span className="min-w-0 truncate font-medium">
+                  {s.suite.label}
+                </span>
+                <span className="flex shrink-0 items-center gap-2">
+                  <SuiteStatusBadge status={s.status} />
+                  <ChevronRight aria-hidden className="h-4 w-4 text-muted" />
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+      {suites.length > 0 && (
+        <p className="readable text-xs text-muted">
+          Needs attention: something is on the suite&apos;s to-do list.
+          Can&apos;t tell yet: no model tested, or too few cases to judge.
+          Healthy: nothing to do.
+          <InfoTip term="standing" id="standing-key" />
+        </p>
+      )}
     </section>
   );
 }
@@ -263,249 +254,6 @@ function NoSuites() {
   );
 }
 
-function Stat({
-  title,
-  term,
-  value,
-  detail,
-}: {
-  title: string;
-  term: GlossaryTerm;
-  value: string;
-  detail: string;
-}) {
-  return (
-    // Full height, so the four cards line up however much each says.
-    <Card className="h-full space-y-1">
-      <p className="text-sm text-muted">
-        {title}
-        <InfoTip term={term} />
-      </p>
-      <p className="text-2xl font-semibold tabular-nums">{value}</p>
-      <p className="text-sm text-muted">{detail}</p>
-    </Card>
-  );
-}
-
-type Board = Awaited<ReturnType<Runner["board"]>>;
-
-/**
- * The live model's check furthest under its bar, as a bar with a tick at
- * the bar, so a card shows how far off it is, not only that it is.
- */
-function WorstCheck({
-  worst: w,
-}: {
-  worst: NonNullable<ReturnType<typeof suiteHealth>["worst"]>;
-}) {
-  return (
-    <div className="flex flex-wrap items-center gap-3 text-sm text-muted">
-      <span>
-        {w.label}
-        {w.serious ? " (serious)" : ""}{" "}
-        <span
-          className={`font-semibold ${w.serious ? "text-bad" : "text-warn"}`}
-        >
-          {pct(w.rate)}
-        </span>
-      </span>
-      <span aria-hidden className="relative h-1.5 w-40 rounded-full bg-tint">
-        <span
-          className={`absolute inset-y-0 left-0 rounded-full ${w.serious ? "bg-bad" : "bg-warn"}`}
-          style={{ width: `${Math.round(w.rate * 100)}%` }}
-        />
-        <span
-          className="absolute -inset-y-1 w-px bg-ink"
-          style={{ left: `${Math.round(w.bar * 100)}%` }}
-        />
-      </span>
-      <span>
-        bar {pct(w.bar)}
-        <InfoTip term="bar" />
-      </span>
-    </div>
-  );
-}
-
-/** Green at 95% and up, amber from 80%, red below. */
-const scoreTone = (rate: number) =>
-  rate >= 0.95 ? "text-good" : rate >= 0.8 ? "text-warn" : "text-bad";
-
-/**
- * One feature on the hub: its live version and models, what the live
- * model costs and how fast it is, its latest test, how it does under
- * attack, what needs a look, and its settings history.
- */
-function SuiteCard({
-  app,
-  board: b,
-  attacked,
-  health: h,
-  history,
-  current,
-}: {
-  app: EvalAppConfig;
-  board: Board;
-  /** The injection suites that attack this feature. */
-  attacked: Board[];
-  health: ReturnType<typeof suiteHealth>;
-  history: HistoryEntry[];
-  current: { settings: Settings; version: SettingsVersion | null } | null;
-}) {
-  const label = (model: string) => app.models[model]?.label ?? model;
-  const live = b.rows.find((r) => r.live && !r.variant);
-  const t = live?.test;
-  const version = current?.version ?? null;
-  const since = version
-    ? (history.find((e) => e.to.id === version.id)?.createdAt ??
-      version.createdAt)
-    : null;
-  const s = current?.settings;
-  const price = s ? app.models[s.model] : undefined;
-  const versions = Math.max(1, ...history.map((e) => e.to.number));
-  return (
-    <Card className="relative space-y-4 transition-colors hover:border-muted">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0 space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="font-semibold">
-              {/* Covers the whole card; the versions toggle sits above it. */}
-              <Link
-                href={evalsPath(app, b.suite.key)}
-                className="after:absolute after:inset-0 after:rounded-lg"
-              >
-                {b.suite.label}
-              </Link>
-            </h2>
-            <StandingBadge standing={h.standing} />
-            <InfoTip term="standing" />
-          </div>
-          <HealthReasons flags={h.flags} />
-          <p className="readable text-sm text-muted">{b.suite.description}</p>
-        </div>
-        {t && (
-          <div className="shrink-0 space-y-0.5 text-right text-sm">
-            <p className="font-semibold tabular-nums">
-              {perAnswer(t.costPerAnswer)} / answer
-            </p>
-            <p className="text-xs text-muted">{seconds(t.avgMs)} avg</p>
-            {price?.inputPer1M !== undefined &&
-              price.outputPer1M !== undefined && (
-                <p className="text-xs text-muted">
-                  ${price.inputPer1M} / ${price.outputPer1M} per 1M
-                </p>
-              )}
-          </div>
-        )}
-      </div>
-
-      {/* The models and how live does, read together. */}
-      <div className="space-y-1">
-        {s && (
-          <p className="text-sm text-muted">
-            <span className="font-semibold text-ink">{label(s.model)}</span>
-            {s.fallbackModel ? (
-              <>
-                {" "}
-                · fallback{" "}
-                <span className="font-semibold text-ink">
-                  {label(s.fallbackModel)}
-                </span>
-              </>
-            ) : (
-              " · no fallback"
-            )}
-            {s.reasoningEffort ? ` · reasoning ${s.reasoningEffort}` : ""}
-          </p>
-        )}
-
-        <p className="text-sm">
-          {t ? (
-            <>
-              Accuracy{" "}
-              <span className={`font-semibold ${scoreTone(t.right / t.total)}`}>
-                {pct(t.right / t.total)}
-              </span>
-            </>
-          ) : (
-            "Live model not tested yet"
-          )}{" "}
-          · {b.cases} cases · {h.testedModels} models tested
-        </p>
-        {h.worst && <WorstCheck worst={h.worst} />}
-      </div>
-
-      {h.details.length > 0 && (
-        <ul className="readable list-disc space-y-1 pl-5 text-sm text-muted">
-          {h.details.slice(0, 3).map((d) => (
-            <li key={d}>{d}</li>
-          ))}
-        </ul>
-      )}
-
-      {/* Once the feature has attack cases (a test makes them). */}
-      {attacked
-        .filter((a) => a.cases > 0)
-        .map((a) => {
-          const r = live ? attacksResisted(live.key, [a]) : null;
-          return (
-            <p key={a.suite.key} className="relative text-sm">
-              Attacks resisted
-              <InfoTip term="attacksResisted" />:{" "}
-              {r === null ? (
-                <span className="text-muted">not tested yet</span>
-              ) : (
-                <Link
-                  href={evalsPath(app, a.suite.key)}
-                  className={`font-semibold hover:underline ${scoreTone(r.resisted / r.of)}`}
-                >
-                  {pct(r.resisted / r.of)}
-                </Link>
-              )}{" "}
-              of {a.cases} {a.cases === 1 ? "attack" : "attacks"}
-            </p>
-          );
-        })}
-
-      {s && (
-        <details className="group/history relative rounded-md bg-tint">
-          <summary className="flex list-none items-center justify-between gap-2 p-3 text-sm font-medium">
-            Versions
-            <span className="flex items-center gap-1 text-xs font-normal text-muted">
-              <span className="font-medium text-ink">
-                v{version?.number ?? 1}
-              </span>{" "}
-              {since ? (
-                <>
-                  live since <LocalDate date={since} />
-                </>
-              ) : (
-                "defaults from code"
-              )}{" "}
-              · {versions} version{versions === 1 ? "" : "s"}
-              <ChevronDown
-                aria-hidden
-                className="h-4 w-4 transition-transform group-open/history:rotate-180"
-              />
-            </span>
-          </summary>
-          <div className="px-3 pb-3">
-            <HistoryEntries
-              app={app}
-              suite={b.suite.key}
-              entries={history}
-              liveId={version?.id ?? null}
-              label={label}
-              defaults={s}
-              plain
-            />
-          </div>
-        </details>
-      )}
-    </Card>
-  );
-}
-
 /**
  * The AI features no suite tests yet, from your app's `features`: where
  * an eval would tell you the most next. Shows nothing without them.
@@ -541,18 +289,18 @@ export function NoEvalYet({ data }: { data: HubData }) {
   );
 }
 /**
- * The hub as Evalkeeper arranges it: where each suite stands and what
- * needs attention. A hub of your own loads the same data (`loadHub`) and
- * arranges these sections another way.
+ * The hub as Evalkeeper arranges it: where each suite stands, in one row
+ * each. A hub of your own loads the same data (`loadHub`) and arranges
+ * these sections another way.
  */
 export async function HubPage({ app }: { app: EvalAppConfig }) {
   const data = await loadHub(app);
   return (
     <div className="space-y-8">
-      <HubIntro />
+      <HubIntro data={data} />
+      <SuiteList data={data} />
       <HubStats data={data} />
       <WeeklyCheck app={app} weekly={data.weekly} />
-      <SuiteList data={data} />
       <NoEvalYet data={data} />
     </div>
   );

@@ -5,6 +5,7 @@ import {
   prismaJudgmentCache,
   prismaSettingsStore,
   prismaStore,
+  prismaSuiteSettingsStore,
 } from "@crowandraven/evalkeeper/prisma";
 import {
   createSettings,
@@ -20,6 +21,7 @@ import { prisma } from "../db";
 import { MODELS, availableModels } from "../models";
 import { useMatcher } from "../suites/actionItems";
 import { demoCost } from "../demo";
+import { demoSpending } from "../spending";
 import {
   DECISION_OPERATIONS,
   INSTRUCTION_TEXTS,
@@ -111,6 +113,8 @@ export const runner = createRunner({
   route: routeFor,
   candidates: (operation) => ({ models: modelsFor(operation) }),
   estimateCallCost,
+  // Lets people change a suite's target number of cases on its page.
+  suiteSettings: prismaSuiteSettingsStore(prisma),
 });
 
 /**
@@ -191,4 +195,5 @@ export const wiring = {
   answerEditors,
   requireAdmin,
   features: FEATURES,
+  spending: demoSpending(store, SUITES),
 } satisfies Omit<EvalWiring, "basePath">;

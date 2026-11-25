@@ -40,7 +40,9 @@ describe("summarize", () => {
       checks,
     );
     expect(s).toMatchObject({ right: 1, total: 2 });
-    expect(s.trust).toMatch(/too few to trust/);
+    expect(s.trust).toBe(
+      "Only 2 cases: too few to tell yet. A suite needs 20 to judge; add cases, then test again.",
+    );
     expect(s.problems).toEqual([
       { key: "a", label: "Check A", failed: 1, of: 2 },
     ]);
@@ -54,6 +56,51 @@ describe("summarize", () => {
     expect(s.total).toBe(40);
     expect(s.trust).toMatch(/rough|solid/i);
     expect(s.problems.map((p) => p.key)).toEqual(["a", "b"]);
+  });
+});
+
+describe("how far a test's number can be trusted", () => {
+  const perfect = (k: number) =>
+    suiteMetrics(
+      Array.from({ length: k }, (_, i) => output(String(i), true, true)),
+      ["a", "b"],
+    );
+
+  it("never calls 16 of 16 solid: too few cases, as the suite's page says", () => {
+    expect(summarize(perfect(16), checks).trust).toMatch(
+      /^Only 16 cases: too few to tell yet\. A suite needs 20/,
+    );
+  });
+
+  it("lets a suite with a lower target judge sooner", () => {
+    // A target of 10 (cases that cost real money): judged from 10.
+    expect(summarize(perfect(16), checks, 10).trust).toBe(
+      "A rough number: with 16 answers, the real rate is likely 81% or better.",
+    );
+  });
+
+  it("weighs the larger side of the range near 100%", () => {
+    // About 89% or better at 30: still rough; 35 is solid.
+    expect(summarize(perfect(30), checks).trust).toMatch(/89% or better/);
+    expect(summarize(perfect(35), checks).trust).toBe(
+      "A solid number: 35 answers.",
+    );
+  });
+
+  it("gives the range in the middle, and solid only near 100 answers", () => {
+    const half = (k: number) =>
+      suiteMetrics(
+        Array.from({ length: k }, (_, i) =>
+          output(String(i), i % 2 === 0, true),
+        ),
+        ["a", "b"],
+      );
+    expect(summarize(half(40), checks).trust).toMatch(
+      /^A rough number: with 40 answers, the real rate is likely between \d+% and \d+%\.$/,
+    );
+    expect(summarize(half(100), checks).trust).toBe(
+      "A solid number: 100 answers.",
+    );
   });
 });
 

@@ -7,6 +7,16 @@ import type { CheckDef } from "./types.js";
  * common problems. Pure.
  */
 
+const n = (count: number, word: string) =>
+  `${count} ${count === 1 ? word : `${word}s`}`;
+
+/** Where a rate likely is, from its 95% range in points. */
+function likely(low: number, high: number): string {
+  if (high >= 100) return `${low}% or better`;
+  if (low <= 0) return `${high}% or worse`;
+  return `between ${low}% and ${high}%`;
+}
+
 /** A check that failed, and how often. */
 export type Problem = {
   key: string;
@@ -27,25 +37,53 @@ export type Summary = {
   problems: Problem[];
 };
 
-/** Below this many answers the number is mostly noise. */
+/**
+ * Below this many answers the number is mostly noise.
+ *
+ * @deprecated A test's page now counts cases against `tooFewBelow(target)`,
+ *   as the suite's page does. Kept for apps that read it.
+ */
 export const TRUST_MIN = 10;
+
+/** How many points either side a score may be off and still read as solid. */
+export const SOLID_MARGIN = 10;
 
 /**
  * A test's result in plain words, for people who don't want the statistics.
+ * Too few to tell below `tooFewBelow(target)` cases, as the suite's page
+ * says; otherwise solid when the score's 95% range reaches no more than
+ * SOLID_MARGIN points from it on either side. Near 100% the range is
+ * lopsided (the real rate can only be lower), so the larger side counts:
+ * 16 of 16 right is likely 81% or better, not "about 10 points either way".
+ *
+ * @param m - The test's metrics.
+ * @param checks - The suite's checks, for the problems.
+ * @param target - The suite's target number of cases (`targetCasesOf`); a
+ *   lower target lowers the fewest cases that can be judged.
  */
-export function summarize(m: SuiteMetrics, checks: CheckDef[]): Summary {
+export function summarize(
+  m: SuiteMetrics,
+  checks: CheckDef[],
+  target: number = TARGET_CASES,
+): Summary {
   const right = m.allPass.passed;
   const total = m.allPass.n;
-  const spread =
-    m.allPass.low !== null && m.allPass.high !== null
-      ? Math.round(((m.allPass.high - m.allPass.low) / 2) * 100)
+  // Older stored metrics may lack the case count: answers stand in.
+  const cases = typeof m.cases === "number" ? m.cases : total;
+  const rate = total ? right / total : 0;
+  const { low, high } = m.allPass;
+  const pts = (x: number) => Math.round(x * 100);
+  const off =
+    low !== null && high !== null
+      ? Math.max(pts(rate) - pts(low), pts(high) - pts(rate))
       : null;
+  const floor = tooFewBelow(target);
   const trust =
-    total < TRUST_MIN
-      ? `Only ${total} ${total === 1 ? "answer" : "answers"}: too few to trust yet. Confirm more cases, then test again.`
-      : spread !== null && spread > 10
-        ? `A rough number: with ${total} answers it could be about ${spread} points either way.`
-        : `A solid number: ${total} answers.`;
+    cases < floor
+      ? `Only ${n(cases, "case")}: too few to tell yet. A suite needs ${floor} to judge; add cases, then test again.`
+      : off !== null && off > SOLID_MARGIN && low !== null && high !== null
+        ? `A rough number: with ${n(total, "answer")}, the real rate is likely ${likely(pts(low), pts(high))}.`
+        : `A solid number: ${n(total, "answer")}.`;
   const problems = checks
     .map((c) => {
       const r = m.byCheck[c.key];

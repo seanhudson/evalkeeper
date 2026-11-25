@@ -202,8 +202,14 @@ or missed differently), each opened side by side with both answers and
 what each check found. "No clear difference" means little until you've
 read where the two disagree.
 
-**How sure.** Under 20 cases, a score is mostly noise; under 50, rough;
-under 100, good.
+**How sure.** Under 20 cases (or the suite's target, if that's lower), a
+score is too few to tell; under 50, rough; under 100, good. A test's page
+says the same for its own score: too few to tell below that floor, then
+solid once the score's 95% range reaches no more than 10 points from it
+on either side, and rough until then, with where the real rate likely
+is. Near 100% the range only reaches down, so a perfect score needs about
+35 answers to be solid ("16 of 16" is likely 81% or better), and a score
+near 50% about 100.
 
 **Target number of cases.** How many cases a suite's answer key aims
 for: the suite's `targetCases` (50 unless it sets one), or what a person

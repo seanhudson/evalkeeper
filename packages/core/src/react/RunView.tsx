@@ -7,6 +7,7 @@ import {
   failureHints,
   money,
   summarize,
+  targetCasesOf,
 } from "../index.js";
 import { FieldValues } from "./Fields.js";
 import { ReadableOutput } from "./ReadableOutput.js";
@@ -38,7 +39,9 @@ export async function RunView({
     return c ? suite.title(suite.input.parse(c.input)) : "A retired case";
   };
   const metrics = run.metrics;
-  const summary = metrics ? summarize(metrics, suite.checks) : null;
+  // Judged against the suite's target, as its own page is.
+  const target = targetCasesOf(suite, await app.runner.suiteSettings(key));
+  const summary = metrics ? summarize(metrics, suite.checks, target) : null;
   // Answers that never came back first, then wrong ones, then right ones,
   // so what needs a look is at the top.
   const rank = (o: (typeof outputs)[number]) =>

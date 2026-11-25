@@ -5,7 +5,10 @@ Notable changes, newest first. The format follows
 follow [semantic versioning](https://semver.org/): until 1.0, a minor
 version may change an interface, and its entry says how to update.
 
-## Unreleased
+## 0.20.0 - 2026-11-25
+
+Rescore tests, fixed and made plain: it covers every test the model
+table shows, says what it cost, and goes on past the request's time limit.
 
 Update:
 

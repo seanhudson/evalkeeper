@@ -76,8 +76,10 @@ function answersFrom(store: ReturnType<typeof memoryStore>, days: number) {
 function threeModels(
   store: ReturnType<typeof memoryStore>,
   suite: typeof double,
+  { settings = false } = {},
 ) {
   return createRunner({
+    ...(settings ? { suiteSettings: store } : {}),
     store,
     suites: [suite],
     models: {
@@ -422,6 +424,55 @@ describe("runner, beyond a basic test", () => {
     expect(await runner.retireStaleDrafts("double")).toBe(1);
     expect(draft.status).toBe("RETIRED");
     expect(await runner.retireStaleDrafts("double")).toBe(0);
+  });
+
+  it("keeps a suite's own target as the floor, saved or in code", async () => {
+    const store = memoryStore();
+    for (let n = 1; n <= 20; n++)
+      await store.createCase(kase(n, { input: { n, group: `g${n}` } }));
+    answersFrom(store, 30);
+    // Under 50 cases, nothing is retired by default.
+    const plain = threeModels(store, single);
+    await testRounds(plain, store, [4, 3, 2, 1]);
+    expect(await plain.targetCases("double")).toBe(50);
+    expect((await plain.answerKeyHealth("double")).easyToRetire).toHaveLength(
+      0,
+    );
+    expect(plain.canSaveSuiteSettings).toBe(false);
+    await expect(
+      plain.saveSuiteSettings("double", { targetCases: 10 }, "p"),
+    ).rejects.toThrow(/pass suiteSettings/);
+    // The suite's own target of 15 in code: 5 can go.
+    const own = threeModels(store, { ...single, targetCases: 15 });
+    expect(await own.targetCases("double")).toBe(15);
+    expect((await own.answerKeyHealth("double")).easyToRetire).toHaveLength(5);
+    // A saved target of 18 wins over the code's.
+    const saved = threeModels(
+      store,
+      { ...single, targetCases: 15 },
+      { settings: true },
+    );
+    expect(saved.canSaveSuiteSettings).toBe(true);
+    await saved.saveSuiteSettings("double", { targetCases: 18 }, "person-1");
+    expect(await saved.suiteSettings("double")).toEqual({ targetCases: 18 });
+    expect(await saved.targetCases("double")).toBe(18);
+    expect(await saved.retireEasy("double")).toBe(2);
+  });
+
+  it("reads suite settings it can't load as none saved", async () => {
+    const store = memoryStore();
+    const runner = createRunner({
+      store,
+      suites: [single],
+      models: {},
+      promptVersion: () => "v1",
+      suiteSettings: {
+        getSuiteSettings: () => Promise.reject(new Error("no table")),
+        saveSuiteSettings: () => Promise.resolve(),
+      },
+    });
+    expect(await runner.suiteSettings("double")).toEqual({ targetCases: null });
+    expect(await runner.targetCases("double")).toBe(50);
   });
 
   it("counts a round only after a case's answer last changed", async () => {

@@ -45,3 +45,18 @@ export const momentOf = (d: Date, timeZone?: string): string =>
  * styled as buttons, card titles, and the back link have their own look.
  */
 export const LINK = "text-accent hover:underline";
+
+/**
+ * A tinted background with readable text, from the app's color names
+ * (`--color-good`, `--color-warn`, `--color-bad`), so the app's
+ * evalkeeper.css decides both themes: no fixed palette colors and no
+ * `dark:` variants, which follow the system rather than the app.
+ */
+export const TINT = {
+  good: "bg-good/15 text-[color-mix(in_srgb,var(--color-good)_55%,var(--color-ink))]",
+  warn: "bg-warn/15 text-[color-mix(in_srgb,var(--color-warn)_55%,var(--color-ink))]",
+  bad: "bg-bad/10 text-[color-mix(in_srgb,var(--color-bad)_60%,var(--color-ink))]",
+} as const;
+
+/** A warning panel's tint: the warn color, faint, behind ink text. */
+export const WARN_PANEL = "bg-warn/10 border border-warn/40";

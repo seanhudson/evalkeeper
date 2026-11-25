@@ -11,10 +11,13 @@ Every feature's answer key is at the bottom of its page in your admin.
 ## How many cases
 
 Start with 10 to 20 real inputs, with names and personal details
-removed, and grow toward 50. Pick the inputs that matter: the common
-ones, the ones that went wrong before, and the edge cases a person would
-argue about. A score on a handful of cases can be off by a lot; every
-score says how many cases it rests on and how far off it could be.
+removed, and grow toward the suite's target: 50 unless it sets
+`targetCases`, or someone changed it under the page menu's **Suite
+settings**. Until then the to-do list says **Add N cases** (40 of 50).
+Pick the inputs that matter: the common ones, the ones that went wrong
+before, and the edge cases a person would argue about. A score on a
+handful of cases can be off by a lot; every score says how many cases it
+rests on and how far off it could be.
 
 Keep a few cases aside as a held-out set (`TEST`) that you never tune
 your prompt against, and tune against the rest (`DEV`).
@@ -39,6 +42,12 @@ A suite can come with `starter` cases. When some aren't in the answer
 key yet, it offers **Add N starter cases**. They arrive pending, to
 confirm like any draft, unless the suite's author already reviewed them.
 A starter you retired isn't offered again.
+
+When a suite's starters change, the new ones arrive beside the old. A
+case added from a starter whose input is no longer one of them is marked
+**No longer a starter** in the answer key, and the to-do list offers
+**Retire N replaced starters**. Retiring can be undone. A case that
+didn't come from a starter is never marked, even when it matches none.
 
 ## Describe the cases you want
 
@@ -116,8 +125,9 @@ Sometimes the owner says "use them so we can test, I'll review later."
 **Provisional** answers are used by tests, and every score that rests on
 them says so. Import answers as provisional, or press **Test with
 drafts, as provisional** above the answer key to put every pending one
-to use. Open one to **Confirm this answer** as it is or **Edit answer**
-first. Nothing is ever confirmed on someone's behalf.
+to use. While any are left, the to-do list says **Confirm N answers**.
+Open one to **Confirm this answer** as it is or **Edit answer** first.
+Nothing is ever confirmed on someone's behalf.
 
 ## Rate blind
 

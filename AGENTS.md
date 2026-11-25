@@ -47,7 +47,7 @@ each kind of change goes.
 - Every form field has a `label` and `help` (`FormField`), shown with the
   field and as a tooltip where the value is read.
 - Every check has a `description` that says what it checks and why its
-  severity is serious or minor.
+  it must pass (serious) or is nice to have (minor).
 - Plain words, US English, and the Oxford comma. Prose gets the `readable`
   class (about 65 characters a line).
 

@@ -7,6 +7,100 @@ version may change an interface, and its entry says how to update.
 
 ## Unreleased
 
+A design pass over the eval pages (#148): the hub answers "is anything
+wrong?" in seconds, each suite's page leads with what to do next, every
+menu and drawer is one shared component, and the words are plain.
+
+Update:
+
+- Re-copy the actions file so the new menu items and buttons work:
+  `npx @crowandraven/evalkeeper add pages --only actions --force` (the
+  file is Evalkeeper's; your own code isn't in it). Without it the
+  pages still work; they just don't offer Suite settings, Save limits,
+  Stop all tests, or Retire replaced starters.
+- For Suite settings, add the optional EvalSuiteSetting table
+  (`npx @crowandraven/evalkeeper migration`) and pass
+  `suiteSettings: prismaSuiteSettingsStore(prisma)` to `createRunner`.
+- To show spending, pass your own `spending` (an `EvalSpending`) in your
+  wiring, and take out any panel of your own on the eval pages.
+- The glossary term `bar` is now `aim`. `InfoTip term="bar"` becomes
+  `term="aim"`.
+- A hub of your own: `loadHub` returns `suites` (each with its `status`
+  and `todos`) in place of `cards`, `histories`, and `needs`;
+  `HubIntro` takes `data`; `HubStats` is now one line of thumbs down.
+  `suiteHealth`, its standings, and `StandingBadge` are still exported
+  but no page uses them; use `suiteTodos` and `suiteStatus`.
+
+### Added
+
+- **A to-do list at the top of each suite's page**, in the order to do
+  it: test every model (or test again), make a better model live, fix
+  each must-pass check every tested model misses (how far off it is, and
+  a link to the cases it misses), confirm provisional answers, add cases
+  toward the target, make attack cases, retire replaced starters, and
+  review cases models split on. Each is done right there and drops off
+  once it's done (`suiteTodos`, `todoText`).
+- **A suite's own target number of cases.** `targetCases` on a suite
+  (default 50), and **Suite settings** in the page's menu to change it,
+  kept apart from the model versions. The target replaces 50 in "Add
+  cases", drafting, the floor for retiring easy cases, "Aim for", and
+  "Too few cases", so a suite at its own target isn't flagged
+  (`targetCasesOf`, `runner.targetCases`, `prismaSuiteSettingsStore`,
+  `describeSuiteSettingsStoreContract`).
+- **Spending and daily limits** from your app's numbers: in the page's
+  menu, a drawer with the last 24 hours' spending and one form for both
+  limits, in dollars. Over a limit, stopped, or while a test runs, a
+  warning says what to do, with **Stop all tests** or **Allow tests**
+  (`EvalSpending`, `memorySpending`, `SpendingAlert`). The runner side
+  (a stop between answers, a budget hook) stays in #143.
+- **Replaced starters.** A case added from a suite's starters whose input
+  no starter has anymore is marked **No longer a starter**, and the to-do
+  list offers to retire just those. A new starter that shares a title
+  with one it replaces says so (`replacedStarters`).
+- One vertical-dots `Menu` (model rows, cases, and the page title all use
+  it) and a `Drawer`, exported for custom pages.
+
+### Changed
+
+- **The hub is one short row per suite**: its name and status, Needs
+  attention first, then Can't tell yet, then Healthy. Each row opens the
+  suite's page. No chips, scores, bars, models, or versions on the hub,
+  and the four stat cards are gone (thumbs down this week stays, as one
+  line).
+- **Plain words**: a check's "bar" is its **aim**, "serious" checks
+  **must pass**, "minor" ones are **nice to have**, and the model table's
+  column is **Must-pass misses**. A yes-or-no decision's threshold reads
+  "cutoff".
+- Where the mistakes are: **Answers with no mistakes at all** shows a
+  percentage per model in the same colored chips as the rows above it,
+  against an aim of 100%, and its label says how many answers ("14 of
+  16 answers" stays as each cell's tooltip).
+- The answer key no longer shows each case's Dev or Test chip: nothing
+  on the pages treats the two sets differently (every test runs every
+  case). Cases keep their `split` for tests run from code.
+- The answer key's **Attacks** tab looks like its **Cases** tab: a
+  heading with how many are in use, **Add an attack** as a button, and
+  **Update attack cases** as an icon button, each with a tooltip.
+- **Against live** says **Better**, **Similar**, or **Worse** (or
+  **Can't tell**, with too few cases), in place of "More accurate",
+  "About as accurate", and "Less accurate".
+- The suite page's status sits beside its title. The to-do list is the
+  one place to act: the suggestion card explains, and its item has **Use
+  the suggestion**; the separate "attack cases not made yet" card is now
+  a to-do item.
+- When attacks hold back a model that would otherwise be suggested, the
+  suggestion's first reason says so, with what it would have won on, and
+  it isn't also named as "one to watch" (#142).
+- **Add cases here** says first that picking a topic opens Add a case
+  with it filled in, and each topic shows a + to say it opens one.
+  Split-case cards in Answer key health span the panel; their words keep
+  a readable width. With `draftMore`, the topics to draft for are chips that
+  toggle (a ✓ once picked), like the + chips, not checkboxes.
+- Colors come from the app's color names (`--color-good`, `--color-warn`,
+  `--color-bad`), not fixed palette colors with `dark:` variants, so an
+  app's own light and dark themes apply to chips, the check breakdown,
+  and topics (#121).
+
 ### Fixed
 
 - CI's audit passes again. Two packages that only the Prisma command
@@ -17,6 +111,12 @@ version may change an interface, and its entry says how to update.
   reach those versions, or with the planned Prisma upgrade. The picomatch
   advisory is no longer reported, so its allowance is gone. Nothing in
   the published package changes.
+- One feature with no settings yet (no version, no default in code) no
+  longer breaks the hub or its page; its page says how to set them, and
+  **Use the suggestion** asks for them first (`currentSettings`, #141).
+- Non-urgent reasons no longer show an (i) that isn't a tip (#146).
+- Tooltips on chips at the right edge of a page no longer make it scroll
+  sideways.
 
 ## 0.18.0 - 2026-11-17
 

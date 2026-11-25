@@ -3,7 +3,12 @@
  *
  * @module evalkeeper/prisma
  */
-import { CHANGE_KINDS, SettingsConflict, cleanRating } from "../index.js";
+import {
+  CHANGE_KINDS,
+  SettingsConflict,
+  cleanRating,
+  readSuiteSettings,
+} from "../index.js";
 import type {
   CaseRecord,
   FeedbackRecord,
@@ -23,6 +28,7 @@ import type {
   SettingsChange,
   SettingsStore,
   SettingsVersion,
+  SuiteSettingsStore,
 } from "../index.js";
 import {
   Table,
@@ -1171,4 +1177,65 @@ export function prismaSettingsStore(
     },
   };
 }
+/** An EvalSuiteSetting row. */
+export type EvalSuiteSettingRow = {
+  suite: string;
+  values: Json;
+  updatedBy: string | null;
+  updatedAt: Date;
+};
+
+/** Where your suite settings table differs from Evalkeeper's. */
+export type PrismaSuiteSettingsMap = {
+  /**
+   * The table's model on the Prisma client, as the client spells it
+   * (`prisma.evalSuiteSetting` is `"evalSuiteSetting"`).
+   */
+  models?: { evalSuiteSetting?: string };
+  /** Column names, keyed by Evalkeeper's field (`updatedBy: "userId"`). */
+  fields?: { evalSuiteSetting?: ColumnMap<EvalSuiteSettingRow> };
+};
+
+/**
+ * A SuiteSettingsStore on the EvalSuiteSetting table: one row per suite,
+ * its settings as JSON. Give it to `createRunner` as `suiteSettings`, so
+ * people can change a suite's target number of cases on its page. A row
+ * that doesn't parse reads as nothing saved.
+ *
+ * @param db - Your Prisma client.
+ * @param map - Where your table differs from Evalkeeper's, if it does.
+ *
+ * @example
+ * ```ts
+ * const runner = createRunner({
+ *   store, suites, models, promptVersion,
+ *   suiteSettings: prismaSuiteSettingsStore(prisma),
+ * });
+ * ```
+ */
+export function prismaSuiteSettingsStore(
+  db: object,
+  map: PrismaSuiteSettingsMap = {},
+): SuiteSettingsStore {
+  const t = new Table(
+    "evalSuiteSetting",
+    map.models?.evalSuiteSetting ?? "evalSuiteSetting",
+    map.fields?.evalSuiteSetting,
+  );
+  return {
+    async getSuiteSettings(suite) {
+      const row = await t.on(db).findUnique({ where: t.out({ suite }) });
+      return readSuiteSettings(row ? t.in(row).values : null);
+    },
+    async saveSuiteSettings(suite, settings, by) {
+      const d = t.on(db);
+      const data = { values: { ...settings }, updatedBy: by };
+      // No upsert on every client a map can point at: find, then write.
+      const found = await d.findUnique({ where: t.out({ suite }) });
+      if (found) await d.update({ where: t.out({ suite }), data: t.out(data) });
+      else await d.create({ data: t.out({ suite, ...data }) });
+    },
+  };
+}
+
 export * from "./moveIn.js";

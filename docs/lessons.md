@@ -155,6 +155,13 @@ attacks resisted, the suggestion there weighs both, and one Test runs a
 model on the cases and the attacks together. A separate "Test attacks"
 step, and attack cases someone had to make, were the same split again.
 
+**Every suite was asked for 50 cases, including the costly ones.** A
+suite whose every case runs a billed web search had 34 cases because the
+page said "Aim for 50", and two rounds of testing every model spent
+about $59 in twenty minutes, with no way to stop them. _So:_ a suite
+sets its own target number of cases (and a person can change it on its
+page), and the pages show spending against daily limits with a stop.
+
 ## Settings
 
 **The live settings stayed a row, not a pointer.** The app's call sites
@@ -249,6 +256,30 @@ cases and how far a score could be off.
 **Fields nobody remembers.** People confirming answers weeks later forgot
 what a field meant. _So:_ every case and answer field gets a plain label
 and help.
+
+**A card that said everything was read as nothing.** A failing suite's
+hub card reported the same failing checks three times (chips, a colored
+bar, and bullets), in Evalkeeper's own words ("2 serious under bar"),
+while the fact that mattered most, that only one model had been tested,
+sat in a gray line. Nobody saw "test more models" as the next step.
+_So:_ the hub shows one status per suite in one short row, and the suite
+page leads with a to-do list where each item says what to do and why and
+is done right there. The words are plain: a check has an aim, and must
+pass or is nice to have.
+
+**Two cases with one title, and no way to tell which was current.** A
+suite's starter cases were rewritten keeping their titles, and adding
+the new starters put them beside the old ones. Unable to tell which nine
+were replaced, the owner retired all 25 to be safe, and the 16 current
+ones were restored by hand from the deployed starters. _So:_ a starter a
+starter update replaced is marked "No longer a starter", with one action
+that retires only those.
+
+**An app added its own panel to the eval pages, and they drifted.** One
+app put its own spending panel and menu on the eval pages, in its own
+styles, easy to miss and hard to act on. _So:_ apps add no UI to these
+pages. What one needs is built in Evalkeeper (spending, from the app's
+numbers), with one menu, one drawer, and an (i) only for a real tip.
 
 ## Adopting it with your own setup
 

@@ -35,7 +35,7 @@ can't trust goes.
   case."
 - **No model is chosen on it.** One feature has one live model. Its
   results show on the base suite's page as **attacks resisted**: the
-  share of each model's attack answers with no serious mistake. The
+  share of each model's attack answers with no must-pass miss. The
   suggestion there takes them into account, and a model's Test runs the
   attacks along with the feature's cases.
 - Code that finds a feature's suite by operation skips injection suites
@@ -89,10 +89,12 @@ kept as a SKIPPED mark with no value: it's never graded against and only
 keeps the case out of that person's queue.
 
 **Check.** One thing a good answer gets right. A check passes, fails, or
-doesn't apply (null). It's either _serious_ (a mistake that changes what
-your product does: the wrong queue, a missed urgent ticket) or _minor_ (a
-fair difference of judgment). Serious checks should pass 95% of the time
-and minor ones 75%, unless a check sets its own bar.
+doesn't apply (null). It's either _must pass_ (`severity: "serious"`: a
+mistake that changes what your product does, the wrong queue, a missed
+urgent ticket) or _nice to have_ (`severity: "minor"`: a fair difference
+of judgment). Each has an _aim_, the pass rate it aims for: 95% for
+must-pass checks and 75% for nice-to-have ones, unless a check sets its
+own (`bar`). Under its aim, a check needs work.
 
 **Partial credit.** When an answer has parts (action items, facts), a
 check can report `units`: parts right of parts expected. The headline
@@ -110,7 +112,7 @@ cost, and its time, plus what it ran with: the instructions hash, the
 dataset version (cases and answers), and the grader version.
 
 **Board.** For one suite, every model your app can use, with its latest
-test: score, serious mistakes, time and cost per answer, and how it
+test: score, must-pass misses, time and cost per answer, and how it
 compares with the live model. A _baseline_ (code the app runs instead of a
 model, such as a matcher) can sit on the board too, for comparison; it's
 never suggested. A retiring model is on the board unless the runner
@@ -122,8 +124,9 @@ still runs on it.
 answered with a probability instead of text. Set `decisions: true` and
 grade each question with `decisionCheck`. A decision is graded twice:
 
-- **The pick.** Did the top choice, or the side of 50% for a true-or-false
-  question, match the answer key? That's the check's pass or fail, as in
+- **The pick.** Did the top choice, or the side of the cutoff (50%
+  unless the check sets `threshold`) for a true-or-false question, match
+  the answer key? That's the check's pass or fail, as in
   any suite.
 - **The probabilities.** Each check also records measures: the Brier
   score (squared error, 0 to 1), log loss, and how sure the model was.
@@ -167,7 +170,15 @@ what each check found. "About as accurate" means little until you've
 read where the two disagree.
 
 **How sure.** Under 20 cases, a score is mostly noise; under 50, rough;
-under 100, good. Aim for 50 cases a suite.
+under 100, good.
+
+**Target number of cases.** How many cases a suite's answer key aims
+for: the suite's `targetCases` (50 unless it sets one), or what a person
+saved in the page's **Suite settings**. It sets when the page asks to
+**Add N cases**, how many to draft, and the fewest that retiring easy
+cases leaves. A suite has too few cases to judge under 20 or its target,
+whichever is smaller, so a suite whose every case costs real money can
+aim for 10.
 
 **Priority.** After accuracy, each suite cares about one thing:
 
@@ -185,12 +196,12 @@ one:
    than live. If live's own current test has failed answers (a timeout,
    say), the suggestion is to test live again: it can't be compared yet,
    and that isn't a reason to switch.
-2. A switch scores at least as high as live with no more serious
-   mistakes, and needs a real reason: clearly more accurate, at least two
-   fewer serious mistakes, or 30% faster or cheaper when the suite favors
+2. A switch scores at least as high as live with no more must-pass
+   misses, and needs a real reason: clearly more accurate, at least two
+   fewer must-pass misses, or 30% faster or cheaper when the suite favors
    speed or cost.
 3. Trade-off, for cost and speed suites only: a model within 10 points
-   (no clear difference) with no more serious mistakes qualifies at half
+   (no clear difference) with no more must-pass misses qualifies at half
    the cost or time.
 4. Otherwise live stays, and the best other model is named as one to
    watch. The page still shows the card, titled "No change suggested",
@@ -202,8 +213,28 @@ one:
 There's no blended score. A weighted sum can rank a model first while it's
 worse at the job.
 
-**Health.** A suite's card says where it stands: not tested, test again,
-needs more cases, room to improve, fair, or good, with the reasons.
+**Status and the to-do list.** Each suite's page opens with a **To do**
+list: what to do next, in order, each with why. Each item is done on the
+page and drops off once it's done:
+
+1. **Test every model** (or **Test again** after the instructions,
+   answers, or cases change).
+2. **Make X live** (or the fallback), when the suggestion differs from
+   what's live.
+3. **Fix "check"**, for each must-pass check every tested model misses,
+   with how far off it is and a link to the cases. The fix is in the
+   instructions or the answers, not the model.
+4. **Confirm N answers**, when answers are only provisional.
+5. **Add N cases** toward the suite's target (40 of 50).
+6. **Make attack cases**, when attacks are set up but none are made.
+7. **Retire N replaced starters**, then **Review N cases models split
+   on**.
+
+The suite's status shows beside its name and on its row on the hub:
+_Needs attention_ when the list has something on it (a must-pass check
+every model misses counts even on few cases), _Can't tell yet_
+when no model has a current test or there are too few cases to judge,
+and _Healthy_ when there's nothing to do.
 
 **Versioned settings (optional).** A feature's settings are its live
 model, fallback, reasoning setting, output limit, and temperature, with

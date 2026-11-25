@@ -60,7 +60,10 @@ test("keeps every case of a suite under 50, even when all models get them right"
   page,
 }) => {
   await page.goto("/evals/ticket_triage");
-  await page.getByRole("button", { name: "Test every model" }).click();
+  await page
+    .locator('section[aria-labelledby="models"]')
+    .getByRole("button", { name: "Test every model" })
+    .click();
   await expect(page.getByRole("status", { name: "Testing" })).toHaveCount(0, {
     timeout: 60_000,
   });

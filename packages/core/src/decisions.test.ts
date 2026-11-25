@@ -117,10 +117,10 @@ describe("decisionCheck", () => {
       decisionCheck("u", { type: "boolean", probability: 0.34 }, false, {
         threshold: 0.4,
       }).given,
-    ).toBe("34% true, bar 40%");
+    ).toBe("34% true, cutoff 40%");
     expect(
       decisionCheck("u", { type: "boolean", probability: 0.8 }, false).given,
-    ).toBe("80% true, bar 50%");
+    ).toBe("80% true, cutoff 50%");
     expect(
       decisionCheck(
         "q",

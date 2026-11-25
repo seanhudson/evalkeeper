@@ -21,23 +21,24 @@ cases expected high scores for made-up names. The model that followed
 the instructions scored worst. Put the instruction and the answer side
 by side, decide which is right for your product, and make both say it.
 
-**When no model clears the bar and the checks are right, stop tuning.**
+**When no model meets the aim and the checks are right, stop tuning.**
 Say so, and leave the decision to a person, rather than loosening the
 checks until something passes.
 
 ## Write checks that measure the right thing
 
-**Mark what's serious.** A serious check is a mistake that changes what
-your product does: the wrong queue, a missed urgent ticket. A minor one
-is a fair difference of judgment. Compare serious mistakes before you
-keep a prompt change: in one app, a rule cut minor misses from 8 to 5
-and raised made-up details, a serious mistake, from 4 to 7.
+**Mark what must pass.** A must-pass check (`severity: "serious"`)
+catches a mistake that changes what your product does: the wrong queue,
+a missed urgent ticket. A nice-to-have one (`"minor"`) is a fair
+difference of judgment. Compare must-pass misses before you keep a
+prompt change: in one app, a rule cut nice-to-have misses from 8 to 5
+and raised made-up details, a must-pass miss, from 4 to 7.
 
 **Grade rankings, not cutoffs, when the answer is a score.** Every model
 put most items between 66 and 88, so "70 or more means yes" measured
 each model's scale, not its judgment, and the model that ranked best
 looked worst. Make "are the pairs in the right order" the headline, and
-cutoffs minor.
+cutoffs nice to have.
 
 **Compare answers only about the same subject.** A ranking check that
 compared every person's items with every other person's lifted two

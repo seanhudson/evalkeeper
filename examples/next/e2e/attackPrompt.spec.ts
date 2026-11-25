@@ -21,12 +21,14 @@ test.afterAll(async () => {
 
 test("a feature without attack cases offers to make them", async ({ page }) => {
   await page.goto("/evals/ticket_triage");
-  const prompt = page.getByText(
-    "This feature has attack tests set up, but no attack cases yet.",
-  );
-  await expect(prompt).toBeVisible();
-  await page.getByRole("button", { name: "Make attack cases" }).click();
-  await expect(prompt).toBeHidden({ timeout: 30_000 });
+  // An item on the to-do list, done right there.
+  const todo = page
+    .locator('section[aria-labelledby="todo"]')
+    .getByRole("listitem")
+    .filter({ hasText: "Make attack cases" });
+  await expect(todo).toContainText("attacks are set up, but none are made");
+  await todo.getByRole("button", { name: "Make attack cases" }).click();
+  await expect(todo).toHaveCount(0, { timeout: 30_000 });
   await expect(
     page.getByRole("tab", { name: /^Attacks \(\d+\)$/ }),
   ).toBeVisible();

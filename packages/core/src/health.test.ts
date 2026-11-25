@@ -79,7 +79,7 @@ describe("suiteHealth", () => {
     const h = suiteHealth(rows, checks, quality, 12);
     expect(h.status).toBe("few");
     expect(h.details[0]).toMatch(/12 of 50 cases/);
-    expect(h.details[1]).toMatch(/Rule: 80%, under the 95% bar \(serious\)/);
+    expect(h.details[1]).toMatch(/Rule: 80%, under its 95% aim \(must pass\)/);
   });
 
   it("names each reason as a flag", () => {

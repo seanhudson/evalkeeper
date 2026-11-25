@@ -38,6 +38,12 @@ export async function RunView({
     o.error ? 0 : allPassed(o.scores ?? null) ? 2 : 1;
   const ordered = [...outputs].sort((a, b) => rank(a) - rank(b));
   const failed = outputs.filter((o) => o.error);
+  // The first answer that missed each check, which a to-do item's "See the
+  // cases" links to (#check-<key>).
+  const firstMiss = new Map<string, string>();
+  for (const o of ordered)
+    for (const c of o.scores ?? [])
+      if (c.pass === false && !firstMiss.has(c.key)) firstMiss.set(c.key, o.id);
   // Why they failed, counted: "timed out after 60s (3)".
   const reasons = [
     ...failed
@@ -96,7 +102,14 @@ export async function RunView({
             <ul className="readable list-disc pl-5 text-sm">
               {summary.problems.map((p) => (
                 <li key={p.key}>
-                  {p.label}: failed {p.failed} of {p.of}
+                  {firstMiss.has(p.key) ? (
+                    <a href={`#check-${p.key}`} className={LINK}>
+                      {p.label}
+                    </a>
+                  ) : (
+                    p.label
+                  )}
+                  : failed {p.failed} of {p.of}
                 </li>
               ))}
             </ul>
@@ -107,6 +120,7 @@ export async function RunView({
         {ordered.map((o, i) => {
           const checks = (o.scores as Check[] | null) ?? null;
           const ok = allPassed(checks);
+          const anchors = [...firstMiss].filter(([, id]) => id === o.id);
           return (
             <div
               key={o.id}
@@ -114,6 +128,9 @@ export async function RunView({
               id={o.error && i === 0 ? "failed" : undefined}
               className="scroll-mt-4 rounded-md bg-tint p-3 text-sm"
             >
+              {anchors.map(([k]) => (
+                <span key={k} id={`check-${k}`} className="block scroll-mt-4" />
+              ))}
               <div className="flex justify-between gap-4">
                 <span className="font-medium">{titleOf(o.caseId)}</span>
                 <span

@@ -70,6 +70,13 @@ describe("confidenceFor", () => {
       margin: 6,
     });
   });
+  it("asks for more only under the suite's target", () => {
+    expect(confidenceFor(29).sentence).toMatch(/Aim for 50\./);
+    expect(confidenceFor(10, 0.5, 10)).toMatchObject({ level: "rough" });
+    expect(confidenceFor(10, 0.5, 10).sentence).not.toMatch(/Aim for/);
+    expect(confidenceFor(8, 0.5, 10)).toMatchObject({ level: "too-few" });
+    expect(confidenceFor(8, 0.5, 10).sentence).toMatch(/Aim for 10\./);
+  });
 });
 
 describe("draftsToTarget", () => {

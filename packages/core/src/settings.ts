@@ -198,6 +198,26 @@ export class SettingsConflict extends Error {
 }
 
 /**
+ * A feature's live settings, or null when it has none yet (no version,
+ * and no default in code). Use it where one feature with no settings must
+ * not break a page that shows many.
+ *
+ * @param settings - Your versioned settings (`createSettings`).
+ * @param operation - The feature.
+ */
+export async function currentSettings(
+  settings: Pick<VersionedSettings, "current">,
+  operation: string,
+): Promise<{ settings: Settings; version: SettingsVersion | null } | null> {
+  try {
+    return await settings.current(operation);
+  } catch (e) {
+    if (e instanceof NoSettingsError) return null;
+    throw e;
+  }
+}
+
+/**
  * A feature has no settings: no version yet, and no default in code. Apps
  * whose models are chosen in an admin page, not in code, see this until
  * the feature's first version is recorded (`seed` or `change`).

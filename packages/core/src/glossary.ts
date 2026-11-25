@@ -7,15 +7,15 @@ export const GLOSSARY = {
   score:
     "Accuracy: how much the model got right on every case in use. With partial credit, parts right of parts expected; otherwise answers with every check passed.",
   seriousMistakes:
-    "Failed serious checks: mistakes that change what your product does. Models are compared on these first.",
+    "Answers that missed a must-pass check: mistakes that change what your product does. Models are compared on these first.",
   time: "Speed: average seconds per answer, so lower is faster, from answers the model actually made (reused answers keep their original time).",
   favors:
-    "What the suggestion weighs once accuracy holds. It never suggests a model with more serious mistakes, and only trades accuracy for a clear gain: accuracy alone, or the same accuracy at half the cost or time.",
+    "What the suggestion weighs once accuracy holds. It never suggests a model with more must-pass misses, and only trades accuracy for a clear gain: accuracy alone, or the same accuracy at half the cost or time.",
   attackFailures:
     "Answers on the attack cases that never came back (an error or a timeout, not a wrong answer). Attacks resisted counts only complete tests: test again.",
   cost: "Average cost per answer on this model, from your catalog's prices.",
   againstLive:
-    "A paired comparison with the live model on the same cases: more accurate, about as accurate, less accurate, or too few cases to tell.",
+    "Accuracy against the live model, paired on the same cases: better, similar (closer than these cases can tell apart), or worse. Can't tell: too few cases.",
   live: "The model this feature runs on now.",
   fallback:
     "The model that answers when the live model's provider is down. Any model can be chosen; the suggestion recommends the most accurate one from another provider.",
@@ -24,14 +24,14 @@ export const GLOSSARY = {
   outOfDate:
     "Cases, answers, or instructions changed since this test ran. Test again, or rescore for free if only answers changed.",
   serious:
-    "A mistake that changes what the product does. Serious checks should pass 95% of the time unless the check sets its own bar.",
+    "Must pass: missing it changes what the product does. A must-pass check aims to pass 95% of the time unless it sets its own aim.",
   minor:
-    "A fair difference of judgment. Minor checks should pass 75% of the time unless the check sets its own bar.",
-  bar: "The pass rate this check should reach.",
+    "Nice to have: a fair difference of judgment. It aims to pass 75% of the time unless it sets its own aim.",
+  aim: "The pass rate this check aims for. Under it, the check needs work.",
   reasoningSetting:
     "Some models think before answering, and how much is a setting. Less is faster and cheaper; more can be more accurate. Each setting you test gets its own row.",
   checkBreakdown:
-    "How often each check passed, for every model with a current test. Serious checks come first; minor ones are fair differences of judgment, so their bar is lower.",
+    "How often each check passed, for every model with a current test. Must-pass checks come first; nice-to-have ones are fair differences of judgment, so they aim lower.",
   confirmed: "A person said this answer is right. Tests grade against it.",
   provisional:
     "Put to use before anyone reviewed it. Tests use it, and every score says it rests on unreviewed answers.",
@@ -43,12 +43,18 @@ export const GLOSSARY = {
     "An attack case's answer, carried from the case it was made from and the person who confirmed that one. An attack shouldn't change the right answer.",
   expertReviewed:
     "Confirmed by an expert in what the suite judges, such as a crisis line counselor, once for every app that uses the suite. Your own confirmed answer replaces it.",
-  dev: "Cases you tune against: change prompts and checks while looking at these.",
-  test: "Cases you only check: never tune against them, so they show how a change does on cases it wasn't fitted to.",
+  dev: "A case you can look at while you change the instructions. Most cases are.",
+  test: "A held-out case: kept out of sight while you change the instructions, so it shows whether a change works on cases nobody tuned it on.",
   suggestion:
     "Fixed rules pick it, so the reason given is the real one: accuracy first, then the suite's priority. Nothing changes until you choose.",
   attacksResisted:
-    "Of the attacks planted where untrusted text goes, the share answered with no serious mistake. A model's Test runs them with its cases.",
+    "Of the attacks planted where untrusted text goes, the share answered with no must-pass miss. A model's Test runs them with its cases.",
+  attackCases:
+    "Each is a confirmed case with an attack planted where untrusted text goes, and keeps that case's answer. A model's Test runs them, and they follow the cases as answers change.",
+  updateAttackCases:
+    "Brings attack cases in step with the answer key: new confirmed cases get attacks, changed answers carry over, and retired cases' attacks retire. No model calls, so it's free.",
+  addAttack:
+    "Attacks are written in code, in the suite's setup. This guide shows how.",
   attackResults:
     "This suite attacks another feature's cases. Its results show on that feature's page, where its models are chosen, so one choice weighs both.",
   priority:
@@ -88,14 +94,25 @@ export const GLOSSARY = {
     "The instructions changed in code and were recorded under the same models. No model was switched.",
   instructionsEdited:
     "Instructions edited at runtime (an admin override or added guidance) were recorded under the same models. No model was switched. Dated when noticed, which can be after the edit.",
+  noEvalYet:
+    "AI features no suite tests yet, so nothing tells you when one gets worse. Ask your coding agent to write a suite for each: Evalkeeper's guide for adding a suite tells it how.",
   suites:
     "One suite per AI feature: its cases, the answers people confirmed, and the checks that grade any model against them. Open one to compare models and choose the live one.",
   standing:
-    "Where a suite stands. At risk: a serious check is under its bar. Can improve: a minor one is, a better model is suggested, or a retest is due. Healthy: meets every bar. Can't tell yet: too few cases or untested.",
+    "Where a suite stands. Needs attention: its to-do list has something on it. Can't tell yet: no model tested, or too few cases to judge. Healthy: nothing to do.",
+  todo: "What to do next on this suite, in order, each with why. Each is done on this page, and drops off once it's done.",
+  replacedStarter:
+    "Added from the suite's starter cases, which have changed since: this input is no longer one of them. Retire it, unless you want it as a case of your own.",
+  targetCases:
+    "How many cases this answer key aims for: when to ask for more, how many to draft, and the fewest retiring leaves. Fewer make scores less certain; when every case costs real money, about 10 can be right.",
+  suiteSettings:
+    "This suite's own settings, kept apart from its model versions: changing them never makes a new version.",
+  spending:
+    "What eval tests spent in the last 24 hours against the daily limits. At a limit, tests stop until earlier spending is more than 24 hours old.",
   answerKey:
     "The cases and the answers tests grade against. Only confirmed answers count: a model can draft answers, but they stay pending until a person confirms them. Open a case to see how each model did on it.",
   checks:
-    "What a good answer gets right, one thing per check. Serious checks catch mistakes that change what your product does; minor ones, fair differences of judgment. Each has a bar its pass rate should reach.",
+    "What a good answer gets right, one thing per check. Must-pass checks catch mistakes that change what your product does; nice-to-have ones, fair differences of judgment. Each has an aim for its pass rate.",
   probabilityQuality:
     "How good the probabilities were: 100% minus the Brier score. High means sure when right and unsure when wrong; picking right with careless probabilities scores lower.",
   calibrationError:
@@ -130,9 +147,9 @@ export const GLOSSARY = {
   answerKeyHealth:
     "What would keep this answer key useful: cases that no longer tell models apart, cases to check, near-duplicates, old drafts, and thin tags.",
   easyCases:
-    "Cases 3 or more models got fully right in 4 rounds of testing (days), since the answer last changed. Suggested for retiring only past 50 cases; never a case a ranking compares.",
+    "Cases 3 or more models got fully right in 4 rounds of testing (days), since the answer last changed. Suggested only past the suite's target number of cases; never a case a ranking compares.",
   easyFloor:
-    "A suite keeps at least 50 cases: easy ones are never retired below that, and none are suggested at or under it.",
+    "A suite keeps at least its target number of cases (50 unless it sets one): easy ones are never retired below that, or suggested at or under it.",
   splitCases:
     "Cases models divide about evenly on. Often the answer is unclear, so check it. Once it's right, it's the most useful kind of case.",
   nearDuplicates:

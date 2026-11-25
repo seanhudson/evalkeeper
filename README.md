@@ -2,7 +2,7 @@
 
 **An eval harness for the AI features in your TypeScript app.** For each
 feature, keep an answer key people confirm, run any model against it, and
-compare models on accuracy, serious mistakes, cost, and speed. Evalkeeper
+compare models on accuracy, must-pass misses, cost, and speed. Evalkeeper
 suggests a live model and a fallback with its reasons, records every
 switch, and checks weekly that the live model hasn't drifted.
 
@@ -16,7 +16,7 @@ npm install @crowandraven/evalkeeper
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/board-dark.png">
-  <img alt="A suite's model board: each model's score, serious mistakes, time, and cost, the live and retiring models marked, and the suggested live and fallback models with their reasons." src="docs/screenshots/board-light.png">
+  <img alt="A suite's model board: each model's score, must-pass misses, time, and cost, the live and retiring models marked, and the suggested live and fallback models with their reasons." src="docs/screenshots/board-light.png">
 </picture>
 
 ---
@@ -51,10 +51,11 @@ design.
   output, so what the app decided doesn't anchor the answer.
 - **Tests per model.** Every case, on any model, with time and cost per
   answer. Identical requests are reused for a week, so retesting is free.
-- **Checks that say what matters.** Each check is serious (it changes what
-  your product does) or minor (a fair difference of judgment), with its
-  own bar. Partial credit where an answer has parts.
-- **A model board.** Every model's latest test, its serious mistakes, speed,
+- **Checks that say what matters.** Each check is must pass (it changes
+  what your product does) or nice to have (a fair difference of
+  judgment), with its own aim for its pass rate. Partial credit where an
+  answer has parts.
+- **A model board.** Every model's latest test, its must-pass misses, speed,
   and cost, and a bootstrap comparison with the live model: _more accurate_,
   _about as accurate_, _less accurate_, or _too few cases to tell_.
 - **Where two models disagree.** Compare any two tests: the verdict in
@@ -62,7 +63,7 @@ design.
   graded differently, each opened with both answers next to the expected
   one.
 - **A suggestion with its reason.** Accuracy is the floor. A switch needs a
-  real reason: clearly more accurate, fewer serious mistakes, or, for a
+  real reason: clearly more accurate, fewer must-pass misses, or, for a
   suite that favors cost or speed, the same results at half the cost or
   time. Retiring models are never suggested. The fallback comes from
   another provider.
@@ -124,7 +125,7 @@ design.
   held, and two more show whether the model said a made-up canary word
   the attack asked for or leaked text you name. It ships with 20 attacks
   and reads more from CyberSecEval, garak, and promptfoo. Its results
-  show on the feature's own page, as each model's serious mistakes under
+  show on the feature's own page, as each model's must-pass misses under
   attack, and the suggestion never picks a model with more than live's.
   Passing means the model resisted these attacks, not that your app is
   safe.
@@ -172,12 +173,13 @@ with a judge model instead of by shared words.
 
 ## A look around
 
-**The hub:** where every suite stands, what needs attention, and the
-weekly check.
+**The hub:** one row per suite with where it stands (Needs attention,
+Can't tell yet, or Healthy), and the weekly check. Each suite's page
+opens with its to-do list.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/hub-dark.png">
-  <img alt="The evals hub: stat cards for room to improve, the slowest and costliest live models, and thumbs down this week; the weekly check; and a card per suite." src="docs/screenshots/hub-light.png">
+  <img alt="The evals hub: one row per suite with its name and status (Needs attention, Can't tell yet, or Healthy), thumbs down this week, and the weekly check." src="docs/screenshots/hub-light.png">
 </picture>
 
 **The answer key:** each case opens to its input, its confirmed answer,

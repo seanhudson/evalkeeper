@@ -28,4 +28,7 @@ export * from "./SideBySideView.js";
 export * from "./RateView.js";
 export * from "./FeedbackView.js";
 export * from "./ModelMenu.js";
+export * from "./Menu.js";
+export * from "./Drawer.js";
+export * from "./Spending.js";
 export * from "./Tabs.js";

@@ -14,7 +14,10 @@ test("the decision board shows probability quality, calibration, and native vs p
   await expect(
     page.getByRole("heading", { name: "Ticket routing (decisions)" }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Test every model" }).click();
+  await page
+    .locator('section[aria-labelledby="models"]')
+    .getByRole("button", { name: "Test every model" })
+    .click();
   await expect(page.getByRole("status", { name: "Testing" })).toHaveCount(0, {
     timeout: 60_000,
   });
@@ -34,9 +37,9 @@ test("the decision board shows probability quality, calibration, and native vs p
     modelRow(page, "Demo Legacy").getByText("Prompted", { exact: true }),
   ).toBeVisible();
 
-  // The test's page shows each answer's probabilities with the bar (#67).
+  // The test's page shows each answer's probabilities with the cutoff (#67).
   await careful.getByRole("link", { name: /\d+%/ }).click();
-  await expect(page.getByText(/\d+% true, bar \d+%/).first()).toBeVisible();
+  await expect(page.getByText(/\d+% true, cutoff \d+%/).first()).toBeVisible();
 
   // Text-only checks don't show these columns.
   await page.goto("/evals/ticket_triage");

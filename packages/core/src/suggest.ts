@@ -153,7 +153,7 @@ export function seriousMistakes(row: SuggestRow, checks: CheckDef[]): number {
     }, 0);
 }
 
-const mistakes = (n: number) => `${n} serious mistake${n === 1 ? "" : "s"}`;
+const mistakes = (n: number) => `${n} must-pass miss${n === 1 ? "" : "es"}`;
 const rate = (r: SuggestRow) => (r.test ? r.test.right / r.test.total : 0);
 
 /**
@@ -285,7 +285,7 @@ export function suggest<R extends SuggestRow>(
       const ra = underAttack(r);
       const la = underAttack(live);
       return ra !== null && la !== null && ra <= la - 2 && rate(r) >= rate(live)
-        ? `${r.label} makes fewer serious mistakes on the attacks than ${live.label} (${ra} against ${la}), and scores at least as well (${against(rate(r), rate(live))}).`
+        ? `${r.label} makes fewer must-pass misses on the attacks than ${live.label} (${ra} against ${la}), and scores at least as well (${against(rate(r), rate(live))}).`
         : null;
     };
     const why = (r: R): string | null => {
@@ -293,7 +293,7 @@ export function suggest<R extends SuggestRow>(
       if (r.vsLive === "BETTER")
         return `${r.label} is clearly more accurate than ${live.label} on the cases both answered (overall ${against(rate(r), rate(live))}).`;
       if (serious(r) <= serious(live) - 2)
-        return `${r.label} makes fewer serious mistakes than ${live.label} (${serious(r)} against ${serious(live)}), and scores at least as well (${against(rate(r), rate(live))}).`;
+        return `${r.label} makes fewer must-pass misses than ${live.label} (${serious(r)} against ${serious(live)}), and scores at least as well (${against(rate(r), rate(live))}).`;
       const byAttacks = attackReason(r);
       if (byAttacks) return byAttacks;
       if (priority.favor === "cost" && clearlyLess(cost(r), cost(live)))
@@ -312,7 +312,7 @@ export function suggest<R extends SuggestRow>(
         serious(r) > serious(live)
       )
         return null;
-      const close = `${r.label} is about as accurate as ${live.label} (${against(rate(r), rate(live))}: closer than these cases can tell apart), with no more serious mistakes`;
+      const close = `${r.label} is about as accurate as ${live.label} (${against(rate(r), rate(live))}: closer than these cases can tell apart), with no more must-pass misses`;
       if (priority.favor === "cost" && cost(r) <= cost(live) * HALF)
         return `${close}, at ${Math.round((1 - cost(r) / cost(live)) * 100)}% less per answer. This suite favors cost.`;
       if (priority.favor === "speed" && ms(r) <= ms(live) * HALF)
@@ -360,26 +360,33 @@ export function suggest<R extends SuggestRow>(
         );
     } else {
       next = live;
-      reasons.push(
-        `Keep ${live.label}: no other model is safely better on these cases.`,
-      );
-      // Would have been suggested, but for the attacks.
+      // Would have been suggested, but for the attacks: said first, since
+      // it's the real reason live stays.
       const held = liveable.find((r) => qualifies(r) && !safeUnderAttack(r));
       if (held) {
         const a = underAttack(held);
+        const otherwise = why(held);
         reasons.push(
-          a === null
-            ? `${held.label} would otherwise qualify, but it has no up-to-date test against the attacks. Test it on ${at(attacks, 0).label}.`
-            : `${held.label} would otherwise qualify, but it makes more serious mistakes on the attacks (${a} against ${liveAttack ?? 0}).`,
+          `${held.label} is held back by the attacks${
+            a === null
+              ? `: it has no up-to-date test against them. Test it on ${at(attacks, 0).label}.`
+              : `: it makes more must-pass misses on them (${a} against ${liveAttack ?? 0}).`
+          }${otherwise ? ` Otherwise it would be suggested: ${otherwise}` : ""}`,
         );
       }
-      // The one to watch: scored higher, but not by enough to tell.
+      reasons.push(
+        held
+          ? `Keep ${live.label} until then.`
+          : `Keep ${live.label}: no other model is safely better on these cases.`,
+      );
+      // The one to watch: scored higher, but not by enough to tell. Not
+      // the held model, whose reason is already given.
       const watch = tested
-        .filter((r) => !r.live && rate(r) > rate(live))
+        .filter((r) => !r.live && rate(r) > rate(live) && r.key !== held?.key)
         .sort((a, b) => rate(b) - rate(a))[0];
       if (watch)
         reasons.push(
-          `${watch.label} scored highest (${pct(rate(watch))} against ${pct(rate(live))}), but with this many cases the gap can't be told from noise${serious(watch) > serious(live) ? `, and it makes more serious mistakes (${serious(watch)} against ${serious(live)})` : ""}. Add cases, then test again.`,
+          `${watch.label} scored highest (${pct(rate(watch))} against ${pct(rate(live))}), but with this many cases the gap can't be told from noise${serious(watch) > serious(live) ? `, and it makes more must-pass misses (${serious(watch)} against ${serious(live)})` : ""}. Add cases, then test again.`,
         );
     }
   }

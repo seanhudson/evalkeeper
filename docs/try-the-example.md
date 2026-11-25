@@ -31,16 +31,17 @@ it with the example's cases. Then open `http://localhost:3000/evals` in your bro
    and urgency a person confirmed.
 2. **Test every model.** Press **Test every model**. Each demo model
    answers every ticket, and the board fills in with each one's score,
-   serious mistakes, time, and cost.
+   must-pass misses, time, and cost.
 
-   ![The model board after a test of every model: each model's score, serious mistakes, time, and cost, and the suggested live and fallback models.](screenshots/board-light.png "The board after testing every model.")
+   ![The model board after a test of every model: each model's score, must-pass misses, time, and cost, and the suggested live and fallback models.](screenshots/board-light.png "The board after testing every model.")
 
 3. **Read the suggestion.** Above the board, Evalkeeper suggests a live
-   model and a fallback, with its reasons. Press **Use these** to make
+   model and a fallback, with its reasons. The **To do** list at the top
+   of the page says **Make X live**: press **Use the suggestion** to make
    them live. The change shows under **Versions**, with the test behind
    it and a button to roll it back.
 4. **See where two models differ.** In the **Against live** column,
-   open "Less accurate" for any model. The compare page says which is
+   open "Worse" for any model. The compare page says which is
    better, in plain words, and lists the cases they graded differently.
 5. **Rate an answer.** Open **Rate an answer** in the header, and press
    thumbs down on the sample answer. Then open **Feedback**: your rating

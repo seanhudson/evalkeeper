@@ -17,7 +17,9 @@ import {
   type HealthStanding,
   type HealthStatus,
 } from "../health.js";
-import { dayOf, momentOf, pct, QUIET_BUTTON } from "./format.js";
+import { dayOf, momentOf, pct, QUIET_BUTTON, TINT } from "./format.js";
+import { SUITE_STATUS_LABEL, type SuiteStatus } from "../todo.js";
+import { SEVERITY_LABEL, type CheckDef } from "../types.js";
 
 /**
  * The pieces Evalkeeper's screens are built from. Each draws Evalkeeper's
@@ -27,12 +29,14 @@ import { dayOf, momentOf, pct, QUIET_BUTTON } from "./format.js";
  * client components).
  */
 
+// Every tone from the app's color names, so its evalkeeper.css decides
+// both themes.
 const CHIP = {
-  live: "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300",
-  fallback: "bg-sky-100 text-sky-800 dark:bg-sky-500/15 dark:text-sky-200",
+  live: TINT.good,
+  fallback: "bg-ink/10 text-ink",
   suggested: "bg-accent/10 text-accent",
-  warn: "bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-200",
-  serious: "bg-red-50 text-red-800 dark:bg-red-500/10 dark:text-red-200",
+  warn: TINT.warn,
+  serious: TINT.bad,
   neutral: "bg-tint text-muted",
 } as const;
 
@@ -191,7 +195,7 @@ export function Card(props: CardProps) {
   );
 }
 
-/** A small rounded label: Live, Fallback, Retires …, serious, minor. */
+/** A small rounded label: Live, Fallback, Retires …, Must pass. */
 export function Chip(props: ChipProps) {
   const C = useSwapped("Chip");
   if (C) return createElement(C, props);
@@ -234,13 +238,18 @@ function flagChips(f: HealthFlag): { text: string; tone: ChipTone }[] {
         ...(f.serious
           ? [
               {
-                text: `${f.serious} serious under bar`,
+                text: `${f.serious} must-pass ${f.serious === 1 ? "check" : "checks"} under ${f.serious === 1 ? "its" : "their"} aim`,
                 tone: "serious" as const,
               },
             ]
           : []),
         ...(f.minor
-          ? [{ text: `${f.minor} minor under bar`, tone: "warn" as const }]
+          ? [
+              {
+                text: `${f.minor} nice-to-have ${f.minor === 1 ? "check" : "checks"} under ${f.minor === 1 ? "its" : "their"} aim`,
+                tone: "warn" as const,
+              },
+            ]
           : []),
       ];
     case "suggestLive":
@@ -278,9 +287,34 @@ export function StandingBadge({ standing }: { standing: HealthStanding }) {
   return <Chip tone={STANDING_TONE[standing]}>{STANDING_LABEL[standing]}</Chip>;
 }
 
+const SUITE_STATUS_TONE: Record<SuiteStatus, ChipTone> = {
+  attention: "warn",
+  unknown: "neutral",
+  healthy: "live",
+};
+
 /**
- * The reasons behind a suite's standing as one plain line ("1 serious
- * under bar · New fallback suggested"), for under its name. Provisional
+ * A suite's status on the hub and its page: Needs attention (amber), Can't
+ * tell yet (gray), or Healthy (green). Each color means only that.
+ */
+export function SuiteStatusBadge({ status }: { status: SuiteStatus }) {
+  return (
+    <Chip tone={SUITE_STATUS_TONE[status]}>{SUITE_STATUS_LABEL[status]}</Chip>
+  );
+}
+
+/** A check's severity as the pages say it: Must pass, or Nice to have. */
+export function SeverityChip({ severity }: { severity: CheckDef["severity"] }) {
+  return (
+    <Chip tone={severity === "serious" ? "serious" : "neutral"}>
+      {SEVERITY_LABEL[severity]}
+    </Chip>
+  );
+}
+
+/**
+ * The reasons behind a suite's standing as one plain line ("1 must-pass
+ * check under its aim · New fallback suggested"), for under its name. Provisional
  * answers are left out: a choice, not a problem, so the card says it in a
  * footnote instead.
  */
@@ -289,8 +323,9 @@ export function HealthReasons({ flags }: { flags: readonly HealthFlag[] }) {
     .filter((f) => f.kind !== "provisional" && f.kind !== "good")
     .flatMap(flagChips);
   if (!reasons.length) return null;
-  // Each in its standing's color with an icon, so it reads at a glance
-  // without another row of chips.
+  // Each in its standing's color, urgent ones with an alert icon, so it
+  // reads at a glance without another row of chips. The others get no
+  // icon: an (i) is only ever a tip you can open.
   return (
     <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium">
       {reasons.map((r) => {
@@ -306,11 +341,7 @@ export function HealthReasons({ flags }: { flags: readonly HealthFlag[] }) {
                   : "text-ink"
             }`}
           >
-            {urgent ? (
-              <CircleAlert aria-hidden className="h-4 w-4 shrink-0" />
-            ) : (
-              <Info aria-hidden className="h-4 w-4 shrink-0 text-muted" />
-            )}
+            {urgent && <CircleAlert aria-hidden className="h-4 w-4 shrink-0" />}
             {r.text}
           </li>
         );
@@ -320,7 +351,7 @@ export function HealthReasons({ flags }: { flags: readonly HealthFlag[] }) {
 }
 
 /**
- * A suite's health as chips naming each reason ("2 serious under bar",
+ * A suite's health as chips naming each reason ("2 must-pass checks under their aim",
  * "New fallback suggested", "Add cases (33 of 50)"), so a card says why at
  * a glance; its details say more.
  */

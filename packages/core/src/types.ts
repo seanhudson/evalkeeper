@@ -59,8 +59,20 @@ export type CheckDef = {
    * to split). Models are ranked on serious mistakes.
    */
   severity: "serious" | "minor";
-  /** Pass rate it should reach; default by severity (checkBar). */
+  /**
+   * The pass rate it aims for, shown as its aim; default by severity
+   * (checkBar).
+   */
   bar?: number;
+};
+
+/**
+ * What the pages call each severity: a serious check must pass, a minor
+ * one is nice to have.
+ */
+export const SEVERITY_LABEL: Readonly<Record<CheckDef["severity"], string>> = {
+  serious: "Must pass",
+  minor: "Nice to have",
 };
 
 /** The pass rate a check should reach: its own, else 95% serious, 75% minor. */
@@ -80,7 +92,7 @@ export function pctBeside(rate: number, bar: number): string {
     : `${whole}%`;
 }
 
-/** Meets the bar, is within 10 points of it, or is further below. */
+/** Meets the aim (bar), is within 10 points of it, or is further below. */
 export function barStatus(
   rate: number,
   bar: number,
@@ -106,7 +118,7 @@ export const FAVOR_TEXT: Record<SuitePriority["favor"], string> = {
     "speed: someone waits on this, so a model that scores as well and answers clearly faster is worth switching to, and so is one about as accurate (within 10 points) in half the time",
   cost: "cost: this runs in the background, often, so a model that scores as well and is clearly cheaper is worth switching to, and so is one about as accurate (within 10 points) at half the cost",
   quality:
-    "quality: people read and act on this, so only clearly better accuracy or fewer serious mistakes is worth switching for",
+    "quality: people read and act on this, so only clearly better accuracy or fewer must-pass misses is worth switching for",
 };
 
 /**
@@ -120,6 +132,14 @@ export type Suite<Input, Output, Label> = {
   priority: SuitePriority;
   label: string;
   description: string;
+  /**
+   * How many cases this suite's answer key should have (default 50). Lower
+   * it for a suite whose every case costs real money (a billed web search,
+   * say), where about 10 is the sensible size. A person can change it on
+   * the suite's page (Suite settings) when the runner has a
+   * `suiteSettings` store; theirs wins.
+   */
+  targetCases?: number;
   /** Bump when checks change, so runs say which grading they used. */
   graderVersion: string;
   input: z.ZodType<Input>;

@@ -3,6 +3,7 @@ import { memoryStore } from "./memoryStore.js";
 import {
   CHANGE_KINDS,
   NoSettingsError,
+  currentSettings,
   SettingsConflict,
   createSettings,
   describeChange,
@@ -277,6 +278,22 @@ describe("versioned settings without defaults in code", () => {
     await expect(
       settings.update("triage", { model: "big" }, { by: "sam", reason: null }),
     ).rejects.toBeInstanceOf(NoSettingsError);
+  });
+
+  it("reads no settings as null where a page shows many features", async () => {
+    const { settings } = setupWithoutDefaults();
+    expect(await currentSettings(settings, "triage")).toBeNull();
+    await settings.seed("triage", IMPORTED, { by: null, reason: null });
+    expect((await currentSettings(settings, "triage"))?.settings.model).toBe(
+      "big",
+    );
+    // Any other error still throws.
+    await expect(
+      currentSettings(
+        { current: () => Promise.reject(new Error("database down")) },
+        "triage",
+      ),
+    ).rejects.toThrow("database down");
   });
 
   it("seeds version 1 from an existing config, once", async () => {

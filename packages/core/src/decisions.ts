@@ -174,7 +174,7 @@ export function decisionCheck(
     ...(s.correct ? {} : { note: `Expected ${say(expected)}, got ${given}` }),
     given:
       answer.type === "boolean"
-        ? `${given}, bar ${pct(opts.threshold ?? 0.5)}`
+        ? `${given}, cutoff ${pct(opts.threshold ?? 0.5)}`
         : `${given}${sure}`,
     measures,
   };

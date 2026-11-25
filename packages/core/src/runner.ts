@@ -48,6 +48,12 @@ export { confirmedLabel, isProvisional };
 import { injectionSuitesOf, type AnySuite, type CheckResult } from "./types.js";
 import { injectionCases } from "./suites/injection.js";
 import { at } from "./util.js";
+import { targetCasesOf } from "./summary.js";
+import {
+  NO_SUITE_SETTINGS,
+  type SuiteSettings,
+  type SuiteSettingsStore,
+} from "./suiteSettings.js";
 import { mustGet } from "./util.js";
 
 /**
@@ -136,6 +142,13 @@ export type RunnerOptions = {
    * fallback model, so nobody spends a test on a model that's going away.
    */
   retiringOnBoard?: "always" | "inUse";
+  /**
+   * Where settings a person adjusts on a suite's page are kept (its target
+   * number of cases). `memoryStore` and `prismaSuiteSettingsStore` are
+   * ones. Without it, every suite uses its values in code, and the page
+   * offers no Suite settings.
+   */
+  suiteSettings?: SuiteSettingsStore;
 };
 
 /**
@@ -801,30 +814,85 @@ export function createRunner(opts: RunnerOptions) {
    * the tags spread, from the board's current tests.
    */
   async function answerKeyHealthOf(suiteKey: string, today = new Date()) {
-    const [b, cases] = await Promise.all([
+    const [b, cases, target] = await Promise.all([
       board(suiteKey),
       store.listCases(suiteKey),
+      targetCases(suiteKey),
     ]);
-    const rounds = await easyRounds(suiteKey, cases);
-    return answerKeyHealth(cases, withRounds(b.caseResults, rounds), today);
+    const rounds = await easyRounds(suiteKey, cases, target);
+    return answerKeyHealth(
+      cases,
+      withRounds(b.caseResults, rounds),
+      today,
+      null,
+      target,
+    );
+  }
+
+  /**
+   * A suite's saved settings (its target number of cases), or none saved
+   * when there's no `suiteSettings` store or it can't be read: a page
+   * still loads, on the suite's values in code.
+   */
+  async function suiteSettingsOf(suiteKey: string): Promise<SuiteSettings> {
+    if (!opts.suiteSettings) return NO_SUITE_SETTINGS;
+    try {
+      return await opts.suiteSettings.getSuiteSettings(suiteKey);
+    } catch {
+      return NO_SUITE_SETTINGS;
+    }
+  }
+
+  /**
+   * A suite's target number of cases: saved in its settings, else its
+   * `targetCases`, else TARGET_CASES. It sets the floor for retiring easy
+   * cases, how many drafts to ask for, and when the page asks for more.
+   */
+  async function targetCases(suiteKey: string): Promise<number> {
+    return targetCasesOf(
+      suiteOrThrow(suiteKey),
+      await suiteSettingsOf(suiteKey),
+    );
+  }
+
+  /**
+   * Saves a suite's settings, as a person changed them on its page.
+   * Throws without a `suiteSettings` store.
+   */
+  async function saveSuiteSettings(
+    suiteKey: string,
+    settings: SuiteSettings,
+    by: string | null,
+  ): Promise<void> {
+    if (!opts.suiteSettings)
+      throw new Error(
+        "Suite settings need a place to keep them: pass suiteSettings to createRunner.",
+      );
+    await opts.suiteSettings.saveSuiteSettings(
+      suiteOrThrow(suiteKey).key,
+      settings,
+      by,
+    );
   }
 
   /**
    * Per case, the rounds of testing it passed (EASY_MIN_ROUNDS): days on
    * which at least EASY_MIN_MODELS models were tested on it and every one
    * got it fully right (all repeats), counted only after its answer last
-   * changed. Empty when the suite has EASY_FLOOR_CASES cases in use or
-   * fewer: nothing can be retired then, so the history isn't read.
+   * changed. Empty when the suite has its floor of cases in use or fewer
+   * (its target number of cases, EASY_FLOOR_CASES by default): nothing can
+   * be retired then, so the history isn't read.
    */
   async function easyRounds(
     suiteKey: string,
     cases?: readonly CaseRecord[],
+    floor: number = EASY_FLOOR_CASES,
   ): Promise<Record<string, number>> {
     const all = cases ?? (await store.listCases(suiteKey));
     const inUse = all.filter(
       (c) => c.status !== "RETIRED" && confirmedLabel(c.labels),
     );
-    if (inUse.length <= EASY_FLOOR_CASES) return {};
+    if (inUse.length <= floor) return {};
     const since = new Map(
       inUse.map((c) => {
         const l = confirmedLabel(c.labels);
@@ -1428,6 +1496,11 @@ export function createRunner(opts: RunnerOptions) {
     answerKeyHealth: answerKeyHealthOf,
     retireEasy,
     easyRounds,
+    targetCases,
+    suiteSettings: suiteSettingsOf,
+    saveSuiteSettings,
+    /** Whether suite settings can be saved (a `suiteSettings` store). */
+    canSaveSuiteSettings: opts.suiteSettings !== undefined,
     retireStaleDrafts,
     stopStuckRuns,
     compare,

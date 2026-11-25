@@ -18,6 +18,11 @@ import type {
   OutputRecord,
   RunRecord,
 } from "./store.js";
+import {
+  NO_SUITE_SETTINGS,
+  type SuiteSettings,
+  type SuiteSettingsStore,
+} from "./suiteSettings.js";
 
 /**
  * An EvalStore in memory: for tests, demos, and trying Evalkeeper before
@@ -25,7 +30,8 @@ import type {
  */
 export function memoryStore(): EvalStore &
   FeedbackStore &
-  SettingsStore & {
+  SettingsStore &
+  SuiteSettingsStore & {
     cases: CaseRecord[];
     runs: RunRecord[];
     outputs: OutputRecord[];
@@ -40,6 +46,7 @@ export function memoryStore(): EvalStore &
   const versions: SettingsVersion[] = [];
   const changes: SettingsChange[] = [];
   const live = new Map<string, string>();
+  const suiteSettings = new Map<string, SuiteSettings>();
   let n = 0;
   const id = (prefix: string) => `${prefix}_${(++n).toString(36)}`;
   const now = () => new Date();
@@ -51,6 +58,12 @@ export function memoryStore(): EvalStore &
     feedback,
     versions,
     changes,
+    async getSuiteSettings(suite) {
+      return { ...(suiteSettings.get(suite) ?? NO_SUITE_SETTINGS) };
+    },
+    async saveSuiteSettings(suite, settings) {
+      suiteSettings.set(suite, { ...settings });
+    },
     async liveVersion(operation) {
       const id = live.get(operation);
       return versions.find((v) => v.id === id) ?? null;

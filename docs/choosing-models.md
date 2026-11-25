@@ -19,32 +19,32 @@ background; you can leave the page.
 
 ## Read the board
 
-![The model board: each model's score, serious mistakes, time, cost, and how it compares with the live model, with the suggested live and fallback models above it.](screenshots/board-light.png "Ticket triage's board after a test of every model.")
+![The model board: each model's score, must-pass misses, time, cost, and how it compares with the live model, with the suggested live and fallback models above it.](screenshots/board-light.png "Ticket triage's board after a test of every model.")
 
 For each model:
 
 - **Accuracy:** the share of the checks it passed, with partial credit,
   and how many.
-- **Serious mistakes:** answers that would change what your product
+- **Must-pass misses:** answers that would change what your product
   does (the wrong queue, a missed urgent ticket). Fewer is better, and
   it matters more than accuracy.
 - **Speed and cost:** seconds and cost per answer.
-- **Against live:** is it **More accurate**, **About as accurate**, or
-  **Less accurate** than the live model, or are there **Too few cases to
-  tell**? Evalkeeper works this out from the cases both tested, not from
-  the gap between scores, so a 3-point gap on 16 cases isn't called a
-  win. When it's about as accurate, it says what it gains on the
-  feature's priority: "About as accurate, 4× cheaper".
+- **Against live:** is its accuracy **Better**, **Similar**, or
+  **Worse** than the live model's, or **Can't tell** (too few cases)?
+  Evalkeeper works this out from the cases both tested, not from the gap
+  between scores, so a 3-point gap on 16 cases isn't called a win. When
+  it's similar, it says what it gains on the feature's priority:
+  "Similar, 4× cheaper".
 
 Beside **Models**, **Favors cost**, **Favors speed**, or **Favors
 accuracy** says what the feature weighs once accuracy holds. It starts as
 the suite's `priority` in code. Press the chip to see what it means and
 pick another, with an optional reason: it's saved as a new settings version,
 so it shows under **Versions** with who and why, and rolling back undoes
-it. The suggestion, the row order, and the feature's card on the hub all
+it. The suggestion, the row order, and the feature's to-do list all
 follow it. The rows
 come in the order the suggestion weighs them: the suggested model, then
-live, then the rest by fewest serious mistakes, then accuracy, then the
+live, then the rest by fewest must-pass misses, then accuracy, then the
 priority. **Suggested** and **Suggested fallback** mark its picks.
 There's no blended score: cost and speed only ever break ties between
 models that are about as accurate.
@@ -67,15 +67,17 @@ that setting, and making it live sets the feature's reasoning to it.
 ## See where the mistakes are
 
 **Where the mistakes are** shows how often each check passed, for every
-model with a current test, beside each check's bar. Green meets the bar,
-amber is within 10 points of it, and red is further below. Serious checks
-come first.
+model with a current test, beside each check's aim. Green meets the
+aim, amber is within 10 points of it, and red is further below.
+Must-pass checks come first.
 
-![Where the mistakes are: each check's pass rate for every tested model, green where it meets the bar, amber within 10 points, and red further below.](screenshots/breakdown-light.png "Ticket triage's checks across four models.")
+![Where the mistakes are: each check's pass rate for every tested model, green where it meets its aim, amber within 10 points, and red further below.](screenshots/breakdown-light.png "Ticket triage's checks across four models.")
 
-Read it when two models score about the same: one may miss a serious
+Read it when two models score about the same: one may miss a must-pass
 check the other passes. It's also where a check that every model fails
 stands out, which usually means the check, not the models, needs a look.
+A must-pass check every tested model misses also goes on the to-do list
+as **Fix "check"**, with how far off it is and a link to the cases.
 
 ## See one test's answers
 
@@ -106,7 +108,9 @@ and the fallback comes from another provider, so one outage can't take
 out both. That needs models from at least two providers in your
 [catalog](models.md): with one, no fallback can be suggested.
 
-- Press **Use these** to take the suggestion.
+- When it differs from what's live, the to-do list at the top of the
+  page has **Make X live** (or the fallback): press **Use the
+  suggestion** there to take it.
 - Or choose yourself: open a row's menu and pick **Make live** or **Make
   fallback**.
 

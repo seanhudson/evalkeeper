@@ -18,6 +18,10 @@ import {
   useDraftsProvisionally,
   withoutLeaks,
   priorityOf,
+  limitsFromForm,
+  currentSettings,
+  replacedStarters,
+  suiteSettingsFromForm,
   type ReasoningEffort,
 } from "../index.js";
 import { evalsPath, type EvalActions } from "../react/app.js";
@@ -262,7 +266,12 @@ export function evalActions(w: EvalWiring): Required<EvalActions> {
       ]);
       if (board.rows.some((r) => r.testing))
         throw new Error("Wait for the tests running now to finish");
-      const { settings: live } = await settings.current(suite.operation);
+      const current = await currentSettings(settings, suite.operation);
+      if (!current)
+        throw new Error(
+          `Set ${suite.label}'s settings first: it has no version yet, and no default in code.`,
+        );
+      const live = current.settings;
       const s = suggest(
         board.rows,
         suite.checks,
@@ -433,6 +442,57 @@ export function evalActions(w: EvalWiring): Required<EvalActions> {
       revalidatePath(page(suite.key));
     },
 
+    /**
+     * Retires the starter cases a starter update replaced (their input is
+     * no longer among the suite's starters). Reversible, like any retire.
+     */
+    async retireReplacedStarters(form) {
+      await w.requireAdmin();
+      const suite = suiteFrom(form);
+      const cases = await store.listCases(suite.key);
+      for (const c of replacedStarters(suite, cases))
+        await store.setCaseStatus(c.id, "RETIRED");
+      revalidatePath(page(suite.key));
+    },
+
+    /** Saves a suite's settings: its target number of cases. */
+    async saveSuiteSettings(form) {
+      const admin = await w.requireAdmin();
+      const suite = suiteFrom(form);
+      await runner.saveSuiteSettings(
+        suite.key,
+        suiteSettingsFromForm(form),
+        changer(admin),
+      );
+      everyPage();
+    },
+
+    /** Saves the daily spending limits: all tests, and a feature's. */
+    async saveLimits(form) {
+      const admin = await w.requireAdmin();
+      if (!w.spending) throw new Error("This app keeps no spending limits");
+      const limits = limitsFromForm(form);
+      if (limits.feature) runner.suiteOrThrow(formText(form, "suite"));
+      await w.spending.saveLimits(limits, changer(admin));
+      everyPage();
+    },
+
+    /** Stops every test now; answers already given are kept. */
+    async stopTests() {
+      const admin = await w.requireAdmin();
+      if (!w.spending?.stopAll) throw new Error("This app has no stop");
+      await w.spending.stopAll(changer(admin));
+      everyPage();
+    },
+
+    /** Lifts a stop early; the daily limits still apply. */
+    async allowTests() {
+      await w.requireAdmin();
+      if (!w.spending?.allow) throw new Error("This app has no stop");
+      await w.spending.allow();
+      everyPage();
+    },
+
     async addStarters(form) {
       await w.requireAdmin();
       const suite = suiteFrom(form);
@@ -476,6 +536,7 @@ export function evalActions(w: EvalWiring): Required<EvalActions> {
       await draftMoreCases({
         store,
         suite,
+        target: await runner.targetCases(suite.key),
         focus: focus ? focus.slice(0, 500) : null,
         ...(Number.isFinite(asked) && asked > 0
           ? { count: asked }

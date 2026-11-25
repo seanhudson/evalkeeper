@@ -18,6 +18,7 @@ export const SPLIT_MIN_MODELS = 4;
 /**
  * Retiring easy cases never takes a suite below this many cases in use,
  * and isn't suggested at or under it: a small answer key keeps every case.
+ * The default; a suite's own target number of cases replaces it.
  */
 export const EASY_FLOOR_CASES = 50;
 /**
@@ -77,9 +78,9 @@ export function isSplit(r: CaseResult | undefined): boolean {
  */
 export function easyToRetire<
   C extends { id: string; smoke: boolean; createdAt: Date },
->(easy: C[], inUse: number): C[] {
+>(easy: C[], inUse: number, floor: number = EASY_FLOOR_CASES): C[] {
   // Never below the floor: with 52 in use, at most 2 go.
-  const room = Math.max(0, inUse - EASY_FLOOR_CASES);
+  const room = Math.max(0, inUse - floor);
   // The quick set's and the oldest stay longest; newer ones go first.
   const ordered = [...easy].sort(
     (a, b) => Number(b.smoke) - Number(a.smoke) || +a.createdAt - +b.createdAt,
@@ -195,6 +196,8 @@ function checkedSince(labels: readonly LabelLike[], since: Date): boolean {
  * @param testedAt - When the newest current test ran. A split case whose
  *   answer a person confirmed after it ("the answer is right") isn't
  *   listed again until a newer test splits on it.
+ * @param floor - The fewest cases retiring may leave: the suite's target
+ *   number of cases (`targetCasesOf`), EASY_FLOOR_CASES by default.
  * @returns What needs a look: easy, split, and duplicate cases, old
  *   drafts, and how the tags spread.
  */
@@ -203,6 +206,7 @@ export function answerKeyHealth<C extends HealthCase>(
   caseResults: Readonly<Record<string, CaseResult>>,
   today = new Date(),
   testedAt: Date | null = null,
+  floor: number = EASY_FLOOR_CASES,
 ): AnswerKeyHealth<C> {
   const live = cases.filter((c) => c.status !== "RETIRED");
   const inUse = live.filter((c) => confirmedLabel(c.labels));
@@ -220,6 +224,7 @@ export function answerKeyHealth<C extends HealthCase>(
     easyToRetire(
       proven.map((c) => ({ ...c, smoke: quick.has(c.id) })),
       inUse.length,
+      floor,
     ).map((c) => c.id),
   );
   return {

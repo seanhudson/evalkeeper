@@ -4,6 +4,7 @@ import { Button, Card } from "./pieces.js";
 import { QUIET_BUTTON } from "./format.js";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { Plus } from "lucide-react";
+import { CloseButton } from "./InfoPopover.js";
 
 /** The address's hash, kept current; "" on the server. */
 const hashNow = () => window.location.hash;
@@ -41,13 +42,20 @@ export function AddCaseHeader({
     ? decodeURIComponent(hash.slice("#add-case=".length))
     : null;
   const shown = open || topic !== null;
-  // A topic from the link goes into the new case's tags.
+  // A topic from the link goes into the new case's tags; with none
+  // ("#add-case="), the form just opens, in view.
   useEffect(() => {
-    if (!topic) return;
+    if (topic === null) return;
     const tags = document.getElementById("new-tags");
-    if (tags instanceof HTMLInputElement && !tags.value.includes(topic))
+    if (
+      topic &&
+      tags instanceof HTMLInputElement &&
+      !tags.value.includes(topic)
+    )
       tags.value = tags.value ? `${tags.value}, ${topic}` : topic;
-    tags?.scrollIntoView({ block: "center" });
+    (tags ?? document.getElementById("answer-key"))?.scrollIntoView({
+      block: "center",
+    });
   }, [topic]);
   const close = () => {
     setOpen(false);
@@ -109,13 +117,7 @@ export function AddCaseHeader({
             ) : (
               <h3 className="font-medium">New case</h3>
             )}
-            <Button
-              type="button"
-              onClick={close}
-              className="text-sm text-muted hover:text-ink"
-            >
-              Cancel
-            </Button>
+            <CloseButton onClick={close} />
           </div>
           {draft && tab === "describe" ? draft : form}
         </Card>

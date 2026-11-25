@@ -199,3 +199,16 @@ model EvalSettingsChange {
 
   @@index([operation, createdAt])
 }
+
+// Suite settings (optional): add this to let people change a suite's
+// target number of cases on its page. Skip it to keep the targets in code.
+
+/// Settings a person changed on a suite's page, by suite, as JSON (its
+/// target number of cases). Apart from the versioned model settings.
+model EvalSuiteSetting {
+  suite     String   @id
+  values    Json
+  /// Who saved them; null for the system.
+  updatedBy String?
+  updatedAt DateTime @updatedAt
+}

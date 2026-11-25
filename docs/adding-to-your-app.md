@@ -217,6 +217,9 @@ It says "Already up to date: nothing to change."
   SQL is worked out by your own `prisma migrate diff`, from the schema
   files before and after.
 - The command never reads or writes a database.
+- One table, `EvalSuiteSetting`, is used only if you give the runner a
+  `suiteSettings` store ([step 6](#6-create-the-runner)), for what
+  people change under a suite page's **Suite settings**.
 
 ### After each upgrade
 
@@ -293,7 +296,8 @@ graded. Start with one, so you see a real result soon.
 Pick the AI feature people would notice most if it got worse. Then write:
 
 - its input and answer shapes, with zod
-- two or three checks, at least one of them serious
+- two or three checks, at least one of them must pass
+  (`severity: "serious"`)
 - `run`
 - `grade`
 
@@ -306,7 +310,8 @@ labels, help, and descriptions are there. It also checks that your
 starter cases fit their schemas.
 
 Start with 10 to 20 real cases, with personal details removed. Confirm
-each answer yourself. Grow toward 50.
+each answer yourself. Grow toward 50, or the suite's own `targetCases`
+([How many cases](suites.md#how-many-cases)).
 
 **Check it works:** your suite contract test passes.
 
@@ -341,8 +346,14 @@ export const runner = createRunner({
   // On a platform with a request limit (Vercel: 300s), hand off long tests:
   requestLimitMs: 270_000,
   continueRun: (runId, opts) => postToYourContinueRoute(runId, opts),
+  // Optional: lets people change a suite's target number of cases on its
+  // page (Suite settings), kept in the EvalSuiteSetting table:
+  suiteSettings: prismaSuiteSettingsStore(prisma),
 });
 ```
+
+Leave out `suiteSettings` to keep every suite's target in code; the
+page then offers no Suite settings. `memoryStore` works as one too.
 
 **Check it works:** your app compiles with the runner in it. You'll see
 it work in [step 7](#7-add-the-pages).
@@ -381,6 +392,14 @@ Then:
    everyone until you write yours.
 3. Make them look like your app with your own components ([Make the
    screens your own](screens.md)).
+4. Optional: if your app keeps daily spending limits for eval tests,
+   add `spending` (an `EvalSpending`) to the wiring. Your app keeps the
+   numbers and enforces the limits where its AI calls are made; the
+   pages read them and save the limits. They show a warning panel only
+   when tests are over a limit, stopped, or running (with **Stop all
+   tests** and **Allow tests**), and otherwise keep spending under the
+   page menu's **Spending and daily limits**. `memorySpending()` is an
+   in-memory one for demos and tests.
 
 **Check it works:** signed in as an admin, open `/admin/evals`. The hub
 lists your suite.

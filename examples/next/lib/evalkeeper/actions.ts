@@ -101,6 +101,26 @@ export async function keepAnswer(form: FormData) {
   return actions.keepAnswer(form);
 }
 
+export async function retireReplacedStarters(form: FormData) {
+  return actions.retireReplacedStarters(form);
+}
+
+export async function saveSuiteSettings(form: FormData) {
+  return actions.saveSuiteSettings(form);
+}
+
+export async function saveLimits(form: FormData) {
+  return actions.saveLimits(form);
+}
+
+export async function stopTests(form: FormData) {
+  return actions.stopTests(form);
+}
+
+export async function allowTests(form: FormData) {
+  return actions.allowTests(form);
+}
+
 export async function runWeeklyNow() {
   return actions.runWeeklyNow();
 }

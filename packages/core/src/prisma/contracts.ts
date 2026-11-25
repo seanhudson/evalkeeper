@@ -14,6 +14,7 @@ import type {
   PrismaFeedbackMap,
   PrismaSettingsMap,
   PrismaStoreMap,
+  PrismaSuiteSettingsMap,
 } from "./index.js";
 import { Table, isRow, type Row } from "./mapping.js";
 
@@ -48,6 +49,7 @@ export type ScopedRowsDeleted = {
   versions: number;
   live: number;
   changes: number;
+  suiteSettings: number;
 };
 
 /** The maps for `deleteScopedRows`: the ones you pass the stores. */
@@ -58,12 +60,14 @@ export type ScopedRowsMaps = {
   settingsMap?: PrismaSettingsMap;
   /** The map you pass `prismaFeedbackStore`, if any. */
   feedbackMap?: PrismaFeedbackMap;
+  /** The map you pass `prismaSuiteSettingsStore`, if any. */
+  suiteSettingsMap?: PrismaSuiteSettingsMap;
 };
 
 /**
  * Deletes the rows a scoped store contract wrote, and nothing else: cases
  * and tests whose suite starts with `scope` (with their answers and
- * outputs), and ratings, versions, live pointers, and changes whose
+ * outputs) and its suite settings, and ratings, versions, live pointers, and changes whose
  * feature starts with it. Each row's name is compared exactly in code,
  * not by the database's pattern matching (which may ignore case), so a
  * row whose name only looks like the scope stays. Tables your client
@@ -99,6 +103,7 @@ export async function deleteScopedRows(
     versions: 0,
     live: 0,
     changes: 0,
+    suiteSettings: 0,
   };
 
   /**
@@ -172,6 +177,16 @@ export async function deleteScopedRows(
   if (lv) deleted.live = await remove(lives, lv.d, "operation", lv.ids);
   const vs = await scoped(versions, "operation");
   if (vs) deleted.versions = await remove(versions, vs.d, "id", vs.ids);
+
+  const sm = maps.suiteSettingsMap ?? {};
+  const suiteSettings = new Table(
+    "evalSuiteSetting",
+    sm.models?.evalSuiteSetting ?? "evalSuiteSetting",
+    sm.fields?.evalSuiteSetting,
+  );
+  const ss = await scoped(suiteSettings, "suite", "suite");
+  if (ss)
+    deleted.suiteSettings = await remove(suiteSettings, ss.d, "suite", ss.ids);
   return deleted;
 }
 

@@ -3,24 +3,24 @@
 Everything that comes with the package, before you write a line of your
 own: the screens, the weekly check, and suites you can use as they are.
 
-![The evals hub: stat cards for room to improve, the slowest and costliest live models, and thumbs down this week; the weekly check; and a card per feature.](screenshots/hub-light.png "The hub, the first of the seven screens.")
+![The evals hub: one short row per feature with its name and status, thumbs down this week, and the weekly check.](screenshots/hub-light.png "The hub, the first of the seven screens.")
 
-![The hub's suites, grouped by standing: each card names its standing (At risk, Can improve, Healthy, or Can't tell yet), the reasons in one line, and the check furthest under its bar.](screenshots/hub-suites-light.png "Suites grouped by standing, what needs you first.")
+![The hub's suites: one row per suite, its name and status, sorted Needs attention, then Can't tell yet, then Healthy.](screenshots/hub-suites-light.png "Suites sorted by status, what needs you first.")
 
 ## Seven screens
 
 **Seven screens** in your admin, from the package, drawn with your app's
 own components ([Make the screens your own](screens.md)):
 
-| Screen           | What it's for                                                                 |
-| ---------------- | ----------------------------------------------------------------------------- |
-| Hub              | Where every feature stands, what needs a look, and the weekly check           |
-| A feature's page | Its model board, the suggestion, its versions, its checks, and its answer key |
-| A test           | Every answer one model gave, graded, with its cost and time                   |
-| Compare          | Two tests: a verdict in plain words and the cases they graded differently     |
-| Side by side     | Two tests' answers to each case, next to the expected one                     |
-| Rate blind       | One case at a time, input only, for cases taken from your app's own data      |
-| Feedback         | Thumbs from people using your product, ready to become cases                  |
+| Screen           | What it's for                                                             |
+| ---------------- | ------------------------------------------------------------------------- |
+| Hub              | Where every feature stands, what needs a look, and the weekly check       |
+| A feature's page | Its to-do list, model board, suggestion, versions, checks, and answer key |
+| A test           | Every answer one model gave, graded, with its cost and time               |
+| Compare          | Two tests: a verdict in plain words and the cases they graded differently |
+| Side by side     | Two tests' answers to each case, next to the expected one                 |
+| Rate blind       | One case at a time, input only, for cases taken from your app's own data  |
+| Feedback         | Thumbs from people using your product, ready to become cases              |
 
 ## The weekly check
 

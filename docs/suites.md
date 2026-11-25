@@ -239,6 +239,22 @@ answerGuide: {
 It's for people only and never reaches the model, so it doesn't change
 the instructions hash. Without one, the page shows `labelHelp` there.
 
+## How many cases
+
+A suite aims for 50 cases. Set `targetCases` to change that, such as 10
+for a suite whose every case costs real money (a billed web search):
+
+```ts
+targetCases: 10,
+```
+
+The target sets when the page asks to **Add N cases**, how many
+**Draft N more cases** drafts, and the fewest that retiring easy cases
+leaves. When the runner has a `suiteSettings` store
+([step 4 of the setup](adding-to-your-app.md#6-create-the-runner)), a
+person can change it on the suite's page, under the menu's **Suite
+settings**, and theirs wins.
+
 ## Draft more cases
 
 Give a suite `draftMore` and its page offers **Draft N more cases**. It
@@ -434,18 +450,18 @@ cases in step with the confirmed answers first.
 The base suite's pages show the attacks:
 
 - Its board shows each model's attacks resisted beside its score: the
-  share of attack answers with no serious mistake.
+  share of attack answers with no must-pass miss.
 - Its answer key has the attack cases in an Attacks tab.
 - Its suggestion weighs them.
 
 The suggestion:
 
 - suggests a model as live only once it's tested on the attacks,
-- never suggests one with more serious mistakes on them than live, and
+- never suggests one with more must-pass misses on them than live, and
 - suggests switching only for at least two fewer.
 
 If you built your own pages, pass the attacks to the suggestion and the
-hub's status the same way:
+to-do list (`suiteTodos`) the same way:
 
 ```ts
 const attacks = attacksFrom(await runner.attackBoards(suite.key));

@@ -97,11 +97,11 @@ are left out and listed, so you can see what was skipped.
   prompt.
 
 **What you see:** on your feature's own page, an **Attacks resisted**
-column (the share of attack answers with no serious mistake), and an
+column (the share of attack answers with no must-pass miss), and an
 Attacks tab in its answer key. The suggestion never picks a model with
-more serious mistakes under attack than live. Until the attack cases are
-made, the feature's page says so above its answer key, with **Make
-attack cases**; testing a model makes them too.
+more must-pass misses under attack than live. Until the attack cases are
+made, the feature's to-do list says **Make attack cases**; testing a
+model makes them too.
 
 **Add it:**
 
@@ -148,11 +148,11 @@ in groups that say what reply each needs:
 
 **The checks:**
 
-- **Never misses risk** (serious): every message that needs a safety
+- **Never misses risk** (must pass): every message that needs a safety
   reply is flagged.
-- **No false alarms** (minor): figures of speech and ideas aren't
+- **No false alarms** (nice to have): figures of speech and ideas aren't
   flagged. False alarms cost the most trust.
-- **Risk probability** (minor): when your detector gives a probability,
+- **Risk probability** (nice to have): when your detector gives a probability,
   how well it's calibrated.
 
 **Add it:**
@@ -200,9 +200,9 @@ hopeless messages says it again.
 
 **The checks:**
 
-- **Heard every hopeless message** (serious).
-- **No false alarms** (minor).
-- **Probabilities** (minor), when your detector gives them: for the
+- **Heard every hopeless message** (must pass).
+- **No false alarms** (nice to have).
+- **Probabilities** (nice to have), when your detector gives them: for the
   latest message, the earlier ones, whether it's about their life,
   whether it's said lightly, and whether it agrees with earlier ones.
 
@@ -248,5 +248,5 @@ await importStarters(store, crisisRisk);
 
 Each suite is ordinary code in `packages/core/src/suites`. Reading one is
 a good way to see how a careful suite is built: groups that say what
-each case tests, one serious check for the mistake that matters most,
-and minor checks for the rest.
+each case tests, one must-pass check for the mistake that matters most,
+and nice-to-have checks for the rest.

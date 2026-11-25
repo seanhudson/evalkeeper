@@ -3,7 +3,7 @@ import { evalsPath, type EvalAppConfig } from "./app.js";
 import {
   BackLink,
   Card,
-  Chip,
+  SeverityChip,
   InfoTip,
   Link,
   Tip,
@@ -177,8 +177,8 @@ export async function CompareView({
                     </Tip>
                   </th>
                   <th className="p-3 font-normal">
-                    <Tip term="bar" side="bottom" align="end">
-                      Bar
+                    <Tip term="aim" side="bottom" align="end">
+                      Aim
                     </Tip>
                   </th>
                 </tr>
@@ -199,13 +199,7 @@ export async function CompareView({
                             id={`severity-${c.key}`}
                             side="bottom"
                           >
-                            <Chip
-                              tone={
-                                c.severity === "serious" ? "serious" : "neutral"
-                              }
-                            >
-                              {c.severity}
-                            </Chip>
+                            <SeverityChip severity={c.severity} />
                           </Tip>
                         </span>
                       </td>

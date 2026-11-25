@@ -8,6 +8,7 @@ import type { BoardRow } from "../board.js";
 import type { VersionedSettings } from "../settings.js";
 import type { AnswerEditorProps, AnySuite } from "../types.js";
 import { weeklySummary, type WeeklySummary } from "../weekly.js";
+import type { EvalSpending } from "../spending.js";
 
 /** A form action: a server action the screens' forms submit to. */
 export type FormAction = (form: FormData) => Promise<void>;
@@ -45,6 +46,16 @@ export type EvalActions = {
   setPriority?: FormAction;
   /** Keeping a split case's answer as right, after checking it. */
   keepAnswer?: FormAction;
+  /** Retiring starter cases a starter update replaced. */
+  retireReplacedStarters?: FormAction;
+  /** Saving a suite's settings (its target number of cases). */
+  saveSuiteSettings?: FormAction;
+  /** Saving the daily spending limits; needs your app's `spending`. */
+  saveLimits?: FormAction;
+  /** Stopping every test now; needs your app's `spending.stopAll`. */
+  stopTests?: FormAction;
+  /** Lifting a stop early; needs your app's `spending.allow`. */
+  allowTests?: FormAction;
   runWeeklyNow: () => Promise<void>;
   /** Blind rating; only for an app with the rate page. */
   rateBlind?: FormAction;
@@ -84,6 +95,13 @@ export type EvalApp = {
    * description when there is one. Leave it out to skip that list.
    */
   features?: { operation: string; label: string; description?: string }[];
+  /**
+   * What eval tests spent against your daily limits, and the stop. Your
+   * app keeps the numbers and enforces the limits; the pages show them
+   * (in the page menu, or in a warning when tests are over a limit,
+   * stopped, or running) and save the limits. Leave it out to show none.
+   */
+  spending?: EvalSpending;
 };
 
 /** An `EvalApp` with its suites by key, as the screens read it. */

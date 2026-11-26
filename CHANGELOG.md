@@ -5,6 +5,13 @@ Notable changes, newest first. The format follows
 follow [semantic versioning](https://semver.org/): until 1.0, a minor
 version may change an interface, and its entry says how to update.
 
+## Unreleased
+
+### Fixed
+
+- The number check no longer counts shorthand such as "24/7", "1:1", and
+  "1-on-1" meetings, or "9-to-5", as invented numbers (#190).
+
 ## 0.21.0 - 2026-11-25
 
 Fixes for numbers and to-dos that didn't add up: a Must-pass share over

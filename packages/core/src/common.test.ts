@@ -138,6 +138,22 @@ describe("standard phrasing and counted number words", () => {
     ).toEqual([]);
   });
 
+  it("doesn't count shorthand like 24/7, 1:1, or 9-to-5 as a claim", () => {
+    expect(
+      inventedNumbers(
+        "I am available 24/7 and hold weekly 1:1 meetings from 9-to-5.",
+        ["I manage a team."],
+      ),
+    ).toEqual([]);
+    expect(
+      inventedNumbers(
+        "I am available 24/7 and hold 1-on-1 meetings with 5 direct reports.",
+        ["I manage a team."],
+      ),
+    ).toEqual(["5"]);
+    expect(withoutStockPhrases("we meet 1:1 weekly")).not.toMatch(/\d/);
+  });
+
   it("still catches an invented result", () => {
     expect(
       inventedNumbers(

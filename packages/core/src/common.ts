@@ -99,13 +99,17 @@ const NUMBER_WORDS =
 
 /**
  * Number words that count something in an answer ("twenty years", "a
- * decade", "five direct reports") as digits, so an invented figure written
- * out is caught too. Number words that count nothing ("one idea", "two
+ * decade", "five direct reports", "five hundred customers") as digits, so
+ * an invented figure written out is caught too. Number words that count nothing ("one idea", "two
  * things to try") stay words.
  */
 export function withCountedWords(text: string): string {
   return text
     .replace(/\b(?:a|one)\s+decade\b/gi, "10 years")
+    .replace(
+      new RegExp(`${scaledWords()}(?=\\s+(?:${COUNTED})\\b)`, "gi"),
+      scaledToDigits,
+    )
     .replace(
       new RegExp(`\\b${NUMBER_WORDS}(?=\\s+(?:${COUNTED})\\b)`, "gi"),
       (w) => withNumberWords(w),
@@ -294,13 +298,54 @@ const TENS = [
 ];
 
 /**
- * Number words up to ninety-nine as digits ("sixteen weeks" → "16 weeks",
- * "twenty-one" → "21"), for the evidence side of a number check: sources
- * often spell numbers out where answers use digits.
+ * A run of number words, such as "five hundred", "a thousand", or "two
+ * thousand three hundred and fifty". Whether it has a "hundred" or
+ * "thousand" in it is left to {@link scaledToDigits}.
+ */
+function scaledWords(): string {
+  const small = [...ONES, ...TENS.filter(Boolean)].join("|");
+  const word = `(?:${small}|hundred|thousand)`;
+  return `\\b(?:a|${small})\\b(?:(?:\\s+and\\s+|[\\s-]+)${word}\\b)*`;
+}
+
+/**
+ * A run of number words with "hundred" or "thousand" in it as digits
+ * ("five hundred" → "500", "two thousand three hundred and fifty" →
+ * "2350"). A run without either is returned as it was, for the
+ * word-by-word replacements.
+ */
+function scaledToDigits(run: string): string {
+  let total = 0;
+  let current = 0;
+  let scaled = false;
+  for (const w of run.toLowerCase().split(/[\s-]+/)) {
+    if (w === "and") continue;
+    if (w === "a") current = 1;
+    else if (w === "hundred") {
+      current = (current || 1) * 100;
+      scaled = true;
+    } else if (w === "thousand") {
+      total += (current || 1) * 1000;
+      current = 0;
+      scaled = true;
+    } else {
+      const one = ONES.indexOf(w);
+      current += one >= 0 ? one : TENS.indexOf(w) * 10;
+    }
+  }
+  return scaled ? String(total + current) : run;
+}
+
+/**
+ * Number words as digits ("sixteen weeks" → "16 weeks", "twenty-one" →
+ * "21", "five hundred" → "500", "two thousand" → "2000"), for the
+ * evidence side of a number check: sources often spell numbers out where
+ * answers use digits.
  */
 export function withNumberWords(text: string): string {
   const tens = TENS.filter(Boolean).join("|");
   return text
+    .replace(new RegExp(scaledWords(), "gi"), scaledToDigits)
     .replace(
       new RegExp(`\\b(${tens})[\\s-](${ONES.slice(1, 10).join("|")})\\b`, "gi"),
       (_, t: string, o: string) =>

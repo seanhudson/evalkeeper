@@ -138,6 +138,29 @@ describe("standard phrasing and counted number words", () => {
     ).toEqual([]);
   });
 
+  it("reads number words with hundred or thousand", () => {
+    const source = ["I served 120 customers."];
+    expect(inventedNumbers("I served five hundred customers.", source)).toEqual(
+      ["500"],
+    );
+    expect(inventedNumbers("I served two thousand customers.", source)).toEqual(
+      ["2000"],
+    );
+    expect(
+      inventedNumbers("I served 500 customers.", [
+        "I served five hundred customers.",
+      ]),
+    ).toEqual([]);
+    expect(withNumberWords("three hundred and fifty")).toBe("350");
+    expect(withNumberWords("a hundred")).toBe("100");
+    expect(withNumberWords("two thousand three hundred")).toBe("2300");
+    expect(withNumberWords("one hundred thousand")).toBe("100000");
+    expect(withNumberWords("twenty-five hundred")).toBe("2500");
+    expect(withNumberWords("thousands of them")).toBe("thousands of them");
+    expect(withCountedWords("a hundred ideas")).toBe("a hundred ideas");
+    expect(withCountedWords("a thousand people")).toBe("1000 people");
+  });
+
   it("doesn't count shorthand like 24/7, 1:1, or 9-to-5 as a claim", () => {
     expect(
       inventedNumbers(

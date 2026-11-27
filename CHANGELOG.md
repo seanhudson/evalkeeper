@@ -11,6 +11,13 @@ version may change an interface, and its entry says how to update.
 
 - The number check no longer counts shorthand such as "24/7", "1:1", and
   "1-on-1" meetings, or "9-to-5", as invented numbers (#190).
+- The number check reads number words with "hundred" or "thousand"
+  ("five hundred customers", "two thousand"), so an invented figure
+  written that way is caught, and a source that spells one out matches an
+  answer's digits (#191). A suite that uses `numbersCheck` or
+  `inventedNumbers` should bump its `graderVersion`.
+- A tooltip inside a no-wrap parent, such as a Models table header, wraps
+  its text inside its box instead of running past it (#197).
 
 ## 0.21.0 - 2026-11-25
 

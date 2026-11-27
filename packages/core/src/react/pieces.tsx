@@ -514,7 +514,7 @@ function Bubble({
     <span
       role="tooltip"
       id={id}
-      className={`pointer-events-none invisible absolute ${side === "top" ? "bottom-full mb-2" : "top-full mt-2"} ${align === "end" ? "right-0" : "left-1/2 -translate-x-1/2"} z-20 w-64 rounded-md border border-line bg-card px-3 py-2 text-left text-xs font-normal normal-case leading-snug tracking-normal text-ink opacity-0 shadow-lg transition-opacity group-focus-within/tip:visible group-focus-within/tip:opacity-100 group-hover/tip:visible group-hover/tip:opacity-100`}
+      className={`pointer-events-none invisible absolute ${side === "top" ? "bottom-full mb-2" : "top-full mt-2"} ${align === "end" ? "right-0" : "left-1/2 -translate-x-1/2"} z-20 w-64 whitespace-normal break-words rounded-md border border-line bg-card px-3 py-2 text-left text-xs font-normal normal-case leading-snug tracking-normal text-ink opacity-0 shadow-lg transition-opacity group-focus-within/tip:visible group-focus-within/tip:opacity-100 group-hover/tip:visible group-hover/tip:opacity-100`}
     >
       {text}
     </span>

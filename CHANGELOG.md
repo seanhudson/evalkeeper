@@ -5,6 +5,18 @@ Notable changes, newest first. The format follows
 follow [semantic versioning](https://semver.org/): until 1.0, a minor
 version may change an interface, and its entry says how to update.
 
+## Unreleased
+
+### Fixed
+
+- The number check reads number words with "hundred" or "thousand"
+  ("five hundred customers", "two thousand"), so an invented figure
+  written that way is caught, and a source that spells one out matches an
+  answer's digits (#191). A suite that uses `numbersCheck` or
+  `inventedNumbers` should bump its `graderVersion`.
+- A tooltip inside a no-wrap parent, such as a Models table header, wraps
+  its text inside its box instead of running past it (#197).
+
 ## 0.21.0 - 2026-11-25
 
 Fixes for numbers and to-dos that didn't add up: a Must-pass share over

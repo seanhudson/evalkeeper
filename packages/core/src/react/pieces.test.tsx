@@ -29,6 +29,16 @@ const html = (node: ReactNode, components?: Partial<EvalComponents>) =>
   );
 
 describe("the screens' pieces", () => {
+  it("wrap a tooltip's text inside a no-wrap parent, like a table header", () => {
+    const tip = html(
+      <th className="whitespace-nowrap">
+        Accuracy <InfoTip text="Share of cases the model got right." />
+      </th>,
+    ).match(/<span role="tooltip"[^>]*class="([^"]*)"/);
+    expect(tip?.[1]).toMatch(/\bwhitespace-normal\b/);
+    expect(tip?.[1]).toMatch(/\bbreak-words\b/);
+  });
+
   it("draw Evalkeeper's own when the app names none", () => {
     expect(html(<Card>x</Card>)).toMatch(/^<section class="rounded-lg/);
     expect(html(<Chip tone="live">Live</Chip>)).toMatch(/^<span class=/);

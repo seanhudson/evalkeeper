@@ -68,7 +68,8 @@ export function withoutStockPhrases(text: string): string {
       .replace(/\b24\s*\/\s*7\b/g, " ")
       .replace(/\b1\s*:\s*1\b/g, " ")
       .replace(/\b1\s*[-\s]\s*on\s*[-\s]\s*1\b/gi, " ")
-      .replace(/\b9(?:\s*[-–]\s*to\s*[-–]\s*|\s+to\s+|[-–])\s*5\b/gi, " ")
+      // Only the hyphenated "9-to-5": "from 9 to 5 people" is a real claim.
+      .replace(/\b9\s*[-–]\s*to\s*[-–]\s*5\b/gi, " ")
       .replace(/\b30\s*[-–/]\s*60\s*[-–/]\s*90\b/g, " ")
       .replace(/\b(?:first|next|initial)\s+(?:30|60|90|100)\s+days\b/gi, " ")
       .replace(/\b(?:30|60|90)\s+days?\s*[:\-–]/gi, " ")

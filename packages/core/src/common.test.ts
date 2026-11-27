@@ -154,6 +154,16 @@ describe("standard phrasing and counted number words", () => {
     expect(withoutStockPhrases("we meet 1:1 weekly")).not.toMatch(/\d/);
   });
 
+  it("still catches a real range that only looks like 9-to-5", () => {
+    expect(
+      inventedNumbers("We cut the team from 9 to 5 people.", ["A manager."]),
+    ).toEqual(["9", "5"]);
+    expect(inventedNumbers("Scored 9-5 in the final.", ["A coach."])).toEqual([
+      "9",
+      "5",
+    ]);
+  });
+
   it("still catches an invented result", () => {
     expect(
       inventedNumbers(

@@ -7,6 +7,7 @@ import {
   createRunner,
   datasetVersion,
   type BudgetCall,
+  NO_ESTIMATE_CEILING_USD,
 } from "./runner.js";
 import type { EvalStore, NewCase } from "./store.js";
 import { SCHEDULED } from "./weekly.js";
@@ -892,6 +893,72 @@ describe("runner, beyond a basic test", () => {
     const again = await free.createRun({ suite: "double", model: "good" });
     await free.runEval(again.run.id, { fresh: true });
     expect((await store.getRun(again.run.id))?.status).toBe("SUCCEEDED");
+  });
+
+  it("caps a test with no estimate, so a new model's first test can't run uncapped", async () => {
+    const { store } = await setup();
+    const options = {
+      store,
+      suites: [{ ...double, concurrency: 1 }],
+      models: MODELS,
+      promptVersion: () => "v1",
+      // No estimateCallCost and no earlier test: no estimate. Each answer
+      // costs 0.002, so the third goes over.
+      noEstimateCeilingUsd: 0.003,
+    };
+    const runner = createRunner(options);
+    expect(
+      (await runner.estimateRun("double", "good", "ALL", 1, { fresh: true }))
+        .costUsd,
+    ).toBeNull();
+    const { run } = await runner.createRun({ suite: "double", model: "good" });
+    await runner.runEval(run.id, { fresh: true });
+    const done = await store.getRun(run.id);
+    expect(done?.status).toBe("FAILED");
+    expect(done?.error).toBe(
+      "Stopped after 2 of 6 answers. This test has spent 0.40¢, more than 0.30¢, the most a test with no cost estimate may spend. Answers already given are reused at no cost when you test again.",
+    );
+    // Turned off, the same test finishes.
+    const free = createRunner({ ...options, noEstimateCeilingUsd: null });
+    const again = await free.createRun({ suite: "double", model: "good" });
+    await free.runEval(again.run.id, { fresh: true });
+    expect((await store.getRun(again.run.id))?.status).toBe("SUCCEEDED");
+  });
+
+  it("caps a test with no estimate even when the estimate ceiling is off", async () => {
+    const { store } = await setup();
+    const runner = createRunner({
+      store,
+      suites: [{ ...double, concurrency: 1 }],
+      models: MODELS,
+      promptVersion: () => "v1",
+      ceilingTimes: null,
+      noEstimateCeilingUsd: 0.003,
+    });
+    const { run } = await runner.createRun({ suite: "double", model: "good" });
+    await runner.runEval(run.id, { fresh: true });
+    expect((await store.getRun(run.id))?.status).toBe("FAILED");
+  });
+
+  it("uses the estimate's ceiling, not the flat cap, once there is an estimate", async () => {
+    const { store } = await setup();
+    const runner = createRunner({
+      store,
+      suites: [{ ...double, concurrency: 1 }],
+      models: MODELS,
+      promptVersion: () => "v1",
+      // Priced right (0.002 an answer): six answers stay under twice that,
+      // though they go over the flat cap.
+      estimateCallCost: async () => 0.002,
+      noEstimateCeilingUsd: 0.003,
+    });
+    const { run } = await runner.createRun({ suite: "double", model: "good" });
+    await runner.runEval(run.id, { fresh: true });
+    expect((await store.getRun(run.id))?.status).toBe("SUCCEEDED");
+  });
+
+  it("caps a test with no estimate at $5 by default", () => {
+    expect(NO_ESTIMATE_CEILING_USD).toBe(5);
   });
 
   it("goes ahead when the budget can't be read", async () => {

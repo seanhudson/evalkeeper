@@ -58,11 +58,18 @@ export function thirdPerson(
 /**
  * Standard phrasing whose numbers aren't claims about the person: a "first
  * 90 days" plan, "30-60-90", "2 to 3 minutes", a "top 5", a quarter (Q3),
- * fact ids ("[f9]"), and list markers ("(1)", "2.").
+ * shorthand like "24/7", "1:1" meetings, and "9-to-5", fact ids ("[f9]"),
+ * and list markers ("(1)", "2.").
  */
 export function withoutStockPhrases(text: string): string {
   return (
     text
+      // Shorthand, not figures: "24/7", "1:1" and "1-on-1" meetings, "9-to-5".
+      .replace(/\b24\s*\/\s*7\b/g, " ")
+      .replace(/\b1\s*:\s*1\b/g, " ")
+      .replace(/\b1\s*[-\s]\s*on\s*[-\s]\s*1\b/gi, " ")
+      // Only the hyphenated "9-to-5": "from 9 to 5 people" is a real claim.
+      .replace(/\b9\s*[-–]\s*to\s*[-–]\s*5\b/gi, " ")
       .replace(/\b30\s*[-–/]\s*60\s*[-–/]\s*90\b/g, " ")
       .replace(/\b(?:first|next|initial)\s+(?:30|60|90|100)\s+days\b/gi, " ")
       .replace(/\b(?:30|60|90)\s+days?\s*[:\-–]/gi, " ")

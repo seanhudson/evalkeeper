@@ -70,9 +70,10 @@ compared every person's items with every other person's lifted two
 models by 7 to 9 points on easy pairs that meant nothing.
 
 **Don't count stock phrasing as invented facts.** A check for made-up
-numbers flagged "a 30-60-90 day plan", "2 to 3 minutes", and list
-markers like "(1)". Strip stock phrases and references before checking,
-and catch numbers written as words ("a decade", "five reports").
+numbers flagged "a 30-60-90 day plan", "2 to 3 minutes", shorthand like
+"24/7", and list markers like "(1)". Strip stock phrases and references
+before checking, and catch numbers written as words ("a decade", "five
+reports").
 
 ## Keep the answer key honest
 

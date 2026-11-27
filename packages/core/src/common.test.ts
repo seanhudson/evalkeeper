@@ -161,6 +161,32 @@ describe("standard phrasing and counted number words", () => {
     expect(withCountedWords("a thousand people")).toBe("1000 people");
   });
 
+  it("doesn't count shorthand like 24/7, 1:1, or 9-to-5 as a claim", () => {
+    expect(
+      inventedNumbers(
+        "I am available 24/7 and hold weekly 1:1 meetings from 9-to-5.",
+        ["I manage a team."],
+      ),
+    ).toEqual([]);
+    expect(
+      inventedNumbers(
+        "I am available 24/7 and hold 1-on-1 meetings with 5 direct reports.",
+        ["I manage a team."],
+      ),
+    ).toEqual(["5"]);
+    expect(withoutStockPhrases("we meet 1:1 weekly")).not.toMatch(/\d/);
+  });
+
+  it("still catches a real range that only looks like 9-to-5", () => {
+    expect(
+      inventedNumbers("We cut the team from 9 to 5 people.", ["A manager."]),
+    ).toEqual(["9", "5"]);
+    expect(inventedNumbers("Scored 9-5 in the final.", ["A coach."])).toEqual([
+      "9",
+      "5",
+    ]);
+  });
+
   it("still catches an invented result", () => {
     expect(
       inventedNumbers(

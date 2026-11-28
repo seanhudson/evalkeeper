@@ -52,7 +52,9 @@ flowchart LR
 2. `runEval` loads the cases in use (not retired, with a confirmed or
    provisional answer), skips any already answered by an earlier leg,
    and for each case and repeat reuses an identical request from the last
-   7 days or calls the suite's `run` with a timeout.
+   7 days or calls the suite's `run` with a timeout. A suite with
+   `reuseAnswers: false` reuses only a stopped test's answers, within
+   `resumeWithinMs`.
 3. Each answer is graded by `grade`, then `gradeTogether` adds checks
    across answers, and the metrics are stored on the test.
 4. `board` reads every model's latest test, compares each with the live

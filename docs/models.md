@@ -162,7 +162,10 @@ shows each answer's cost, and the board each model's cost per answer.
 Before a test, the board shows its estimated cost (`~$0.16`): the cost
 of one answer on that model, times the answers the test still needs.
 Answers to identical requests from the last 7 days are reused for free,
-so they don't count, and a test with every answer reused says "Free".
+so they don't count, and a test with every answer reused says "Free". A
+suite with `reuseAnswers: false` prices every answer, except those a
+test that stopped partway already got (see
+[Answers that go stale](suites.md#answers-that-go-stale)).
 
 Give the runner `estimateCallCost(operation, model)` for the cost of one
 answer, counting everything an answer pays for: web searches and tool

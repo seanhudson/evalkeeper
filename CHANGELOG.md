@@ -7,6 +7,13 @@ version may change an interface, and its entry says how to update.
 
 ## Unreleased
 
+### Fixed
+
+- The **Test every model** tooltip, the cost estimate guide, and the
+  setup and architecture docs said every test reuses answers from the
+  last 7 days. They now say a suite with `reuseAnswers: false` doesn't,
+  except for a test that stopped partway.
+
 ## 0.22.1 - 2026-11-27
 
 A stopped test of a suite that doesn't reuse answers picks up where it

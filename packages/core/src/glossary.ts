@@ -72,7 +72,7 @@ export const GLOSSARY = {
   useAnyway:
     "Makes this model live although the attacks hold it back, recorded in the history as your call. Read the attack cases it missed first.",
   testAll:
-    "Asks every model for new answers to every case, so it costs money; the estimate is beside the button. Answers an identical request gave in the last 7 days are reused free.",
+    "Asks every model for new answers to every case; the estimate is beside the button. Answers from the last 7 days are reused free, unless the suite turns reuse off (a stopped test still picks up where it left off).",
   tags: "What a case tests. The quick set picks cases that cover the most tags.",
   improve:
     "The suite whose best tested model scores lowest: where better cases, checks, or instructions would help most.",

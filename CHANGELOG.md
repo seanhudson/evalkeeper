@@ -7,6 +7,17 @@ version may change an interface, and its entry says how to update.
 
 ## Unreleased
 
+### Fixed
+
+- A suite with `reuseAnswers: false` asked for every answer again when a
+  test that stopped partway (at a daily limit, stopped by hand, out of
+  credits, or out of time) was tested again, so each stop paid twice. It
+  now reuses that test's answers for a day, so testing the same model
+  again picks up where it left off; finished tests are still never
+  reused. The estimate, the stop messages, and the suite's page say so.
+  `resumeWithinMs` on the suite changes the window (0 turns it off), and
+  attack suites follow it (#211).
+
 ## 0.22.0 - 2026-11-27
 
 Spending you can see and cap: a rescore's judge calls ask your budget

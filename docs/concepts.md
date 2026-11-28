@@ -179,8 +179,10 @@ its true-or-false answers.
 instructions, input, and repeat) from the last 7 days is reused instead
 of paid for twice. Testing with `fresh` calls every time, to measure how
 much answers move between identical requests. A suite with
-`reuseAnswers: false` always tests that way, for answers that depend on
-when they're made, such as live web results.
+`reuseAnswers: false` never reuses a finished test's answers, for answers
+that depend on when they're made, such as live web results. A test of it
+that stopped partway still keeps its answers for a day
+(`resumeWithinMs`), so testing again picks up where it left off.
 
 **Out of date.** A test is current when its instructions, dataset
 version, temperature, and output cap match today's. Edit a prompt, an

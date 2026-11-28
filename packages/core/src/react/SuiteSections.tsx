@@ -44,6 +44,7 @@ import { ModelMenu } from "./ModelMenu.js";
 import { PriorityPicker } from "./PriorityPicker.js";
 import { InfoPopover } from "./InfoPopover.js";
 import { GLOSSARY } from "../glossary.js";
+import { resumeWithin } from "../reuse.js";
 import type { AnswerGuide } from "../types.js";
 import { Tabs } from "./Tabs.js";
 import {
@@ -907,7 +908,9 @@ export function ModelTable({ data }: { data: SuitePageData }) {
             />
           </div>
         </div>
-        {suite.reuseAnswers === false && <NoReuseNote />}
+        {suite.reuseAnswers === false && (
+          <NoReuseNote resumeWithinMs={resumeWithin(suite)} />
+        )}
         <Card className="overflow-x-auto p-0 lg:overflow-visible">
           <table className="w-full text-sm">
             <thead className="text-left text-muted">

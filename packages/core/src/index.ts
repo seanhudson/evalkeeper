@@ -24,6 +24,7 @@ export * from "./quickSet.js";
 export * from "./stableJson.js";
 export * from "./upkeepRules.js";
 export * from "./format.js";
+export * from "./reuse.js";
 export * from "./glossary.js";
 export * from "./feedback.js";
 export * from "./weekly.js";

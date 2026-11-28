@@ -78,6 +78,8 @@ export const ANSWER_TIMEOUT_MS = 60_000;
 export const STUCK_MS = 6 * 60_000;
 /** Identical requests within this many days are reused. */
 export const REUSE_DAYS = 7;
+export { RESUME_WITHIN_MS } from "./reuse.js";
+import { resumeWithin, spanText } from "./reuse.js";
 
 /** A provider refusing calls for billing: every later call fails too. */
 export { OUT_OF_CREDITS } from "./failures.js";
@@ -259,14 +261,27 @@ export const STOPPED_BY_HAND =
 const reusesAnswers = (suite: { reuseAnswers?: boolean }) =>
   suite.reuseAnswers !== false;
 
+/** The settings that decide what a retest reuses. */
+type ReuseSettings = { reuseAnswers?: boolean; resumeWithinMs?: number };
+
 /** After "Test again": what a retest costs, for this suite. */
-const againText = (suite: { reuseAnswers?: boolean }) =>
+const againText = (suite: ReuseSettings) =>
   reusesAnswers(suite)
     ? "answers already given are reused at no cost"
-    : "this suite doesn't reuse answers, so every answer is asked for again";
+    : resumeWithin(suite) > 0
+      ? `answers already given are reused at no cost within ${spanText(resumeWithin(suite))}`
+      : "this suite doesn't reuse answers, so every answer is asked for again";
+
+/** After a stop at a limit: what testing again reuses, or "". */
+const haltAgainText = (suite: ReuseSettings) =>
+  reusesAnswers(suite)
+    ? " Answers already given are reused at no cost when you test again."
+    : resumeWithin(suite) > 0
+      ? ` Answers already given are reused at no cost if you test again within ${spanText(resumeWithin(suite))}.`
+      : "";
 
 /** A test stopped by hand, for this suite. */
-const stoppedByHand = (suite: { reuseAnswers?: boolean }) =>
+const stoppedByHand = (suite: ReuseSettings) =>
   reusesAnswers(suite)
     ? STOPPED_BY_HAND
     : `Stopped by hand. Test again: ${againText(suite)}.`;
@@ -594,10 +609,43 @@ export function createRunner(opts: RunnerOptions) {
   }
 
   /**
+   * For a suite with `reuseAnswers: false`: the answers a stopped or
+   * failed test of this model gave within `resumeWithinMs`, by request
+   * hash, so testing again picks up where it left off. Only answers a
+   * model gave (not copies, not errors) from tests that didn't finish:
+   * a finished test is never reused, so a deliberate retest asks again.
+   */
+  async function resumableAnswers(
+    suite: ReuseSettings & { key: string },
+    model: string,
+  ): Promise<Map<string, OutputRecord>> {
+    const found = new Map<string, OutputRecord>();
+    // Turned off: even a test stopped this same millisecond isn't kept.
+    if (resumeWithin(suite) <= 0) return found;
+    const since = Date.now() - resumeWithin(suite);
+    const runs = (
+      await store.listRuns(suite.key, { status: "FAILED", limit: 50 })
+    ).filter((r) => r.model === model && r.startedAt.getTime() >= since);
+    const ids = runs.map((r) => r.id);
+    const outputs = store.listOutputsFor
+      ? await store.listOutputsFor(ids)
+      : (await Promise.all(ids.map((id) => store.listOutputs(id)))).flat();
+    for (const x of outputs) {
+      if (x.reused || x.error !== null || x.createdAt.getTime() < since)
+        continue;
+      const had = found.get(x.requestHash);
+      if (!had || had.createdAt < x.createdAt) found.set(x.requestHash, x);
+    }
+    return found;
+  }
+
+  /**
    * What a test would cost. Answers an identical request gave in the last
    * 7 days are reused for free, so only the rest are priced: a retest
    * after rescoring, or after a test that ran out of time, often costs
-   * little or nothing. `costUsd` is null when the model has no price.
+   * little or nothing. For a suite with `reuseAnswers: false`, only a
+   * stopped test's answers from within `resumeWithinMs` are free.
+   * `costUsd` is null when the model has no price.
    */
   async function estimateRun(
     suiteKey: string,
@@ -640,36 +688,38 @@ export function createRunner(opts: RunnerOptions) {
       ]);
     const answers = cases.length * repeats;
     const since = new Date(Date.now() - REUSE_DAYS * 86_400_000);
-    const hashes =
-      o.fresh || !reusesAnswers(suite)
-        ? []
-        : cases.flatMap((c) =>
-            Array.from({ length: repeats }, (_, i) =>
-              requestHashFor({
-                suite: suite.key,
-                model,
-                effort,
-                prompt,
-                input: c.input,
-                repeat: i + 1,
-                temperature,
-                maxOutputTokens: cap,
-              }),
-            ),
-          );
-    // One query where the store can: a lookup per answer is slow on a
-    // remote database.
-    const found = store.findReusableHashes
-      ? await store.findReusableHashes(hashes, since)
-      : new Set(
-          (
-            await Promise.all(
-              hashes.map(async (h) =>
-                (await store.findReusableOutput(h, since)) ? h : null,
-              ),
-            )
-          ).filter((h): h is string => h !== null),
+    const hashes = o.fresh
+      ? []
+      : cases.flatMap((c) =>
+          Array.from({ length: repeats }, (_, i) =>
+            requestHashFor({
+              suite: suite.key,
+              model,
+              effort,
+              prompt,
+              input: c.input,
+              repeat: i + 1,
+              temperature,
+              maxOutputTokens: cap,
+            }),
+          ),
         );
+    // A suite that doesn't reuse answers still resumes a stopped test.
+    // Otherwise one query where the store can: a lookup per answer is slow
+    // on a remote database.
+    const found: Set<string> = !reusesAnswers(suite)
+      ? new Set((await resumableAnswers(suite, model)).keys())
+      : store.findReusableHashes
+        ? await store.findReusableHashes(hashes, since)
+        : new Set(
+            (
+              await Promise.all(
+                hashes.map(async (h) =>
+                  (await store.findReusableOutput(h, since)) ? h : null,
+                ),
+              )
+            ).filter((h): h is string => h !== null),
+          );
     const reused = hashes.filter((h) => found.has(h)).length;
     return {
       cases: cases.length,
@@ -876,8 +926,14 @@ export function createRunner(opts: RunnerOptions) {
       const suite = await effectiveSuite(run.suite);
       const cases = await casesFor(suite.key, run.set);
       const since = new Date(Date.now() - REUSE_DAYS * 86_400_000);
-      // The suite's own setting, or the caller's: never reuse an answer.
-      const fresh = !!o.fresh || !reusesAnswers(suite);
+      // The caller's: never reuse an answer.
+      const fresh = !!o.fresh;
+      // The suite's own setting: reuse only what a stopped test of this
+      // model gave recently, so testing again picks up where it left off.
+      const resumable =
+        fresh || reusesAnswers(suite)
+          ? null
+          : await resumableAnswers(suite, run.model);
       const jobs = cases.flatMap((c) =>
         Array.from({ length: run.repeats }, (_, i) => ({ c, repeat: i + 1 })),
       );
@@ -950,7 +1006,9 @@ export function createRunner(opts: RunnerOptions) {
         });
         const earlier = fresh
           ? null
-          : await store.findReusableOutput(requestHash, since);
+          : resumable
+            ? (resumable.get(requestHash) ?? null)
+            : await store.findReusableOutput(requestHash, since);
         if (earlier) {
           await store.createOutput({
             runId,
@@ -1065,7 +1123,7 @@ export function createRunner(opts: RunnerOptions) {
           {
             status: "FAILED",
             finishedAt: new Date(),
-            error: `Stopped after ${jobs.length - skipped} of ${jobs.length} answers. ${halted}${/reused/i.test(halted) || !reusesAnswers(suite) ? "" : " Answers already given are reused at no cost when you test again."}`,
+            error: `Stopped after ${jobs.length - skipped} of ${jobs.length} answers. ${halted}${/reused/i.test(halted) ? "" : haltAgainText(suite)}`,
           },
           { status: "RUNNING" },
         );

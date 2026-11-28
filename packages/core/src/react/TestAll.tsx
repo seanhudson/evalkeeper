@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { money } from "../format.js";
+import { spanText } from "../reuse.js";
 import type { FormAction } from "./app.js";
 import { Button, Submit, Tip } from "./pieces.js";
 import { QUIET_BUTTON } from "./format.js";
@@ -88,13 +89,19 @@ export function TestAll({
 
 /**
  * Under Test every model, for a suite with `reuseAnswers: false`: why a
- * retest costs as much as the first test.
+ * retest costs as much as the first test, and that a stopped test still
+ * picks up where it left off.
+ *
+ * @param props.resumeWithinMs - How long a stopped test's answers are kept
+ *   (`resumeWithin(suite)`); 0 when they aren't.
  */
-export function NoReuseNote() {
+export function NoReuseNote({ resumeWithinMs }: { resumeWithinMs: number }) {
   return (
     <p className="readable text-sm text-muted">
       Every test asks each model for new answers: this suite doesn&apos;t reuse
       earlier ones, since its answers depend on when they&apos;re made.
+      {resumeWithinMs > 0 &&
+        ` A test that stopped partway picks up where it left off if you test again within ${spanText(resumeWithinMs)}.`}
     </p>
   );
 }

@@ -246,11 +246,10 @@ describe("runner, beyond a basic test", () => {
     expect(fresh.run.estimatedCostUsd).toBeCloseTo(0.02);
   });
 
-  it("never reuses an answer for a suite with reuseAnswers: false", async () => {
+  it("never reuses a finished test's answers for a suite with reuseAnswers: false", async () => {
     const store = memoryStore();
     for (const n of [2, 4]) await store.createCase(kase(n));
     const calls: BudgetCall[] = [];
-    let limit = false;
     const runner = createRunner({
       store,
       suites: [{ ...double, reuseAnswers: false, concurrency: 1 }],
@@ -259,7 +258,7 @@ describe("runner, beyond a basic test", () => {
       estimateCallCost: async () => 0.01,
       budget: (call) => {
         calls.push(call);
-        return limit && call.spentUsd > 0 ? "Over today's limit." : null;
+        return null;
       },
     });
     const first = await runner.createRun({ suite: "double", model: "good" });
@@ -276,19 +275,119 @@ describe("runner, beyond a basic test", () => {
     const outs = await store.listOutputs(again.run.id);
     expect(outs.filter((x) => x.reused)).toHaveLength(0);
     expect(outs.every((x) => x.costUsd > 0)).toBe(true);
-    // A stop doesn't promise free answers next time.
+    expect(calls.every((c) => c.kind === "answer")).toBe(true);
+  });
+
+  it("picks up a stopped test where it left off, though the suite doesn't reuse answers", async () => {
+    const store = memoryStore();
+    for (const n of [2, 4]) await store.createCase(kase(n));
+    let limit = false;
+    const make = (resumeWithinMs?: number) =>
+      createRunner({
+        store,
+        suites: [
+          {
+            ...double,
+            reuseAnswers: false,
+            concurrency: 1,
+            ...(resumeWithinMs === undefined ? {} : { resumeWithinMs }),
+          },
+        ],
+        models: MODELS,
+        promptVersion: () => "v1",
+        estimateCallCost: async () => 0.01,
+        budget: (call) =>
+          limit && call.spentUsd > 0 ? "Over today's limit." : null,
+      });
+    const runner = make();
+    // Stopped at the limit after one answer: the error says it's kept.
     limit = true;
-    const third = await runner.createRun({ suite: "double", model: "good" });
-    await runner.runEval(third.run.id);
-    expect((await store.getRun(third.run.id))?.error).toBe(
-      "Stopped after 1 of 2 answers. Over today's limit.",
+    const stopped = await runner.createRun({ suite: "double", model: "good" });
+    await runner.runEval(stopped.run.id);
+    expect((await store.getRun(stopped.run.id))?.error).toBe(
+      "Stopped after 1 of 2 answers. Over today's limit. Answers already given are reused at no cost if you test again within a day.",
     );
-    const fourth = await runner.createRun({ suite: "double", model: "good" });
-    expect(await runner.stopTests()).toBe(1);
-    expect((await store.getRun(fourth.run.id))?.error).toBe(
+    limit = false;
+    // Testing again pays only for the answer it didn't get.
+    expect(await runner.estimateRun("double", "good", "ALL", 1)).toMatchObject({
+      reused: 1,
+      costUsd: 0.01,
+    });
+    // Another model's stopped test isn't this one's.
+    expect(await runner.estimateRun("double", "bad", "ALL", 1)).toMatchObject({
+      reused: 0,
+    });
+    // Asking for fresh answers asks for every one.
+    expect(
+      await runner.estimateRun("double", "good", "ALL", 1, { fresh: true }),
+    ).toMatchObject({ reused: 0 });
+    const resumed = await runner.createRun({ suite: "double", model: "good" });
+    expect(resumed.run.estimatedCostUsd).toBeCloseTo(0.01);
+    await runner.runEval(resumed.run.id);
+    const outs = await store.listOutputs(resumed.run.id);
+    expect(outs).toHaveLength(2);
+    expect(outs.filter((x) => x.reused)).toHaveLength(1);
+    expect((await store.getRun(resumed.run.id))?.status).toBe("SUCCEEDED");
+    // The finished test's new answer isn't reused; the stopped test's
+    // still is, within the day.
+    expect(await runner.estimateRun("double", "good", "ALL", 1)).toMatchObject({
+      reused: 1,
+    });
+    // With the window turned off, nothing is kept.
+    const off = make(0);
+    expect(await off.estimateRun("double", "good", "ALL", 1)).toMatchObject({
+      reused: 0,
+      costUsd: 0.02,
+    });
+    const byHand = await off.createRun({ suite: "double", model: "good" });
+    expect(await off.stopTests()).toBe(1);
+    expect((await store.getRun(byHand.run.id))?.error).toBe(
       "Stopped by hand. Test again: this suite doesn't reuse answers, so every answer is asked for again.",
     );
+    const kept = await runner.createRun({ suite: "double", model: "good" });
+    expect(await runner.stopTests()).toBe(1);
+    expect((await store.getRun(kept.run.id))?.error).toBe(
+      "Stopped by hand. Test again: answers already given are reused at no cost within a day.",
+    );
     expect(STOPPED_BY_HAND).toMatch(/reused at no cost/);
+  });
+
+  it("doesn't resume a stopped test from longer ago than the suite's window", async () => {
+    const store = memoryStore();
+    for (const n of [2, 4]) await store.createCase(kase(n));
+    let limit = true;
+    const runner = createRunner({
+      store,
+      suites: [
+        {
+          ...double,
+          reuseAnswers: false,
+          concurrency: 1,
+          resumeWithinMs: 60_000,
+        },
+      ],
+      models: MODELS,
+      promptVersion: () => "v1",
+      estimateCallCost: async () => 0.01,
+      budget: (call) =>
+        limit && call.spentUsd > 0 ? "Over today's limit." : null,
+    });
+    const stopped = await runner.createRun({ suite: "double", model: "good" });
+    await runner.runEval(stopped.run.id);
+    limit = false;
+    expect(await runner.estimateRun("double", "good", "ALL", 1)).toMatchObject({
+      reused: 1,
+    });
+    // Two minutes later, past its one-minute window.
+    const later = Date.now() + 120_000;
+    const now = vi.spyOn(Date, "now").mockReturnValue(later);
+    try {
+      expect(
+        await runner.estimateRun("double", "good", "ALL", 1),
+      ).toMatchObject({ reused: 0 });
+    } finally {
+      now.mockRestore();
+    }
   });
 
   it("uses the operation's live reasoning setting unless told otherwise", async () => {

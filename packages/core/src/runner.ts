@@ -131,9 +131,18 @@ export type RunnerOptions = {
    * A test stops once its own new answers cost more than this many times
    * its estimate, and says so: a price set too low, or an answer that pays
    * for more than expected, can't run on unnoticed. Default
-   * `CEILING_TIMES` (2); null turns it off. No estimate, no ceiling.
+   * `CEILING_TIMES` (2); null turns it off. A test with no estimate
+   * stops at `noEstimateCeilingUsd` instead.
    */
   ceilingTimes?: number | null;
+  /**
+   * The most a test with no estimate may spend on new answers, in USD: a
+   * model never tested on the suite, with no price from
+   * `estimateCallCost`. That first test is when cost is least known, so
+   * it doesn't run uncapped. Default `NO_ESTIMATE_CEILING_USD` ($5); null
+   * turns it off.
+   */
+  noEstimateCeilingUsd?: number | null;
   /**
    * How long one request may run, in ms. A test answers what fits, then
    * hands the rest to `continueRun` (a fresh request). Default: no limit.
@@ -197,6 +206,9 @@ export const STOP_CHECK_MS = 2_000;
 
 /** How many times its estimate a test may spend (`ceilingTimes`). */
 export const CEILING_TIMES = 2;
+
+/** The most a test with no estimate may spend (`noEstimateCeilingUsd`). */
+export const NO_ESTIMATE_CEILING_USD = 5;
 
 /** USD as the pages show it: "$1.20", or cents below a cent ("0.20¢"). */
 const usdText = (n: number) => (n >= 0.01 ? money(n) : perAnswer(n));
@@ -751,12 +763,22 @@ export function createRunner(opts: RunnerOptions) {
       // What this test's new answers have cost, earlier legs included.
       let spent = given.reduce((t, x) => t + (x.reused ? 0 : x.costUsd), 0);
       // The ceiling: a multiple of what every answer this test needs would
-      // cost new. Null: no estimate, or turned off.
+      // cost new, or with no estimate, a fixed amount. Null: turned off.
       const times =
         opts.ceilingTimes === undefined ? CEILING_TIMES : opts.ceilingTimes;
-      const perAnswer = times ? await perAnswerCost(suite, run.model) : null;
+      const flat =
+        opts.noEstimateCeilingUsd === undefined
+          ? NO_ESTIMATE_CEILING_USD
+          : opts.noEstimateCeilingUsd;
+      const perAnswer =
+        times || flat ? await perAnswerCost(suite, run.model) : null;
       const estimateUsd = perAnswer ? perAnswer * jobs.length : null;
-      const ceiling = times && estimateUsd ? times * estimateUsd : null;
+      const ceiling =
+        estimateUsd === null
+          ? flat || null
+          : times
+            ? times * estimateUsd
+            : null;
       const timesText = times === 2 ? "twice" : String(times) + " times";
       // Set inside the answers below, which TypeScript can't follow.
       let halted = null as string | null;
@@ -826,15 +848,21 @@ export function createRunner(opts: RunnerOptions) {
         // budget can't be read, the answer goes ahead, as a blip shouldn't
         // fail every test.
         const overCeiling =
-          ceiling !== null && estimateUsd !== null && spent > ceiling
-            ? "This test has spent " +
-              usdText(spent) +
-              ", more than " +
-              timesText +
-              " its estimate (" +
-              usdText(estimateUsd) +
-              "). Check the model's price, and what an answer pays for."
-            : null;
+          ceiling === null || spent <= ceiling
+            ? null
+            : estimateUsd === null
+              ? "This test has spent " +
+                usdText(spent) +
+                ", more than " +
+                usdText(ceiling) +
+                ", the most a test with no cost estimate may spend."
+              : "This test has spent " +
+                usdText(spent) +
+                ", more than " +
+                timesText +
+                " its estimate (" +
+                usdText(estimateUsd) +
+                "). Check the model's price, and what an answer pays for.";
         const refused =
           overCeiling ??
           (opts.budget

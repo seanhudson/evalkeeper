@@ -81,7 +81,8 @@ They need three things:
 3. **A cost per answer for estimates,** from the runner's
    `estimateCallCost`
    ([How a test's cost is estimated](#how-a-tests-cost-is-estimated)).
-   Without it, a test still runs, but its button shows no estimate.
+   Without it, a test still runs, but its button shows no estimate and
+   the test stops at $5.
 
 ## The catalog
 
@@ -168,12 +169,14 @@ calls, not only tokens. The runner also looks at what the model's last
 finished test of the suite actually cost per answer (everything your
 suite reported through `onCost`) and uses whichever is higher, so a price
 that misses a per-search fee is corrected after one test. Without either,
-the estimate shows as unknown, and the test still runs.
+the estimate shows as unknown, and the test still runs, up to a cap.
 
 A test stops once its own new answers cost more than twice its estimate
 and says so, so a price set too low can't run on unnoticed
-(`ceilingTimes`, default 2; null turns it off). Answers already given
-are reused at no cost when it runs again.
+(`ceilingTimes`, default 2; null turns it off). A test with no estimate,
+such as a new model's first test with no price from you, stops once its
+new answers cost more than $5 (`noEstimateCeilingUsd`; null turns it
+off). Answers already given are reused at no cost when it runs again.
 
 ## Which models are offered
 

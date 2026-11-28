@@ -981,6 +981,82 @@ describe("runner, beyond a basic test", () => {
     ).toBeCloseTo(0.004);
   });
 
+  it("prices a model's first test from another model's, at its catalog prices", async () => {
+    const { store } = await setup([2, 4]);
+    const priced = {
+      cheap: {
+        label: "Cheap",
+        provider: "acme",
+        inputPer1M: 1,
+        outputPer1M: 4,
+      },
+      dear: { label: "Dear", provider: "other", inputPer1M: 3, outputPer1M: 8 },
+      odd: {
+        label: "Odd",
+        provider: "third",
+        inputPer1M: 0.5,
+        outputPer1M: 20,
+      },
+      unpriced: { label: "Unpriced", provider: "fourth" },
+    };
+    // Answers that take no time don't count toward cost per answer.
+    const slow: typeof double = {
+      ...double,
+      async run(i, ctx) {
+        await new Promise((r) => setTimeout(r, 2));
+        return double.run(i, ctx);
+      },
+    };
+    const route = () => ({
+      model: "cheap",
+      fallbackModel: null,
+      reasoningEffort: null,
+    });
+    const runner = createRunner({
+      store,
+      suites: [slow],
+      models: priced,
+      promptVersion: () => "v1",
+      route,
+    });
+    // Nothing tested yet: nothing to reprice.
+    expect(
+      (await runner.estimateRun("double", "dear", "ALL", 1)).costUsd,
+    ).toBeNull();
+    const { run } = await runner.createRun({ suite: "double", model: "cheap" });
+    await runner.runEval(run.id);
+    const perAnswer = (await store.getRun(run.id))?.metrics?.costPerAnswer;
+    expect(perAnswer).toBeGreaterThan(0);
+    // Input costs 3× and output 2×: the larger, so it overstates.
+    expect(
+      (await runner.estimateRun("double", "dear", "ALL", 1)).costUsd,
+    ).toBeCloseTo((perAnswer as number) * 3 * 2);
+    // Cheaper input, dearer output: still the larger ratio.
+    expect(
+      (await runner.estimateRun("double", "odd", "ALL", 1)).costUsd,
+    ).toBeCloseTo((perAnswer as number) * 5 * 2);
+    // No catalog price: still unknown, and the flat cap applies.
+    expect(
+      (await runner.estimateRun("double", "unpriced", "ALL", 1)).costUsd,
+    ).toBeNull();
+    // The app's price, or the model's own test, comes first.
+    const given = createRunner({
+      store,
+      suites: [slow],
+      models: priced,
+      promptVersion: () => "v1",
+      route,
+      estimateCallCost: async () => 0.5,
+    });
+    expect(
+      (await given.estimateRun("double", "dear", "ALL", 1)).costUsd,
+    ).toBeCloseTo(1);
+    expect(
+      (await runner.estimateRun("double", "cheap", "ALL", 1, { fresh: true }))
+        .costUsd,
+    ).toBeCloseTo((perAnswer as number) * 2);
+  });
+
   it("stops a test that spends more than twice its estimate", async () => {
     const { store } = await setup();
     const options = {

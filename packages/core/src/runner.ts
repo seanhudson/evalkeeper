@@ -535,9 +535,50 @@ export function createRunner(opts: RunnerOptions) {
   }
 
   /**
+   * For a model never tested on the suite: what other models' last tests
+   * of it cost per answer, repriced at this model's catalog prices. Each
+   * is scaled by the larger of the input and output price ratios, and the
+   * highest is kept, so it overstates rather than flatters. Rough, since
+   * answers differ in length and searches don't follow token prices, but
+   * closer than nothing. Null when this model or no tested one is priced.
+   */
+  async function catalogCostPerAnswer(
+    suiteKey: string,
+    model: string,
+  ): Promise<number | null> {
+    const to = opts.models[model];
+    if (!to?.inputPer1M || !to.outputPer1M) return null;
+    const runs = await store.listRuns(suiteKey, {
+      status: "SUCCEEDED",
+      limit: 50,
+    });
+    const seen = new Set<string>();
+    let most: number | null = null;
+    for (const r of runs) {
+      const c = r.metrics?.costPerAnswer;
+      // Each model's latest priced test only.
+      if (r.model === model || seen.has(r.model) || typeof c !== "number")
+        continue;
+      seen.add(r.model);
+      const from = opts.models[r.model];
+      if (!from?.inputPer1M || !from.outputPer1M || c <= 0) continue;
+      const usd =
+        c *
+        Math.max(
+          to.inputPer1M / from.inputPer1M,
+          to.outputPer1M / from.outputPer1M,
+        );
+      most = Math.max(most ?? 0, usd);
+    }
+    return most;
+  }
+
+  /**
    * What one new answer costs, for estimates: your `estimateCallCost`, or
    * what the model's last test of the suite actually cost per answer
-   * (searches and tool calls included), whichever is higher.
+   * (searches and tool calls included), whichever is higher. With
+   * neither, other models' tests of the suite repriced at this model's
+   * catalog prices (`catalogCostPerAnswer`).
    */
   async function perAnswerCost(
     suite: AnySuite,
@@ -547,7 +588,8 @@ export function createRunner(opts: RunnerOptions) {
       opts.estimateCallCost?.(suite.operation, model) ?? null,
       lastCostPerAnswer(suite.key, model),
     ]);
-    if (given === null) return actual;
+    if (given === null)
+      return actual ?? (await catalogCostPerAnswer(suite.key, model));
     return actual === null ? given : Math.max(given, actual);
   }
 

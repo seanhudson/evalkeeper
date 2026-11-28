@@ -40,6 +40,10 @@ version may change an interface, and its entry says how to update.
 
 ### Fixed
 
+- A model with no test of a suite and no price from `estimateCallCost`
+  had no estimate, so the page said "cost unknown" and the test ran up
+  to the $5 cap. Its estimate now reprices other models' tests of the
+  suite at its catalog prices, erring high (#199).
 - A rescore of a suite with a judge didn't ask the app's `budget` first,
   so confirming an answer, retiring easy cases, or saving check levels
   could call the judge while tests were stopped or over a daily limit.

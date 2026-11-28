@@ -50,7 +50,9 @@ design.
   data are rated one at a time from their input alone, never the app's
   output, so what the app decided doesn't anchor the answer.
 - **Tests per model.** Every case, on any model, with time and cost per
-  answer. Identical requests are reused for a week, so retesting is free.
+  answer. Identical requests are reused for a week, so retesting is free,
+  unless a suite's answers go stale (it reads the live web, say) and
+  turns reuse off.
 - **Checks that say what matters.** Each check is must pass (it changes
   what your product does), should pass (it matters, but less), or nice to
   have (a fair difference of judgment), with its own aim for its pass

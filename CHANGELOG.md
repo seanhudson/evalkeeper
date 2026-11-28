@@ -7,7 +7,15 @@ version may change an interface, and its entry says how to update.
 
 ## Unreleased
 
-**To update:**
+## 0.22.0 - 2026-11-27
+
+Spending you can see and cap: a rescore's judge calls ask your budget
+and can be counted, a new model's first test has an estimate and a cap,
+a model can be removed from one suite's tests, and a suite that reads
+the live web can stop reusing answers. Plus fixes to the number check
+and tooltips.
+
+Update:
 
 - To show **Remove from this suite** and **Add back**, add `removeModel`
   and `addModelBack` to `lib/evalkeeper/actions.ts` (`add pages --force

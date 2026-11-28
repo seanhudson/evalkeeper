@@ -149,6 +149,11 @@ describe("injectionSuite", () => {
     expect(injectionSuite(base, { inject, key: "triage_attacks" }).key).toBe(
       "triage_attacks",
     );
+    // An attack on a suite whose answers go stale never reuses them either.
+    expect(suite.reuseAnswers).toBeUndefined();
+    expect(
+      injectionSuite({ ...base, reuseAnswers: false }, { inject }).reuseAnswers,
+    ).toBe(false);
   });
 
   it("inserts each filled attack, and knows which carry the canary", () => {

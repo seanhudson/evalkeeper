@@ -178,7 +178,9 @@ its true-or-false answers.
 **Reuse.** An identical request (same suite, model, setting,
 instructions, input, and repeat) from the last 7 days is reused instead
 of paid for twice. Testing with `fresh` calls every time, to measure how
-much answers move between identical requests.
+much answers move between identical requests. A suite with
+`reuseAnswers: false` always tests that way, for answers that depend on
+when they're made, such as live web results.
 
 **Out of date.** A test is current when its instructions, dataset
 version, temperature, and output cap match today's. Edit a prompt, an

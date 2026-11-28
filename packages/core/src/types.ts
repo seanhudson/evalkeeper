@@ -337,6 +337,14 @@ export type Suite<Input, Output, Label> = {
    */
   concurrency?: number;
   /**
+   * False: never reuse an earlier test's answers, so every test of this
+   * suite asks the model again, as if `fresh` were passed. For a suite
+   * whose answer depends on when it's made, such as one that reads the
+   * live web or puts today's date in the prompt: a reused answer would be
+   * stale. Every retest pays in full. Default true.
+   */
+  reuseAnswers?: boolean;
+  /**
    * Graded as decisions (typed answers with probabilities, as from the AI
    * SDK's `experimental_decide`), so pages show probability quality and
    * calibration next to accuracy, and which models' probabilities are

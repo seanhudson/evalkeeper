@@ -255,6 +255,22 @@ const usdText = (n: number) => (n >= 0.01 ? money(n) : perAnswer(n));
 export const STOPPED_BY_HAND =
   "Stopped by hand. Test again: answers already given are reused at no cost.";
 
+/** Whether a suite's tests reuse earlier answers (`reuseAnswers`). */
+const reusesAnswers = (suite: { reuseAnswers?: boolean }) =>
+  suite.reuseAnswers !== false;
+
+/** After "Test again": what a retest costs, for this suite. */
+const againText = (suite: { reuseAnswers?: boolean }) =>
+  reusesAnswers(suite)
+    ? "answers already given are reused at no cost"
+    : "this suite doesn't reuse answers, so every answer is asked for again";
+
+/** A test stopped by hand, for this suite. */
+const stoppedByHand = (suite: { reuseAnswers?: boolean }) =>
+  reusesAnswers(suite)
+    ? STOPPED_BY_HAND
+    : `Stopped by hand. Test again: ${againText(suite)}.`;
+
 /**
  * Which model a feature runs on now, its fallback, its reasoning setting,
  * its temperature, and its output cap.
@@ -582,22 +598,23 @@ export function createRunner(opts: RunnerOptions) {
       ]);
     const answers = cases.length * repeats;
     const since = new Date(Date.now() - REUSE_DAYS * 86_400_000);
-    const hashes = o.fresh
-      ? []
-      : cases.flatMap((c) =>
-          Array.from({ length: repeats }, (_, i) =>
-            requestHashFor({
-              suite: suite.key,
-              model,
-              effort,
-              prompt,
-              input: c.input,
-              repeat: i + 1,
-              temperature,
-              maxOutputTokens: cap,
-            }),
-          ),
-        );
+    const hashes =
+      o.fresh || !reusesAnswers(suite)
+        ? []
+        : cases.flatMap((c) =>
+            Array.from({ length: repeats }, (_, i) =>
+              requestHashFor({
+                suite: suite.key,
+                model,
+                effort,
+                prompt,
+                input: c.input,
+                repeat: i + 1,
+                temperature,
+                maxOutputTokens: cap,
+              }),
+            ),
+          );
     // One query where the store can: a lookup per answer is slow on a
     // remote database.
     const found = store.findReusableHashes
@@ -817,6 +834,8 @@ export function createRunner(opts: RunnerOptions) {
       const suite = await effectiveSuite(run.suite);
       const cases = await casesFor(suite.key, run.set);
       const since = new Date(Date.now() - REUSE_DAYS * 86_400_000);
+      // The suite's own setting, or the caller's: never reuse an answer.
+      const fresh = !!o.fresh || !reusesAnswers(suite);
       const jobs = cases.flatMap((c) =>
         Array.from({ length: run.repeats }, (_, i) => ({ c, repeat: i + 1 })),
       );
@@ -887,7 +906,7 @@ export function createRunner(opts: RunnerOptions) {
           temperature: run.temperature ?? null,
           maxOutputTokens: run.maxOutputTokens ?? null,
         });
-        const earlier = o.fresh
+        const earlier = fresh
           ? null
           : await store.findReusableOutput(requestHash, since);
         if (earlier) {
@@ -1004,7 +1023,7 @@ export function createRunner(opts: RunnerOptions) {
           {
             status: "FAILED",
             finishedAt: new Date(),
-            error: `Stopped after ${jobs.length - skipped} of ${jobs.length} answers. ${halted}${/reused/i.test(halted) ? "" : " Answers already given are reused at no cost when you test again."}`,
+            error: `Stopped after ${jobs.length - skipped} of ${jobs.length} answers. ${halted}${/reused/i.test(halted) || !reusesAnswers(suite) ? "" : " Answers already given are reused at no cost when you test again."}`,
           },
           { status: "RUNNING" },
         );
@@ -1034,8 +1053,8 @@ export function createRunner(opts: RunnerOptions) {
             status: "FAILED",
             finishedAt: new Date(),
             error: outOfCredits
-              ? `The ${providerName(run.model)} account is out of credits, so the test stopped after ${jobs.length - skipped} of ${jobs.length} answers. Add credits, then test again: answers already given are reused at no cost.`
-              : `Ran out of time after ${jobs.length - skipped} of ${jobs.length} answers. Test again to finish: answers already given are reused at no cost.`,
+              ? `The ${providerName(run.model)} account is out of credits, so the test stopped after ${jobs.length - skipped} of ${jobs.length} answers. Add credits, then test again: ${againText(suite)}.`
+              : `Ran out of time after ${jobs.length - skipped} of ${jobs.length} answers. Test again to finish: ${againText(suite)}.`,
           },
           // A stop that came meanwhile stays.
           { status: "RUNNING" },
@@ -1536,7 +1555,11 @@ export function createRunner(opts: RunnerOptions) {
       for (const r of await store.listRuns(key, { status: "RUNNING" })) {
         await store.updateRun(
           r.id,
-          { status: "FAILED", finishedAt: new Date(), error: STOPPED_BY_HAND },
+          {
+            status: "FAILED",
+            finishedAt: new Date(),
+            error: stoppedByHand(suiteOrThrow(key)),
+          },
           { status: "RUNNING" },
         );
         n++;
@@ -1562,8 +1585,7 @@ export function createRunner(opts: RunnerOptions) {
           {
             status: "FAILED",
             finishedAt: new Date(now),
-            error:
-              "The test stopped before it finished. Test again: answers already given are reused at no cost.",
+            error: `The test stopped before it finished. Test again: ${againText(suiteOrThrow(suiteKey))}.`,
           },
           { status: "RUNNING" },
         );

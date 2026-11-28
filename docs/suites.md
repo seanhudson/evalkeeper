@@ -255,6 +255,26 @@ that retiring easy cases leaves. When the runner has a `suiteSettings` store
 person can change it on the suite's page, under the menu's **Suite
 settings**, and theirs wins.
 
+## Answers that go stale
+
+A test reuses any answer an identical request gave in the last 7 days
+(see [Reuse](concepts.md#rules)). For a suite whose answer depends on
+when it's made, such as one that searches the live web, fetches pages,
+or puts today's date in the prompt, a reused answer would be stale but
+graded as new. Turn reuse off for that suite:
+
+```ts
+reuseAnswers: false,
+```
+
+Every test of the suite then runs as if `fresh` were passed: each answer
+is asked for again, the estimate prices all of them, and the suite's page
+says why. Every retest pays in full, so keep the daily limits on.
+Rescoring is unaffected: it regrades stored answers without asking the
+model. Don't put the date in `promptVersion` instead: the weekly drift
+check only compares runs on the same version, and the model table would
+mark every test out of date each time it changed.
+
 ## Draft more cases
 
 Give a suite `draftMore` and **Add a case** gets a **Describe them**

@@ -514,6 +514,70 @@ describe("runner, beyond a basic test", () => {
     expect(await saved.retireEasy("double")).toBe(2);
   });
 
+  it("removes a model from one suite's tests, and adds it back", async () => {
+    const store = memoryStore();
+    for (const n of [1, 2]) await store.createCase(kase(n));
+    const runner = threeModels(store, double, { settings: true });
+    await testRounds(runner, store, [0]);
+    await runner.saveSuiteSettings(
+      "double",
+      { targetCases: 18, checks: {} },
+      "person-1",
+    );
+    await runner.setModelRemoved("double", "c", true, "person-1");
+    // Off the board and Test every model; its tests are kept.
+    const board = await runner.board("double");
+    expect(board.rows.map((r) => r.model)).toEqual(
+      expect.not.arrayContaining(["c"]),
+    );
+    expect(board.removedModels).toEqual(["c"]);
+    expect(await runner.modelsForSuite("double")).toEqual(["a", "b"]);
+    expect(runner.modelsFor("double")).toEqual(["a", "b", "c"]);
+    expect((await store.listRuns("double")).some((r) => r.model === "c")).toBe(
+      true,
+    );
+    // Other settings stay as they were.
+    expect(await runner.suiteSettings("double")).toEqual({
+      targetCases: 18,
+      checks: {},
+      removedModels: ["c"],
+    });
+    // Removing it twice keeps one entry; adding it back clears the list.
+    await runner.setModelRemoved("double", "c", true, "person-1");
+    expect((await runner.suiteSettings("double")).removedModels).toEqual(["c"]);
+    await runner.setModelRemoved("double", "c", false, "person-1");
+    expect(await runner.suiteSettings("double")).toEqual({
+      targetCases: 18,
+      checks: {},
+    });
+    expect((await runner.board("double")).rows.map((r) => r.model)).toContain(
+      "c",
+    );
+  });
+
+  it("never removes the live model, and refuses a model the feature can't use", async () => {
+    const store = memoryStore();
+    const runner = threeModels(store, double, { settings: true });
+    await expect(
+      runner.setModelRemoved("double", "a", true, null),
+    ).rejects.toThrow(
+      "A is this feature's live model. Make another model live first.",
+    );
+    await expect(
+      runner.setModelRemoved("double", "z", true, null),
+    ).rejects.toThrow("Unknown model");
+    // Saved by hand anyway, the live model stays on the board and is tested.
+    await runner.saveSuiteSettings(
+      "double",
+      { targetCases: null, checks: {}, removedModels: ["a", "b"] },
+      null,
+    );
+    expect(await runner.modelsForSuite("double")).toEqual(["a", "c"]);
+    const board = await runner.board("double");
+    expect(board.rows.map((r) => r.model)).toContain("a");
+    expect(board.removedModels).toEqual(["b"]);
+  });
+
   it("grades at the levels a person set, and records them on each test", async () => {
     const store = memoryStore();
     for (const n of [1, 2, 3, 4]) await store.createCase(kase(n));

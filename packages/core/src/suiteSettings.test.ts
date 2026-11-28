@@ -184,6 +184,18 @@ describe("a check's level and aim, set per suite", () => {
     });
   });
 
+  it("reads back the models removed from a suite, and drops bad ones", () => {
+    expect(
+      readSuiteSettings({ checks: {}, removedModels: ["old-model"] }),
+    ).toEqual({ targetCases: null, checks: {}, removedModels: ["old-model"] });
+    // None removed, or not a list: no field at all.
+    for (const removedModels of [[], "old-model", [1]])
+      expect(readSuiteSettings({ checks: {}, removedModels })).toEqual({
+        targetCases: null,
+        checks: {},
+      });
+  });
+
   it("puts a person's level and aim in place of the check's own", () => {
     const [fact, category, tone] = effectiveChecks(checks, {
       checks: {

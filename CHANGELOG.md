@@ -7,14 +7,28 @@ version may change an interface, and its entry says how to update.
 
 ## Unreleased
 
-**To update:** to count the judge's spending toward your daily limits,
-pass `onJudgeCost` to `createRunner` and add each charge to the spending
-your `EvalSpending.read` sums. Nothing else is needed: the budget check
-in rescores uses the `budget` you already pass. A `budget` that builds
-its own `BudgetCall` values (in tests, say) adds `kind: "answer"`.
+**To update:**
+
+- To show **Remove from this suite** and **Add back**, add `removeModel`
+  and `addModelBack` to `lib/evalkeeper/actions.ts` (`add pages --force
+--only actions` rewrites it). No migration: removals are kept in suite
+  settings.
+- To count the judge's spending toward your daily limits, pass
+  `onJudgeCost` to `createRunner` and add each charge to the spending
+  your `EvalSpending.read` sums. The budget check in rescores uses the
+  `budget` you already pass. A `budget` that builds its own `BudgetCall`
+  values (in tests, say) adds `kind: "answer"`.
 
 ### Added
 
+- **Remove a model from one suite's tests.** **Remove from this suite**
+  in a model's menu takes it off that suite's model table, **Test every
+  model**, and the reasoning setting menu, so a model that keeps doing
+  poorly, or one the feature no longer needs, costs nothing there.
+  Other suites still test it, its earlier tests are kept, and **Add
+  back** under the table returns it. The live and fallback models can't
+  be removed. In code: `runner.setModelRemoved` and
+  `runner.modelsForSuite`.
 - **`onJudgeCost` on the runner:** what the judge charged to grade each
   answer, in a test and in a rescore, so an app's daily spending count
   can include it (#200).

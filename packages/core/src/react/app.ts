@@ -66,6 +66,10 @@ export type EvalActions = {
   retireReplacedStarters?: FormAction;
   /** Saving a suite's settings (its target number of cases). */
   saveSuiteSettings?: FormAction;
+  /** Removing a model from a suite's tests; needs `suiteSettings`. */
+  removeModel?: FormAction;
+  /** Adding a model removed from a suite back to its tests. */
+  addModelBack?: FormAction;
   /** Saving the daily spending limits; needs your app's `spending`. */
   saveLimits?: FormAction;
   /** Stopping every test now; needs your app's `spending.stopAll`. */

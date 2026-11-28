@@ -37,6 +37,13 @@ export type SuiteSettings = {
    * Unset: never saved.
    */
   levelsReviewed?: readonly string[] | undefined;
+  /**
+   * Models a person removed from this suite's tests: off its model table,
+   * Test every model, and the reasoning setting menu, though the feature
+   * can still use them. The live and fallback models are never removed.
+   * Unset: none.
+   */
+  removedModels?: readonly string[] | undefined;
 };
 
 /** A person's level or aim for one check; either may be left to the check's own. */
@@ -74,6 +81,7 @@ const schema = z.object({
   checks: z.record(z.string(), override.catch({})).catch({}),
   attacks: z.enum(["strict", "balanced", "off"]).nullable().catch(null),
   levelsReviewed: z.array(z.string()).nullable().catch(null),
+  removedModels: z.array(z.string()).nullable().catch(null),
 });
 
 /**
@@ -88,11 +96,13 @@ export function readSuiteSettings(value: unknown): SuiteSettings {
   const checks: unknown = Reflect.get(value, "checks");
   const attacks: unknown = Reflect.get(value, "attacks");
   const levelsReviewed: unknown = Reflect.get(value, "levelsReviewed");
+  const removedModels: unknown = Reflect.get(value, "removedModels");
   const parsed = schema.safeParse({
     targetCases: targetCases ?? null,
     checks: checks ?? {},
     attacks: attacks ?? null,
     levelsReviewed: levelsReviewed ?? null,
+    removedModels: removedModels ?? null,
   });
   if (!parsed.success) return NO_SUITE_SETTINGS;
   // Only what was set: an override with neither part is no override.
@@ -109,6 +119,9 @@ export function readSuiteSettings(value: unknown): SuiteSettings {
     ...(parsed.data.attacks ? { attacks: parsed.data.attacks } : {}),
     ...(parsed.data.levelsReviewed
       ? { levelsReviewed: parsed.data.levelsReviewed }
+      : {}),
+    ...(parsed.data.removedModels?.length
+      ? { removedModels: parsed.data.removedModels }
       : {}),
   };
 }

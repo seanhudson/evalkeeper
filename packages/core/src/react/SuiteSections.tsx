@@ -122,6 +122,11 @@ export async function loadSuitePage(app: EvalAppConfig, key: string) {
     app.spending ? app.spending.read(operation).catch(() => null) : null,
   ]);
   const { suite, rows } = b;
+  // The models this suite is tested on: its feature's, less the ones a
+  // person removed from it (never the live or fallback model).
+  const testable = app.runner
+    .modelsFor(operation)
+    .filter((m) => !b.removedModels.includes(m));
   const attacks = attacksFrom(attackBoards);
   // An injection suite's models are chosen on its base suite's page.
   const choosesHere = !isInjectionSuite(suite);
@@ -154,7 +159,7 @@ export async function loadSuitePage(app: EvalAppConfig, key: string) {
   // What Test every model costs now: each model the feature can use, at
   // its live setting, as the button tests them. Null: a price is unknown.
   const testAllCost = (() => {
-    const tested = new Set(app.runner.modelsFor(operation));
+    const tested = new Set(testable);
     let usd = 0;
     for (const r of rows) {
       if (r.variant || !tested.has(r.model)) continue;
@@ -188,7 +193,7 @@ export async function loadSuitePage(app: EvalAppConfig, key: string) {
   const unmade = attackBoards.filter((a) => a.cases === 0);
   const todoInput: TodoInput = {
     rows,
-    testAllModels: app.runner.modelsFor(operation),
+    testAllModels: testable,
     ...(savedSettings.levelsReviewed
       ? { levelsReviewed: savedSettings.levelsReviewed }
       : {}),
@@ -275,6 +280,7 @@ export async function loadSuitePage(app: EvalAppConfig, key: string) {
     testing,
     estimates,
     testAllCost,
+    testable,
     showAttacks,
     live,
     health,
@@ -865,6 +871,7 @@ export function ModelTable({ data }: { data: SuitePageData }) {
     live: suggestedLive,
   });
   const tunable = tunableModels(data);
+  const removedHere = choosesHere ? data.b.removedModels : [];
   const columns = 7 + (showAttacks ? 1 : 0) + (suite.decisions ? 2 : 0);
   return (
     <>
@@ -1165,6 +1172,14 @@ export function ModelTable({ data }: { data: SuitePageData }) {
                             ? app.actions.makeFallback
                             : null
                         }
+                        remove={
+                          choosesHere &&
+                          !r.live &&
+                          !r.fallback &&
+                          app.runner.canSaveSuiteSettings
+                            ? app.actions.removeModel
+                            : null
+                        }
                         effort={r.variant ? r.effort : undefined}
                       />
                     </div>
@@ -1172,13 +1187,22 @@ export function ModelTable({ data }: { data: SuitePageData }) {
                 </tr>
               ))}
             </tbody>
-            {tunable.length > 0 && (
+            {(tunable.length > 0 || removedHere.length > 0) && (
               <tfoot>
-                <tr>
-                  <td colSpan={columns} className="p-2">
-                    <TestSettingForm data={data} tunable={tunable} />
-                  </td>
-                </tr>
+                {tunable.length > 0 && (
+                  <tr>
+                    <td colSpan={columns} className="p-2">
+                      <TestSettingForm data={data} tunable={tunable} />
+                    </td>
+                  </tr>
+                )}
+                {removedHere.length > 0 && (
+                  <tr>
+                    <td colSpan={columns} className="p-2">
+                      <RemovedModels data={data} models={removedHere} />
+                    </td>
+                  </tr>
+                )}
               </tfoot>
             )}
           </table>
@@ -1189,13 +1213,49 @@ export function ModelTable({ data }: { data: SuitePageData }) {
 }
 
 /**
+ * Models removed from this suite's tests, each with Add back: off the
+ * table and Test every model, but one press from returning. The table's
+ * last row, inset.
+ */
+function RemovedModels({
+  data,
+  models,
+}: {
+  data: SuitePageData;
+  models: string[];
+}) {
+  const { app, key } = data;
+  const addBack = app.actions.addModelBack;
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md bg-tint px-3 py-2.5 text-sm">
+      <span className="font-medium">
+        <span>Removed from this suite</span>
+        <InfoTip term="removedModels" />
+      </span>
+      {models.map((m) => (
+        <span key={m} className="inline-flex items-center gap-1.5">
+          <span>{app.models[m]?.label ?? m}</span>
+          {addBack && (
+            <form action={addBack} className="inline">
+              <input type="hidden" name="suite" value={key} />
+              <input type="hidden" name="model" value={m} />
+              <Submit variant="quiet">Add back</Submit>
+            </form>
+          )}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/**
  * The models a feature may use that list reasoning settings in your
  * catalog, each with its settings; empty when there's nothing to test.
  */
 function tunableModels(data: SuitePageData) {
-  const { app, operation, choosesHere } = data;
+  const { app, choosesHere, testable } = data;
   if (!choosesHere) return [];
-  return app.runner.modelsFor(operation).flatMap((m) => {
+  return testable.flatMap((m) => {
     const efforts = app.models[m]?.efforts;
     return efforts?.length
       ? [{ model: m, label: app.models[m]?.label ?? m, efforts }]

@@ -85,3 +85,16 @@ export function TestAll({
     </form>
   );
 }
+
+/**
+ * Under Test every model, for a suite with `reuseAnswers: false`: why a
+ * retest costs as much as the first test.
+ */
+export function NoReuseNote() {
+  return (
+    <p className="readable text-sm text-muted">
+      Every test asks each model for new answers: this suite doesn&apos;t reuse
+      earlier ones, since its answers depend on when they&apos;re made.
+    </p>
+  );
+}

@@ -312,6 +312,10 @@ export function injectionSuite<Input, Output, Label>(
     ...(base.concurrency !== undefined
       ? { concurrency: base.concurrency }
       : {}),
+    // An attack on a suite that reads the live web reads it too.
+    ...(base.reuseAnswers !== undefined
+      ? { reuseAnswers: base.reuseAnswers }
+      : {}),
     title: (i) => `${i.attack.kind}: ${base.title(i.input)}`,
     describe: (i) =>
       `${base.describe?.(i.input) ?? stableJson(i.input)}\n\n${describeAttack(i.attack)}`,

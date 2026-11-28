@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { TestAll } from "./TestAll.js";
+import { NoReuseNote, TestAll } from "./TestAll.js";
 
 const action = async () => {};
 const html = (cost: number | null, confirmAbove = 5) =>
@@ -28,5 +28,11 @@ describe("Test every model", () => {
       expect(page).toMatch(/<button type="button"[^>]*>Test every model/);
     }
     expect(html(12.4)).toContain("~$12");
+  });
+
+  it("says why a suite that never reuses answers pays in full each time", () => {
+    expect(renderToStaticMarkup(<NoReuseNote />)).toContain(
+      "this suite doesn&#x27;t reuse earlier ones",
+    );
   });
 });

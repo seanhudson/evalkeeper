@@ -32,6 +32,11 @@ version may change an interface, and its entry says how to update.
 - **`onJudgeCost` on the runner:** what the judge charged to grade each
   answer, in a test and in a rescore, so an app's daily spending count
   can include it (#200).
+- **`reuseAnswers: false` on a suite:** every test of it asks each model
+  for new answers, as if `fresh` were passed, for a suite whose answers
+  depend on when they're made, such as one that reads the live web. The
+  estimate prices every answer, the suite's page says why, and its
+  attack suites follow it. Other suites still reuse answers (#204).
 
 ### Fixed
 

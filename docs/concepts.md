@@ -188,8 +188,10 @@ with no new model answers and brings a test up to today's answers, but
 never up to inputs that changed after it ran. It covers every test the
 model table shows, plus the recent ones. It's free unless a check asks
 an AI judge (`judged: true`) about wording the judge hasn't compared
-before, usually a few cents; those calls count against the daily
-limits, and the button says what it cost. A long rescore stops before
+before, usually a few cents. Those calls wait while tests are stopped
+or over a daily limit (the runner asks `budget` first), they count
+against the limits when your app adds what `onJudgeCost` reports to its
+spending, and the button says what it cost. A long rescore stops before
 the request's time limit and goes on in a new request.
 
 **Comparison.** Two tests on the same cases are compared case by case

@@ -7,6 +7,7 @@ import {
   createRunner,
   datasetVersion,
   type BudgetCall,
+  type JudgeCharge,
 } from "./runner.js";
 import type { EvalStore, NewCase } from "./store.js";
 import { SCHEDULED } from "./weekly.js";
@@ -821,6 +822,7 @@ describe("runner, beyond a basic test", () => {
       suite: "double",
       operation: "double",
       model: "good",
+      kind: "answer",
       spentUsd: 0.002,
     });
     // Testing again reuses the two answers, free: the budget isn't asked
@@ -891,6 +893,123 @@ describe("runner, beyond a basic test", () => {
     const free = createRunner({ ...options, ceilingTimes: null });
     const again = await free.createRun({ suite: "double", model: "good" });
     await free.runEval(again.run.id, { fresh: true });
+    expect((await store.getRun(again.run.id))?.status).toBe("SUCCEEDED");
+  });
+
+  it("asks the budget before the judge grades in a rescore, and stops where it says", async () => {
+    const { store } = await setup([2, 4]);
+    // The same grader, marked as asking the judge (half a cent an answer).
+    const judged = {
+      ...double,
+      concurrency: 1,
+      checks: double.checks.map((c) =>
+        c.key === "right" ? { ...c, judged: true } : c,
+      ),
+    };
+    const calls: BudgetCall[] = [];
+    let refuse = false;
+    const runner = createRunner({
+      store,
+      suites: [judged],
+      models: MODELS,
+      promptVersion: () => "v1",
+      budget: (call) => {
+        calls.push(call);
+        return refuse && call.kind === "judge"
+          ? "Tests are stopped until 3:00 PM."
+          : null;
+      },
+    });
+    const { run } = await runner.createRun({ suite: "double", model: "good" });
+    await runner.runEval(run.id);
+    // Asked before the judge grades each stored answer.
+    calls.length = 0;
+    const ok = await runner.rescoreRecent("double");
+    expect(ok.waiting).toBeUndefined();
+    expect(ok.judgeCostUsd).toBeCloseTo(0.001);
+    expect(calls.map((c) => c.kind)).toEqual(["judge", "judge"]);
+    expect(calls[0]).toMatchObject({
+      runId: run.id,
+      suite: "double",
+      model: "good",
+      spentUsd: 0,
+    });
+    // Refused: the judge isn't asked, and the rescore says why.
+    refuse = true;
+    const before = await store.getRun(run.id);
+    const stopped = await runner.rescoreRecent("double");
+    expect(stopped).toEqual({
+      rescored: [],
+      total: 1,
+      left: 1,
+      judgeCostUsd: 0,
+      waiting: "Tests are stopped until 3:00 PM.",
+    });
+    expect(await store.getRun(run.id)).toEqual(before);
+  });
+
+  it("never asks the budget to regrade a suite without a judge", async () => {
+    const { store } = await setup([2, 4]);
+    const calls: BudgetCall[] = [];
+    const runner = createRunner({
+      store,
+      suites: [double],
+      models: MODELS,
+      promptVersion: () => "v1",
+      budget: (call) => {
+        calls.push(call);
+        return null;
+      },
+    });
+    const { run } = await runner.createRun({ suite: "double", model: "good" });
+    await runner.runEval(run.id);
+    calls.length = 0;
+    await runner.rescoreRecent("double");
+    expect(calls).toEqual([]);
+  });
+
+  it("tells the app what the judge charged, in a test and in a rescore", async () => {
+    const { store } = await setup([2, 4]);
+    const charges: JudgeCharge[] = [];
+    const runner = createRunner({
+      store,
+      suites: [double],
+      models: MODELS,
+      promptVersion: () => "v1",
+      onJudgeCost: (c) => {
+        charges.push(c);
+      },
+    });
+    const { run } = await runner.createRun({ suite: "double", model: "good" });
+    await runner.runEval(run.id);
+    await runner.rescoreRecent("double");
+    expect(charges.map((c) => c.during)).toEqual([
+      "test",
+      "test",
+      "rescore",
+      "rescore",
+    ]);
+    expect(charges[0]).toEqual({
+      runId: run.id,
+      suite: "double",
+      operation: "double",
+      usd: 0.0005,
+      during: "test",
+    });
+    // A hook that fails doesn't fail the test.
+    const broken = createRunner({
+      store,
+      suites: [double],
+      models: MODELS,
+      promptVersion: () => "v1",
+      onJudgeCost: () => Promise.reject(new Error("down")),
+    });
+    const again = await broken.createRun({
+      suite: "double",
+      model: "good",
+      fresh: true,
+    });
+    await broken.runEval(again.run.id, { fresh: true });
     expect((await store.getRun(again.run.id))?.status).toBe("SUCCEEDED");
   });
 

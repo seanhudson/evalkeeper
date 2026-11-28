@@ -7,8 +7,26 @@ version may change an interface, and its entry says how to update.
 
 ## Unreleased
 
+**To update:** to count the judge's spending toward your daily limits,
+pass `onJudgeCost` to `createRunner` and add each charge to the spending
+your `EvalSpending.read` sums. Nothing else is needed: the budget check
+in rescores uses the `budget` you already pass. A `budget` that builds
+its own `BudgetCall` values (in tests, say) adds `kind: "answer"`.
+
+### Added
+
+- **`onJudgeCost` on the runner:** what the judge charged to grade each
+  answer, in a test and in a rescore, so an app's daily spending count
+  can include it (#200).
+
 ### Fixed
 
+- A rescore of a suite with a judge didn't ask the app's `budget` first,
+  so confirming an answer, retiring easy cases, or saving check levels
+  could call the judge while tests were stopped or over a daily limit.
+  It now asks before each judged grading (`BudgetCall.kind` is
+  `"judge"`), stops where the budget says, and says why. The check
+  levels tooltip mentions the judge (#200).
 - The number check no longer counts shorthand such as "24/7", "1:1", and
   "1-on-1" meetings, or "9-to-5", as invented numbers (#190).
 - The number check reads number words with "hundred" or "thousand"

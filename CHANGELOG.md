@@ -7,6 +7,17 @@ version may change an interface, and its entry says how to update.
 
 ## Unreleased
 
+## 0.22.1 - 2026-11-27
+
+A stopped test of a suite that doesn't reuse answers picks up where it
+left off, instead of paying for every answer again.
+
+Update:
+
+- Nothing to change: no re-copy and no migration. A suite with
+  `reuseAnswers: false` resumes a stopped test for a day by default; set
+  `resumeWithinMs` to change that (0 turns it off).
+
 ### Fixed
 
 - A suite with `reuseAnswers: false` asked for every answer again when a

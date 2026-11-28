@@ -398,8 +398,11 @@ Then:
 4. Optional: if your app keeps daily spending limits for eval tests,
    add `spending` (an `EvalSpending`) to the wiring, and pass
    `budget: spendingBudget(spending)` to `createRunner`. Your app keeps
-   the numbers; the runner asks before each new answer, so a test stops
-   over a limit and says why in the limit's words. The pages read them
+   the numbers; the runner asks before each new answer, and before the
+   judge grades in a rescore, so a test stops over a limit and says why
+   in the limit's words. Answers' costs are on their outputs; add the
+   judge's too, from the runner's `onJudgeCost`, so the limits include
+   them. The pages read them
    and save the limits. They show a warning panel only when tests are
    over a limit, stopped, or running (with **Stop all tests** and
    **Allow tests**), and otherwise keep spending under the page menu's

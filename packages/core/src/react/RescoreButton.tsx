@@ -56,11 +56,12 @@ export function RescoreButton({
         left = 0;
         break;
       }
+      // Kept first, so pressing again later picks up after them.
+      done.current.push(...r.rescored);
       if (r.waiting) {
         show({ type: "error", text: r.waiting });
         return;
       }
-      done.current.push(...r.rescored);
       total = r.total;
       left = r.left;
       judgeCostUsd += r.judgeCostUsd;

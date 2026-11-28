@@ -46,7 +46,12 @@ import {
 import { SCHEDULED } from "./weekly.js";
 import { confirmedLabel, isProvisional } from "./labels.js";
 export { confirmedLabel, isProvisional };
-import { injectionSuitesOf, type AnySuite, type CheckResult } from "./types.js";
+import {
+  injectionSuitesOf,
+  usesJudge,
+  type AnySuite,
+  type CheckResult,
+} from "./types.js";
 import { injectionCases } from "./suites/injection.js";
 import { at } from "./util.js";
 import { targetCasesOf } from "./summary.js";
@@ -136,6 +141,15 @@ export type RunnerOptions = {
    */
   ceilingTimes?: number | null;
   /**
+   * Called with what the judge charged to grade each answer, in a test
+   * and in a rescore (pressing Rescore tests, confirming an answer,
+   * saving check levels). Model answers' costs are on their outputs; the
+   * judge's are only here and in a test's metrics. Add them to your daily
+   * spending count, so the limits include them. Keep it quick; an error
+   * in it is ignored.
+   */
+  onJudgeCost?: (charge: JudgeCharge) => void | Promise<void>;
+  /**
    * The most a test with no estimate may spend on new answers, in USD: a
    * model never tested on the suite, with no price from
    * `estimateCallCost`. That first test is when cost is least known, so
@@ -193,9 +207,33 @@ export type BudgetCall = {
   runId: string;
   suite: string;
   operation: string;
+  /** The model being tested (whose answers the judge grades, for "judge"). */
   model: string;
-  /** USD this test's new answers have cost so far, earlier legs included. */
+  /**
+   * What's about to be paid for: a new model answer in a test, or the
+   * judge grading a stored answer in a rescore of a suite whose checks
+   * ask it (`usesJudge`).
+   */
+  kind: "answer" | "judge";
+  /**
+   * USD spent so far: for "answer", this test's new answers, earlier legs
+   * included; for "judge", the judge in this rescore of the test.
+   */
   spentUsd: number;
+};
+
+/**
+ * What the judge charged to grade one answer, as `onJudgeCost` gets it:
+ * the test, its suite and feature, the cost, and whether it was during
+ * the test or a later rescore.
+ */
+export type JudgeCharge = {
+  runId: string;
+  suite: string;
+  operation: string;
+  /** USD the judge charged for this answer. */
+  usd: number;
+  during: "test" | "rescore";
 };
 
 /**
@@ -277,6 +315,11 @@ export type RescoreProgress = {
   left: number;
   /** USD the judge spent in this request; 0 when every comparison was kept. */
   judgeCostUsd: number;
+  /**
+   * Why it stopped before the rest, in the budget's words: tests are
+   * stopped or over a limit, and the suite's checks ask the judge.
+   */
+  waiting?: string;
 };
 
 /**
@@ -643,16 +686,36 @@ export function createRunner(opts: RunnerOptions) {
     c: CaseRecord,
     output: unknown,
     onCost?: (usd: number) => void,
+    /** The test it belongs to, so `onJudgeCost` hears what the judge charged. */
+    charge?: { runId: string; during: JudgeCharge["during"] },
   ): Promise<CheckResult[]> {
     const input = suite.input.parse(c.input);
     const label = confirmedLabel(c.labels);
     const parsed = label ? suite.labelValue.safeParse(label.value) : null;
-    return suite.grade(
+    let usd = 0;
+    const scores = await suite.grade(
       input,
       output,
       parsed?.success ? parsed.data : null,
-      onCost ? { onCost } : undefined,
+      onCost
+        ? {
+            onCost: (n: number) => {
+              usd += n;
+              onCost(n);
+            },
+          }
+        : undefined,
     );
+    if (usd > 0 && charge && opts.onJudgeCost)
+      await Promise.resolve(
+        opts.onJudgeCost({
+          ...charge,
+          suite: suite.key,
+          operation: suite.operation,
+          usd,
+        }),
+      ).catch(() => undefined);
+    return scores;
   }
 
   /**
@@ -835,7 +898,10 @@ export function createRunner(opts: RunnerOptions) {
             requestHash,
             output: earlier.output,
             error: null,
-            scores: await gradeOutput(suite, c, earlier.output, onJudge),
+            scores: await gradeOutput(suite, c, earlier.output, onJudge, {
+              runId,
+              during: "test",
+            }),
             // What the call cost and took when it was made, so per-answer
             // numbers stay real; the run's spend leaves reused ones out.
             costUsd: earlier.costUsd,
@@ -872,6 +938,7 @@ export function createRunner(opts: RunnerOptions) {
                   suite: suite.key,
                   operation: suite.operation,
                   model: run.model,
+                  kind: "answer",
                   spentUsd: spent,
                 }),
               ).catch(() => null)
@@ -901,7 +968,10 @@ export function createRunner(opts: RunnerOptions) {
             requestHash,
             output,
             error: null,
-            scores: await gradeOutput(suite, c, output, onJudge),
+            scores: await gradeOutput(suite, c, output, onJudge, {
+              runId,
+              during: "test",
+            }),
             costUsd: cost,
             ms: Date.now() - started,
             reused: false,
@@ -1005,7 +1075,7 @@ export function createRunner(opts: RunnerOptions) {
   async function rescoreRun(
     runId: string,
     deadline = Infinity,
-  ): Promise<{ done: boolean; judgeCostUsd: number }> {
+  ): Promise<{ done: boolean; judgeCostUsd: number; waiting?: string }> {
     const run = await store.getRun(runId);
     if (!run) return { done: true, judgeCostUsd: 0 };
     const suite = await effectiveSuite(run.suite);
@@ -1018,17 +1088,43 @@ export function createRunner(opts: RunnerOptions) {
     let judgeCost = 0;
     // Set inside the grading below, which TypeScript can't follow.
     let late = false as boolean;
+    let waiting = null as string | null;
     const onJudge = (usd: number) => (judgeCost += usd);
+    // Grading may ask the judge, which costs money: the app's budget may
+    // refuse it, as it may a new answer. A free regrade never asks.
+    const askBudget = usesJudge(suite) ? opts.budget : undefined;
     await mapLimit(outputs, 6, async (x) => {
-      if (late || Date.now() > deadline) {
+      if (late || waiting !== null || Date.now() > deadline) {
         late = true;
         return;
       }
+      if (askBudget) {
+        const refused = await Promise.resolve(
+          askBudget({
+            runId,
+            suite: suite.key,
+            operation: suite.operation,
+            model: run.model,
+            kind: "judge",
+            spentUsd: judgeCost,
+          }),
+        ).catch(() => null);
+        if (refused) {
+          waiting ??= refused;
+          late = true;
+          return;
+        }
+      }
       await store.setOutputScores(
         x.id,
-        await gradeOutput(suite, mustGet(cases, x.caseId), x.output, onJudge),
+        await gradeOutput(suite, mustGet(cases, x.caseId), x.output, onJudge, {
+          runId,
+          during: "rescore",
+        }),
       );
     });
+    if (waiting !== null)
+      return { done: false, judgeCostUsd: judgeCost, waiting };
     if (late) return { done: false, judgeCostUsd: judgeCost };
     await gradeTogether(run, suite);
     const used = [...new Set(outputs.map((x) => x.caseId))].map((id) =>
@@ -1169,10 +1265,12 @@ export function createRunner(opts: RunnerOptions) {
     const todo = ids.filter((id) => !skip.has(id));
     const rescored: string[] = [];
     let judgeCostUsd = 0;
+    let waiting: string | undefined;
     for (const id of todo) {
       if (Date.now() > deadline) break;
       const r = await rescoreRun(id, deadline);
       judgeCostUsd += r.judgeCostUsd;
+      waiting = r.waiting;
       if (!r.done) break;
       rescored.push(id);
     }
@@ -1181,6 +1279,7 @@ export function createRunner(opts: RunnerOptions) {
       total: ids.length,
       left: todo.length - rescored.length,
       judgeCostUsd,
+      ...(waiting ? { waiting } : {}),
     };
   }
 

@@ -113,7 +113,7 @@ export const GLOSSARY = {
   standing:
     "Where a suite stands. Needs attention: its to-do list has something on it. Can't tell yet: no model tested, or too few cases to judge. Healthy: nothing to do.",
   checkLevels:
-    "Each check's level and aim, in place of the suite's own. Grading and the suggestion use them, a nice-to-have miss never fails an answer, and saving rescores recent tests (no new model answers).",
+    "Each check's level and aim, in place of the suite's own. Grading and the suggestion use them, and a nice-to-have miss never fails an answer. Saving rescores recent tests: free, or a few cents if a check asks the judge.",
   todo: "What to do next on this suite, in order, each with why. Each is done on this page, and drops off once it's done.",
   replacedStarter:
     "Added from the suite's starter cases, which have changed since: this input is no longer one of them. Retire it, unless you want it as a case of your own.",

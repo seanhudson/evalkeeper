@@ -15,8 +15,8 @@ export type FormAction = (form: FormData) => Promise<void>;
 
 /**
  * What rescoring returns: what it did and what's left (`RescoreProgress`),
- * or, with `waiting`, why it didn't start (tests are stopped or over a
- * daily limit, and the suite's checks ask the judge).
+ * or, with `waiting`, why it didn't start or stopped part way (tests are
+ * stopped or over a daily limit, and the suite's checks ask the judge).
  */
 export type RescoreResult = RescoreProgress & { waiting?: string };
 

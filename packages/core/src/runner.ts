@@ -619,6 +619,9 @@ export function createRunner(opts: RunnerOptions) {
     suite: ReuseSettings & { key: string },
     model: string,
   ): Promise<Map<string, OutputRecord>> {
+    const found = new Map<string, OutputRecord>();
+    // Turned off: even a test stopped this same millisecond isn't kept.
+    if (resumeWithin(suite) <= 0) return found;
     const since = Date.now() - resumeWithin(suite);
     const runs = (
       await store.listRuns(suite.key, { status: "FAILED", limit: 50 })
@@ -627,7 +630,6 @@ export function createRunner(opts: RunnerOptions) {
     const outputs = store.listOutputsFor
       ? await store.listOutputsFor(ids)
       : (await Promise.all(ids.map((id) => store.listOutputs(id)))).flat();
-    const found = new Map<string, OutputRecord>();
     for (const x of outputs) {
       if (x.reused || x.error !== null || x.createdAt.getTime() < since)
         continue;

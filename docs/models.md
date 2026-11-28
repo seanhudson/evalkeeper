@@ -81,8 +81,9 @@ They need three things:
 3. **A cost per answer for estimates,** from the runner's
    `estimateCallCost`
    ([How a test's cost is estimated](#how-a-tests-cost-is-estimated)).
-   Without it, a test still runs, but its button shows no estimate and
-   the test stops at $5.
+   Without it, a model's first test is priced from other models' tests
+   at its catalog prices; with no prices at all, its button shows no
+   estimate and the test stops at $5.
 
 ## The catalog
 
@@ -168,8 +169,16 @@ answer, counting everything an answer pays for: web searches and tool
 calls, not only tokens. The runner also looks at what the model's last
 finished test of the suite actually cost per answer (everything your
 suite reported through `onCost`) and uses whichever is higher, so a price
-that misses a per-search fee is corrected after one test. Without either,
-the estimate shows as unknown, and the test still runs, up to a cap.
+that misses a per-search fee is corrected after one test.
+
+Without either, such as a model you just added, the runner reprices
+other models' last tests of the suite at this model's catalog prices
+(`inputPer1M` and `outputPer1M`). It scales each by the larger of the
+input and output price ratios and keeps the highest, so the guess runs
+high rather than low. It's rough: answers differ in length between
+models, and searches don't follow token prices. After the first test,
+the model's own cost takes over. With no catalog prices either, the
+estimate shows as unknown, and the test still runs, up to a cap.
 
 A test stops once its own new answers cost more than twice its estimate
 and says so, so a price set too low can't run on unnoticed

@@ -196,7 +196,7 @@ export function evalActions(w: EvalWiring): Required<EvalActions> {
     async testAll(form) {
       await w.requireAdmin();
       const suite = suiteFrom(form);
-      for (const model of runner.modelsFor(suite.operation)) {
+      for (const model of await runner.modelsForSuite(suite.key)) {
         const { runs } = await runner.createTest({ suite: suite.key, model });
         after(() => runAll(runs));
       }
@@ -499,15 +499,49 @@ export function evalActions(w: EvalWiring): Required<EvalActions> {
     async saveSuiteSettings(form) {
       const admin = await w.requireAdmin();
       const suite = suiteFrom(form);
+      // The form doesn't hold the models removed from the suite: kept.
+      const { removedModels } = await runner.suiteSettings(suite.key);
       await runner.saveSuiteSettings(
         suite.key,
-        suiteSettingsFromForm(form, suite.checks, suite.priority.attacks),
+        {
+          ...suiteSettingsFromForm(form, suite.checks, suite.priority.attacks),
+          ...(removedModels ? { removedModels } : {}),
+        },
         changer(admin),
       );
       // Levels and aims change what passed: recent tests are rescored with
       // them now (free), so no test reads as out of date.
       await runner.rescoreRecent(suite.key);
       everyPage();
+    },
+
+    /**
+     * Removes a model from a suite's tests: off its model table and Test
+     * every model. Its earlier tests are kept.
+     */
+    async removeModel(form) {
+      const admin = await w.requireAdmin();
+      const suite = suiteFrom(form);
+      await runner.setModelRemoved(
+        suite.key,
+        formText(form, "model"),
+        true,
+        changer(admin),
+      );
+      revalidatePath(page(suite.key));
+    },
+
+    /** Adds a model removed from a suite back to its tests. */
+    async addModelBack(form) {
+      const admin = await w.requireAdmin();
+      const suite = suiteFrom(form);
+      await runner.setModelRemoved(
+        suite.key,
+        formText(form, "model"),
+        false,
+        changer(admin),
+      );
+      revalidatePath(page(suite.key));
     },
 
     /** Saves the daily spending limits: all tests, and a feature's. */

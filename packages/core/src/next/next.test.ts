@@ -557,6 +557,68 @@ describe("the eval actions", () => {
     });
   });
 
+  it("remove a model from a suite's tests, keep it removed through Save, and add it back", async () => {
+    const { wiring, store, settings } = setup();
+    const runner = createRunner({
+      store,
+      suites: [double],
+      models: {},
+      promptVersion: () => "p1",
+      route: (op) => settings.route(op),
+      candidates: () => ({ models: ["good", "bad", "spare"] }),
+      suiteSettings: store,
+    });
+    const actions = evalActions({ ...wiring, runner });
+    await actions.removeModel(form({ suite: "double", model: "spare" }));
+    expect(await runner.modelsForSuite("double")).toEqual(["good", "bad"]);
+    // Test every model leaves it out.
+    await addCases(actions);
+    await actions.testAll(form({ suite: "double" }));
+    await flush();
+    expect(
+      new Set((await store.listRuns("double")).map((r) => r.model)),
+    ).toEqual(new Set(["good", "bad"]));
+    // The Suite settings form doesn't hold it, but saving keeps it.
+    await actions.saveSuiteSettings(
+      form({ suite: "double", targetCases: "12" }),
+    );
+    expect((await runner.suiteSettings("double")).removedModels).toEqual([
+      "spare",
+    ]);
+    // The live model can't go; the person is told what to do first.
+    await expect(
+      actions.removeModel(form({ suite: "double", model: "good" })),
+    ).rejects.toThrow(/live model. Make another model live first/);
+    await actions.addModelBack(form({ suite: "double", model: "spare" }));
+    expect(await runner.modelsForSuite("double")).toEqual([
+      "good",
+      "bad",
+      "spare",
+    ]);
+  });
+
+  it("refuse to remove the fallback model", async () => {
+    const store = memoryStore();
+    const runner = createRunner({
+      store,
+      suites: [double],
+      models: {},
+      promptVersion: () => "p1",
+      route: () => ({
+        model: "good",
+        fallbackModel: "bad",
+        reasoningEffort: null,
+      }),
+      candidates: () => ({ models: ["good", "bad", "spare"] }),
+      suiteSettings: store,
+    });
+    await expect(
+      runner.setModelRemoved("double", "bad", true, null),
+    ).rejects.toThrow(
+      "bad is this feature's fallback. Choose another fallback first.",
+    );
+  });
+
   it("save a suite's target, and retire only the starters it replaced", async () => {
     const { wiring, store } = setup();
     const runner = createRunner({

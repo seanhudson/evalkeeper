@@ -182,3 +182,13 @@ feature may be tested on. Leave out models whose API key isn't set, and,
 for a decision feature, models that can't answer decisions. Adding a
 model to the catalog and to `candidates` puts it on every board it
 belongs on, ready to test.
+
+To stop testing a model on one suite, such as one that keeps doing
+poorly there or that the feature no longer needs, choose **Remove from
+this suite** in its menu on the model table. It leaves that suite's
+table, **Test every model**, and the reasoning setting menu, so it costs
+nothing there; other suites still test it, and its earlier tests are
+kept. A row under the table lists the removed models, each with **Add
+back**. The live and fallback models can't be removed. Removals are kept
+in the suite's settings, so this needs `suiteSettings` on the runner;
+in code, `runner.setModelRemoved` does the same.

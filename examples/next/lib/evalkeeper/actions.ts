@@ -25,6 +25,14 @@ export async function makeFallback(form: FormData) {
   return actions.makeFallback(form);
 }
 
+export async function removeModel(form: FormData) {
+  return actions.removeModel(form);
+}
+
+export async function addModelBack(form: FormData) {
+  return actions.addModelBack(form);
+}
+
 export async function useSuggestion(form: FormData) {
   return actions.useSuggestion(form);
 }

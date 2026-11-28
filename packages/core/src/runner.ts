@@ -1641,6 +1641,12 @@ export function createRunner(opts: RunnerOptions) {
     // A retiring model stays on the board only while a feature runs on it.
     const inUse = (model: string) =>
       model === route.model || model === route.fallbackModel;
+    // Models a person removed from this suite leave its board, unless the
+    // feature runs on them.
+    const removed = new Set(
+      (await suiteSettingsOf(suite.key)).removedModels ?? [],
+    );
+    keys = keys.filter(({ model }) => !removed.has(model) || inUse(model));
     if (opts.retiringOnBoard === "inUse")
       keys = keys.filter(
         ({ model }) => !opts.models[model]?.retiring || inUse(model),
@@ -1781,6 +1787,8 @@ export function createRunner(opts: RunnerOptions) {
       provisional: cases.filter((c) => isProvisional(c.labels)).length,
       rows,
       liveRunId: liveRun?.id ?? null,
+      /** Models removed from this suite that it could test, for Add back. */
+      removedModels: [...removed].filter((m) => allowed.has(m) && !inUse(m)),
     };
   }
 
@@ -1876,6 +1884,71 @@ export function createRunner(opts: RunnerOptions) {
     return opts.candidates?.(operation).models ?? [];
   }
 
+  /**
+   * The models a suite is tested on: its feature's (`modelsFor`), less
+   * the ones a person removed from it, though never the live or fallback
+   * model. What Test every model tests.
+   *
+   * @param suiteKey - The suite.
+   */
+  async function modelsForSuite(suiteKey: string): Promise<string[]> {
+    const suite = suiteOrThrow(suiteKey);
+    const removed = new Set(
+      (await suiteSettingsOf(suite.key)).removedModels ?? [],
+    );
+    const all = modelsFor(suite.operation);
+    if (!removed.size) return all;
+    const route = opts.route ? await opts.route(suite.operation) : null;
+    return all.filter(
+      (m) =>
+        !removed.has(m) || m === route?.model || m === route?.fallbackModel,
+    );
+  }
+
+  /**
+   * Removes a model from a suite's tests, or adds it back: it leaves the
+   * model table, Test every model, and the reasoning setting menu, and
+   * its earlier tests are kept. Throws a sentence a person can act on for
+   * the feature's live or fallback model, or without a `suiteSettings`
+   * store.
+   *
+   * @param suiteKey - The suite.
+   * @param model - The model.
+   * @param removed - True to remove it, false to add it back.
+   * @param by - Who changed it, for the settings row.
+   */
+  async function setModelRemoved(
+    suiteKey: string,
+    model: string,
+    removed: boolean,
+    by: string | null,
+  ): Promise<void> {
+    const suite = suiteOrThrow(suiteKey);
+    if (!modelsFor(suite.operation).includes(model))
+      throw new Error("Unknown model");
+    const label = opts.models[model]?.label ?? model;
+    if (removed && opts.route) {
+      const route = await opts.route(suite.operation);
+      if (model === route.model)
+        throw new Error(
+          `${label} is this feature's live model. Make another model live first.`,
+        );
+      if (model === route.fallbackModel)
+        throw new Error(
+          `${label} is this feature's fallback. Choose another fallback first.`,
+        );
+    }
+    const saved = await suiteSettingsOf(suite.key);
+    const rest = (saved.removedModels ?? []).filter((m) => m !== model);
+    const next = removed ? [...rest, model] : rest;
+    const { removedModels: _was, ...kept } = saved;
+    await saveSuiteSettings(
+      suite.key,
+      next.length ? { ...kept, removedModels: next } : kept,
+      by,
+    );
+  }
+
   return {
     startDriftCheck,
     runDriftCheck,
@@ -1883,6 +1956,8 @@ export function createRunner(opts: RunnerOptions) {
     board,
     attackBoards,
     modelsFor,
+    modelsForSuite,
+    setModelRemoved,
     createTest,
     estimateTest,
     suiteOrThrow,

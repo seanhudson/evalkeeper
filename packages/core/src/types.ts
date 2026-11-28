@@ -337,13 +337,21 @@ export type Suite<Input, Output, Label> = {
    */
   concurrency?: number;
   /**
-   * False: never reuse an earlier test's answers, so every test of this
-   * suite asks the model again, as if `fresh` were passed. For a suite
-   * whose answer depends on when it's made, such as one that reads the
-   * live web or puts today's date in the prompt: a reused answer would be
-   * stale. Every retest pays in full. Default true.
+   * False: never reuse a finished test's answers, so every retest of this
+   * suite asks the model again. For a suite whose answer depends on when
+   * it's made, such as one that reads the live web or puts today's date
+   * in the prompt: a reused answer would be stale. A test that stopped
+   * partway (a daily limit, stopped by hand, out of credits, or out of
+   * time) still keeps its answers for `resumeWithinMs`, so testing again
+   * picks up where it left off. Default true.
    */
   reuseAnswers?: boolean;
+  /**
+   * With `reuseAnswers: false`: how long, in ms, a stopped or failed
+   * test's answers are reused when the same model is tested again.
+   * Default `RESUME_WITHIN_MS` (24 hours); 0 asks for every answer again.
+   */
+  resumeWithinMs?: number;
   /**
    * Graded as decisions (typed answers with probabilities, as from the AI
    * SDK's `experimental_decide`), so pages show probability quality and

@@ -31,8 +31,16 @@ describe("Test every model", () => {
   });
 
   it("says why a suite that never reuses answers pays in full each time", () => {
-    expect(renderToStaticMarkup(<NoReuseNote />)).toContain(
-      "this suite doesn&#x27;t reuse earlier ones",
+    const day = renderToStaticMarkup(
+      <NoReuseNote resumeWithinMs={86_400_000} />,
     );
+    expect(day).toContain("this suite doesn&#x27;t reuse earlier ones");
+    expect(day).toContain(
+      "A test that stopped partway picks up where it left off if you test again within a day.",
+    );
+    // Turned off: no promise about stopped tests.
+    expect(
+      renderToStaticMarkup(<NoReuseNote resumeWithinMs={0} />),
+    ).not.toContain("picks up");
   });
 });

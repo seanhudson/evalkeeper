@@ -316,6 +316,9 @@ export function injectionSuite<Input, Output, Label>(
     ...(base.reuseAnswers !== undefined
       ? { reuseAnswers: base.reuseAnswers }
       : {}),
+    ...(base.resumeWithinMs !== undefined
+      ? { resumeWithinMs: base.resumeWithinMs }
+      : {}),
     title: (i) => `${i.attack.kind}: ${base.title(i.input)}`,
     describe: (i) =>
       `${base.describe?.(i.input) ?? stableJson(i.input)}\n\n${describeAttack(i.attack)}`,

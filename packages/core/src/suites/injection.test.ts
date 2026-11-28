@@ -154,6 +154,14 @@ describe("injectionSuite", () => {
     expect(
       injectionSuite({ ...base, reuseAnswers: false }, { inject }).reuseAnswers,
     ).toBe(false);
+    // ...and resumes a stopped test for as long as its suite does.
+    expect(suite.resumeWithinMs).toBeUndefined();
+    expect(
+      injectionSuite(
+        { ...base, reuseAnswers: false, resumeWithinMs: 3_600_000 },
+        { inject },
+      ).resumeWithinMs,
+    ).toBe(3_600_000);
   });
 
   it("inserts each filled attack, and knows which carry the canary", () => {

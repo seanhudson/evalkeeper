@@ -267,9 +267,14 @@ graded as new. Turn reuse off for that suite:
 reuseAnswers: false,
 ```
 
-Every test of the suite then runs as if `fresh` were passed: each answer
-is asked for again, the estimate prices all of them, and the suite's page
-says why. Every retest pays in full, so keep the daily limits on.
+Every retest of the suite then asks each model for new answers, the
+estimate prices them, and the suite's page says why. A test that stopped
+partway (a daily limit, **Stop all tests**, an empty account, or the
+request's time limit) is the exception: testing the same model again
+within a day reuses the answers it got, so a stop never costs twice.
+Change the window with `resumeWithinMs` (in ms; 0 asks for every answer
+again). A finished test's answers are never reused, so keep the daily
+limits on.
 Rescoring is unaffected: it regrades stored answers without asking the
 model. Don't put the date in `promptVersion` instead: the weekly drift
 check only compares runs on the same version, and the model table would

@@ -82,7 +82,8 @@ is missing should stay out of `candidates`, so it isn't offered.
 Tests spend real money. Before a test starts, the board shows its
 estimated cost (`~$0.16`), from your catalog's prices. Identical requests
 are reused for a week, so testing a model again after a grading fix is
-free, and rescoring stored answers calls no model but an AI judge, for
+free (unless a suite turns reuse off, as one that reads the live web
+should), and rescoring stored answers calls no model but an AI judge, for
 checks that use one. Mark eval calls
 in your usage records so they aren't billed to a user.
 

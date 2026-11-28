@@ -15,6 +15,7 @@ export function ModelMenu({
   test,
   makeLive,
   makeFallback,
+  remove,
   effort,
 }: {
   suite: string;
@@ -30,13 +31,15 @@ export function ModelMenu({
   makeLive: FormAction | null;
   /** Your makeFallback action, when it can be the fallback. */
   makeFallback: FormAction | null;
+  /** Your removeModel action, when the model can leave this suite's tests. */
+  remove?: FormAction | null | undefined;
   /**
    * The row's reasoning setting, for a row at a setting other than the
    * feature's (null: the model's own default); unset for the others.
    */
   effort?: string | null | undefined;
 }) {
-  if (!test && !makeLive && !makeFallback) return null;
+  if (!test && !makeLive && !makeFallback && !remove) return null;
   const fields = {
     suite,
     model,
@@ -57,6 +60,11 @@ export function ModelMenu({
       {makeFallback && (
         <MenuForm action={makeFallback} fields={fields}>
           Make fallback
+        </MenuForm>
+      )}
+      {remove && (
+        <MenuForm action={remove} fields={{ suite, model }}>
+          Remove from this suite
         </MenuForm>
       )}
     </Menu>

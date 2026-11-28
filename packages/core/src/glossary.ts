@@ -30,6 +30,8 @@ export const GLOSSARY = {
   minor:
     "Nice to have: a fair difference of judgment. It aims to pass 75% of the time unless it sets its own aim, and a miss never fails the answer.",
   aim: "The pass rate this check aims for. Under it, the check needs work.",
+  removedModels:
+    "Models removed from this suite's tests: off its model table and Test every model, so they cost nothing here. Earlier tests are kept, other suites still test them, and Add back returns them.",
   reasoningSetting:
     "Some models think before answering, and how much is a setting. Less is faster and cheaper; more can be more accurate. Each setting you test gets its own row.",
   checkBreakdown:

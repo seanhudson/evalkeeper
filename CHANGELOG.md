@@ -7,6 +7,22 @@ version may change an interface, and its entry says how to update.
 
 ## Unreleased
 
+**To update:** to show **Remove from this suite** and **Add back**, add
+`removeModel` and `addModelBack` to `lib/evalkeeper/actions.ts`
+(`add pages --force --only actions` rewrites it). No migration: removals
+are kept in suite settings.
+
+### Added
+
+- **Remove a model from one suite's tests.** **Remove from this suite**
+  in a model's menu takes it off that suite's model table, **Test every
+  model**, and the reasoning setting menu, so a model that keeps doing
+  poorly, or one the feature no longer needs, costs nothing there.
+  Other suites still test it, its earlier tests are kept, and **Add
+  back** under the table returns it. The live and fallback models can't
+  be removed. In code: `runner.setModelRemoved` and
+  `runner.modelsForSuite`.
+
 ### Fixed
 
 - A test with no cost estimate, such as a new model's first test of a

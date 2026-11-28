@@ -27,6 +27,10 @@ its own `BudgetCall` values (in tests, say) adds `kind: "answer"`.
   It now asks before each judged grading (`BudgetCall.kind` is
   `"judge"`), stops where the budget says, and says why. The check
   levels tooltip mentions the judge (#200).
+- A test with no cost estimate, such as a new model's first test of a
+  suite with no price from `estimateCallCost`, ran with no spending cap.
+  It now stops once its new answers cost more than $5
+  (`noEstimateCeilingUsd` on the runner; null turns it off) (#199).
 - The number check no longer counts shorthand such as "24/7", "1:1", and
   "1-on-1" meetings, or "9-to-5", as invented numbers (#190).
 - The number check reads number words with "hundred" or "thousand"

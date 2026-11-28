@@ -39,7 +39,7 @@ import {
 } from "../index.js";
 import { AnswerKey } from "./AnswerKey.js";
 import { RescoreButton } from "./RescoreButton.js";
-import { TestAll } from "./TestAll.js";
+import { NoReuseNote, TestAll } from "./TestAll.js";
 import { ModelMenu } from "./ModelMenu.js";
 import { PriorityPicker } from "./PriorityPicker.js";
 import { InfoPopover } from "./InfoPopover.js";
@@ -907,6 +907,7 @@ export function ModelTable({ data }: { data: SuitePageData }) {
             />
           </div>
         </div>
+        {suite.reuseAnswers === false && <NoReuseNote />}
         <Card className="overflow-x-auto p-0 lg:overflow-visible">
           <table className="w-full text-sm">
             <thead className="text-left text-muted">

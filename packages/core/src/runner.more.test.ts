@@ -246,6 +246,51 @@ describe("runner, beyond a basic test", () => {
     expect(fresh.run.estimatedCostUsd).toBeCloseTo(0.02);
   });
 
+  it("never reuses an answer for a suite with reuseAnswers: false", async () => {
+    const store = memoryStore();
+    for (const n of [2, 4]) await store.createCase(kase(n));
+    const calls: BudgetCall[] = [];
+    let limit = false;
+    const runner = createRunner({
+      store,
+      suites: [{ ...double, reuseAnswers: false, concurrency: 1 }],
+      models: MODELS,
+      promptVersion: () => "v1",
+      estimateCallCost: async () => 0.01,
+      budget: (call) => {
+        calls.push(call);
+        return limit && call.spentUsd > 0 ? "Over today's limit." : null;
+      },
+    });
+    const first = await runner.createRun({ suite: "double", model: "good" });
+    await runner.runEval(first.run.id);
+    // The same test again: nothing is reused, and the estimate says so.
+    expect(await runner.estimateRun("double", "good", "ALL", 1)).toMatchObject({
+      answers: 2,
+      reused: 0,
+      costUsd: 0.02,
+    });
+    const again = await runner.createRun({ suite: "double", model: "good" });
+    expect(again.run.estimatedCostUsd).toBeCloseTo(0.02);
+    await runner.runEval(again.run.id);
+    const outs = await store.listOutputs(again.run.id);
+    expect(outs.filter((x) => x.reused)).toHaveLength(0);
+    expect(outs.every((x) => x.costUsd > 0)).toBe(true);
+    // A stop doesn't promise free answers next time.
+    limit = true;
+    const third = await runner.createRun({ suite: "double", model: "good" });
+    await runner.runEval(third.run.id);
+    expect((await store.getRun(third.run.id))?.error).toBe(
+      "Stopped after 1 of 2 answers. Over today's limit.",
+    );
+    const fourth = await runner.createRun({ suite: "double", model: "good" });
+    expect(await runner.stopTests()).toBe(1);
+    expect((await store.getRun(fourth.run.id))?.error).toBe(
+      "Stopped by hand. Test again: this suite doesn't reuse answers, so every answer is asked for again.",
+    );
+    expect(STOPPED_BY_HAND).toMatch(/reused at no cost/);
+  });
+
   it("uses the operation's live reasoning setting unless told otherwise", async () => {
     const { runner } = await setup();
     const live = await runner.createRun({ suite: "double", model: "thinker" });
